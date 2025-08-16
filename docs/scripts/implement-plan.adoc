@@ -14,6 +14,7 @@ This script:
 * Provides Claude with the complete project context
 * Enables iterative implementation with plan updates
 * Supports direct implementation from specification and plan
+* Runs `claude` interactively enabling the developer to intervene promptly.
 
 == Prerequisites
 

@@ -1,10 +1,24 @@
-= GenAI-assisted development
+= Humans in the loop development workflow and tools
 
 My GenAI-assisted development workflows and supporting tools (Claude custom commands and link:docs/scripts/scripts.adoc[shell scripts] that run Claude).
 
+== About humans in the loop development
+
+If you want quality software then must be developed by human developers - GenAI plays the role of an assistant, not a developer.
+
+**The human developer is responsible for the delivered software**
+
+A GenAI coding agent must write code iteratively using TDD.
+
+The developer must carefully review any GenAI-generated code and provide prompt feedback.
+For example, the scripts described below run `claude` interactively, which enables prompt intervention by the developer.
+
+
+== Development workflows
+
 There are two workflows: greenfield and brownfield.
 
-== Greenfield development workflow
+=== Greenfield development workflow
 
 My GenAI-assisted greenfield development workflow consists of the following steps:
 
@@ -18,7 +32,7 @@ Let's look at the example scenario - the development of https://github.com/human
 
 See link:./docs/greenfield-development-workflow.adoc[Greenfield development workflow]
 
-== Brownfield development workflow
+=== Brownfield development workflow
 
 Coming soon.
 

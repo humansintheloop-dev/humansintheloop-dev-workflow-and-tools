@@ -37,6 +37,11 @@ Specifically, I run the link:./scripts/brainstorm-idea.adoc[brainstorm-idea.sh] 
 $ brainstorm-idea.sh docs/features/loc-outliner 
 ----
 
+Note: 
+
+* `loc-outliner` will be used as the idea name and any generated idea-related files will be prefixed with `loc-outliner`
+* It's good to run this command from the to-be-created project's root directory.
+
 Here's the results of the Q&A session: https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/blob/master/docs/features/loc-outliner/loc-outliner-discussion.md[loctree Q&A].
 
 == ... then a specification is created ...
@@ -75,6 +80,8 @@ Specifically, I run the link:./scripts/implement-plan.adoc[implement-plan.sh] co
 ----
 $ implement-plan.sh docs/features/loc-outliner 
 ----
+
+This script runs `claude` interactively enabling the developer to intervene promptly.
 
 See the https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/commits/master/[loctree commit history].
 

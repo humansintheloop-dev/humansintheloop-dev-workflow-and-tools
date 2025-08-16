@@ -1,0 +1,64 @@
+= make-stories.sh
+:toc:
+:toclevels: 2
+
+== Overview
+
+The `make-stories.sh` script generates user stories from the idea and specification files. It creates a set of user-focused requirements with acceptance criteria to guide development.
+
+== Purpose
+
+This script:
+
+* Validates that idea and specification files exist
+* Generates comprehensive user stories
+* Creates acceptance criteria for each story
+* Provides user-centric development guidance
+
+== Prerequisites
+
+Before running this script, you must have executed `make-spec.sh` which generates the technical specification. This script requires the specification and idea files to exist.
+
+Additional requirement: `claude` CLI must be available in the PATH
+
+== Generated Output
+
+Creates `${IDEA_NAME}-stories.md` containing:
+
+* User stories in standard format ("As a... I want... So that...")
+* Acceptance criteria for each story
+* Story priorities and dependencies
+* User personas and their needs
+* Epic groupings where appropriate
+
+== Usage
+
+[source,bash]
+----
+./make-stories.sh ~/ideas/my-app
+----
+
+This will:
+
+. Validate that idea and specification files exist
+. Generate user stories based on the specification
+. Save the stories to `my-app-stories.md`
+
+== Story Format
+
+Generated stories follow best practices:
+
+* Clear user role identification
+* Specific desired functionality
+* Business value justification
+* Measurable acceptance criteria
+* Testable success conditions
+
+== Next Steps
+
+After generating stories:
+
+* Review stories for completeness and clarity
+* Use `make-story-plan.sh` to create a story-based implementation plan
+* Use `implement-story-plan.sh` to begin story-driven development
+

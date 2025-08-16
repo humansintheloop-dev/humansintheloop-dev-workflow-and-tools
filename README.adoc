@@ -1,0 +1,28 @@
+= GenAI-assisted development
+
+My GenAI-assisted development workflows and supporting tools (Claude custom commands and link:docs/scripts/scripts.adoc[shell scripts] that run Claude).
+
+There are two workflows: greenfield and brownfield.
+
+== Greenfield development workflow
+
+My GenAI-assisted greenfield development workflow consists of the following steps:
+
+. Exploring an idea - an interactive, GenAI-driven Q&A session to flesh out an idea
+. Creating a specification - GenAI creates a specification from the Q&A session
+. Optionally creating user stories and scenarios - it's sometimes useful to create user stories/scenarios
+. Creating an implementation plan - a sequence tasks that are prompts for a coding agent
+. Executing the implementation plan - running the coding agent to execute the plan
+
+Let's look at the example scenario - the development of https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree[`loctree`], a terminal user interface (TUI) application that provides an interactive, hierarchical view of lines of code (LOC) counts for a given directory structure.
+
+See link:./docs/greenfield-development-workflow.adoc[Greenfield development workflow]
+
+== Brownfield development workflow
+
+Coming soon.
+
+== Acknowledgement
+
+The original inspiration and some prompts came from this https://harper.blog/2025/02/16/my-llm-codegen-workflow-atm/[excellent post].
+

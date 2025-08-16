@@ -1,0 +1,81 @@
+= Greenfield development workflow
+
+My GenAI-assisted greenfield development workflow consists of the following steps:
+
+. Exploring an idea - an interactive, GenAI-driven Q&A session to flesh out an idea
+. Creating a specification - GenAI creates a specification from the Q&A session
+. Optionally creating user stories and scenarios - it's sometimes useful to create user stories/scenarios
+. Creating an implementation plan - a sequence tasks that are prompts for a coding agent
+. Executing the implementation plan - running the coding agent to execute the plan
+
+Let's look at each step.
+
+== Development starts with an idea...
+
+The starting point for development is an idea, such as:
+
+```
+I want a GoLang TUI application that takes a directory of source code as an argument.
+It will show the total LOC in the directory.
+I can expand a directory and it will show the LOC for each subdirectory
+I can expand subdirectories recursively to see more details.
+I can also collapse directory to hide the details.
+Each directory is shown as LOC directory name.
+The subdirectories are indented.
+```
+
+See the https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/blob/master/docs/features/loc-outliner/loc-outliner-idea.txt[loctree idea].
+
+== ... followed by interactive Q&A ... 
+
+I then tell Claude to ask me a series of questions to flesh out the idea.
+
+Specifically, I run the link:./scripts/brainstorm-idea.adoc[brainstorm-idea.sh] command:
+
+[source,bash]
+----
+$ brainstorm-idea.sh docs/features/loc-outliner 
+----
+
+Here's the results of the Q&A session: https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/blob/master/docs/features/loc-outliner/loc-outliner-discussion.md[loctree Q&A].
+
+== ... then a specification is created ...
+
+Once the idea has been explored, the next step is for Claude to create a specification:
+
+Specifically, I run the link:./scripts/make-spec.adoc[make-spec.sh] command:
+
+[source,bash]
+----
+$ make-spec.sh docs/features/loc-outliner 
+----
+
+Here's the https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/blob/master/docs/features/loc-outliner/loc-outliner-spec.md[loctree specification].
+
+== ... followed by an implementation plan
+
+Once the specification has been created, the next step to create an implementation plan.
+
+Specifically, I run the link:./scripts/make-plan.adoc[make-plan.sh] command:
+
+[source,bash]
+----
+$ make-plan.sh docs/features/loc-outliner 
+----
+
+Here's the https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/blob/master/docs/features/loc-outliner/loc-outliner-plan.md[loctree implementation plan].
+
+== .. which is then executed
+
+The final step is to implement the plan.
+
+Specifically, I run the link:./scripts/implement-plan.adoc[implement-plan.sh] command:
+
+[source,bash]
+----
+$ implement-plan.sh docs/features/loc-outliner 
+----
+
+See the https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/commits/master/[loctree commit history].
+
+

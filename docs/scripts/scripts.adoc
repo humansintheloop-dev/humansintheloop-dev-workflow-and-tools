@@ -1,0 +1,77 @@
+= Workflow Scripts Command Reference
+:toc:
+:toclevels: 2
+
+== Overview
+
+This document provides a quick reference to all workflow scripts in the order they should be executed.
+
+== Workflow Diagram
+
+----
+brainstorm-idea.sh
+        ↓
+   make-spec.sh
+        ↓
+    [Choose Path]
+        ↓
+ ┌──────────────┬────────────────┐
+ ↓              ↓                ↓
+make-plan.sh   OR   make-stories.sh
+ ↓                       ↓
+implement-plan.sh   make-story-plan.sh
+                         ↓
+                 implement-story-plan.sh
+----
+
+== Initial Idea Development
+
+* link:brainstorm-idea.adoc[brainstorm-idea.sh] - Start brainstorming and develop your initial idea
+* link:make-spec.adoc[make-spec.sh] - Create technical specification from the brainstormed idea
+
+== Planning Phase
+
+Choose one of the following planning approaches:
+
+=== Direct Planning
+
+* link:make-plan.adoc[make-plan.sh] - Generate implementation plan directly from specification
+
+=== Story-Driven Planning
+
+* link:make-stories.adoc[make-stories.sh] - Create user stories from specification
+* link:make-story-plan.adoc[make-story-plan.sh] - Generate story-based implementation plan
+
+== Implementation Phase
+
+Execute the plan created in the planning phase:
+
+=== Direct Implementation
+
+* link:implement-plan.adoc[implement-plan.sh] - Execute the implementation plan (requires make-plan.sh)
+
+=== Story-Driven Implementation
+
+* link:implement-story-plan.adoc[implement-story-plan.sh] - Execute the story-based plan (requires make-story-plan.sh)
+
+== Quick Start Example
+
+For a new project using the story-driven approach:
+
+[source,bash]
+----
+# 1. Start with your idea
+./workflow-scripts/brainstorm-idea.sh ~/ideas/my-app
+
+# 2. Create specification
+./workflow-scripts/make-spec.sh ~/ideas/my-app
+
+# 3. Generate user stories
+./workflow-scripts/make-stories.sh ~/ideas/my-app
+
+# 4. Create story-based plan
+./workflow-scripts/make-story-plan.sh ~/ideas/my-app
+
+# 5. Implement the application
+./workflow-scripts/implement-story-plan.sh ~/ideas/my-app
+----

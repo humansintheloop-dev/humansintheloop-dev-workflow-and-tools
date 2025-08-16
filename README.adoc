@@ -13,6 +13,9 @@ A GenAI coding agent must write code iteratively using TDD.
 The developer must carefully review any GenAI-generated code and provide prompt feedback.
 For example, the scripts described below run `claude` interactively, which enables prompt intervention by the developer.
 
+== Installing Claude Code
+
+See https://microservices.io/post/architecture/2025/07/09/vibe-coding-good-almost-other-part-2.html[Vibe coding: the good, the almost, and the @#$%** - Part 2], which describes how to get started with the Claude Code - a command-line based coding agent.
 
 == Development workflows
 

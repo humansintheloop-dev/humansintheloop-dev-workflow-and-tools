@@ -10,10 +10,10 @@ fi
 
 IDEA_NAME=$(basename "$IDEA_DIR")
 
-if ! ls "$IDEA_DIR/${IDEA_NAME}-idea.*" >/dev/null 2>&1; then
+if ! ls "$IDEA_DIR"/${IDEA_NAME}-idea.* >/dev/null 2>&1; then
     IDEA_FILE="$IDEA_DIR/${IDEA_NAME}-idea.txt"
 else
-    IDEA_FILE="$(ls $IDEA_DIR/${IDEA_NAME}-idea.*)"
+    IDEA_FILE="$(ls "$IDEA_DIR"/${IDEA_NAME}-idea.*)"
 fi
 
 DISCUSSION_FILE="$IDEA_DIR/${IDEA_NAME}-discussion.md"

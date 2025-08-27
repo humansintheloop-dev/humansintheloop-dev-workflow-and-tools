@@ -1,6 +1,6 @@
-= Greenfield development workflow
+= Idea to code workflow
 
-My GenAI-assisted greenfield development workflow consists of the following steps:
+My GenAI-assisted **idea to code workflow** consists of the following steps:
 
 . Exploring an idea - an interactive, GenAI-driven Q&A session to flesh out an idea
 . Creating a specification - GenAI creates a specification from the Q&A session

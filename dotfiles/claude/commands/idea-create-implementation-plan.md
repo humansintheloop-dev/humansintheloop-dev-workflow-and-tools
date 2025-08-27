@@ -7,8 +7,11 @@ I want to implement this using the Steel thread methodology.
   * Whenever possible, it should use the recommended starter/template/skeleton for the technology stack.
   * It should setup the an automated deployment pipeline, e.g. Github Actions that builds and tests the application.
   * If applicable, the deployment pipeline should deploy the application
+
 * Each of the following threads should build on the previous ones, adding more functionality.
 * Organize the steel threads by causal dependencies and architectural priority.
+* Ideally a thread should implement an end-to-end flow through the architecture: for example, Controller (or message handler) -> Service -> Repository -> DB and back.
+
 
 The process for defining the threads should be iterative:
 
@@ -31,3 +34,7 @@ The implementation should be:
 * Each subtask/step within a task should also have a checkbox '[ ]' for granular tracking
 * Include instructions for the coding LLM to mark each checkbox as '[x]' when the task/step is completed
 * Make sure and separate each prompt section. Use markdown. Each prompt should be tagged as text using code tags. The goal is to output prompts, but context, etc is important as well.
+
+The final section of the plan is a "## Change History".
+It's initially empty.
+You must record any changes to the plan requested during a conversation in this section.

@@ -1,6 +1,6 @@
-= Humans in the loop development workflow and tools
+= Humans in the loop idea to code workflow and tools
 
-My GenAI-assisted development workflows and supporting tools (Claude custom commands and link:docs/scripts/scripts.adoc[shell scripts] that run Claude).
+My GenAI-assisted idea to code workflow and supporting tools (Claude custom commands and link:docs/scripts/scripts.adoc[shell scripts] that run Claude).
 
 == About humans in the loop development
 
@@ -17,13 +17,9 @@ For example, the scripts described below run `claude` interactively, which enabl
 
 See https://microservices.io/post/architecture/2025/07/09/vibe-coding-good-almost-other-part-2.html[Vibe coding: the good, the almost, and the @#$%** - Part 2], which describes how to get started with the Claude Code - a command-line based coding agent.
 
-== Development workflows
+== The idea to code workflow
 
-There are two workflows: greenfield and brownfield.
-
-=== Greenfield development workflow
-
-My GenAI-assisted greenfield development workflow consists of the following steps:
+My GenAI-assisted idea to code workflow consists of the following steps:
 
 . Exploring an idea - an interactive, GenAI-driven Q&A session to flesh out an idea
 . Creating a specification - GenAI creates a specification from the Q&A session
@@ -33,11 +29,7 @@ My GenAI-assisted greenfield development workflow consists of the following step
 
 Let's look at the example scenario - the development of https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree[`loctree`], a terminal user interface (TUI) application that provides an interactive, hierarchical view of lines of code (LOC) counts for a given directory structure.
 
-See link:./docs/greenfield-development-workflow.adoc[Greenfield development workflow]
-
-=== Brownfield development workflow
-
-Coming soon.
+See link:./docs/idea-to-code-workflow.adoc[idea to code workflow]
 
 == Acknowledgement
 

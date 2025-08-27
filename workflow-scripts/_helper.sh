@@ -3,6 +3,8 @@
 
 IDEA_DIR=${1}
 
+shift
+
 if [ -z "$IDEA_DIR" ]; then
     echo "Please specify the directory that will contain the idea-related files"
     exit 1

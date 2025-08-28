@@ -34,7 +34,7 @@ To use this workflow simply run:
 ./idea-to-code.sh ~/ideas/my-new-idea
 ----
 
-where `~/ideas/my-new-idea` is a directory that will contain the idea, spec, and implemention plan.
+where `~/ideas/my-new-idea` is a directory that will contain the idea, spec, and implementation plan.
 
 === An example
 

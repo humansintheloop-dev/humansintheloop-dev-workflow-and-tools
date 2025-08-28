@@ -27,7 +27,7 @@ My GenAI-assisted idea to code workflow consists of the following steps:
 . Creating an implementation plan - a sequence tasks that are prompts for a coding agent
 . Executing the implementation plan - running the coding agent to execute the plan
 
-To use this workflow simply run:
+To use this workflow simply run link:./docs/scripts/idea-to-code.adoc[idea-to-code.sh]:
 
 [source,bash]
 ----

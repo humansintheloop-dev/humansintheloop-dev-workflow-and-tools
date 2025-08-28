@@ -35,12 +35,14 @@ See the https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loct
 
 I then tell Claude to ask me a series of questions to flesh out the idea.
 
-Specifically, I run the link:./scripts/brainstorm-idea.adoc[brainstorm-idea.sh] command:
+This is done using the link:./scripts/idea-to-code.adoc[idea-to-code.sh] orchestrator:
 
 [source,bash]
 ----
-$ brainstorm-idea.sh docs/features/loc-outliner 
+$ ./workflow-scripts/idea-to-code.sh docs/features/loc-outliner 
 ----
+
+The orchestrator runs link:./scripts/brainstorm-idea.adoc[brainstorm-idea.sh] to first create the idea if it does not exist and then start or resume the interactive Q&A session.
 
 Note: 
 
@@ -51,13 +53,15 @@ Here's the results of the Q&A session: https://github.com/humansintheloop-dev/hu
 
 == ... then a specification is created ...
 
-Once the idea has been explored, the next step is for Claude to create a specification:
+Once the idea has been explored, the next step is to create a specification.
 
-Specifically, I run the link:./scripts/make-spec.adoc[make-spec.sh] command:
+After completing the Q&A session, the link:./scripts/idea-to-code.adoc[idea-to-code.sh] orchestrator will present you with the option to create a specification. 
+When selected, it runs link:./scripts/make-spec.adoc[make-spec.sh]:
 
 [source,bash]
 ----
-$ make-spec.sh docs/features/loc-outliner 
+# The orchestrator continues from the Q&A session
+# and offers: "Create specification from idea"
 ----
 
 Here's the https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/blob/master/docs/features/loc-outliner/loc-outliner-spec.md[loctree specification].
@@ -66,11 +70,16 @@ Here's the https://github.com/humansintheloop-dev/humansintheloop-dev-examples-l
 
 Once the specification has been created, the next step to create an implementation plan.
 
-Specifically, I run the link:./scripts/make-plan.adoc[make-plan.sh] command:
+The link:./scripts/idea-to-code.adoc[idea-to-code.sh] orchestrator will present you with options to either:
+* Create user stories (for a story-driven approach)
+* Create implementation plan directly
+
+When you choose to create an implementation plan, it runs link:./scripts/make-plan.adoc[make-plan.sh]:
 
 [source,bash]
 ----
-$ make-plan.sh docs/features/loc-outliner 
+# The orchestrator continues from the specification step
+# and offers: "Create implementation plan (direct approach)"
 ----
 
 Here's the https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/blob/master/docs/features/loc-outliner/loc-outliner-plan.md[loctree implementation plan].
@@ -79,14 +88,17 @@ Here's the https://github.com/humansintheloop-dev/humansintheloop-dev-examples-l
 
 The final step is to implement the plan.
 
-Specifically, I run the link:./scripts/implement-plan.adoc[implement-plan.sh] command:
+Once the plan is created, the link:./scripts/idea-to-code.adoc[idea-to-code.sh] orchestrator will offer to implement it. 
+
+When selected, it runs link:./scripts/implement-plan.adoc[implement-plan.sh]:
 
 [source,bash]
 ----
-$ implement-plan.sh docs/features/loc-outliner 
+# The orchestrator continues from the plan creation
+# and offers: "Implement the plan"
 ----
 
-This script runs `claude` interactively enabling the developer to intervene promptly.
+This runs `claude` interactively, enabling the developer to intervene promptly. The orchestrator will check for uncompleted tasks and offer to continue implementation if needed.
 
 See the https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/commits/master/[loctree commit history].
 

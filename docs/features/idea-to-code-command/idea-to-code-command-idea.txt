@@ -1,0 +1,7 @@
+Implement an idea-to-code.sh script in workflow-scripts that takes the user through the idea to code workflow
+
+It has a single parameter that's the directory containing the workflow files
+
+On startup it should determine what steps of the workflow have been completed, and resume the workflow at the correct point by running the appropriate script.
+
+If there is a choice, it should prompt the user which option to do next.

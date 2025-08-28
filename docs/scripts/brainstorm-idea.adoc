@@ -31,13 +31,13 @@ This script:
 
 [source,bash]
 ----
-./brainstorm-idea.sh ~/ideas/my-new-app
+./brainstorm-idea.sh ~/ideas/my-new-idea
 ----
 
 This will:
 
-. Create `~/ideas/my-new-app/` directory if needed
-. Create or open `my-new-app-idea.txt` for editing
+. Create `~/ideas/my-new-idea/` directory if needed
+. Create or open `my-new-idea-idea.txt` for editing
 . Start or resume a Claude brainstorming session
-. Save the discussion to `my-new-app-discussion.md`
+. Save the discussion to `my-new-idea-discussion.md`
 

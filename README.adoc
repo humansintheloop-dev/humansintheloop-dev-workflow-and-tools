@@ -27,6 +27,17 @@ My GenAI-assisted idea to code workflow consists of the following steps:
 . Creating an implementation plan - a sequence tasks that are prompts for a coding agent
 . Executing the implementation plan - running the coding agent to execute the plan
 
+To use this workflow simply run:
+
+[source,bash]
+----
+./idea-to-code.sh ~/ideas/my-new-idea
+----
+
+where `~/ideas/my-new-idea` is a directory that will contain the idea, spec, and implemention plan.
+
+=== An example
+
 Let's look at the example scenario - the development of https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree[`loctree`], a terminal user interface (TUI) application that provides an interactive, hierarchical view of lines of code (LOC) counts for a given directory structure.
 
 See link:./docs/idea-to-code-workflow.adoc[idea to code workflow]

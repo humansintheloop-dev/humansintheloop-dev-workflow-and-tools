@@ -1,0 +1,206 @@
+= idea-to-code.sh - Workflow Orchestrator
+:toc:
+:toclevels: 2
+
+== Overview
+
+The `idea-to-code.sh` script is the main orchestrator for the idea-to-code workflow. It provides an interactive, guided experience that takes you through the entire development process from initial idea to implemented code.
+
+== Purpose
+
+This script automates the workflow management, detecting your current state and presenting appropriate options at each step. It eliminates the need to remember which script to run next and handles errors gracefully with retry options.
+
+== Usage
+
+[source,bash]
+----
+./workflow-scripts/idea-to-code.sh <directory>
+----
+
+=== Parameters
+
+* `<directory>` - The directory containing (or that will contain) your workflow files
+  - Must be an existing directory
+  - Will be used to store all generated artifacts (idea, spec, plan, etc.)
+
+=== Example
+
+[source,bash]
+----
+# Create a new idea directory
+mkdir ~/projects/my-new-idea
+
+# Start the orchestrator
+./workflow-scripts/idea-to-code.sh ~/projects/my-new-idea
+----
+
+== Workflow States
+
+The orchestrator detects and manages the following workflow states:
+
+=== no_idea
+* No idea file exists yet
+* Prompts to create initial idea using `brainstorm-idea.sh`
+
+=== has_idea_no_spec
+* Idea exists but no specification
+* Options:
+  - Revise the existing idea
+  - Create specification from idea
+  - Exit
+
+=== has_spec
+* Specification exists but no plan
+* Options:
+  - Revise the specification
+  - Create user stories (story-driven approach)
+  - Create implementation plan (direct approach)
+  - Exit
+
+=== has_stories
+* User stories exist but no story-based plan
+* Automatically creates story-based plan
+
+=== has_story_plan
+* Story-based plan exists
+* Options:
+  - Implement the story plan
+  - Exit
+
+=== has_plan
+* Direct implementation plan exists
+* Options:
+  - Revise the plan
+  - Implement the plan
+  - Exit
+
+=== complete
+* All expected files are present
+* Workflow is considered complete
+
+== Features
+
+=== Interactive Menus
+
+The script presents context-aware menus at decision points:
+
+* Default options are highlighted and can be selected by pressing Enter
+* Numbered choices for explicit selection
+* Clear prompts explaining each option
+
+=== Error Handling
+
+When a step fails, the orchestrator offers:
+
+* **Retry** - Attempt the failed step again
+* **Abort** - Exit the workflow
+
+This allows you to fix issues (like missing dependencies or configuration) without losing progress.
+
+=== State Detection
+
+The script automatically detects your current progress by checking for the presence of workflow files:
+
+* Idea files (`*-idea.txt` or `*-idea.md`)
+* Specification (`*-spec.md`)
+* User stories (`*-stories.md`)
+* Implementation plans (`*-plan.md` or `*-story-plan.md`)
+
+=== Continuous Workflow
+
+After implementing a plan, the script checks for uncompleted tasks:
+
+* If uncompleted tasks exist (checkboxes with `[ ]`), returns to menu for continuing work
+* If all tasks are complete, exits with success message
+
+=== Signal Handling
+
+* Gracefully handles Ctrl+C interruption
+* Properly exits with appropriate status codes
+
+== Workflow Paths
+
+The orchestrator supports two main workflow paths:
+
+=== Direct Path
+
+1. Create idea → Create spec → Create plan → Implement plan
+
+Suitable for:
+* Smaller projects
+* Clear, well-defined requirements
+* Projects without complex user interactions
+
+=== Story-Driven Path
+
+1. Create idea → Create spec → Create stories → Create story plan → Implement story plan
+
+Suitable for:
+* Larger projects
+* User-facing applications
+* Projects requiring user story mapping
+* Agile development approach
+
+== Dependencies
+
+The orchestrator relies on these workflow scripts:
+
+* `_helper.sh` - Sets up environment variables
+* `brainstorm-idea.sh` - Initial idea creation
+* `make-spec.sh` - Specification generation
+* `make-stories.sh` - User story creation
+* `make-plan.sh` - Direct plan generation
+* `make-story-plan.sh` - Story-based plan generation
+* `implement-plan.sh` - Direct plan implementation
+* `implement-story-plan.sh` - Story-based plan implementation
+* `revise-spec.sh` - Specification revision (if exists)
+* `revise-plan.sh` - Plan revision (if exists)
+
+== Exit Codes
+
+* `0` - Successful completion or user-initiated exit
+* `1` - Error in workflow execution
+* `130` - Interrupted by Ctrl+C
+
+== Tips
+
+=== Starting Fresh
+
+Create a new directory for each project to keep workflows organized:
+
+[source,bash]
+----
+mkdir ~/ideas/project-name
+./workflow-scripts/idea-to-code.sh ~/ideas/project-name
+----
+
+=== Resuming Work
+
+Run the orchestrator on an existing project directory to continue where you left off:
+
+[source,bash]
+----
+./workflow-scripts/idea-to-code.sh ~/ideas/existing-project
+----
+
+=== Handling Failures
+
+If a step fails:
+
+1. Read the error message carefully
+2. Fix any issues (missing files, dependencies, etc.)
+3. Choose "Retry" to attempt the step again
+4. If the issue persists, choose "Abort" and investigate further
+
+=== Choosing Workflow Path
+
+* Choose **user stories** for applications with multiple user-facing features
+* Choose **direct planning** for utilities, scripts, or backend services
+
+== See Also
+
+* link:scripts.adoc[Workflow Scripts Overview]
+* link:brainstorm-idea.adoc[brainstorm-idea.sh]
+* link:make-spec.adoc[make-spec.sh]
+* link:make-plan.adoc[make-plan.sh]
+* link:make-stories.adoc[make-stories.sh]

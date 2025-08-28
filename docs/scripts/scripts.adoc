@@ -6,7 +6,13 @@
 
 This document provides a quick reference to all workflow scripts in the order they should be executed.
 
-== Workflow Diagram
+== Orchestrator Script
+
+* link:idea-to-code.adoc[idea-to-code.sh] - Main orchestrator that guides you through the entire workflow interactively
+
+== Manual Workflow Diagram
+
+If you prefer to run scripts manually instead of using the orchestrator:
 
 ----
 brainstorm-idea.sh
@@ -54,7 +60,29 @@ Execute the plan created in the planning phase:
 
 * link:implement-story-plan.adoc[implement-story-plan.sh] - Execute the story-based plan (requires make-story-plan.sh)
 
-== Quick Start Example
+== Quick Start Examples
+
+=== Using the Orchestrator (Recommended)
+
+The easiest way to use the workflow is with the orchestrator script:
+
+[source,bash]
+----
+# Create your project directory
+mkdir ~/ideas/my-app
+
+# Run the orchestrator - it will guide you through each step
+./workflow-scripts/idea-to-code.sh ~/ideas/my-app
+----
+
+The orchestrator will:
+
+* Detect your current workflow state
+* Present appropriate options at each step  
+* Allow you to retry failed steps
+* Guide you through the entire process interactively
+
+=== Manual Execution
 
 For a new project using the story-driven approach:
 

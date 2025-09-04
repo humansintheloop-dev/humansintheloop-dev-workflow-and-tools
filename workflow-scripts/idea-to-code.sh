@@ -132,10 +132,23 @@ main() {
     
     # Check if directory exists
     if [[ ! -d "$dir" ]]; then
-        echo "Error: Directory does not exist: $dir"
+        echo "Directory does not exist: $dir"
         echo ""
-        echo "Please create the directory first or provide a valid directory path."
-        exit 1
+        read -r -p "Would you like to create it? (y/N): " create_dir
+        
+        if [[ "$create_dir" =~ ^[Yy]$ ]]; then
+            if mkdir -p "$dir"; then
+                echo "Directory created successfully: $dir"
+                echo ""
+            else
+                echo "Error: Failed to create directory: $dir"
+                exit 1
+            fi
+        else
+            echo "Directory creation cancelled."
+            echo "Please create the directory manually or provide a valid directory path."
+            exit 1
+        fi
     fi
     
     # Source helper to set up environment variables

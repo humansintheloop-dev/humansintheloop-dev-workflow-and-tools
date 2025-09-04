@@ -24,5 +24,5 @@ The set of implementation tasks are in this file ${PLAN_WITHOUT_STORIES_FILE?}.
 
 ${SPECIFIC_TASK} 
 
-IMPORTANT when a task is implemented, Update the plan file to mark the task as completed.
+IMPORTANT when a task is implemented (the tests have been written and pass), Update the plan file to mark the task as completed.
 Do this  BEFORE committing the task's changes  so that the commit includes the task's changes and the updated plan"

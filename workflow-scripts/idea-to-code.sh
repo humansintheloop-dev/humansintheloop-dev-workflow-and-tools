@@ -274,7 +274,8 @@ main() {
             has_story_plan)
                 local choice
                 choice=$(get_user_choice "Story-based plan exists. What would you like to do?" 1 \
-                    "Implement the story plan" \
+                    "Implement the entire story plan" \
+                    "Implement a specific task" \
                     "Exit")
                 
                 case "$choice" in
@@ -302,6 +303,31 @@ main() {
                         fi
                         ;;
                     2)
+                        echo ""
+                        echo "Enter the specific task to implement:"
+                        read -r -p "> " specific_task
+                        if [ -n "$specific_task" ]; then
+                            if "$SCRIPT_DIR/implement-story-plan.sh" "$dir" "$specific_task"; then
+                                echo "Task implementation completed successfully!"
+                                echo ""
+                                # Check if plan has uncompleted tasks
+                                if grep -q '\[ \]' "$PLAN_WITH_STORIES_FILE" 2>/dev/null; then
+                                    echo "Plan still has uncompleted tasks."
+                                else
+                                    echo "================================================"
+                                    echo "  All tasks complete!"
+                                    echo "================================================"
+                                fi
+                            else
+                                if handle_error "$SCRIPT_DIR/implement-story-plan.sh" "$dir"; then
+                                    continue  # Retry
+                                fi
+                            fi
+                        else
+                            echo "No task specified. Returning to menu."
+                        fi
+                        ;;
+                    3)
                         echo "Exiting workflow."
                         exit 0
                         ;;
@@ -312,7 +338,8 @@ main() {
                 local choice
                 choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
                     "Revise the plan" \
-                    "Implement the plan" \
+                    "Implement the entire plan" \
+                    "Implement a specific task" \
                     "Exit")
                 
                 case "$choice" in
@@ -349,6 +376,31 @@ main() {
                         fi
                         ;;
                     3)
+                        echo ""
+                        echo "Enter the specific task to implement:"
+                        read -r -p "> " specific_task
+                        if [ -n "$specific_task" ]; then
+                            if "$SCRIPT_DIR/implement-plan.sh" "$dir" "$specific_task"; then
+                                echo "Task implementation completed successfully!"
+                                echo ""
+                                # Check if plan has uncompleted tasks
+                                if grep -q '\[ \]' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null; then
+                                    echo "Plan still has uncompleted tasks."
+                                else
+                                    echo "================================================"
+                                    echo "  All tasks complete!"
+                                    echo "================================================"
+                                fi
+                            else
+                                if handle_error "$SCRIPT_DIR/implement-plan.sh" "$dir"; then
+                                    continue  # Retry
+                                fi
+                            fi
+                        else
+                            echo "No task specified. Returning to menu."
+                        fi
+                        ;;
+                    4)
                         echo "Exiting workflow."
                         exit 0
                         ;;

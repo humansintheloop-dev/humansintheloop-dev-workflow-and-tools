@@ -6,6 +6,8 @@
 
 This document provides a quick reference to all workflow scripts in the order they should be executed.
 
+NOTE: The slash commands used by these scripts must be installed first via `/plugin install idea-to-code-workflow`.
+
 == Orchestrator Script
 
 * link:idea-to-code.adoc[idea-to-code.sh] - Main orchestrator that guides you through the entire workflow interactively

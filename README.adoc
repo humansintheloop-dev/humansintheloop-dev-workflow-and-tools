@@ -13,9 +13,87 @@ A GenAI coding agent must write code iteratively using TDD.
 The developer must carefully review any GenAI-generated code and provide prompt feedback.
 For example, the scripts described below run `claude` interactively, which enables prompt intervention by the developer.
 
-== Installing Claude Code
+== Installation
 
-See https://microservices.io/post/architecture/2025/07/09/vibe-coding-good-almost-other-part-2.html[Vibe coding: the good, the almost, and the @#$%** - Part 2], which describes how to get started with the Claude Code - a command-line based coding agent.
+=== Prerequisites
+
+Install Claude Code - see https://microservices.io/post/architecture/2025/07/09/vibe-coding-good-almost-other-part-2.html[Vibe coding: the good, the almost, and the @#$%** - Part 2] for getting started.
+
+=== Installing the Slash Commands
+
+The workflow uses custom slash commands that need to be installed. You can install using either slash commands (inside a Claude Code session) or shell commands.
+
+==== Option 1: Install from GitHub (Published Plugin)
+
+**Using slash commands** (inside Claude Code session):
+
+[source,bash]
+----
+/plugin marketplace add https://github.com/chrisrichardson/genai-development-workflow
+/plugin install idea-to-code
+----
+
+**Using shell commands** (from terminal):
+
+[source,bash]
+----
+claude plugin marketplace add https://github.com/chrisrichardson/genai-development-workflow
+claude plugin install idea-to-code
+----
+
+==== Option 2: Install from Local Clone (For Development)
+
+If you've cloned the repository locally:
+
+**Using slash commands** (inside Claude Code session):
+
+[source,bash]
+----
+/plugin marketplace add /path/to/genai-development-workflow
+/plugin install idea-to-code
+----
+
+**Using shell commands** (from terminal):
+
+[source,bash]
+----
+claude plugin marketplace add /path/to/genai-development-workflow
+claude plugin install idea-to-code
+----
+
+After installation, restart Claude Code to load the new plugins.
+
+=== Uninstalling the Plugin
+
+To uninstall the plugin and remove the marketplace:
+
+**Using slash commands** (inside Claude Code session):
+
+[source,bash]
+----
+/plugin uninstall idea-to-code
+/plugin marketplace remove idea-to-code
+----
+
+**Using shell commands** (from terminal):
+
+[source,bash]
+----
+claude plugin uninstall idea-to-code
+claude plugin marketplace remove idea-to-code
+----
+
+=== Getting the Workflow Scripts
+
+To use the workflow orchestration scripts, clone the repository:
+
+[source,bash]
+----
+git clone https://github.com/chrisrichardson/genai-development-workflow
+cd genai-development-workflow
+----
+
+NOTE: Even if you install via plugin, you still need to clone the repository to use the workflow scripts.
 
 == The idea to code workflow
 

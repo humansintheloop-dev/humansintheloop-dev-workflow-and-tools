@@ -21,4 +21,4 @@ else
     COMMAND_SUFFIX="-continue"
 fi
 
-claude "$SESSION_ARG" "$(_session_id)" "/idea-brainstorm${COMMAND_SUFFIX} idea-file=$IDEA_FILE discussion-file=$DISCUSSION_FILE"
+claude "$SESSION_ARG" "$(_session_id)" "/idea-to-code:idea-brainstorm${COMMAND_SUFFIX} idea-file=$IDEA_FILE discussion-file=$DISCUSSION_FILE"

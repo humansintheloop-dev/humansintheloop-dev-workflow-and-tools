@@ -1,0 +1,13 @@
+{
+  "name": "idea-to-code",
+  "owner": {
+    "name": "Chris Richardson",
+    "email": "Chris@ChrisRichardson.net"
+  },
+  "plugins": [
+    {
+      "name": "idea-to-code",
+      "source": "./"
+    }
+  ]
+}

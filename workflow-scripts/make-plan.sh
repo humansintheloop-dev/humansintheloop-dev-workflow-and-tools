@@ -8,4 +8,4 @@ source "$DIR/_helper.sh"
 _validate_idea
 _validate_spec
 
-claude  "/idea-create-implementation-plan ${IDEA_FILE?} ${SPEC_FILE?}"
+claude  "/idea-to-code:idea-create-implementation-plan ${IDEA_FILE?} ${SPEC_FILE?}"

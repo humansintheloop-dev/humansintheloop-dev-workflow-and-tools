@@ -7,4 +7,4 @@ source "$DIR/_helper.sh"
 
 _validate_idea
 
-claude  --resume "$(_session_id)" "/idea-create-spec idea-file=${IDEA_FILE?} discussion-file=${DISCUSSION_FILE?}"
+claude  --resume "$(_session_id)" "/idea-to-code:idea-create-spec idea-file=${IDEA_FILE?} discussion-file=${DISCUSSION_FILE?}"

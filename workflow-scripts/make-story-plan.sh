@@ -9,4 +9,4 @@ _validate_idea
 _validate_spec
 _validate_story
 
-claude  "/idea-create-implementation-plan-from-stories ${IDEA_FILE?} ${SPEC_FILE?} ${STORY_FILE?}"
+claude  "/idea-to-code:idea-create-implementation-plan-from-stories ${IDEA_FILE?} ${SPEC_FILE?} ${STORY_FILE?}"

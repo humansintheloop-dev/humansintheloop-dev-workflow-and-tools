@@ -9,5 +9,6 @@
   "repository": "https://github.com/chrisrichardson/genai-development-workflow",
   "license": "MIT",
   "keywords": ["workflow", "planning", "implementation", "tdd", "steel-thread"],
-  "commands": ["./commands/*.md"]
+  "commands": ["./commands/*.md"],
+  "skills": ["./skills/*/SKILL.md"]
 }

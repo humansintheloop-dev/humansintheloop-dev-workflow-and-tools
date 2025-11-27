@@ -83,39 +83,39 @@ Capture user prompts in real-time and append them to the session file in markdow
 ### Implementation Steps
 
 ```text
-[ ] Write test for UserPromptSubmit hook
-    [ ] Test hook receives correct JSON input with prompt text
-    [ ] Test prompt is properly formatted in markdown blockquote
-    [ ] Test prompt is appended to existing session file
-    [ ] Test empty prompts are handled gracefully
+[x] Write test for UserPromptSubmit hook
+    [x] Test hook receives correct JSON input with prompt text
+    [x] Test prompt is properly formatted in markdown blockquote
+    [x] Test prompt is appended to existing session file
+    [x] Test empty prompts are handled gracefully
 
-[ ] Implement prompt capture logic
-    [ ] Read JSON input from stdin in hook handler
-    [ ] Extract user prompt text from hook data
-    [ ] Format prompt as markdown: "**User:**\n> {prompt text}"
-    [ ] Add blank line after prompt for readability
+[x] Implement prompt capture logic
+    [x] Read JSON input from stdin in hook handler
+    [x] Extract user prompt text from hook data
+    [x] Format prompt as markdown: "**User:**\n> {prompt text}"
+    [x] Add blank line after prompt for readability
 
-[ ] Write test for file append operation
-    [ ] Test append mode doesn't overwrite existing content
-    [ ] Test multiple prompts are appended sequentially
-    [ ] Test file handle is properly closed after write
-    [ ] Test write operation is flushed for crash safety
+[x] Write test for file append operation
+    [x] Test append mode doesn't overwrite existing content
+    [x] Test multiple prompts are appended sequentially
+    [x] Test file handle is properly closed after write
+    [x] Test write operation is flushed for crash safety
 
-[ ] Implement session file append
-    [ ] Use fs.appendFileSync or fs.appendFile for atomic writes
-    [ ] Ensure data is flushed to disk
-    [ ] Handle concurrent access gracefully
-    [ ] Log errors without throwing
+[x] Implement session file append
+    [x] Use fs.appendFileSync or fs.appendFile for atomic writes
+    [x] Ensure data is flushed to disk
+    [x] Handle concurrent access gracefully
+    [x] Log errors without throwing
 
-[ ] Configure UserPromptSubmit hook in plugin.json
-    [ ] Add "hooks" configuration section
-    [ ] Register UserPromptSubmit hook pointing to session-recorder.js
-    [ ] Test hook is triggered on user input
+[x] Configure UserPromptSubmit hook in plugin.json
+    [x] Add "hooks" configuration section
+    [x] Register UserPromptSubmit hook pointing to hooks/session-recorder.js
+    [x] Test hook is triggered on user input
 
-[ ] Write integration test
-    [ ] Test complete flow: user input -> hook triggered -> file written
-    [ ] Test session file contains correctly formatted prompt
-    [ ] Test multiple prompts in sequence
+[x] Write integration test
+    [x] Test complete flow: user input -> hook triggered -> file written
+    [x] Test session file contains correctly formatted prompt
+    [x] Test multiple prompts in sequence
 ```
 
 **Prompt for Coding Agent:**

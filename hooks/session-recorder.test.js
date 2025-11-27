@@ -161,6 +161,129 @@ test('resetSession clears the current session', async () => {
   assert.notStrictEqual(filePath1, filePath2, 'Should create new session after reset');
 });
 
+// --- Tests for user prompt formatting ---
+
+test('formatUserPrompt formats single line prompt correctly', () => {
+  const prompt = 'Help me add a new feature';
+  const result = sessionRecorder.formatUserPrompt(prompt);
+  assert.strictEqual(result, '**User:**\n> Help me add a new feature\n\n');
+});
+
+test('formatUserPrompt formats multi-line prompt correctly', () => {
+  const prompt = 'First line\nSecond line\nThird line';
+  const result = sessionRecorder.formatUserPrompt(prompt);
+  assert.strictEqual(result, '**User:**\n> First line\n> Second line\n> Third line\n\n');
+});
+
+test('formatUserPrompt handles empty prompt', () => {
+  const result = sessionRecorder.formatUserPrompt('');
+  assert.strictEqual(result, '**User:**\n> \n\n');
+});
+
+test('formatUserPrompt handles prompt with special markdown characters', () => {
+  const prompt = 'Use `code` and **bold** text';
+  const result = sessionRecorder.formatUserPrompt(prompt);
+  assert.strictEqual(result, '**User:**\n> Use `code` and **bold** text\n\n');
+});
+
+// --- Tests for appendToSession ---
+
+test('appendToSession appends content to session file', () => {
+  sessionRecorder.resetSession();
+  const filePath = sessionRecorder.getOrCreateSession(TEST_DIR);
+
+  const content = '**User:**\n> Test prompt\n\n';
+  const result = sessionRecorder.appendToSession(content);
+
+  assert.strictEqual(result, true, 'Should return true on success');
+
+  const fileContent = fs.readFileSync(filePath, 'utf8');
+  assert.ok(fileContent.includes('Test prompt'), 'File should contain appended content');
+});
+
+test('appendToSession preserves existing content', () => {
+  sessionRecorder.resetSession();
+  const filePath = sessionRecorder.getOrCreateSession(TEST_DIR);
+
+  sessionRecorder.appendToSession('First append\n');
+  sessionRecorder.appendToSession('Second append\n');
+
+  const fileContent = fs.readFileSync(filePath, 'utf8');
+  assert.ok(fileContent.includes('First append'), 'File should contain first append');
+  assert.ok(fileContent.includes('Second append'), 'File should contain second append');
+});
+
+test('appendToSession returns false when no active session', () => {
+  sessionRecorder.resetSession();
+  suppressErrors();
+  try {
+    // Don't create a session, just try to append
+    sessionRecorder.resetSession();
+    const result = sessionRecorder.appendToSession('test');
+    assert.strictEqual(result, false, 'Should return false when no session');
+  } finally {
+    restoreErrors();
+  }
+});
+
+// --- Tests for handleUserPromptSubmit ---
+
+test('handleUserPromptSubmit records user prompt to session file', () => {
+  sessionRecorder.resetSession();
+
+  const hookInput = {
+    session_id: 'test-session-123',
+    cwd: TEST_DIR,
+    hook_event_name: 'UserPromptSubmit',
+    prompt: 'Help me write a function'
+  };
+
+  sessionRecorder.handleUserPromptSubmit(hookInput);
+
+  const sessionPath = sessionRecorder.getCurrentSessionPath();
+  assert.ok(sessionPath, 'Session should be created');
+
+  const content = fs.readFileSync(sessionPath, 'utf8');
+  assert.ok(content.includes('**User:**'), 'Should contain User label');
+  assert.ok(content.includes('Help me write a function'), 'Should contain prompt text');
+});
+
+test('handleUserPromptSubmit handles missing prompt gracefully', () => {
+  sessionRecorder.resetSession();
+  suppressErrors();
+  try {
+    const hookInput = {
+      session_id: 'test-session-123',
+      cwd: TEST_DIR,
+      hook_event_name: 'UserPromptSubmit'
+      // prompt is missing
+    };
+
+    // Should not throw
+    sessionRecorder.handleUserPromptSubmit(hookInput);
+  } finally {
+    restoreErrors();
+  }
+});
+
+test('handleUserPromptSubmit handles missing cwd gracefully', () => {
+  sessionRecorder.resetSession();
+  suppressErrors();
+  try {
+    const hookInput = {
+      session_id: 'test-session-123',
+      hook_event_name: 'UserPromptSubmit',
+      prompt: 'Test prompt'
+      // cwd is missing
+    };
+
+    // Should not throw
+    sessionRecorder.handleUserPromptSubmit(hookInput);
+  } finally {
+    restoreErrors();
+  }
+});
+
 // --- Tests for error handling ---
 
 test('createSessionsDirectory handles permission errors gracefully', () => {

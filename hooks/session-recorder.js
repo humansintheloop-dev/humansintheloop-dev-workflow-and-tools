@@ -132,6 +132,74 @@ function appendToSession(content) {
   }
 }
 
+/**
+ * Gets the current session file path (for testing)
+ * @returns {string|null} The current session path
+ */
+function getCurrentSessionPath() {
+  return currentSessionPath;
+}
+
+/**
+ * Formats a user prompt as markdown with blockquote
+ * @param {string} prompt - The user's prompt text
+ * @returns {string} Formatted markdown string
+ */
+function formatUserPrompt(prompt) {
+  const lines = prompt.split('\n');
+  const quotedLines = lines.map(line => `> ${line}`).join('\n');
+  return `**User:**\n${quotedLines}\n\n`;
+}
+
+/**
+ * Handles the UserPromptSubmit hook event
+ * @param {Object} hookInput - The hook input data
+ * @param {string} hookInput.session_id - The session ID
+ * @param {string} hookInput.cwd - The current working directory
+ * @param {string} hookInput.hook_event_name - The hook event name
+ * @param {string} hookInput.prompt - The user's prompt text
+ */
+function handleUserPromptSubmit(hookInput) {
+  const { cwd, prompt } = hookInput;
+
+  if (!cwd) {
+    console.error('[session-recorder] Missing cwd in hook input');
+    return;
+  }
+
+  if (prompt === undefined || prompt === null) {
+    console.error('[session-recorder] Missing prompt in hook input');
+    return;
+  }
+
+  // Get or create session file
+  const sessionPath = getOrCreateSession(cwd);
+  if (!sessionPath) {
+    console.error('[session-recorder] Failed to get or create session');
+    return;
+  }
+
+  // Format and append the prompt
+  const formatted = formatUserPrompt(prompt);
+  appendToSession(formatted);
+}
+
+/**
+ * Main hook handler - routes to appropriate handler based on event type
+ * @param {Object} hookInput - The hook input data
+ */
+function handleHookEvent(hookInput) {
+  const { hook_event_name } = hookInput;
+
+  switch (hook_event_name) {
+    case 'UserPromptSubmit':
+      handleUserPromptSubmit(hookInput);
+      break;
+    default:
+      console.error(`[session-recorder] Unknown hook event: ${hook_event_name}`);
+  }
+}
+
 // Export functions for testing
 module.exports = {
   createSessionsDirectory,
@@ -139,7 +207,11 @@ module.exports = {
   createSessionFile,
   getOrCreateSession,
   resetSession,
-  appendToSession
+  appendToSession,
+  getCurrentSessionPath,
+  formatUserPrompt,
+  handleUserPromptSubmit,
+  handleHookEvent
 };
 
 // Main entry point when run as a script
@@ -155,8 +227,7 @@ if (require.main === module) {
   process.stdin.on('end', () => {
     try {
       const data = JSON.parse(input);
-      // Hook handling will be implemented in Steel Thread 2
-      console.error('[session-recorder] Received hook data:', JSON.stringify(data, null, 2));
+      handleHookEvent(data);
     } catch (error) {
       console.error(`[session-recorder] Failed to parse input: ${error.message}`);
     }

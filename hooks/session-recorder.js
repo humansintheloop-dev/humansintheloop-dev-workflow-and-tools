@@ -17,6 +17,69 @@ const path = require('path');
 let currentSessionPath = null;
 
 /**
+ * Gets the path to the session state file for a given workspace
+ * @param {string} workspaceDir - The workspace directory
+ * @returns {string} Path to the state file
+ */
+function getStateFilePath(workspaceDir) {
+  return path.join(workspaceDir, '.claude', 'sessions', '.current-session');
+}
+
+/**
+ * Loads the current session path from the state file
+ * @param {string} workspaceDir - The workspace directory
+ * @returns {string|null} The session path, or null if not found
+ */
+function loadSessionState(workspaceDir) {
+  try {
+    const stateFile = getStateFilePath(workspaceDir);
+    if (fs.existsSync(stateFile)) {
+      const sessionPath = fs.readFileSync(stateFile, 'utf8').trim();
+      if (sessionPath && fs.existsSync(sessionPath)) {
+        return sessionPath;
+      }
+    }
+  } catch (error) {
+    // Ignore errors reading state file
+  }
+  return null;
+}
+
+/**
+ * Saves the current session path to the state file
+ * @param {string} workspaceDir - The workspace directory
+ * @param {string} sessionPath - The session file path to save
+ */
+function saveSessionState(workspaceDir, sessionPath) {
+  try {
+    const stateFile = getStateFilePath(workspaceDir);
+    fs.writeFileSync(stateFile, sessionPath, 'utf8');
+  } catch (error) {
+    // Ignore errors writing state file
+  }
+}
+
+/**
+ * Writes debug log to .claude/sessions/debug.log
+ * @param {string} message - The message to log
+ * @param {Object} data - Optional data to log as JSON
+ */
+function debugLog(message, data = null) {
+  try {
+    const debugFile = path.join(process.cwd(), '.claude', 'sessions', 'debug.log');
+    const timestamp = new Date().toISOString();
+    let logEntry = `[${timestamp}] ${message}`;
+    if (data) {
+      logEntry += `\n${JSON.stringify(data, null, 2)}`;
+    }
+    logEntry += '\n\n';
+    fs.appendFileSync(debugFile, logEntry);
+  } catch (error) {
+    // Silently ignore debug logging errors
+  }
+}
+
+/**
  * Creates the .claude/sessions/ directory if it doesn't exist
  * @param {string} workspaceDir - The workspace directory path
  * @returns {string|null} The sessions directory path, or null on error
@@ -89,8 +152,15 @@ function createSessionFile(sessionsDir) {
  * @returns {string|null} The session file path, or null on error
  */
 function getOrCreateSession(workspaceDir) {
-  // Return existing session if we have one
+  // Return existing session if we have one in memory
   if (currentSessionPath && fs.existsSync(currentSessionPath)) {
+    return currentSessionPath;
+  }
+
+  // Try to load from state file (for cross-process persistence)
+  const savedSession = loadSessionState(workspaceDir);
+  if (savedSession) {
+    currentSessionPath = savedSession;
     return currentSessionPath;
   }
 
@@ -102,14 +172,32 @@ function getOrCreateSession(workspaceDir) {
 
   // Create new session file
   currentSessionPath = createSessionFile(sessionsDir);
+
+  // Save to state file for other hook processes
+  if (currentSessionPath) {
+    saveSessionState(workspaceDir, currentSessionPath);
+  }
+
   return currentSessionPath;
 }
 
 /**
  * Resets the current session (for testing)
+ * @param {string} workspaceDir - Optional workspace directory to clear state file
  */
-function resetSession() {
+function resetSession(workspaceDir = null) {
   currentSessionPath = null;
+  // Also clear state file if workspace provided
+  if (workspaceDir) {
+    try {
+      const stateFile = getStateFilePath(workspaceDir);
+      if (fs.existsSync(stateFile)) {
+        fs.unlinkSync(stateFile);
+      }
+    } catch (error) {
+      // Ignore errors
+    }
+  }
 }
 
 /**
@@ -152,6 +240,96 @@ function formatUserPrompt(prompt) {
 }
 
 /**
+ * Formats a Claude response as markdown with blockquote
+ * @param {string} response - Claude's response text
+ * @returns {string} Formatted markdown string
+ */
+function formatClaudeResponse(response) {
+  const lines = response.split('\n');
+  const quotedLines = lines.map(line => `> ${line}`).join('\n');
+  return `**Claude:**\n${quotedLines}\n\n`;
+}
+
+/**
+ * Extracts text content from a message content field
+ * Content can be a string or an array of content blocks
+ * @param {string|Array} content - The message content
+ * @returns {string|null} The extracted text, or null if not found
+ */
+function extractTextFromContent(content) {
+  if (typeof content === 'string') {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    // Find text blocks and concatenate them
+    const textBlocks = content
+      .filter(block => block.type === 'text' && block.text)
+      .map(block => block.text);
+
+    if (textBlocks.length > 0) {
+      return textBlocks.join('\n');
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Parses a transcript file to extract the last assistant message
+ * Supports both JSON array format and JSONL (JSON Lines) format
+ * @param {string} transcriptPath - Path to the transcript file
+ * @returns {string|null} The last assistant response text, or null on error
+ */
+function parseTranscript(transcriptPath) {
+  try {
+    const content = fs.readFileSync(transcriptPath, 'utf8');
+
+    // Try JSONL format first (one JSON object per line)
+    if (transcriptPath.endsWith('.jsonl') || content.trim().startsWith('{')) {
+      const lines = content.trim().split('\n').filter(line => line.trim());
+
+      // Find the last assistant message (iterate backwards)
+      for (let i = lines.length - 1; i >= 0; i--) {
+        try {
+          const entry = JSON.parse(lines[i]);
+
+          // JSONL format: {type: "assistant", message: {role: "assistant", content: [...]}}
+          if (entry.type === 'assistant' && entry.message) {
+            return extractTextFromContent(entry.message.content);
+          }
+        } catch (lineError) {
+          // Skip malformed lines
+          continue;
+        }
+      }
+      return null;
+    }
+
+    // Try JSON array format
+    const transcript = JSON.parse(content);
+
+    if (!Array.isArray(transcript)) {
+      console.error('[session-recorder] Transcript is not an array');
+      return null;
+    }
+
+    // Find the last assistant message
+    for (let i = transcript.length - 1; i >= 0; i--) {
+      const message = transcript[i];
+      if (message.role === 'assistant') {
+        return extractTextFromContent(message.content);
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error(`[session-recorder] Failed to parse transcript: ${error.message}`);
+    return null;
+  }
+}
+
+/**
  * Handles the UserPromptSubmit hook event
  * @param {Object} hookInput - The hook input data
  * @param {string} hookInput.session_id - The session ID
@@ -185,6 +363,57 @@ function handleUserPromptSubmit(hookInput) {
 }
 
 /**
+ * Handles the Stop hook event (when Claude finishes responding)
+ * @param {Object} hookInput - The hook input data
+ * @param {string} hookInput.transcript_path - Path to the transcript file
+ * @param {string} hookInput.cwd - The current working directory
+ */
+function handleStop(hookInput) {
+  debugLog('handleStop called', hookInput);
+
+  const { transcript_path, cwd } = hookInput;
+
+  if (!transcript_path) {
+    debugLog('Missing transcript_path in Stop hook input');
+    console.error('[session-recorder] Missing transcript_path in Stop hook input');
+    return;
+  }
+
+  debugLog(`transcript_path: ${transcript_path}, cwd: ${cwd}, currentSessionPath: ${currentSessionPath}`);
+
+  // If no session exists, we can't record the response
+  if (!currentSessionPath) {
+    debugLog('No currentSessionPath, trying to create session');
+    // Try to create session if we have cwd
+    if (cwd) {
+      getOrCreateSession(cwd);
+    }
+    if (!currentSessionPath) {
+      debugLog('Failed to create session');
+      console.error('[session-recorder] No active session for Stop event');
+      return;
+    }
+  }
+
+  // Parse transcript to get Claude's response
+  debugLog(`Parsing transcript from: ${transcript_path}`);
+  const response = parseTranscript(transcript_path);
+  debugLog(`Parsed response: ${response ? response.slice(0, 200) + '...' : 'null'}`);
+
+  if (!response) {
+    debugLog('Could not extract response from transcript');
+    console.error('[session-recorder] Could not extract response from transcript');
+    return;
+  }
+
+  // Format and append the response
+  const formatted = formatClaudeResponse(response);
+  debugLog(`Appending to session: ${currentSessionPath}`);
+  appendToSession(formatted);
+  debugLog('Response appended successfully');
+}
+
+/**
  * Main hook handler - routes to appropriate handler based on event type
  * @param {Object} hookInput - The hook input data
  */
@@ -194,6 +423,9 @@ function handleHookEvent(hookInput) {
   switch (hook_event_name) {
     case 'UserPromptSubmit':
       handleUserPromptSubmit(hookInput);
+      break;
+    case 'Stop':
+      handleStop(hookInput);
       break;
     default:
       console.error(`[session-recorder] Unknown hook event: ${hook_event_name}`);
@@ -210,7 +442,10 @@ module.exports = {
   appendToSession,
   getCurrentSessionPath,
   formatUserPrompt,
+  formatClaudeResponse,
+  parseTranscript,
   handleUserPromptSubmit,
+  handleStop,
   handleHookEvent
 };
 

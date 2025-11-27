@@ -149,13 +149,13 @@ test('getOrCreateSession reuses existing session on subsequent calls', () => {
 });
 
 test('resetSession clears the current session', async () => {
-  sessionRecorder.resetSession();
+  sessionRecorder.resetSession(TEST_DIR);
   const filePath1 = sessionRecorder.getOrCreateSession(TEST_DIR);
 
   // Wait 1 second to ensure different timestamp
   await new Promise(resolve => setTimeout(resolve, 1100));
 
-  sessionRecorder.resetSession();
+  sessionRecorder.resetSession(TEST_DIR);
   const filePath2 = sessionRecorder.getOrCreateSession(TEST_DIR);
 
   assert.notStrictEqual(filePath1, filePath2, 'Should create new session after reset');
@@ -279,6 +279,160 @@ test('handleUserPromptSubmit handles missing cwd gracefully', () => {
 
     // Should not throw
     sessionRecorder.handleUserPromptSubmit(hookInput);
+  } finally {
+    restoreErrors();
+  }
+});
+
+// --- Tests for Claude response formatting ---
+
+test('formatClaudeResponse formats single line response correctly', () => {
+  const response = "I'd be happy to help!";
+  const result = sessionRecorder.formatClaudeResponse(response);
+  assert.strictEqual(result, "**Claude:**\n> I'd be happy to help!\n\n");
+});
+
+test('formatClaudeResponse formats multi-line response correctly', () => {
+  const response = 'First line\nSecond line\nThird line';
+  const result = sessionRecorder.formatClaudeResponse(response);
+  assert.strictEqual(result, '**Claude:**\n> First line\n> Second line\n> Third line\n\n');
+});
+
+test('formatClaudeResponse handles empty response', () => {
+  const result = sessionRecorder.formatClaudeResponse('');
+  assert.strictEqual(result, '**Claude:**\n> \n\n');
+});
+
+// --- Tests for transcript parsing ---
+
+test('parseTranscript extracts assistant message from JSON transcript', () => {
+  const transcript = JSON.stringify([
+    { role: 'user', content: 'Hello' },
+    { role: 'assistant', content: 'Hi there! How can I help?' }
+  ]);
+
+  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
+  fs.writeFileSync(transcriptPath, transcript);
+
+  const result = sessionRecorder.parseTranscript(transcriptPath);
+  assert.strictEqual(result, 'Hi there! How can I help?');
+});
+
+test('parseTranscript returns last assistant message', () => {
+  const transcript = JSON.stringify([
+    { role: 'user', content: 'Hello' },
+    { role: 'assistant', content: 'First response' },
+    { role: 'user', content: 'Thanks' },
+    { role: 'assistant', content: 'Second response' }
+  ]);
+
+  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
+  fs.writeFileSync(transcriptPath, transcript);
+
+  const result = sessionRecorder.parseTranscript(transcriptPath);
+  assert.strictEqual(result, 'Second response');
+});
+
+test('parseTranscript handles nested content array', () => {
+  const transcript = JSON.stringify([
+    { role: 'user', content: 'Hello' },
+    { role: 'assistant', content: [{ type: 'text', text: 'Response with nested content' }] }
+  ]);
+
+  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
+  fs.writeFileSync(transcriptPath, transcript);
+
+  const result = sessionRecorder.parseTranscript(transcriptPath);
+  assert.strictEqual(result, 'Response with nested content');
+});
+
+test('parseTranscript returns null for missing file', () => {
+  suppressErrors();
+  try {
+    const result = sessionRecorder.parseTranscript('/nonexistent/transcript.json');
+    assert.strictEqual(result, null);
+  } finally {
+    restoreErrors();
+  }
+});
+
+test('parseTranscript returns null for invalid JSON', () => {
+  const transcriptPath = path.join(TEST_DIR, 'invalid.json');
+  fs.writeFileSync(transcriptPath, 'not valid json');
+
+  suppressErrors();
+  try {
+    const result = sessionRecorder.parseTranscript(transcriptPath);
+    assert.strictEqual(result, null);
+  } finally {
+    restoreErrors();
+  }
+});
+
+test('parseTranscript returns null when no assistant message', () => {
+  const transcript = JSON.stringify([
+    { role: 'user', content: 'Hello' }
+  ]);
+
+  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
+  fs.writeFileSync(transcriptPath, transcript);
+
+  const result = sessionRecorder.parseTranscript(transcriptPath);
+  assert.strictEqual(result, null);
+});
+
+// --- Tests for handleStop ---
+
+test('handleStop records Claude response to session file', () => {
+  sessionRecorder.resetSession();
+
+  // First create a session via user prompt
+  const userHookInput = {
+    session_id: 'test-session-123',
+    cwd: TEST_DIR,
+    hook_event_name: 'UserPromptSubmit',
+    prompt: 'Hello'
+  };
+  sessionRecorder.handleUserPromptSubmit(userHookInput);
+
+  // Create a transcript file
+  const transcript = JSON.stringify([
+    { role: 'user', content: 'Hello' },
+    { role: 'assistant', content: 'Hi! How can I help you today?' }
+  ]);
+  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
+  fs.writeFileSync(transcriptPath, transcript);
+
+  // Handle Stop event
+  const stopHookInput = {
+    session_id: 'test-session-123',
+    cwd: TEST_DIR,
+    hook_event_name: 'Stop',
+    transcript_path: transcriptPath
+  };
+  sessionRecorder.handleStop(stopHookInput);
+
+  const sessionPath = sessionRecorder.getCurrentSessionPath();
+  const content = fs.readFileSync(sessionPath, 'utf8');
+  assert.ok(content.includes('**Claude:**'), 'Should contain Claude label');
+  assert.ok(content.includes('Hi! How can I help you today?'), 'Should contain response text');
+});
+
+test('handleStop handles missing transcript_path gracefully', () => {
+  sessionRecorder.resetSession();
+  sessionRecorder.getOrCreateSession(TEST_DIR);
+
+  suppressErrors();
+  try {
+    const hookInput = {
+      session_id: 'test-session-123',
+      cwd: TEST_DIR,
+      hook_event_name: 'Stop'
+      // transcript_path is missing
+    };
+
+    // Should not throw
+    sessionRecorder.handleStop(hookInput);
   } finally {
     restoreErrors();
   }

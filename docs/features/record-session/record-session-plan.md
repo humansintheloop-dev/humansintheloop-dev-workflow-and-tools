@@ -151,52 +151,52 @@ Read Claude's responses from the transcript file and append them to the session 
 ### Implementation Steps
 
 ```text
-[ ] Write test for transcript file reading
-    [ ] Test transcript_path is extracted from hook input
-    [ ] Test transcript file is read successfully
-    [ ] Test malformed transcript is handled gracefully
-    [ ] Test missing transcript file doesn't crash
+[x] Write test for transcript file reading
+    [x] Test transcript_path is extracted from hook input
+    [x] Test transcript file is read successfully
+    [x] Test malformed transcript is handled gracefully
+    [x] Test missing transcript file doesn't crash
 
-[ ] Implement transcript reader
-    [ ] Extract transcript_path from hook input JSON
-    [ ] Read transcript file using fs.readFileSync
-    [ ] Handle file read errors with logging
-    [ ] Return raw transcript content
+[x] Implement transcript reader
+    [x] Extract transcript_path from hook input JSON
+    [x] Read transcript file using fs.readFileSync
+    [x] Handle file read errors with logging
+    [x] Return raw transcript content
 
-[ ] Write test for response extraction
-    [ ] Test latest Claude response is identified
-    [ ] Test response text is extracted correctly
-    [ ] Test multi-line responses are preserved
-    [ ] Test incomplete responses are handled
+[x] Write test for response extraction
+    [x] Test latest Claude response is identified
+    [x] Test response text is extracted correctly
+    [x] Test multi-line responses are preserved
+    [x] Test incomplete responses are handled
 
-[ ] Implement response parser
-    [ ] Parse transcript to find Claude's latest response
-    [ ] Extract response text (may be in JSON or text format)
-    [ ] Preserve line breaks and formatting
-    [ ] Handle edge cases (empty responses, partial responses)
+[x] Implement response parser
+    [x] Parse transcript to find Claude's latest response
+    [x] Extract response text (may be in JSON or text format)
+    [x] Preserve line breaks and formatting
+    [x] Handle edge cases (empty responses, partial responses)
 
-[ ] Write test for position tracking
-    [ ] Test last read position is tracked
-    [ ] Test only new content is processed
-    [ ] Test position persists across hook calls
-    [ ] Test position resets on new session
+[x] Write test for position tracking (Simplified: using Stop hook instead)
+    [x] Stop hook fires once per Claude response
+    [x] No position tracking needed with Stop hook approach
+    [x] Each Stop event processes current transcript
+    [x] Session state maintained across hook calls
 
-[ ] Implement incremental parsing
-    [ ] Track last read position in transcript
-    [ ] Only process new content since last read
-    [ ] Update position after processing
-    [ ] Store position in memory (or temp file)
+[x] Implement incremental parsing (Simplified: using Stop hook)
+    [x] Stop hook provides transcript at completion
+    [x] Extract last assistant message from transcript
+    [x] Handle nested content arrays
+    [x] Store session path in memory
 
-[ ] Write test for response formatting
-    [ ] Test response formatted as markdown blockquote
-    [ ] Test blank lines are added for readability
-    [ ] Test special characters are preserved
+[x] Write test for response formatting
+    [x] Test response formatted as markdown blockquote
+    [x] Test blank lines are added for readability
+    [x] Test special characters are preserved
 
-[ ] Implement response appending
-    [ ] Format Claude response as "**Claude:**\n> {response}\n\n"
-    [ ] Handle multi-line responses with proper blockquote formatting
-    [ ] Append to session file
-    [ ] Flush to disk
+[x] Implement response appending
+    [x] Format Claude response as "**Claude:**\n> {response}\n\n"
+    [x] Handle multi-line responses with proper blockquote formatting
+    [x] Append to session file
+    [x] Configure Stop hook in plugin.json
 ```
 
 **Prompt for Coding Agent:**

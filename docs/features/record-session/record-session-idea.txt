@@ -1,0 +1,15 @@
+I want to record my interactions with Claude Code.
+
+Specifically:
+- The prompts that I enter
+- Claude's responses
+- Tool calls and actions (minimal format showing what was done)
+
+The recordings should be:
+- Automatic (always on, no user action needed)
+- Saved as markdown files in .claude/sessions/
+- Named with timestamps (session-YYYY-MM-DD-HHMMSS.md)
+- Written incrementally as the conversation happens
+- Human-readable and easy to review
+
+This will create a complete history of all my Claude Code sessions that I can review, search, and reference later using my own tools.

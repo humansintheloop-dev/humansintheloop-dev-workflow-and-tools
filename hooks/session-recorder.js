@@ -330,6 +330,83 @@ function parseTranscript(transcriptPath) {
 }
 
 /**
+ * Formats a tool call into a minimal summary string
+ * @param {string} toolName - The name of the tool
+ * @param {Object} toolInput - The tool input parameters
+ * @returns {string} Formatted tool call summary
+ */
+function formatToolCall(toolName, toolInput) {
+  if (!toolInput) {
+    return toolName;
+  }
+
+  switch (toolName) {
+    case 'Read':
+      return toolInput.file_path ? `Read ${toolInput.file_path}` : 'Read';
+
+    case 'Write':
+      return toolInput.file_path ? `Write ${toolInput.file_path}` : 'Write';
+
+    case 'Edit':
+      return toolInput.file_path ? `Edit ${toolInput.file_path}` : 'Edit';
+
+    case 'Bash':
+      return toolInput.command ? `Bash: ${toolInput.command}` : 'Bash';
+
+    case 'Grep':
+      return toolInput.pattern ? `Grep '${toolInput.pattern}'` : 'Grep';
+
+    case 'Glob':
+      return toolInput.pattern ? `Glob '${toolInput.pattern}'` : 'Glob';
+
+    case 'Task':
+      return toolInput.description ? `Task: ${toolInput.description}` : 'Task';
+
+    default:
+      return toolName;
+  }
+}
+
+/**
+ * Handles the PostToolUse hook event
+ * @param {Object} hookInput - The hook input data
+ * @param {string} hookInput.tool_name - The name of the tool
+ * @param {Object} hookInput.tool_input - The tool input parameters
+ * @param {string} hookInput.cwd - The current working directory
+ */
+function handlePostToolUse(hookInput) {
+  debugLog('handlePostToolUse called', hookInput);
+
+  const { tool_name, tool_input, cwd } = hookInput;
+
+  if (!tool_name) {
+    debugLog('Missing tool_name in PostToolUse hook input');
+    console.error('[session-recorder] Missing tool_name in PostToolUse hook input');
+    return;
+  }
+
+  // Ensure we have a session
+  if (!currentSessionPath && cwd) {
+    getOrCreateSession(cwd);
+  }
+
+  if (!currentSessionPath) {
+    debugLog('No active session for PostToolUse event');
+    console.error('[session-recorder] No active session for PostToolUse event');
+    return;
+  }
+
+  // Format the tool call
+  const toolSummary = formatToolCall(tool_name, tool_input);
+  debugLog(`Tool summary: ${toolSummary}`);
+
+  // Append tool call to session (each tool call gets its own "Tools Used" section for simplicity)
+  const formatted = `**Tools Used:**\n- ${toolSummary}\n\n`;
+  appendToSession(formatted);
+  debugLog('Tool call appended successfully');
+}
+
+/**
  * Handles the UserPromptSubmit hook event
  * @param {Object} hookInput - The hook input data
  * @param {string} hookInput.session_id - The session ID
@@ -424,6 +501,9 @@ function handleHookEvent(hookInput) {
     case 'UserPromptSubmit':
       handleUserPromptSubmit(hookInput);
       break;
+    case 'PostToolUse':
+      handlePostToolUse(hookInput);
+      break;
     case 'Stop':
       handleStop(hookInput);
       break;
@@ -443,8 +523,10 @@ module.exports = {
   getCurrentSessionPath,
   formatUserPrompt,
   formatClaudeResponse,
+  formatToolCall,
   parseTranscript,
   handleUserPromptSubmit,
+  handlePostToolUse,
   handleStop,
   handleHookEvent
 };

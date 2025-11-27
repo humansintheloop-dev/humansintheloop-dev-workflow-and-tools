@@ -438,6 +438,138 @@ test('handleStop handles missing transcript_path gracefully', () => {
   }
 });
 
+// --- Tests for tool call formatting ---
+
+test('formatToolCall formats Read tool correctly', () => {
+  const result = sessionRecorder.formatToolCall('Read', { file_path: '/src/app.js' });
+  assert.strictEqual(result, 'Read /src/app.js');
+});
+
+test('formatToolCall formats Write tool correctly', () => {
+  const result = sessionRecorder.formatToolCall('Write', { file_path: '/src/new-file.js' });
+  assert.strictEqual(result, 'Write /src/new-file.js');
+});
+
+test('formatToolCall formats Edit tool correctly', () => {
+  const result = sessionRecorder.formatToolCall('Edit', { file_path: '/src/config.json' });
+  assert.strictEqual(result, 'Edit /src/config.json');
+});
+
+test('formatToolCall formats Bash tool correctly', () => {
+  const result = sessionRecorder.formatToolCall('Bash', { command: 'npm test' });
+  assert.strictEqual(result, 'Bash: npm test');
+});
+
+test('formatToolCall formats Grep tool correctly', () => {
+  const result = sessionRecorder.formatToolCall('Grep', { pattern: 'TODO' });
+  assert.strictEqual(result, "Grep 'TODO'");
+});
+
+test('formatToolCall formats Glob tool correctly', () => {
+  const result = sessionRecorder.formatToolCall('Glob', { pattern: '**/*.ts' });
+  assert.strictEqual(result, "Glob '**/*.ts'");
+});
+
+test('formatToolCall formats Task tool correctly', () => {
+  const result = sessionRecorder.formatToolCall('Task', { description: 'Search for patterns' });
+  assert.strictEqual(result, 'Task: Search for patterns');
+});
+
+test('formatToolCall handles unknown tools', () => {
+  const result = sessionRecorder.formatToolCall('UnknownTool', { some: 'data' });
+  assert.strictEqual(result, 'UnknownTool');
+});
+
+test('formatToolCall handles missing tool_input', () => {
+  const result = sessionRecorder.formatToolCall('Read', null);
+  assert.strictEqual(result, 'Read');
+});
+
+// --- Tests for handlePostToolUse ---
+
+test('handlePostToolUse records tool call to session file', () => {
+  sessionRecorder.resetSession(TEST_DIR);
+
+  // First create a session via user prompt
+  const userHookInput = {
+    session_id: 'test-session-123',
+    cwd: TEST_DIR,
+    hook_event_name: 'UserPromptSubmit',
+    prompt: 'Read a file'
+  };
+  sessionRecorder.handleUserPromptSubmit(userHookInput);
+
+  // Handle PostToolUse event
+  const toolHookInput = {
+    session_id: 'test-session-123',
+    cwd: TEST_DIR,
+    hook_event_name: 'PostToolUse',
+    tool_name: 'Read',
+    tool_input: { file_path: '/src/test.js' }
+  };
+  sessionRecorder.handlePostToolUse(toolHookInput);
+
+  const sessionPath = sessionRecorder.getCurrentSessionPath();
+  const content = fs.readFileSync(sessionPath, 'utf8');
+  assert.ok(content.includes('**Tools Used:**'), 'Should contain Tools Used label');
+  assert.ok(content.includes('Read /src/test.js'), 'Should contain tool call');
+});
+
+test('handlePostToolUse handles missing tool_name gracefully', () => {
+  sessionRecorder.resetSession(TEST_DIR);
+  sessionRecorder.getOrCreateSession(TEST_DIR);
+
+  suppressErrors();
+  try {
+    const hookInput = {
+      session_id: 'test-session-123',
+      cwd: TEST_DIR,
+      hook_event_name: 'PostToolUse'
+      // tool_name is missing
+    };
+
+    // Should not throw
+    sessionRecorder.handlePostToolUse(hookInput);
+  } finally {
+    restoreErrors();
+  }
+});
+
+test('handlePostToolUse aggregates multiple tool calls', () => {
+  sessionRecorder.resetSession(TEST_DIR);
+
+  // Create session
+  const userHookInput = {
+    session_id: 'test-session-123',
+    cwd: TEST_DIR,
+    hook_event_name: 'UserPromptSubmit',
+    prompt: 'Do some work'
+  };
+  sessionRecorder.handleUserPromptSubmit(userHookInput);
+
+  // Multiple tool calls
+  sessionRecorder.handlePostToolUse({
+    session_id: 'test-session-123',
+    cwd: TEST_DIR,
+    hook_event_name: 'PostToolUse',
+    tool_name: 'Read',
+    tool_input: { file_path: '/file1.js' }
+  });
+
+  sessionRecorder.handlePostToolUse({
+    session_id: 'test-session-123',
+    cwd: TEST_DIR,
+    hook_event_name: 'PostToolUse',
+    tool_name: 'Edit',
+    tool_input: { file_path: '/file2.js' }
+  });
+
+  const sessionPath = sessionRecorder.getCurrentSessionPath();
+  const content = fs.readFileSync(sessionPath, 'utf8');
+  assert.ok(content.includes('Read /file1.js'), 'Should contain first tool call');
+  assert.ok(content.includes('Edit /file2.js'), 'Should contain second tool call');
+});
+
 // --- Tests for error handling ---
 
 test('createSessionsDirectory handles permission errors gracefully', () => {

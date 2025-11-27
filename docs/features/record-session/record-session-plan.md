@@ -239,55 +239,53 @@ Capture tool calls after execution and append minimal summaries to the session f
 ### Implementation Steps
 
 ```text
-[ ] Write test for PostToolUse hook input
-    [ ] Test hook receives tool_name in JSON input
-    [ ] Test hook receives tool_input parameters
-    [ ] Test malformed hook input is handled
+[x] Write test for PostToolUse hook input
+    [x] Test hook receives tool_name in JSON input
+    [x] Test hook receives tool_input parameters
+    [x] Test malformed hook input is handled
 
-[ ] Implement tool data extraction
-    [ ] Parse JSON input from PostToolUse hook
-    [ ] Extract tool_name from hook data
-    [ ] Extract tool_input parameters from hook data
-    [ ] Handle missing or malformed data
+[x] Implement tool data extraction
+    [x] Parse JSON input from PostToolUse hook
+    [x] Extract tool_name from hook data
+    [x] Extract tool_input parameters from hook data
+    [x] Handle missing or malformed data
 
-[ ] Write test for tool call formatters
-    [ ] Test Read tool: "Read {file_path}"
-    [ ] Test Write tool: "Write {file_path}"
-    [ ] Test Edit tool: "Edit {file_path}"
-    [ ] Test Bash tool: "Bash: {command}"
-    [ ] Test Grep tool: "Grep '{pattern}'"
-    [ ] Test Glob tool: "Glob '{pattern}'"
-    [ ] Test Task tool: "Task {description}"
-    [ ] Test unknown tools: "ToolName"
+[x] Write test for tool call formatters
+    [x] Test Read tool: "Read {file_path}"
+    [x] Test Write tool: "Write {file_path}"
+    [x] Test Edit tool: "Edit {file_path}"
+    [x] Test Bash tool: "Bash: {command}"
+    [x] Test Grep tool: "Grep '{pattern}'"
+    [x] Test Glob tool: "Glob '{pattern}'"
+    [x] Test Task tool: "Task {description}"
+    [x] Test unknown tools: "ToolName"
 
-[ ] Implement tool call formatter
-    [ ] Create formatToolCall(toolName, toolInput) function
-    [ ] Use switch/case for different tool types
-    [ ] Extract relevant parameters for each tool type
-    [ ] Return formatted string
-    [ ] Handle unknown tools gracefully
+[x] Implement tool call formatter
+    [x] Create formatToolCall(toolName, toolInput) function
+    [x] Use switch/case for different tool types
+    [x] Extract relevant parameters for each tool type
+    [x] Return formatted string
+    [x] Handle unknown tools gracefully
 
-[ ] Write test for tool call batching
-    [ ] Test multiple tool calls are grouped together
-    [ ] Test tools are listed under "**Tools Used:**" section
-    [ ] Test blank line added after tool list
+[x] Write test for tool call batching
+    [x] Test multiple tool calls are grouped together
+    [x] Test tools are listed under "**Tools Used:**" section
+    [x] Test blank line added after tool list
 
-[ ] Implement tool call aggregation
-    [ ] Collect tool calls in an array during a response
-    [ ] Detect when to flush tool calls (before next Claude response)
-    [ ] Format as bulleted list under "**Tools Used:**\n"
-    [ ] Append to session file
-    [ ] Clear array after writing
+[x] Implement tool call aggregation (Simplified: each tool call written immediately)
+    [x] Format each tool call with "**Tools Used:**" header
+    [x] Append to session file after each tool call
+    [x] Session state shared via .current-session file
 
-[ ] Configure PostToolUse hook
-    [ ] Register PostToolUse hook in plugin.json
-    [ ] Point to session-recorder.js
-    [ ] Test hook is triggered after tool execution
+[x] Configure PostToolUse hook
+    [x] Register PostToolUse hook in plugin.json
+    [x] Point to session-recorder.js
+    [x] Test hook is triggered after tool execution
 
-[ ] Write integration test
-    [ ] Test tool calls appear in session file
-    [ ] Test formatting matches specification
-    [ ] Test multiple tools in one response
+[x] Write integration test
+    [x] Test tool calls appear in session file
+    [x] Test formatting matches specification
+    [x] Test multiple tools in one response
 ```
 
 **Prompt for Coding Agent:**

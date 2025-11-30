@@ -81,18 +81,20 @@ test('createSessionsDirectory succeeds if directory already exists', () => {
 // --- Tests for filename generation ---
 
 test('generateSessionFilename returns correct format', () => {
-  const filename = sessionRecorder.generateSessionFilename();
-  const pattern = /^session-\d{4}-\d{2}-\d{2}-\d{6}\.md$/;
-  assert.match(filename, pattern, `Filename "${filename}" should match pattern session-YYYY-MM-DD-HHMMSS.md`);
+  const sessionId = 'test-session-abc123';
+  const filename = sessionRecorder.generateSessionFilename(sessionId);
+  const pattern = /^session-\d{4}-\d{2}-\d{2}-\d{6}-test-session-abc123\.md$/;
+  assert.match(filename, pattern, `Filename "${filename}" should match pattern session-YYYY-MM-DD-HHMMSS-{sessionId}.md`);
 });
 
 test('generateSessionFilename uses current timestamp', () => {
+  const sessionId = 'test-session-xyz789';
   const before = new Date();
-  const filename = sessionRecorder.generateSessionFilename();
+  const filename = sessionRecorder.generateSessionFilename(sessionId);
   const after = new Date();
 
   // Extract date parts from filename
-  const match = filename.match(/session-(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})\.md/);
+  const match = filename.match(/session-(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})-test-session-xyz789\.md/);
   assert.ok(match, 'Filename should match expected pattern');
 
   const fileDate = new Date(
@@ -109,11 +111,39 @@ test('generateSessionFilename uses current timestamp', () => {
   assert.ok(fileDate <= new Date(after.getTime() + 1000), 'Timestamp should not be in the future');
 });
 
+// --- Tests for findSessionFile ---
+
+test('findSessionFile finds existing session file by session ID', () => {
+  fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+  const sessionId = 'find-test-session';
+
+  // Create a session file manually
+  const filename = `session-2025-01-01-120000-${sessionId}.md`;
+  const filePath = path.join(SESSIONS_DIR, filename);
+  fs.writeFileSync(filePath, '# Test session\n');
+
+  const result = sessionRecorder.findSessionFile(SESSIONS_DIR, sessionId);
+  assert.strictEqual(result, filePath, 'Should find the session file');
+});
+
+test('findSessionFile returns null when no matching session exists', () => {
+  fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+
+  const result = sessionRecorder.findSessionFile(SESSIONS_DIR, 'nonexistent-session');
+  assert.strictEqual(result, null, 'Should return null when no match');
+});
+
+test('findSessionFile returns null when directory does not exist', () => {
+  const result = sessionRecorder.findSessionFile('/nonexistent/path', 'any-session');
+  assert.strictEqual(result, null, 'Should return null for nonexistent directory');
+});
+
 // --- Tests for session file creation ---
 
 test('createSessionFile creates file with correct header', () => {
   fs.mkdirSync(SESSIONS_DIR, { recursive: true });
-  const filePath = sessionRecorder.createSessionFile(SESSIONS_DIR);
+  const sessionId = 'test-session-header';
+  const filePath = sessionRecorder.createSessionFile(SESSIONS_DIR, sessionId);
 
   assert.ok(fs.existsSync(filePath), 'Session file should exist');
 
@@ -124,41 +154,57 @@ test('createSessionFile creates file with correct header', () => {
 
 test('createSessionFile returns full path to created file', () => {
   fs.mkdirSync(SESSIONS_DIR, { recursive: true });
-  const filePath = sessionRecorder.createSessionFile(SESSIONS_DIR);
+  const sessionId = 'test-session-path';
+  const filePath = sessionRecorder.createSessionFile(SESSIONS_DIR, sessionId);
 
   assert.ok(filePath.startsWith(SESSIONS_DIR), 'Path should be in sessions directory');
   assert.ok(filePath.endsWith('.md'), 'Path should end with .md');
+  assert.ok(filePath.includes(sessionId), 'Path should include session ID');
 });
 
 // --- Tests for session tracking ---
 
 test('getOrCreateSession creates new session on first call', () => {
   sessionRecorder.resetSession(); // Ensure clean state
-  const filePath = sessionRecorder.getOrCreateSession(TEST_DIR);
+  const sessionId = 'test-session-create';
+  const filePath = sessionRecorder.getOrCreateSession(TEST_DIR, sessionId);
 
   assert.ok(filePath, 'Should return a file path');
   assert.ok(fs.existsSync(filePath), 'Session file should exist');
+  assert.ok(filePath.includes(sessionId), 'Path should include session ID');
 });
 
 test('getOrCreateSession reuses existing session on subsequent calls', () => {
   sessionRecorder.resetSession();
-  const filePath1 = sessionRecorder.getOrCreateSession(TEST_DIR);
-  const filePath2 = sessionRecorder.getOrCreateSession(TEST_DIR);
+  const sessionId = 'test-session-reuse';
+  const filePath1 = sessionRecorder.getOrCreateSession(TEST_DIR, sessionId);
+  const filePath2 = sessionRecorder.getOrCreateSession(TEST_DIR, sessionId);
 
   assert.strictEqual(filePath1, filePath2, 'Should return same file path');
 });
 
+test('getOrCreateSession creates different sessions for different session IDs', () => {
+  sessionRecorder.resetSession();
+  const filePath1 = sessionRecorder.getOrCreateSession(TEST_DIR, 'session-id-1');
+  sessionRecorder.resetSession();
+  const filePath2 = sessionRecorder.getOrCreateSession(TEST_DIR, 'session-id-2');
+
+  assert.notStrictEqual(filePath1, filePath2, 'Should create different sessions for different IDs');
+  assert.ok(filePath1.includes('session-id-1'), 'First path should include first session ID');
+  assert.ok(filePath2.includes('session-id-2'), 'Second path should include second session ID');
+});
+
 test('resetSession clears the current session', async () => {
-  sessionRecorder.resetSession(TEST_DIR);
-  const filePath1 = sessionRecorder.getOrCreateSession(TEST_DIR);
+  const sessionId1 = 'test-session-reset-1';
+  const sessionId2 = 'test-session-reset-2';
 
-  // Wait 1 second to ensure different timestamp
-  await new Promise(resolve => setTimeout(resolve, 1100));
+  sessionRecorder.resetSession();
+  const filePath1 = sessionRecorder.getOrCreateSession(TEST_DIR, sessionId1);
 
-  sessionRecorder.resetSession(TEST_DIR);
-  const filePath2 = sessionRecorder.getOrCreateSession(TEST_DIR);
+  sessionRecorder.resetSession();
+  const filePath2 = sessionRecorder.getOrCreateSession(TEST_DIR, sessionId2);
 
-  assert.notStrictEqual(filePath1, filePath2, 'Should create new session after reset');
+  assert.notStrictEqual(filePath1, filePath2, 'Should create new session after reset with different ID');
 });
 
 // --- Tests for user prompt formatting ---
@@ -190,7 +236,8 @@ test('formatUserPrompt handles prompt with special markdown characters', () => {
 
 test('appendToSession appends content to session file', () => {
   sessionRecorder.resetSession();
-  const filePath = sessionRecorder.getOrCreateSession(TEST_DIR);
+  const sessionId = 'test-session-append';
+  const filePath = sessionRecorder.getOrCreateSession(TEST_DIR, sessionId);
 
   const content = '**User:**\n> Test prompt\n\n';
   const result = sessionRecorder.appendToSession(content);
@@ -203,7 +250,8 @@ test('appendToSession appends content to session file', () => {
 
 test('appendToSession preserves existing content', () => {
   sessionRecorder.resetSession();
-  const filePath = sessionRecorder.getOrCreateSession(TEST_DIR);
+  const sessionId = 'test-session-preserve';
+  const filePath = sessionRecorder.getOrCreateSession(TEST_DIR, sessionId);
 
   sessionRecorder.appendToSession('First append\n');
   sessionRecorder.appendToSession('Second append\n');
@@ -420,12 +468,12 @@ test('handleStop records Claude response to session file', () => {
 
 test('handleStop handles missing transcript_path gracefully', () => {
   sessionRecorder.resetSession();
-  sessionRecorder.getOrCreateSession(TEST_DIR);
+  sessionRecorder.getOrCreateSession(TEST_DIR, 'test-session-stop');
 
   suppressErrors();
   try {
     const hookInput = {
-      session_id: 'test-session-123',
+      session_id: 'test-session-stop',
       cwd: TEST_DIR,
       hook_event_name: 'Stop'
       // transcript_path is missing
@@ -488,7 +536,7 @@ test('formatToolCall handles missing tool_input', () => {
 // --- Tests for handlePostToolUse ---
 
 test('handlePostToolUse records tool call to session file', () => {
-  sessionRecorder.resetSession(TEST_DIR);
+  sessionRecorder.resetSession();
 
   // First create a session via user prompt
   const userHookInput = {
@@ -516,13 +564,13 @@ test('handlePostToolUse records tool call to session file', () => {
 });
 
 test('handlePostToolUse handles missing tool_name gracefully', () => {
-  sessionRecorder.resetSession(TEST_DIR);
-  sessionRecorder.getOrCreateSession(TEST_DIR);
+  sessionRecorder.resetSession();
+  sessionRecorder.getOrCreateSession(TEST_DIR, 'test-session-tool');
 
   suppressErrors();
   try {
     const hookInput = {
-      session_id: 'test-session-123',
+      session_id: 'test-session-tool',
       cwd: TEST_DIR,
       hook_event_name: 'PostToolUse'
       // tool_name is missing
@@ -536,7 +584,7 @@ test('handlePostToolUse handles missing tool_name gracefully', () => {
 });
 
 test('handlePostToolUse aggregates multiple tool calls', () => {
-  sessionRecorder.resetSession(TEST_DIR);
+  sessionRecorder.resetSession();
 
   // Create session
   const userHookInput = {
@@ -587,8 +635,19 @@ test('getOrCreateSession returns null on directory creation failure', () => {
   suppressErrors();
   try {
     sessionRecorder.resetSession();
-    const result = sessionRecorder.getOrCreateSession('/nonexistent/path/that/does/not/exist');
+    const result = sessionRecorder.getOrCreateSession('/nonexistent/path/that/does/not/exist', 'test-session-fail');
     assert.strictEqual(result, null, 'Should return null on error');
+  } finally {
+    restoreErrors();
+  }
+});
+
+test('getOrCreateSession returns null when sessionId is missing', () => {
+  suppressErrors();
+  try {
+    sessionRecorder.resetSession();
+    const result = sessionRecorder.getOrCreateSession(TEST_DIR, null);
+    assert.strictEqual(result, null, 'Should return null when sessionId is missing');
   } finally {
     restoreErrors();
   }

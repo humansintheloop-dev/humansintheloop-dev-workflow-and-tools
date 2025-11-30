@@ -1,4 +1,5 @@
 JUNK-*
 *.code-workspace
-.claude/sessions
+**/.claude/sessions
+**/.claude/issues
 .claude/settings.local.json

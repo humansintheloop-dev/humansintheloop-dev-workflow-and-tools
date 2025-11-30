@@ -17,46 +17,23 @@ const path = require('path');
 let currentSessionPath = null;
 
 /**
- * Gets the path to the session state file for a given workspace
- * @param {string} workspaceDir - The workspace directory
- * @returns {string} Path to the state file
+ * Finds an existing session file for the given session ID
+ * @param {string} sessionsDir - The sessions directory path
+ * @param {string} sessionId - The Claude session ID
+ * @returns {string|null} The session file path, or null if not found
  */
-function getStateFilePath(workspaceDir) {
-  return path.join(workspaceDir, '.claude', 'sessions', '.current-session');
-}
-
-/**
- * Loads the current session path from the state file
- * @param {string} workspaceDir - The workspace directory
- * @returns {string|null} The session path, or null if not found
- */
-function loadSessionState(workspaceDir) {
+function findSessionFile(sessionsDir, sessionId) {
   try {
-    const stateFile = getStateFilePath(workspaceDir);
-    if (fs.existsSync(stateFile)) {
-      const sessionPath = fs.readFileSync(stateFile, 'utf8').trim();
-      if (sessionPath && fs.existsSync(sessionPath)) {
-        return sessionPath;
-      }
+    const files = fs.readdirSync(sessionsDir);
+    const pattern = new RegExp(`^session-.*-${sessionId}\\.md$`);
+    const match = files.find(f => pattern.test(f));
+    if (match) {
+      return path.join(sessionsDir, match);
     }
   } catch (error) {
-    // Ignore errors reading state file
+    // Directory doesn't exist or can't be read
   }
   return null;
-}
-
-/**
- * Saves the current session path to the state file
- * @param {string} workspaceDir - The workspace directory
- * @param {string} sessionPath - The session file path to save
- */
-function saveSessionState(workspaceDir, sessionPath) {
-  try {
-    const stateFile = getStateFilePath(workspaceDir);
-    fs.writeFileSync(stateFile, sessionPath, 'utf8');
-  } catch (error) {
-    // Ignore errors writing state file
-  }
 }
 
 /**
@@ -96,10 +73,11 @@ function createSessionsDirectory(workspaceDir) {
 }
 
 /**
- * Generates a session filename with timestamp format: session-YYYY-MM-DD-HHMMSS.md
+ * Generates a session filename with timestamp and session ID: session-YYYY-MM-DD-HHMMSS-{sessionId}.md
+ * @param {string} sessionId - The Claude session ID
  * @returns {string} The generated filename
  */
-function generateSessionFilename() {
+function generateSessionFilename(sessionId) {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -108,7 +86,7 @@ function generateSessionFilename() {
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const seconds = String(now.getSeconds()).padStart(2, '0');
 
-  return `session-${year}-${month}-${day}-${hours}${minutes}${seconds}.md`;
+  return `session-${year}-${month}-${day}-${hours}${minutes}${seconds}-${sessionId}.md`;
 }
 
 /**
@@ -130,10 +108,11 @@ function formatHeaderTimestamp() {
 /**
  * Creates a new session file with the header
  * @param {string} sessionsDir - The sessions directory path
+ * @param {string} sessionId - The Claude session ID
  * @returns {string} The full path to the created session file
  */
-function createSessionFile(sessionsDir) {
-  const filename = generateSessionFilename();
+function createSessionFile(sessionsDir, sessionId) {
+  const filename = generateSessionFilename(sessionId);
   const filePath = path.join(sessionsDir, filename);
   const header = `# Session: ${formatHeaderTimestamp()}\n\n`;
 
@@ -149,18 +128,17 @@ function createSessionFile(sessionsDir) {
 /**
  * Gets the current session file path, creating a new session if needed
  * @param {string} workspaceDir - The workspace directory path
+ * @param {string} sessionId - The Claude session ID
  * @returns {string|null} The session file path, or null on error
  */
-function getOrCreateSession(workspaceDir) {
-  // Return existing session if we have one in memory
-  if (currentSessionPath && fs.existsSync(currentSessionPath)) {
-    return currentSessionPath;
+function getOrCreateSession(workspaceDir, sessionId) {
+  if (!sessionId) {
+    console.error('[session-recorder] Missing sessionId');
+    return null;
   }
 
-  // Try to load from state file (for cross-process persistence)
-  const savedSession = loadSessionState(workspaceDir);
-  if (savedSession) {
-    currentSessionPath = savedSession;
+  // Return existing session if we have one in memory for this session
+  if (currentSessionPath && fs.existsSync(currentSessionPath) && currentSessionPath.includes(sessionId)) {
     return currentSessionPath;
   }
 
@@ -170,34 +148,24 @@ function getOrCreateSession(workspaceDir) {
     return null;
   }
 
-  // Create new session file
-  currentSessionPath = createSessionFile(sessionsDir);
-
-  // Save to state file for other hook processes
-  if (currentSessionPath) {
-    saveSessionState(workspaceDir, currentSessionPath);
+  // Try to find existing session file for this session ID
+  const existingSession = findSessionFile(sessionsDir, sessionId);
+  if (existingSession) {
+    currentSessionPath = existingSession;
+    return currentSessionPath;
   }
+
+  // Create new session file
+  currentSessionPath = createSessionFile(sessionsDir, sessionId);
 
   return currentSessionPath;
 }
 
 /**
  * Resets the current session (for testing)
- * @param {string} workspaceDir - Optional workspace directory to clear state file
  */
-function resetSession(workspaceDir = null) {
+function resetSession() {
   currentSessionPath = null;
-  // Also clear state file if workspace provided
-  if (workspaceDir) {
-    try {
-      const stateFile = getStateFilePath(workspaceDir);
-      if (fs.existsSync(stateFile)) {
-        fs.unlinkSync(stateFile);
-      }
-    } catch (error) {
-      // Ignore errors
-    }
-  }
 }
 
 /**
@@ -370,6 +338,7 @@ function formatToolCall(toolName, toolInput) {
 /**
  * Handles the PostToolUse hook event
  * @param {Object} hookInput - The hook input data
+ * @param {string} hookInput.session_id - The Claude session ID
  * @param {string} hookInput.tool_name - The name of the tool
  * @param {Object} hookInput.tool_input - The tool input parameters
  * @param {string} hookInput.cwd - The current working directory
@@ -377,7 +346,7 @@ function formatToolCall(toolName, toolInput) {
 function handlePostToolUse(hookInput) {
   debugLog('handlePostToolUse called', hookInput);
 
-  const { tool_name, tool_input, cwd } = hookInput;
+  const { session_id, tool_name, tool_input, cwd } = hookInput;
 
   if (!tool_name) {
     debugLog('Missing tool_name in PostToolUse hook input');
@@ -386,8 +355,8 @@ function handlePostToolUse(hookInput) {
   }
 
   // Ensure we have a session
-  if (!currentSessionPath && cwd) {
-    getOrCreateSession(cwd);
+  if (!currentSessionPath && cwd && session_id) {
+    getOrCreateSession(cwd, session_id);
   }
 
   if (!currentSessionPath) {
@@ -409,16 +378,21 @@ function handlePostToolUse(hookInput) {
 /**
  * Handles the UserPromptSubmit hook event
  * @param {Object} hookInput - The hook input data
- * @param {string} hookInput.session_id - The session ID
+ * @param {string} hookInput.session_id - The Claude session ID
  * @param {string} hookInput.cwd - The current working directory
  * @param {string} hookInput.hook_event_name - The hook event name
  * @param {string} hookInput.prompt - The user's prompt text
  */
 function handleUserPromptSubmit(hookInput) {
-  const { cwd, prompt } = hookInput;
+  const { session_id, cwd, prompt } = hookInput;
 
   if (!cwd) {
     console.error('[session-recorder] Missing cwd in hook input');
+    return;
+  }
+
+  if (!session_id) {
+    console.error('[session-recorder] Missing session_id in hook input');
     return;
   }
 
@@ -428,7 +402,7 @@ function handleUserPromptSubmit(hookInput) {
   }
 
   // Get or create session file
-  const sessionPath = getOrCreateSession(cwd);
+  const sessionPath = getOrCreateSession(cwd, session_id);
   if (!sessionPath) {
     console.error('[session-recorder] Failed to get or create session');
     return;
@@ -442,13 +416,14 @@ function handleUserPromptSubmit(hookInput) {
 /**
  * Handles the Stop hook event (when Claude finishes responding)
  * @param {Object} hookInput - The hook input data
+ * @param {string} hookInput.session_id - The Claude session ID
  * @param {string} hookInput.transcript_path - Path to the transcript file
  * @param {string} hookInput.cwd - The current working directory
  */
 function handleStop(hookInput) {
   debugLog('handleStop called', hookInput);
 
-  const { transcript_path, cwd } = hookInput;
+  const { session_id, transcript_path, cwd } = hookInput;
 
   if (!transcript_path) {
     debugLog('Missing transcript_path in Stop hook input');
@@ -461,9 +436,9 @@ function handleStop(hookInput) {
   // If no session exists, we can't record the response
   if (!currentSessionPath) {
     debugLog('No currentSessionPath, trying to create session');
-    // Try to create session if we have cwd
-    if (cwd) {
-      getOrCreateSession(cwd);
+    // Try to create session if we have cwd and session_id
+    if (cwd && session_id) {
+      getOrCreateSession(cwd, session_id);
     }
     if (!currentSessionPath) {
       debugLog('Failed to create session');
@@ -517,6 +492,7 @@ module.exports = {
   createSessionsDirectory,
   generateSessionFilename,
   createSessionFile,
+  findSessionFile,
   getOrCreateSession,
   resetSession,
   appendToSession,

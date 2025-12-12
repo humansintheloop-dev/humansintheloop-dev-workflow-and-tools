@@ -1,0 +1,70 @@
+---
+name: file-organization
+description: Guidelines for file operations like moving, renaming, and reorganizing files. Claude should use this skill when reorganizing code structure to prefer efficient shell commands over write/delete patterns.
+---
+
+# File Organization Guidelines
+
+When reorganizing files, moving files, or renaming files, follow these guidelines:
+
+## Moving/Renaming Files
+
+Use `mv` via Bash instead of Write + delete:
+
+```bash
+mv old/path/File.java new/path/File.java
+```
+
+Then use Edit to update any necessary content (e.g., package declarations).
+
+## Why This Matters
+
+- Simpler: One command instead of multiple tool calls
+- Preserves file metadata (creation time, permissions)
+- Conceptually cleaner: A move operation should be expressed as a move
+- Less error-prone: No risk of forgetting to delete the old file
+
+## Package Reorganization Example
+
+When reorganizing Java packages:
+
+```bash
+# 1. Create new directory structure
+mkdir -p src/main/java/com/example/newpackage
+
+# 2. Move the file
+mv src/main/java/com/example/oldpackage/MyClass.java src/main/java/com/example/newpackage/
+
+# 3. Update the package declaration
+# Use Edit tool to change: package com.example.oldpackage;
+# To: package com.example.newpackage;
+```
+
+## When to Use Write
+
+Reserve the Write tool for:
+- Creating genuinely new files
+- Files where content is being substantially rewritten
+- Generated files where the entire content is new
+
+Do NOT use Write for:
+- Moving files to new locations
+- Renaming files
+- Reorganizing directory structures
+
+## Prefer Dedicated Tools Over Bash
+
+Use the right tool for file discovery and inspection:
+
+| Task | Use | Instead of |
+|------|-----|------------|
+| List/find files | Glob | `ls`, `find` |
+| Search file contents | Grep | `grep`, `rg` |
+| Read file contents | Read | `cat`, `head`, `tail` |
+| Edit files | Edit | `sed`, `awk` |
+
+The dedicated tools:
+- Handle edge cases gracefully (e.g., non-existent directories)
+- Provide better formatted output
+- Are optimized for the task
+- Don't require defensive shell scripting patterns like `command 2>/dev/null || echo "fallback"`

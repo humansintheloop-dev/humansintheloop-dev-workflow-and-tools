@@ -8,4 +8,7 @@ source "$DIR/_helper.sh"
 _validate_idea
 _validate_spec
 
-claude  "/idea-to-code:idea-create-implementation-plan ${IDEA_FILE?} ${SPEC_FILE?}"
+export IDEA_FILE SPEC_FILE
+PROMPT=$(envsubst < "$DIR/../prompt-templates/create-implementation-plan.md")
+
+claude "$PROMPT"

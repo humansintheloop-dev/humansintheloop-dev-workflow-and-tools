@@ -3,3 +3,8 @@ JUNK-*
 **/.claude/sessions
 **/.claude/issues
 .claude/settings.local.json
+tests/kafka-security-poc/kafka-security-poc-discussion.md
+tests/kafka-security-poc/kafka-security-poc-idea.txt
+tests/kafka-security-poc/kafka-security-poc-plan.md
+tests/kafka-security-poc/kafka-security-poc-sessionID.txt
+tests/kafka-security-poc/kafka-security-poc-spec.md

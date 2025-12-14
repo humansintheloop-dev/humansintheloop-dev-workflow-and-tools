@@ -31,7 +31,7 @@ cd genai-development-workflow
 # Commands automatically available in ~/.claude/commands/
 ```
 
-**Result**: Same 10 slash commands, same workflow, same shell scripts - just easier to install.
+**Result**: Same 9 slash commands, same workflow, same shell scripts - just easier to install.
 
 ## What This Does NOT Change
 
@@ -44,18 +44,17 @@ cd genai-development-workflow
 
 ## Commands Being Packaged
 
-The plugin simply makes these 10 existing commands installable:
+The plugin simply makes these 9 existing commands installable:
 
 1. `commit-changes.md`
 2. `commit-staged-changes.md`
 3. `idea-brainstorm.md`
 4. `idea-brainstorm-continue.md`
-5. `idea-create-implementation-plan.md`
-6. `idea-create-implementation-plan-from-stories.md`
-7. `idea-create-spec.md`
-8. `idea-create-stories.md`
-9. `idea-revise-implementation-plan.md`
-10. `precommit-check.md`
+5. `idea-create-implementation-plan-from-stories.md`
+6. `idea-create-spec.md`
+7. `idea-create-stories.md`
+8. `idea-revise-implementation-plan.md`
+9. `precommit-check.md`
 
 ## What Needs to Be Done
 
@@ -173,7 +172,6 @@ genai-development-workflow/
 │   ├── commit-staged-changes.md
 │   ├── idea-brainstorm.md
 │   ├── idea-brainstorm-continue.md
-│   ├── idea-create-implementation-plan.md
 │   ├── idea-create-implementation-plan-from-stories.md
 │   ├── idea-create-spec.md
 │   ├── idea-create-stories.md
@@ -268,7 +266,7 @@ cd /Users/cer/src/genai-development-workflow
 ## Success Criteria
 
 1. Users can install commands via `/plugin install idea-to-code-workflow`
-2. All 10 slash commands work identically to previous manual installation
+2. All 9 slash commands work identically to previous manual installation
 3. Shell scripts continue to work exactly as before
 4. `link-dotfiles.sh` is removed from the repository
 5. Documentation clearly explains plugin installation

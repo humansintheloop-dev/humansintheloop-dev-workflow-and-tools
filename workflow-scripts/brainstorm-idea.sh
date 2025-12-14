@@ -18,7 +18,7 @@ if [ ! -f "$SESSION_ID_FILE" ]; then
     COMMAND_SUFFIX=""
 else
     SESSION_ARG="--resume"
-    COMMAND_SUFFIX="-continue"
+    COMMAND_SUFFIX=""
 fi
 
 claude "$SESSION_ARG" "$(_session_id)" "/idea-to-code:idea-brainstorm${COMMAND_SUFFIX} idea-file=$IDEA_FILE discussion-file=$DISCUSSION_FILE"

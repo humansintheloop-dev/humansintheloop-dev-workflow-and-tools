@@ -12,11 +12,7 @@ detect_state() {
         echo "no_idea"
     elif [[ ! -f "$SPEC_FILE" ]]; then
         echo "has_idea_no_spec"
-    elif [[ -f "$STORY_FILE" ]] && [[ ! -f "$PLAN_WITH_STORIES_FILE" ]]; then
-        echo "has_stories"
-    elif [[ -f "$PLAN_WITH_STORIES_FILE" ]]; then
-        echo "has_story_plan"
-    elif [[ ! -f "$PLAN_WITHOUT_STORIES_FILE" ]] && [[ ! -f "$STORY_FILE" ]]; then
+    elif [[ ! -f "$PLAN_WITHOUT_STORIES_FILE" ]]; then
         echo "has_spec"
     elif [[ -f "$PLAN_WITHOUT_STORIES_FILE" ]]; then
         echo "has_plan"
@@ -218,12 +214,11 @@ main() {
                 
             has_spec)
                 local choice
-                choice=$(get_user_choice "Specification created. What would you like to do?" 3 \
+                choice=$(get_user_choice "Specification created. What would you like to do?" 2 \
                     "Revise the specification" \
-                    "Create user stories" \
                     "Create implementation plan" \
                     "Exit")
-                
+
                 case "$choice" in
                     1)
                         if run_step "Revising specification" "$SCRIPT_DIR/revise-spec.sh" "$dir"; then
@@ -235,96 +230,12 @@ main() {
                         fi
                         ;;
                     2)
-                        if run_step "Creating user stories" "$SCRIPT_DIR/make-stories.sh" "$dir"; then
-                            echo "User stories created successfully!"
-                        else
-                            if handle_error "$SCRIPT_DIR/make-stories.sh" "$dir"; then
-                                continue  # Retry
-                            fi
-                        fi
-                        ;;
-                    3)
                         if run_step "Creating implementation plan" "$SCRIPT_DIR/make-plan.sh" "$dir"; then
                             echo "Implementation plan created successfully!"
                         else
                             if handle_error "$SCRIPT_DIR/make-plan.sh" "$dir"; then
                                 continue  # Retry
                             fi
-                        fi
-                        ;;
-                    4)
-                        echo "Exiting workflow."
-                        exit 0
-                        ;;
-                esac
-                ;;
-                
-            has_stories)
-                echo ""
-                echo "User stories found. Creating story-based plan..."
-                if run_step "Creating story-based plan" "$SCRIPT_DIR/make-story-plan.sh" "$dir"; then
-                    echo "Story-based plan created successfully!"
-                else
-                    if handle_error "$SCRIPT_DIR/make-story-plan.sh" "$dir"; then
-                        continue  # Retry
-                    fi
-                fi
-                ;;
-                
-            has_story_plan)
-                local choice
-                choice=$(get_user_choice "Story-based plan exists. What would you like to do?" 1 \
-                    "Implement the entire story plan" \
-                    "Implement a specific task" \
-                    "Exit")
-                
-                case "$choice" in
-                    1)
-                        if run_step "Implementing story-based plan" "$SCRIPT_DIR/implement-story-plan.sh" "$dir"; then
-                            echo "Story-based implementation completed successfully!"
-                            echo ""
-                            # Check if plan has uncompleted tasks
-                            if grep -q '\[ \]' "$PLAN_WITH_STORIES_FILE" 2>/dev/null; then
-                                echo "================================================"
-                                echo "  Plan has uncompleted tasks"
-                                echo "================================================"
-                                echo ""
-                                # Continue the loop to show options again
-                            else
-                                echo "================================================"
-                                echo "  Workflow Complete!"
-                                echo "================================================"
-                                exit 0
-                            fi
-                        else
-                            if handle_error "$SCRIPT_DIR/implement-story-plan.sh" "$dir"; then
-                                continue  # Retry
-                            fi
-                        fi
-                        ;;
-                    2)
-                        echo ""
-                        echo "Enter the specific task to implement:"
-                        read -r -p "> " specific_task
-                        if [ -n "$specific_task" ]; then
-                            if "$SCRIPT_DIR/implement-story-plan.sh" "$dir" "$specific_task"; then
-                                echo "Task implementation completed successfully!"
-                                echo ""
-                                # Check if plan has uncompleted tasks
-                                if grep -q '\[ \]' "$PLAN_WITH_STORIES_FILE" 2>/dev/null; then
-                                    echo "Plan still has uncompleted tasks."
-                                else
-                                    echo "================================================"
-                                    echo "  All tasks complete!"
-                                    echo "================================================"
-                                fi
-                            else
-                                if handle_error "$SCRIPT_DIR/implement-story-plan.sh" "$dir"; then
-                                    continue  # Retry
-                                fi
-                            fi
-                        else
-                            echo "No task specified. Returning to menu."
                         fi
                         ;;
                     3)

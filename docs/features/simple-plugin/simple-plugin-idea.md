@@ -31,7 +31,7 @@ cd genai-development-workflow
 # Commands automatically available in ~/.claude/commands/
 ```
 
-**Result**: Same 9 slash commands, same workflow, same shell scripts - just easier to install.
+**Result**: Same 7 slash commands, same workflow, same shell scripts - just easier to install.
 
 ## What This Does NOT Change
 
@@ -44,17 +44,15 @@ cd genai-development-workflow
 
 ## Commands Being Packaged
 
-The plugin simply makes these 9 existing commands installable:
+The plugin simply makes these 7 existing commands installable:
 
 1. `commit-changes.md`
 2. `commit-staged-changes.md`
-3. `idea-brainstorm.md`
-4. `idea-brainstorm-continue.md`
-5. `idea-create-implementation-plan-from-stories.md`
-6. `idea-create-spec.md`
-7. `idea-create-stories.md`
-8. `idea-revise-implementation-plan.md`
-9. `precommit-check.md`
+3. `idea-create-implementation-plan-from-stories.md`
+4. `idea-create-spec.md`
+5. `idea-create-stories.md`
+6. `idea-revise-implementation-plan.md`
+7. `precommit-check.md`
 
 ## What Needs to Be Done
 
@@ -170,8 +168,6 @@ genai-development-workflow/
 ├── commands/                # MOVED - Command files from dotfiles/claude/commands/
 │   ├── commit-changes.md
 │   ├── commit-staged-changes.md
-│   ├── idea-brainstorm.md
-│   ├── idea-brainstorm-continue.md
 │   ├── idea-create-implementation-plan-from-stories.md
 │   ├── idea-create-spec.md
 │   ├── idea-create-stories.md
@@ -227,7 +223,7 @@ genai-development-workflow/
 
 # Test a command
 cd /tmp/test-idea
-/idea-brainstorm idea-file=./test-idea.txt discussion-file=./test-discussion.md
+/idea-create-spec idea-file=./test-idea.txt discussion-file=./test-discussion.md
 
 # Verify shell scripts still work
 cd /Users/cer/src/genai-development-workflow
@@ -266,7 +262,7 @@ cd /Users/cer/src/genai-development-workflow
 ## Success Criteria
 
 1. Users can install commands via `/plugin install idea-to-code-workflow`
-2. All 9 slash commands work identically to previous manual installation
+2. All 7 slash commands work identically to previous manual installation
 3. Shell scripts continue to work exactly as before
 4. `link-dotfiles.sh` is removed from the repository
 5. Documentation clearly explains plugin installation

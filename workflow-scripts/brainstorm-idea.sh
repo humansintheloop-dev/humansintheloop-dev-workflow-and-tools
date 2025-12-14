@@ -15,10 +15,11 @@ fi
 if [ ! -f "$SESSION_ID_FILE" ]; then
     uuidgen > "$SESSION_ID_FILE"
     SESSION_ARG="--session-id"
-    COMMAND_SUFFIX=""
 else
     SESSION_ARG="--resume"
-    COMMAND_SUFFIX=""
 fi
 
-claude "$SESSION_ARG" "$(_session_id)" "/idea-to-code:idea-brainstorm${COMMAND_SUFFIX} idea-file=$IDEA_FILE discussion-file=$DISCUSSION_FILE"
+export IDEA_FILE DISCUSSION_FILE
+PROMPT=$(envsubst < "$DIR/../prompt-templates/brainstorm-idea.md")
+
+claude "$SESSION_ARG" "$(_session_id)" "$PROMPT"

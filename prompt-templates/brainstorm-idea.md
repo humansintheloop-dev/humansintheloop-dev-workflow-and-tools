@@ -8,10 +8,8 @@ The goal is to:
 
 Use the following files:
 
-- idea-file: the file containing the idea description
-- discussion-file: the file where questions and answers are saved
-
-The file names are passed in #$ARGUMENTS.
+- idea-file: @${IDEA_FILE}
+- discussion-file: @${DISCUSSION_FILE}
 
 Your tasks:
 
@@ -46,7 +44,7 @@ Remember: only one question at a time.
 - Continue until you believe you have enough information to later create a developer-ready specification and a steel-thread-ready plan (in subsequent steps, not in this one).
 - When you believe all relevant details have been gathered, do NOT generate the specification.
   Instead, ask me:
-  "Are there any additional requirements or concerns before we move to the next step(creating the detailed specification)?"
+  "Are there any additional requirements or concerns before we move to the next step (creating the detailed specification)?"
 - After asking this question and recording my answer in the discussion-file, STOP. Do not generate the specification or a plan in Step 1.
 
 Remember: this is for questions, clarification, and recording information only. Specification and planning happen in later steps.

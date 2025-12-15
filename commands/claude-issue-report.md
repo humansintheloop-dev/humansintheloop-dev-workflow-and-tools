@@ -8,7 +8,7 @@ Capture a mistake or improvement opportunity. Follow these steps:
 2. Identify your current persona/role (what system prompt you're operating under)
 3. Perform 5 whys root cause analysis of why this mistake happened
 4. Extract last 5 message exchanges from the current conversation
-5. Create a report in `./.claude/issues/active/` (first check that directory exists, create if not) with format:
+5. Create a report in the project root's `.claude/issues/active/` directory using an absolute path (first check that directory exists, create if not). IMPORTANT: Use the project root directory (where you started), not the current working directory if you have changed directories during the session. The file path must be absolute (e.g., `/Users/name/project/.claude/issues/active/YYYY-MM-DD-HH-MM-SS.md`). Format:
 
 ```markdown
 ---
@@ -38,4 +38,4 @@ claude_session_id: unknown
 [Empty - filled when resolved]
 ```
 
-6. Confirm to user: "Report captured: .claude/issues/active/[id].md"
+6. Confirm to user: "Report captured: [absolute-path-to-file]"

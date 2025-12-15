@@ -17,6 +17,45 @@ const path = require('path');
 let currentSessionPath = null;
 
 /**
+ * Finds the project root by traversing up from the given directory
+ * looking for .claude/ or .git/ directories.
+ * @param {string} startDir - The directory to start searching from
+ * @returns {string} The project root, or startDir if not found
+ */
+function findProjectRoot(startDir) {
+  if (!startDir) {
+    return startDir;
+  }
+
+  let dir = path.resolve(startDir);
+  const root = path.parse(dir).root;
+
+  while (dir !== root) {
+    // Check for .claude/ directory (preferred marker for this plugin)
+    const claudeDir = path.join(dir, '.claude');
+    if (fs.existsSync(claudeDir) && fs.statSync(claudeDir).isDirectory()) {
+      return dir;
+    }
+
+    // Check for .git/ directory (common project root marker)
+    const gitDir = path.join(dir, '.git');
+    if (fs.existsSync(gitDir)) {
+      return dir;
+    }
+
+    // Move up one directory
+    const parentDir = path.dirname(dir);
+    if (parentDir === dir) {
+      break; // Reached filesystem root
+    }
+    dir = parentDir;
+  }
+
+  // If no markers found, return the original directory
+  return startDir;
+}
+
+/**
  * Finds an existing session file for the given session ID
  * @param {string} sessionsDir - The sessions directory path
  * @param {string} sessionId - The Claude session ID
@@ -38,12 +77,15 @@ function findSessionFile(sessionsDir, sessionId) {
 
 /**
  * Writes debug log to .claude/sessions/debug.log
+ * @param {string} workspaceDir - The workspace directory path (from hook input cwd)
  * @param {string} message - The message to log
  * @param {Object} data - Optional data to log as JSON
  */
-function debugLog(message, data = null) {
+function debugLog(workspaceDir, message, data = null) {
   try {
-    const debugFile = path.join(process.cwd(), '.claude', 'sessions', 'debug.log');
+    // Use workspaceDir if provided, otherwise fall back to process.cwd()
+    const baseDir = workspaceDir || process.cwd();
+    const debugFile = path.join(baseDir, '.claude', 'sessions', 'debug.log');
     const timestamp = new Date().toISOString();
     let logEntry = `[${timestamp}] ${message}`;
     if (data) {
@@ -344,35 +386,38 @@ function formatToolCall(toolName, toolInput) {
  * @param {string} hookInput.cwd - The current working directory
  */
 function handlePostToolUse(hookInput) {
-  debugLog('handlePostToolUse called', hookInput);
-
   const { session_id, tool_name, tool_input, cwd } = hookInput;
 
+  // Find the project root (in case cwd has changed during the session)
+  const projectRoot = findProjectRoot(cwd);
+
+  debugLog(projectRoot, 'handlePostToolUse called', hookInput);
+
   if (!tool_name) {
-    debugLog('Missing tool_name in PostToolUse hook input');
+    debugLog(projectRoot, 'Missing tool_name in PostToolUse hook input');
     console.error('[session-recorder] Missing tool_name in PostToolUse hook input');
     return;
   }
 
   // Ensure we have a session
-  if (!currentSessionPath && cwd && session_id) {
-    getOrCreateSession(cwd, session_id);
+  if (!currentSessionPath && projectRoot && session_id) {
+    getOrCreateSession(projectRoot, session_id);
   }
 
   if (!currentSessionPath) {
-    debugLog('No active session for PostToolUse event');
+    debugLog(projectRoot, 'No active session for PostToolUse event');
     console.error('[session-recorder] No active session for PostToolUse event');
     return;
   }
 
   // Format the tool call
   const toolSummary = formatToolCall(tool_name, tool_input);
-  debugLog(`Tool summary: ${toolSummary}`);
+  debugLog(projectRoot, `Tool summary: ${toolSummary}`);
 
   // Append tool call to session (each tool call gets its own "Tools Used" section for simplicity)
   const formatted = `**Tools Used:**\n- ${toolSummary}\n\n`;
   appendToSession(formatted);
-  debugLog('Tool call appended successfully');
+  debugLog(projectRoot, 'Tool call appended successfully');
 }
 
 /**
@@ -401,8 +446,11 @@ function handleUserPromptSubmit(hookInput) {
     return;
   }
 
+  // Find the project root (in case cwd has changed during the session)
+  const projectRoot = findProjectRoot(cwd);
+
   // Get or create session file
-  const sessionPath = getOrCreateSession(cwd, session_id);
+  const sessionPath = getOrCreateSession(projectRoot, session_id);
   if (!sessionPath) {
     console.error('[session-recorder] Failed to get or create session');
     return;
@@ -421,48 +469,51 @@ function handleUserPromptSubmit(hookInput) {
  * @param {string} hookInput.cwd - The current working directory
  */
 function handleStop(hookInput) {
-  debugLog('handleStop called', hookInput);
-
   const { session_id, transcript_path, cwd } = hookInput;
 
+  // Find the project root (in case cwd has changed during the session)
+  const projectRoot = findProjectRoot(cwd);
+
+  debugLog(projectRoot, 'handleStop called', hookInput);
+
   if (!transcript_path) {
-    debugLog('Missing transcript_path in Stop hook input');
+    debugLog(projectRoot, 'Missing transcript_path in Stop hook input');
     console.error('[session-recorder] Missing transcript_path in Stop hook input');
     return;
   }
 
-  debugLog(`transcript_path: ${transcript_path}, cwd: ${cwd}, currentSessionPath: ${currentSessionPath}`);
+  debugLog(projectRoot, `transcript_path: ${transcript_path}, cwd: ${cwd}, projectRoot: ${projectRoot}, currentSessionPath: ${currentSessionPath}`);
 
   // If no session exists, we can't record the response
   if (!currentSessionPath) {
-    debugLog('No currentSessionPath, trying to create session');
-    // Try to create session if we have cwd and session_id
-    if (cwd && session_id) {
-      getOrCreateSession(cwd, session_id);
+    debugLog(projectRoot, 'No currentSessionPath, trying to create session');
+    // Try to create session if we have projectRoot and session_id
+    if (projectRoot && session_id) {
+      getOrCreateSession(projectRoot, session_id);
     }
     if (!currentSessionPath) {
-      debugLog('Failed to create session');
+      debugLog(projectRoot, 'Failed to create session');
       console.error('[session-recorder] No active session for Stop event');
       return;
     }
   }
 
   // Parse transcript to get Claude's response
-  debugLog(`Parsing transcript from: ${transcript_path}`);
+  debugLog(projectRoot, `Parsing transcript from: ${transcript_path}`);
   const response = parseTranscript(transcript_path);
-  debugLog(`Parsed response: ${response ? response.slice(0, 200) + '...' : 'null'}`);
+  debugLog(projectRoot, `Parsed response: ${response ? response.slice(0, 200) + '...' : 'null'}`);
 
   if (!response) {
-    debugLog('Could not extract response from transcript');
+    debugLog(projectRoot, 'Could not extract response from transcript');
     console.error('[session-recorder] Could not extract response from transcript');
     return;
   }
 
   // Format and append the response
   const formatted = formatClaudeResponse(response);
-  debugLog(`Appending to session: ${currentSessionPath}`);
+  debugLog(projectRoot, `Appending to session: ${currentSessionPath}`);
   appendToSession(formatted);
-  debugLog('Response appended successfully');
+  debugLog(projectRoot, 'Response appended successfully');
 }
 
 /**
@@ -489,6 +540,7 @@ function handleHookEvent(hookInput) {
 
 // Export functions for testing
 module.exports = {
+  findProjectRoot,
   createSessionsDirectory,
   generateSessionFilename,
   createSessionFile,

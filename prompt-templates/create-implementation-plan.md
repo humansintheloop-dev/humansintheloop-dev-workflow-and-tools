@@ -28,6 +28,7 @@ General principles:
     - Each steel thread implements exactly one validation scenario or example scenario.
 - Implement happy-path scenarios first, then add error handling and edge cases.
 - Organize the steel threads by causal dependencies and architectural priority.
+- Build test scripts incrementally: each steel thread should add its relevant test cases to the test script rather than creating all tests in a final steel thread. This ensures tests are verified as functionality is implemented.
 
 Structure of the plan:
 
@@ -36,6 +37,7 @@ Structure of the plan:
 - The plan MUST include an "Instructions for Coding Agent" section at the top that tells the agent to:
   - Use the `idea-to-code:plan-tracking` skill to track task completion
   - Use the `idea-to-code:tdd` skill when implementing code
+  - Test functionality by running test scripts rather than doing the equivalent of manual testing, such as executing complex shell commands.
 
 Steel thread and task structure:
 

@@ -33,11 +33,16 @@ General principles:
 Structure of the plan:
 
 - The plan is a markdown document in the same directory as @${IDEA_FILE}.
-- For the stories file called '<idea-name>-stories.md', call the plan file '<idea-name>-story-plan.md'.
 - The plan MUST include an "Instructions for Coding Agent" section at the top that tells the agent to:
   - Use the `idea-to-code:plan-tracking` skill to track task completion
-  - Use the `idea-to-code:tdd` skill when implementing code
-  - Test functionality by running test scripts rather than doing the equivalent of manual testing, such as executing complex shell commands.
+  - ALWAYS Write code using TDD
+    - Use the `idea-to-code:tdd` skill when implementing code
+    - NEVER write production code (`src/main/java/**/*.java`) without first writing a failing test (`src/test/java/**/*.java`)
+    - Before using the Write tool on any `.java` file in `src/main/`, ask: "Do I have a failing test for this?" If not, write the test first.
+    - When building something that requires scripting, never run the scripts or ad-hoc docker/curl/test commands directly. Always update the test script first, then run the test script.
+    - When task direction changes mid-implementation, return to TDD PLANNING state and write a test first
+
+## TDD Enforcement
 
 Steel thread and task structure:
 

@@ -124,3 +124,6 @@ See link:./docs/idea-to-code-workflow.adoc[idea to code workflow]
 
 The original inspiration and some prompts came from this https://harper.blog/2025/02/16/my-llm-codegen-workflow-atm/[excellent post].
 
+I've subsequently been inspired by https://github.com/nTCoding/claude-skillz/[Nick Tune's work] - most notable the TDD skill and the `/claude-issue-report` command.
+
+

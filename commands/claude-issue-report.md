@@ -8,7 +8,8 @@ Capture a mistake or improvement opportunity. Follow these steps:
 2. Identify your current persona/role (what system prompt you're operating under)
 3. Perform 5 whys root cause analysis of why this mistake happened
 4. Extract last 5 message exchanges from the current conversation
-5. Create a report in the project root's `.claude/issues/active/` directory using an absolute path (first check that directory exists, create if not). IMPORTANT: Use the project root directory (where you started), not the current working directory if you have changed directories during the session. The file path must be absolute (e.g., `/Users/name/project/.claude/issues/active/YYYY-MM-DD-HH-MM-SS.md`). Format:
+5. Suggest an actionable (by me, not you) improvement to prevent recurrence
+6. Create a report in the project root's `.claude/issues/active/` directory using an absolute path (first check that directory exists, create if not). IMPORTANT: Use the project root directory (where you started), not the current working directory if you have changed directories during the session. The file path must be absolute (e.g., `/Users/name/project/.claude/issues/active/YYYY-MM-DD-HH-MM-SS.md`). Format:
 
 ```markdown
 ---
@@ -32,6 +33,10 @@ claude_session_id: unknown
 ## Context (Last 5 Messages)
 
 [Extracted conversation]
+
+## Suggested improvement
+
+[Suggested improvement to prevent recurrence]
 
 ## Resolution
 

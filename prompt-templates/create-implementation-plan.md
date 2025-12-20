@@ -21,6 +21,7 @@ General principles:
   - Use recommended starter/template/skeletons for the technology stack.
   - Set up an automated deployment pipeline (e.g., GitHub Actions) that builds and tests the application.
   - If applicable, the pipeline should also deploy the application.
+  - Ensure that the Git repository is setup with proper .gitignore
 - Subsequent steel threads must implement exactly ONE scenario each:
   - If idea type A (user-facing feature):
     - Each steel thread implements exactly one user-story scenario.
@@ -28,19 +29,44 @@ General principles:
     - Each steel thread implements exactly one validation scenario or example scenario.
 - Implement happy-path scenarios first, then add error handling and edge cases.
 - Organize the steel threads by causal dependencies and architectural priority.
-- Build test scripts incrementally: each steel thread should add its relevant test cases to the test script rather than creating all tests in a final steel thread. This ensures tests are verified as functionality is implemented.
+- Build test scripts incrementally: each task should add its test case to the test script as part of that task, not as a separate "create test" task at the end. This ensures tests are written BEFORE implementations.
+- When appropriate, incrementally update the README.md as part of each task - DO NOT HAVE a separate "update documentation" task at the end.
 
 Structure of the plan:
 
 - The plan is a markdown document in the same directory as @${IDEA_FILE}.
 - The plan MUST include an "Instructions for Coding Agent" section at the top that tells the agent to:
-  - Use the `idea-to-code:plan-tracking` skill to track task completion
+  - ALWAYS Use the `idea-to-code:plan-tracking` skill to track task completion
   - ALWAYS Write code using TDD
     - Use the `idea-to-code:tdd` skill when implementing code
     - NEVER write production code (`src/main/java/**/*.java`) without first writing a failing test (`src/test/java/**/*.java`)
     - Before using the Write tool on any `.java` file in `src/main/`, ask: "Do I have a failing test for this?" If not, write the test first.
     - When building something that requires scripting, never run the scripts or ad-hoc docker/curl/test commands directly. Always update the test script first, then run the test script.
     - When task direction changes mid-implementation, return to TDD PLANNING state and write a test first
+  - ALWAYS after completing a task, when the tests pass and the task has been marked as complete, commit the changes.
+
+## Test-First Task Structure
+
+For infrastructure/scripting steel threads:
+- Do NOT create a separate "Create test script" task at the end
+- Each implementation task implicitly includes: (1) add failing test, (2) implement to make it pass
+- Name tasks by the observable outcome, not the implementation artifact
+
+
+### Example: Bad task structure (test comes after implementations):
+
+```
+- Task 1.1: Create init-ca.sh script
+- Task 1.2: Create stepca service
+- Task 1.3: Create test script  ← Wrong
+```
+
+### Example: Good task structure (outcome-focused, test is implicit in each):
+
+```
+- Task 1.1: init-ca.sh creates CA and .env file
+- Task 1.2: stepca service starts and becomes healthy
+```
 
 ## TDD Enforcement
 

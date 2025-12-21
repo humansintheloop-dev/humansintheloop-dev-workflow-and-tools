@@ -68,5 +68,7 @@ _validate_plan_with_stories() {
 }
 
 _session_id() {
-    cat "$SESSION_ID_FILE"
+    if [ -f "$SESSION_ID_FILE" ]; then
+        cat "$SESSION_ID_FILE"
+    fi
 }

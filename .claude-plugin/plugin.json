@@ -9,8 +9,22 @@
   "repository": "https://github.com/chrisrichardson/genai-development-workflow",
   "license": "MIT",
   "keywords": ["workflow", "planning", "implementation", "tdd", "steel-thread"],
-  "commands": ["./commands/*.md"],
-  "skills": ["./skills/*/SKILL.md"],
+  "commands": [
+    "./commands/claude-issue-report.md",
+    "./commands/commit-changes.md",
+    "./commands/commit-staged-changes.md",
+    "./commands/precommit-check.md"
+  ],
+  "skills": [
+    "./skills/commit-guidelines",
+    "./skills/dockerfile-guidelines",
+    "./skills/file-organization",
+    "./skills/incremental-development",
+    "./skills/plan-tracking",
+    "./skills/tdd",
+    "./skills/test-runner-java-gradle",
+    "./skills/testing-scripts-and-infrastructure"
+  ],
   "hooks": {
     "UserPromptSubmit": [
       {

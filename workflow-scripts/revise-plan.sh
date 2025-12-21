@@ -9,4 +9,7 @@ _validate_idea
 _validate_spec
 _validate_plan_without_stories
 
-claude  "/idea-to-code:idea-revise-implementation-plan ${IDEA_FILE?} ${SPEC_FILE?} ${PLAN_WITHOUT_STORIES_FILE?}"
+export IDEA_FILE SPEC_FILE PLAN_WITHOUT_STORIES_FILE
+PROMPT=$(envsubst < "$DIR/../prompt-templates/revise-plan.md")
+
+claude "$PROMPT"

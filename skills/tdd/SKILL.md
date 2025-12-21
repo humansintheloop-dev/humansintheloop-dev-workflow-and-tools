@@ -19,6 +19,15 @@ It enforces honesty, prevents cheating, and minimizes token usage by focusing so
 4. **Only transition between TDD states when the required test evidence has been shown.**
 5. **In RED, implement only the *minimum* code necessary to make the currently failing test pass.**
 6. **Every message must begin with a TDD state prefix**, and the prefix must match the actual test evidence.
+7. **Promote the Dependency Rule**
+   If making a failing test for the current SUT pass requires changing a dependency,
+   you must stop and promote that dependency to be the SUT.
+   Write a failing test for the dependency, make it pass, then return to the original SUT.
+
+   Clarification:
+    - Modifying a dependency counts as production code.
+    - Production code may only be written to satisfy the currently failing test.
+    - Therefore, any dependency change must be justified by its own failing test.
 
 ---
 

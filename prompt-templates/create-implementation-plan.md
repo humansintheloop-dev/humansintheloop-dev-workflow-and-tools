@@ -41,7 +41,7 @@ Structure of the plan:
     - Use the `idea-to-code:tdd` skill when implementing code
     - NEVER write production code (`src/main/java/**/*.java`) without first writing a failing test (`src/test/java/**/*.java`)
     - Before using the Write tool on any `.java` file in `src/main/`, ask: "Do I have a failing test for this?" If not, write the test first.
-    - When building something that requires scripting, never run the scripts or ad-hoc docker/curl/test commands directly. Always update the test script first, then run the test script.
+    - When building something that requires scripting, never run the scripts or ad-hoc docker/curl/test commands that modify the state (e.g. start/stop containers etc.) directly. Always update the test script first, then run the test script. After the test script fails, you can inspect run ad-hoc commands to inspect the current state (e.g. examine logs, check container status, etc.) but do NOT modify the system state outside of the test script.
     - When task direction changes mid-implementation, return to TDD PLANNING state and write a test first
   - ALWAYS after completing a task, when the tests pass and the task has been marked as complete, commit the changes.
 

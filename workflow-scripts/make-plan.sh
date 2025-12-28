@@ -11,4 +11,9 @@ _validate_spec
 export IDEA_FILE SPEC_FILE
 PROMPT=$(envsubst < "$DIR/../prompt-templates/create-implementation-plan.md")
 
-claude "$PROMPT"
+SESSION_ID=$(_session_id)
+if [ -n "$SESSION_ID" ]; then
+    claude --resume "$SESSION_ID" "$@" "$PROMPT"
+else
+    claude "$@" "$PROMPT"
+fi

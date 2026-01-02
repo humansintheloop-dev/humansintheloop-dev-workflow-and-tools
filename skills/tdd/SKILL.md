@@ -94,21 +94,29 @@ Make the failing test pass using the *minimum* implementation.
 ---
 
 ## 🟢 TDD: GREEN
-**Goal:**  
-The behavior is now correct; prepare safe refactoring.
+**Goal:**
+The behavior is now correct; evaluate and prepare safe refactoring.
 
-**Allowed actions:**  
-- Identify safe refactorings  
-- Explain improvement intent  
-- Run tests as needed  
+**Allowed actions:**
+- Re-read the actual code changes made in this cycle
+- Identify safe refactorings
+- Explain improvement intent
+- Run tests as needed
 
-**Pre-conditions to enter REFACTOR:**  
-- All tests currently pass  
-- Recent test output shown  
-- A refactoring goal identified  
+**Required Evaluation (before any transition):**
+1. **Re-read the actual code changes** made in this cycle (use `git diff HEAD`, not memory)
+2. **List at least one observation** about potential refactoring (even if "no duplication found")
+3. **If duplication exists**, either refactor it OR note it as intentional with justification
 
-**Transition:**  
-- If refactoring is needed → `REFACTOR`  
+Skipping directly from GREEN to VERIFY without this explicit evaluation is a TDD violation.
+
+**Pre-conditions to enter REFACTOR:**
+- All tests currently pass
+- Recent test output shown
+- A refactoring goal identified
+
+**Transition:**
+- If refactoring is needed → `REFACTOR`
 - If no refactoring needed → `VERIFY`
 
 ---

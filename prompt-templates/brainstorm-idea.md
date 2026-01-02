@@ -33,10 +33,21 @@ Important constraints:
 Process:
 
 - If the discussion file already exists, read it first to understand what has already been covered.
+- **Analyze the codebase first** - Before asking questions about current system state, explore the code to understand existing architecture, entities, and relationships. Reserve questions for:
+  - User preferences and decisions
+  - Requirements clarification
+  - Business context not observable in code
+  - Priorities and constraints
+- **Derive obvious conclusions** - Before asking a question, verify it cannot be derived from prior answers. If the answer follows logically from established decisions, state the conclusion and move on. Reserve questions for genuinely ambiguous or preference-based decisions.
 - Ask me one question at a time so we can develop a thorough, step-by-step understanding of the idea.
 - Each question should build on my previous answers.
 - Define sensible and easily changeable default assumptions so we can focus on the most important aspects.
 - If there are multiple options for a question, list them as A, B, C, D, and I will choose one.
+- **Proactively identify downstream impacts** - When analyzing architectural changes:
+  1. Trace event flows - which services consume events from affected components?
+  2. Identify cross-cutting concerns - authorization, auditing, monitoring, caching
+  3. Check for CQRS replicas - what other services maintain replicas of affected data?
+  4. Review integration points - APIs, messaging, shared data
 - Continue until you believe you have enough information to create a developer-ready specification and a steel-thread-ready plan.
 
 Remember: only one question at a time.

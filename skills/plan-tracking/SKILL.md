@@ -61,3 +61,14 @@ When committing completed tasks:
 1. Stage the implementation changes
 2. Stage the updated plan file (with checkbox marked)
 3. Commit together so the commit reflects both the work done and the progress tracked
+
+## Commit Verification for Plan Files
+
+Before running `git commit`, always:
+1. Run `git status` from the **repository root** (not a subdirectory)
+2. Verify the plan file appears in "Changes to be committed"
+3. If the plan file is not staged, explicitly add it: `git add path/to/plan.md`
+
+When committing from a subdirectory:
+- Use absolute paths or navigate to repo root first
+- Example: `git add /path/to/plan.md` or `cd /repo/root && git add .`

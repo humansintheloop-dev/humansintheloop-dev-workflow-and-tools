@@ -22,6 +22,10 @@ A. If it is a **user-facing feature**, produce a PRD-style spec that includes:
    - Problem statement and goals
    - In-scope and out-of-scope
    - High-level functional requirements
+   - **Security requirements** - For each endpoint/operation, specify:
+     - Who can perform this operation (role/persona)
+     - What authorization checks are required
+     - Any additional constraints (e.g., can only operate on own resources)
    - Non-functional requirements (UX, performance, reliability, etc.)
    - Success metrics
    - Epics and user stories
@@ -62,3 +66,16 @@ Output:
 - Save the specification as a markdown document in the same directory as the idea file.
 - Use the naming convention:
   - For the idea file '<idea-name>-idea.md', call the specification file '<idea-name>-spec.md'.
+
+## Specification Update Guidelines
+
+When modifying a specification after initial creation:
+
+1. Add or update the `## Change History` section at the end of the document
+2. For each change, record:
+   - Date of change
+   - Brief description of what changed
+   - Rationale for the change
+3. Format: `### YYYY-MM-DD: <brief description>`
+
+This ensures specifications maintain an audit trail of how requirements evolved.

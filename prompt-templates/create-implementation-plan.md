@@ -68,6 +68,16 @@ For infrastructure/scripting steel threads:
 - Task 1.2: stepca service starts and becomes healthy
 ```
 
+## Task Granularity Guidelines
+
+When defining tasks:
+
+- **Meaningful tasks** represent independently testable, deliverable units of functionality
+- **NOT standalone tasks**: DTOs, helper classes, utility methods, configuration files - these are implementation details of larger tasks
+- **Good task**: "Implement LocationController REST endpoint" (includes creating any DTOs, request/response objects needed)
+- **Bad task**: "Create CreateLocationRequest DTO" (too granular, not independently valuable)
+- A good heuristic: Would you make a separate git commit for just this task? If not, it's probably not a standalone task.
+
 ## TDD Enforcement
 
 Steel thread and task structure:

@@ -31,6 +31,19 @@ It enforces honesty, prevents cheating, and minimizes token usage by focusing so
 
 ---
 
+## TDD Layer Discipline
+
+When testing layer A that mocks layer B:
+- Layer B only needs a **method signature** (stub returning null or throwing UnsupportedOperationException)
+- Do NOT implement Layer B's logic until you write Layer B's tests
+- Ask: "Is the service/dependency mocked in this test?" If yes, only a stub is needed.
+
+Example:
+- Controller test mocks CustomerService → CustomerService.createLocationForCustomer() should be `throw new UnsupportedOperationException("implement me")`
+- CustomerService test (separate task) will drive the actual implementation
+
+---
+
 ## Evidence Format (Required)
 
 Whenever tests are mentioned:

@@ -13,17 +13,20 @@ For each issue file:
 1. **Read the issue** to understand the problem and suggested improvement
 
 2. **Evaluate relevance**: Does it suggest an improvement to a skill, prompt or config-file in this project?
-   - If YES: proceed to step 3
-   - If NO: skip this issue (leave it active for manual review)
+   - If YES: add `type: hitl` to the frontmatter and proceed to step 3
+   - If NO: add `type: unknown` to the frontmatter and skip to the next issue
 
 3. **Incorporate the change**:
    - Find the relevant skill file (in `skills/`) or prompt template (in `prompt-templates/`)
    - Apply the suggested improvement
    - Use your judgment to adapt the suggestion if needed
 
-4. **Commit the change**:
+4. **Commit the change immediately**:
    - Use the `idea-to-code:commit-guidelines` skill for the commit message format
    - Commit the changes with a message describing the improvement
+   - **IMPORTANT**: Commit EACH change before moving to the next issue
+   - Do NOT batch multiple changes into a single commit
+   - Each commit should represent one logical improvement from one issue
 
 5. **Update the issue**:
    - Change `status: active` to `status: resolved` in the frontmatter
@@ -35,5 +38,6 @@ For each issue file:
 ## Important
 
 - Only modify issues that suggest improvements to THIS project (genai-development-workflow)
-- If an issue is unclear or the suggestion doesn't apply, leave it as active
+- If an issue is unclear or the suggestion doesn't apply, mark it with `type: unknown`
+- Issues marked `type: unknown` will be skipped in future runs
 - Summarize what you did for each issue reviewed

@@ -12,11 +12,20 @@ if [ ! -d "$HITL_TRACKING_DIR" ]; then
 fi
 
 # Find active issues created this year (2026-*) across all projects
+# Filter out issues that have already been marked as type: unknown
 CURRENT_YEAR=$(date +%Y)
-ACTIVE_ISSUES=$(find "$HITL_TRACKING_DIR" -path "*/issues/active/${CURRENT_YEAR}-*.md" -type f 2>/dev/null | sort)
+ALL_ISSUES=$(find "$HITL_TRACKING_DIR" -path "*/issues/active/${CURRENT_YEAR}-*.md" -type f 2>/dev/null | sort)
+
+ACTIVE_ISSUES=""
+for issue in $ALL_ISSUES; do
+    if ! grep -q "^type: unknown" "$issue" 2>/dev/null; then
+        ACTIVE_ISSUES="$ACTIVE_ISSUES $issue"
+    fi
+done
+ACTIVE_ISSUES=$(echo "$ACTIVE_ISSUES" | xargs)
 
 if [ -z "$ACTIVE_ISSUES" ]; then
-    echo "No active issues found for $CURRENT_YEAR"
+    echo "No active issues found for $CURRENT_YEAR (excluding type: unknown)"
     exit 0
 fi
 

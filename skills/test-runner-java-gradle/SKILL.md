@@ -100,16 +100,26 @@ When tests cannot run (environment error):
 
 ## 5. Rules for the Coding Agent
 
-1. The agent must always run tests using exactly: `./gradlew test`  
-2. The agent must not guess test results from reading code  
-3. The agent must never claim tests passed without real `./gradlew test` output  
-4. The agent must parse XML under `build/test-results/test` to identify failing tests  
-5. If Gradle cannot be run, the agent must enter BLOCKED and request user-provided output  
+1. The agent must always run tests using exactly: `./gradlew test`
+2. The agent must not guess test results from reading code
+3. The agent must never claim tests passed without real `./gradlew test` output
+4. The agent must parse XML under `build/test-results/test` to identify failing tests
+5. If Gradle cannot be run, the agent must enter BLOCKED and request user-provided output
 6. The agent must not move to GREEN, VERIFY, or COMPLETE without real evidence
+
+## 6. Test Failure Investigation
+
+NEVER ignore test failures. When tests fail:
+
+- **STOP** and investigate the cause before proceeding
+- **Do NOT assume** the cause based on error message alone (e.g., "TimeoutException means Kafka isn't running")
+- **Do NOT dismiss** failures as "infrastructure not running" without verification
+- **Do NOT proceed** with commits or other work until failures are understood and resolved
+- **Check test infrastructure** - many tests use testcontainers which auto-start dependencies
 
 ---
 
-## 6. Summary
+## 7. Summary
 
 - Tests are JUnit 5 `@Test` methods in Java only  
 - Tests are executed exclusively via `./gradlew test` on macOS  

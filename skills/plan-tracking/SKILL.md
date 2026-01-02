@@ -13,14 +13,23 @@ When working from a plan file (markdown file with task checkboxes), follow these
 
 Update the plan file checkboxes (`- [ ]` to `- [x]`) immediately after completing each task. Do NOT rely on internal tracking (like TodoWrite) as a substitute for updating the actual plan file.
 
+## Review Plans for Technical Correctness
+
+Before implementing a task from the plan, review its implementation details for technical flaws:
+
+- Apply fundamental engineering principles (e.g., uniqueness constraints belong at database level, not application level)
+- If the plan specifies a flawed approach, fix it before proceeding
+- Do not blindly follow implementation details that violate best practices
+
 ## Workflow
 
 For each task in the plan:
 
 1. Read the task from the plan file
-2. Implement the task (write test, implement code, verify)
-3. **Immediately update the plan file** - change `- [ ]` to `- [x]`
-4. Continue to the next task
+2. **Review for technical correctness** before implementing
+3. Implement the task (write test, implement code, verify)
+4. **Immediately update the plan file** - change `- [ ]` to `- [x]`
+5. Continue to the next task
 
 ## Why This Matters
 

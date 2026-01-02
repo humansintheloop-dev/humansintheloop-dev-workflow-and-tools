@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew:*)",
+      "Bash(docker build:*)",
+      "Bash(docker compose build:*)",
+      "Bash(docker compose logs:*)",
+      "Bash(docker compose ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker ps:*)",
+      "Bash(find:*)",
+      "Bash(git add:*)",
+      "Bash(git checkout:*)",
+      "Bash(git commit:*)",
+      "Bash(git init:*)",
+      "Bash(git reset:*)",
+      "Bash(git show:*)",
+      "Bash(git stash:*)",
+      "Bash(go build:*)",
+      "Bash(go list:*)",
+      "Bash(go mod tidy:*)",
+      "Bash(go test:*)",
+      "Bash(gradle wrapper:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(rmdir:*)",
+      "Skill(idea-to-code:*)"
+    ],
+    "deny": [
+      "Bash(docker compose down:*)",
+      "Bash(docker compose up:*)",
+      "Bash(docker rm:*)"
+    ],
+    "ask": []
+  },
+  "terminalCompletion": false
+}

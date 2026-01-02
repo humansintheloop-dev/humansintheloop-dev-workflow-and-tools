@@ -44,6 +44,22 @@ Example:
 
 ---
 
+## Outside-In Development
+
+Use outside-in development: start from the external interface and work inward.
+
+**Why:** Every piece of code should be immediately callable and tested from an external perspective. Avoid creating "infrastructure only" code to be connected later.
+
+**Correct order for implementing a feature:**
+1. Write test for the external interface (command handler, REST endpoint)
+2. Implement the handler/controller, which calls the service method
+3. Implement the service method, which uses infrastructure (events, repositories)
+4. Create infrastructure as needed to satisfy the test
+
+**Anti-pattern:** Creating event publishing code or domain methods without a caller (no REST endpoint or command handler to invoke them). Every method should have an entry point that exercises it.
+
+---
+
 ## Evidence Format (Required)
 
 Whenever tests are mentioned:

@@ -24,3 +24,7 @@ Before running any Bash command, ask: "Is there a specialized tool for this?"
 - Read files → Read (NOT cat/head/tail)
 
 The specialized tools are faster, have correct permissions, and provide better output formatting.
+
+## Git Commands
+
+Always run git commands from the project root directory. If you need to operate on the repository, cd to the root directory first rather than using `git -C`. This prevents accidentally committing files outside the project root.

@@ -121,6 +121,16 @@ NEVER ignore test failures. When tests fail:
 - **Do NOT proceed** with commits or other work until failures are understood and resolved
 - **Check test infrastructure** - many tests use testcontainers which auto-start dependencies
 
+### After Fixing a Failing Test
+
+When a test fails (whether from pre-commit hook, CI, or manual run):
+
+1. Fix the test or the code causing the failure
+2. Run the specific failing test to verify the fix
+3. Only after the test passes, proceed with staging and committing
+
+Never assume a fix is correct without running the test to verify.
+
 ---
 
 ## 7. Summary

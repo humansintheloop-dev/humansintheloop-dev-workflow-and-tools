@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: precommit-check
+        name: Run precommit.sh checks
+        entry: ./precommit.sh
+        language: script
+        pass_filenames: false
+        always_run: true

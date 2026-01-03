@@ -60,6 +60,16 @@ Do not use output filtering with Gradle commands (no `| tail`, `| head`, or `2>&
 - `./gradlew test` only runs unit tests and misses integration/component tests
 - NEVER just compile tests to verify they work - always run them
 
+### Test Coverage for Refactoring
+
+When performing refactoring tasks (renaming classes, methods, moving files, changing signatures), always run the full test suite (`./gradlew check`) without excluding any test categories. Refactoring can break:
+
+- Integration tests that reference renamed classes in configuration
+- Component tests that verify service interactions
+- End-to-end tests that may have references to renamed elements
+
+Only exclude test categories when explicitly instructed by the user or when debugging a specific test failure.
+
 Exit code meaning:
 - Exit code 0 → all tests passed
 - Non-zero exit code → tests failed or tests could not run due to build errors

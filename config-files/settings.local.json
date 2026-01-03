@@ -7,6 +7,7 @@
       "Bash(docker compose logs:*)",
       "Bash(docker compose ps:*)",
       "Bash(docker exec:*)",
+      "Bash(docker info:*)",
       "Bash(docker inspect:*)",
       "Bash(docker logs:*)",
       "Bash(docker ps:*)",
@@ -28,6 +29,7 @@
       "Bash(mkdir:*)",
       "Bash(mv:*)",
       "Bash(rmdir:*)",
+      "Bash(tree:*)",
       "Skill(idea-to-code:*)"
     ],
     "deny": [

@@ -39,11 +39,15 @@ No Kotlin and no JUnit 4 are present in this project.
 
 ## 2. Running Tests (macOS only)
 
-When the TDD skill instructs the agent to “run the tests”, the agent must execute:
+When the TDD skill instructs the agent to "run the tests", the agent must execute:
 
 `./gradlew test`
 
 This command must be run from the project root (the directory containing `gradlew`).
+
+### Gradle Daemon
+
+Do not use the `--no-daemon` flag with Gradle commands unless specifically troubleshooting daemon issues. The Gradle daemon improves build performance by keeping the JVM warm between builds.
 
 Exit code meaning:
 - Exit code 0 → all tests passed

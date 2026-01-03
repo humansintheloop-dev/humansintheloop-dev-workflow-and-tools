@@ -53,6 +53,13 @@ Do not use the `--no-daemon` flag with Gradle commands unless specifically troub
 
 Do not use output filtering with Gradle commands (no `| tail`, `| head`, or `2>&1` redirection). Gradle's console output is already concise - just task names and pass/fail status. Verbose test output (Hibernate SQL, Spring Boot logs, etc.) is captured in `TEST-*.xml` files, not streamed to the console.
 
+### Test Verification Commands
+
+- Use `./gradlew check` to verify changes - this runs all test types (unit, integration, component tests)
+- Use `./gradlew test` only when specifically running unit tests in a TDD loop
+- `./gradlew test` only runs unit tests and misses integration/component tests
+- NEVER just compile tests to verify they work - always run them
+
 Exit code meaning:
 - Exit code 0 → all tests passed
 - Non-zero exit code → tests failed or tests could not run due to build errors

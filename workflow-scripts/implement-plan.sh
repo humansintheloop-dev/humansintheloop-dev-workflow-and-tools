@@ -18,9 +18,4 @@ fi
 export IDEA_FILE SPEC_FILE PLAN_WITHOUT_STORIES_FILE SPECIFIC_TASK
 PROMPT=$(envsubst < "$DIR/../prompt-templates/implement-plan.md")
 
-SESSION_ID=$(_session_id)
-if [ -n "$SESSION_ID" ]; then
-    claude --resume "$SESSION_ID" "$@" "$PROMPT"
-else
-    claude "$@" "$PROMPT"
-fi
+claude "$@" "$PROMPT"

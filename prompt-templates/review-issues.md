@@ -17,9 +17,10 @@ For each issue file:
    - If NO: add `type: unknown` to the frontmatter and skip to the next issue
 
 3. **Incorporate the change**:
-   - Find the relevant skill file (in `skills/`) or prompt template (in `prompt-templates/`)
+   - Find the relevant skill file (in `skills/`) or prompt template (in `prompt-templates/`) or CLAUDE.md (in `config-files/`)
    - Apply the suggested improvement
    - Use your judgment to adapt the suggestion if needed
+   - In particular, carefully consider whether the change should be applied to CLAUDE.md, a new or existing skill, or prompt template
 
 4. **Commit the change immediately**:
    - Use the `idea-to-code:commit-guidelines` skill for the commit message format

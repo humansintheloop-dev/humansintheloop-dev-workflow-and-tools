@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 // Current session state
 let currentSessionPath = null;
@@ -378,15 +379,46 @@ function formatToolCall(toolName, toolInput) {
 }
 
 /**
+ * Captures git commit info (SHA and remote URL) from the current directory
+ * @param {string} workspaceDir - The workspace directory path
+ * @returns {Object|null} Object with sha and remote, or null on error
+ */
+function captureCommitInfo(workspaceDir) {
+  try {
+    const sha = execSync('git rev-parse HEAD', {
+      cwd: workspaceDir,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
+
+    let remote = null;
+    try {
+      remote = execSync('git remote get-url origin', {
+        cwd: workspaceDir,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      }).trim();
+    } catch (remoteError) {
+      // No remote configured, that's okay
+    }
+
+    return { sha, remote };
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
  * Handles the PostToolUse hook event
  * @param {Object} hookInput - The hook input data
  * @param {string} hookInput.session_id - The Claude session ID
  * @param {string} hookInput.tool_name - The name of the tool
  * @param {Object} hookInput.tool_input - The tool input parameters
+ * @param {Object} hookInput.tool_response - The tool response (includes success field)
  * @param {string} hookInput.cwd - The current working directory
  */
 function handlePostToolUse(hookInput) {
-  const { session_id, tool_name, tool_input, cwd } = hookInput;
+  const { session_id, tool_name, tool_input, tool_response, cwd } = hookInput;
 
   // Find the project root (in case cwd has changed during the session)
   const projectRoot = findProjectRoot(cwd);
@@ -418,6 +450,25 @@ function handlePostToolUse(hookInput) {
   const formatted = `**Tools Used:**\n- ${toolSummary}\n\n`;
   appendToSession(formatted);
   debugLog(projectRoot, 'Tool call appended successfully');
+
+  // Track git commits
+  if (tool_name === 'Bash' && tool_input?.command && /git\s+commit/.test(tool_input.command)) {
+    if (tool_response?.success) {
+      const gitInfo = captureCommitInfo(projectRoot);
+      if (gitInfo) {
+        let commitFormatted = `**Git Commit:**\n- SHA: ${gitInfo.sha}\n`;
+        if (gitInfo.remote) {
+          commitFormatted += `- Repository: ${gitInfo.remote}\n`;
+        }
+        commitFormatted += '\n';
+        appendToSession(commitFormatted);
+        debugLog(projectRoot, 'Git commit info appended successfully');
+      }
+    } else {
+      appendToSession('**Git Commit Failed**\n\n');
+      debugLog(projectRoot, 'Git commit failure recorded');
+    }
+  }
 }
 
 /**
@@ -552,6 +603,7 @@ module.exports = {
   formatUserPrompt,
   formatClaudeResponse,
   formatToolCall,
+  captureCommitInfo,
   parseTranscript,
   handleUserPromptSubmit,
   handlePostToolUse,

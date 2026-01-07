@@ -653,5 +653,115 @@ test('getOrCreateSession returns null when sessionId is missing', () => {
   }
 });
 
+// --- Tests for git commit tracking ---
+
+test('captureCommitInfo returns SHA and remote in a git repo', () => {
+  // This test runs in the project root which is a git repo
+  const projectRoot = path.join(__dirname, '..');
+  const result = sessionRecorder.captureCommitInfo(projectRoot);
+
+  assert.ok(result, 'Should return commit info');
+  assert.ok(result.sha, 'Should have sha property');
+  assert.ok(result.sha.match(/^[a-f0-9]{40}$/), 'SHA should be a 40-char hex string');
+  // remote may or may not exist depending on repo setup
+});
+
+test('captureCommitInfo returns null for non-git directory', () => {
+  // Use /tmp which is outside any git repo
+  const tempDir = fs.mkdtempSync(path.join('/tmp', 'session-recorder-test-'));
+  try {
+    const result = sessionRecorder.captureCommitInfo(tempDir);
+    assert.strictEqual(result, null, 'Should return null for non-git directory');
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('handlePostToolUse records git commit SHA on successful commit', () => {
+  sessionRecorder.resetSession();
+
+  // Create session
+  sessionRecorder.handleUserPromptSubmit({
+    session_id: 'test-git-commit-success',
+    cwd: TEST_DIR,
+    hook_event_name: 'UserPromptSubmit',
+    prompt: 'Commit the changes'
+  });
+
+  // Simulate successful git commit (tool_response.success = true)
+  // Use the actual project root so captureCommitInfo works
+  const projectRoot = path.join(__dirname, '..');
+  sessionRecorder.handlePostToolUse({
+    session_id: 'test-git-commit-success',
+    cwd: projectRoot,
+    hook_event_name: 'PostToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'git commit -m "Test commit"' },
+    tool_response: { success: true }
+  });
+
+  const sessionPath = sessionRecorder.getCurrentSessionPath();
+  const content = fs.readFileSync(sessionPath, 'utf8');
+
+  assert.ok(content.includes('**Git Commit:**'), 'Should contain Git Commit label');
+  assert.ok(content.includes('- SHA:'), 'Should contain SHA');
+  assert.ok(content.match(/[a-f0-9]{40}/), 'Should contain a valid SHA');
+});
+
+test('handlePostToolUse records git commit failure', () => {
+  sessionRecorder.resetSession();
+
+  // Create session
+  sessionRecorder.handleUserPromptSubmit({
+    session_id: 'test-git-commit-failure',
+    cwd: TEST_DIR,
+    hook_event_name: 'UserPromptSubmit',
+    prompt: 'Commit the changes'
+  });
+
+  // Simulate failed git commit (tool_response.success = false)
+  sessionRecorder.handlePostToolUse({
+    session_id: 'test-git-commit-failure',
+    cwd: TEST_DIR,
+    hook_event_name: 'PostToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'git commit -m "Test commit"' },
+    tool_response: { success: false }
+  });
+
+  const sessionPath = sessionRecorder.getCurrentSessionPath();
+  const content = fs.readFileSync(sessionPath, 'utf8');
+
+  assert.ok(content.includes('**Git Commit Failed**'), 'Should contain Git Commit Failed label');
+});
+
+test('handlePostToolUse does not record git info for non-commit commands', () => {
+  sessionRecorder.resetSession();
+
+  // Create session
+  sessionRecorder.handleUserPromptSubmit({
+    session_id: 'test-non-commit',
+    cwd: TEST_DIR,
+    hook_event_name: 'UserPromptSubmit',
+    prompt: 'Run git status'
+  });
+
+  // git status is not a commit
+  sessionRecorder.handlePostToolUse({
+    session_id: 'test-non-commit',
+    cwd: TEST_DIR,
+    hook_event_name: 'PostToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'git status' },
+    tool_response: { success: true }
+  });
+
+  const sessionPath = sessionRecorder.getCurrentSessionPath();
+  const content = fs.readFileSync(sessionPath, 'utf8');
+
+  assert.ok(!content.includes('**Git Commit:**'), 'Should not contain Git Commit label');
+  assert.ok(!content.includes('**Git Commit Failed**'), 'Should not contain Git Commit Failed');
+});
+
 // Run all tests
 runTests();

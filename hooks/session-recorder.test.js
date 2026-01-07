@@ -688,7 +688,7 @@ test('handlePostToolUse records git commit SHA on successful commit', () => {
     prompt: 'Commit the changes'
   });
 
-  // Simulate successful git commit (tool_response.success = true)
+  // Simulate successful git commit (Bash tool_response has stdout/stderr/interrupted)
   // Use the actual project root so captureCommitInfo works
   const projectRoot = path.join(__dirname, '..');
   sessionRecorder.handlePostToolUse({
@@ -697,7 +697,7 @@ test('handlePostToolUse records git commit SHA on successful commit', () => {
     hook_event_name: 'PostToolUse',
     tool_name: 'Bash',
     tool_input: { command: 'git commit -m "Test commit"' },
-    tool_response: { success: true }
+    tool_response: { stdout: '[master abc123] Test commit', stderr: '', interrupted: false }
   });
 
   const sessionPath = sessionRecorder.getCurrentSessionPath();
@@ -719,14 +719,14 @@ test('handlePostToolUse records git commit failure', () => {
     prompt: 'Commit the changes'
   });
 
-  // Simulate failed git commit (tool_response.success = false)
+  // Simulate failed git commit (stderr has error message)
   sessionRecorder.handlePostToolUse({
     session_id: 'test-git-commit-failure',
     cwd: TEST_DIR,
     hook_event_name: 'PostToolUse',
     tool_name: 'Bash',
     tool_input: { command: 'git commit -m "Test commit"' },
-    tool_response: { success: false }
+    tool_response: { stdout: '', stderr: 'nothing to commit, working tree clean', interrupted: false }
   });
 
   const sessionPath = sessionRecorder.getCurrentSessionPath();
@@ -753,7 +753,7 @@ test('handlePostToolUse does not record git info for non-commit commands', () =>
     hook_event_name: 'PostToolUse',
     tool_name: 'Bash',
     tool_input: { command: 'git status' },
-    tool_response: { success: true }
+    tool_response: { stdout: 'On branch master', stderr: '', interrupted: false }
   });
 
   const sessionPath = sessionRecorder.getCurrentSessionPath();

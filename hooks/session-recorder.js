@@ -453,7 +453,9 @@ function handlePostToolUse(hookInput) {
 
   // Track git commits
   if (tool_name === 'Bash' && tool_input?.command && /git\s+commit/.test(tool_input.command)) {
-    if (tool_response?.success) {
+    // Bash tool_response has: stdout, stderr, interrupted (not a success field)
+    const bashSuccess = tool_response && !tool_response.interrupted && !tool_response.stderr;
+    if (bashSuccess) {
       const gitInfo = captureCommitInfo(projectRoot);
       if (gitInfo) {
         let commitFormatted = `**Git Commit:**\n- SHA: ${gitInfo.sha}\n`;

@@ -17,6 +17,7 @@
   ],
   "skills": [
     "./skills/commit-guidelines",
+    "./skills/debugging-ci-failures",
     "./skills/dockerfile-guidelines",
     "./skills/file-organization",
     "./skills/incremental-development",

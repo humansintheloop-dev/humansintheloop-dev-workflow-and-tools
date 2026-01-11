@@ -55,6 +55,17 @@ Use `./gradlew build`, not `./gradlew clean build`. Gradle's incremental build c
 - Explicitly debugging build cache issues
 - User specifically requests it
 
+### Gradle Wrapper
+
+When creating a standalone Gradle project, use the `gradle wrapper` command to generate wrapper files instead of copying them from another project:
+
+```bash
+cd new-project-directory
+gradle wrapper --gradle-version 8.11.1
+```
+
+This is cleaner than copying `gradle/`, `gradlew`, and `gradlew.bat` files and avoids permission issues.
+
 ### Output Filtering
 
 Do not use output filtering with Gradle commands (no `| tail`, `| head`, or `2>&1` redirection). Gradle's console output is already concise - just task names and pass/fail status. Verbose test output (Hibernate SQL, Spring Boot logs, etc.) is captured in `TEST-*.xml` files, not streamed to the console.

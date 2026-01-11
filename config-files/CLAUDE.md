@@ -4,6 +4,11 @@
 
 IMPORTANT: Use simple commands that you have permission to execute. Avoid complex commands that may fail due to permission issues.
 
+When copying or moving files:
+- Avoid compound commands with `&&` - run commands separately
+- Avoid wildcard patterns (`*.java`) - copy files individually
+- Single-file operations are more reliable with Bash permission system
+
 ## Skills
 
 Always invoke the relevant skill before performing these actions:

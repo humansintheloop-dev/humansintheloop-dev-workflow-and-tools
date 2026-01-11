@@ -38,10 +38,9 @@ The specialized tools are faster, have correct permissions, and provide better o
 
 Always run git commands from the project root directory. If you need to operate on the repository, cd to the root directory first rather than using `git -C`. This prevents accidentally committing files outside the project root.
 
-## Filing Issue Reports
+## Pattern-Based Fixes
 
-When asked to file an issue about a mistake:
-1. File the issue report documenting the lesson learned
-2. Assess current state - if the work is functional, don't undo it
-3. Only "fix" if explicitly asked or if the current state is broken
-4. Ask for clarification if unsure whether to continue, undo, or just document
+When fixing issues caused by naming conventions or patterns:
+1. Search the entire codebase for similar occurrences before making any changes
+2. Fix ALL instances in a single commit
+3. Never commit partial fixes for pattern-based problems

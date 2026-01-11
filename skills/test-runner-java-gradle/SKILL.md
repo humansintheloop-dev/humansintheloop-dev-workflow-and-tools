@@ -49,6 +49,12 @@ This command must be run from the project root (the directory containing `gradle
 
 Do not use the `--no-daemon` flag with Gradle commands unless specifically troubleshooting daemon issues. The Gradle daemon improves build performance by keeping the JVM warm between builds.
 
+### Avoid Clean Builds
+
+Use `./gradlew build`, not `./gradlew clean build`. Gradle's incremental build correctly detects changes. Only use `clean` when:
+- Explicitly debugging build cache issues
+- User specifically requests it
+
 ### Output Filtering
 
 Do not use output filtering with Gradle commands (no `| tail`, `| head`, or `2>&1` redirection). Gradle's console output is already concise - just task names and pass/fail status. Verbose test output (Hibernate SQL, Spring Boot logs, etc.) is captured in `TEST-*.xml` files, not streamed to the console.

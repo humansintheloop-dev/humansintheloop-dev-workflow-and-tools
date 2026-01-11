@@ -49,3 +49,11 @@ claude_session_id: unknown
 ```
 
 6. Confirm to user: "Report captured: [absolute-path-to-file]"
+
+## After Filing the Report
+
+When asked to file an issue about a mistake:
+1. File the issue report documenting the lesson learned
+2. Assess current state - if the work is functional, don't undo it
+3. Only "fix" if explicitly asked or if the current state is broken
+4. Ask for clarification if unsure whether to continue, undo, or just document

@@ -38,6 +38,14 @@ For each task in the plan:
 4. **Immediately update the plan file** - change `- [ ]` to `- [x]`
 5. Continue to the next task
 
+## Continue Without Stopping
+
+When implementing a documented plan:
+- Continue through all phases without stopping for confirmation
+- Only pause if blocked, uncertain about requirements, or encountering errors
+- The plan itself serves as the user's approval to proceed
+- Summarize progress periodically but don't ask "should I continue?"
+
 ## Why This Matters
 
 - The plan file is visible to the user and persists across sessions

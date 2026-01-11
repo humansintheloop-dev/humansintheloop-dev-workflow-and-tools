@@ -48,6 +48,29 @@ When moving files during refactoring:
 3. Delete the old empty directories immediately
 4. Don't ask - empty directories after a move serve no purpose
 
+## Refactoring Checklist
+
+Before moving source files in a refactoring:
+
+### 1. Inventory ALL Source Directories
+- Check for `src/main/java`, `src/test/java`, AND custom source sets
+- Look for `src/integrationTest`, `src/integration-test`, `src/componentTest`, `src/component-test`
+- Check build.gradle for plugin-defined directories (e.g., Eventuate test plugins)
+
+### 2. Move Complete Modules
+- Move main sources AND all test sources together (unit, integration, component tests)
+- A module is incomplete without its tests
+- Verify test count before and after refactoring matches
+
+**IMPORTANT**: This is one situation where `./gradlew build` passing is insufficient. You must verify that each test class has a corresponding `TEST-*.xml` file in the correct build directory. Tests may compile but not run if source sets are misconfigured.
+
+### 3. Transfer ALL Dependencies
+When converting single-module to multi-module:
+- Run `git show HEAD:path/to/build.gradle` to capture original configuration
+- List ALL dependency configurations (implementation, testImplementation, integrationTestImplementation, componentTestImplementation, etc.)
+- For each dependency, determine which subproject needs it
+- Verify build works BEFORE and AFTER refactoring with the same test command
+
 ## When to Use Write
 
 Reserve the Write tool for:

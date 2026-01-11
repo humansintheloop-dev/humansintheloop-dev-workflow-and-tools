@@ -66,6 +66,12 @@ Do not use output filtering with Gradle commands (no `| tail`, `| head`, or `2>&
 - `./gradlew test` only runs unit tests and misses integration/component tests
 - NEVER just compile tests to verify they work - always run them
 
+### Definition of Done for Code Changes
+
+For any code modification task (refactoring, bug fixes, new features):
+- Compilation passing is a prerequisite, not success
+- Success = `./gradlew build` passes (includes all tests)
+
 ### Test Coverage for Refactoring
 
 When performing refactoring tasks (renaming classes, methods, moving files, changing signatures), always run the full test suite (`./gradlew check`) without excluding any test categories. Refactoring can break:

@@ -13,6 +13,13 @@ When working from a plan file (markdown file with task checkboxes), follow these
 
 Update the plan file checkboxes (`- [ ]` to `- [x]`) immediately after completing each task. Do NOT rely on internal tracking (like TodoWrite) as a substitute for updating the actual plan file.
 
+## Migration Planning
+
+When creating migration or upgrade plans for existing codebases:
+1. Before describing any file/directory creation tasks, verify whether the target already exists using Glob or Read
+2. Use precise language: "Transform" or "Convert" for existing items, "Create" only for genuinely new items
+3. Include a "Current State" section in plans that documents what exists before transformation
+
 ## Review Plans for Technical Correctness
 
 Before implementing a task from the plan, review its implementation details for technical flaws:

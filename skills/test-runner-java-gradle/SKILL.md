@@ -76,6 +76,15 @@ Exit code meaning:
 
 The console output of Gradle indicates only overall success or failure, not individual test results.
 
+### Build Success Is Authoritative
+
+When `./gradlew build` succeeds (BUILD SUCCESSFUL), that is authoritative proof that all tests passed. Do not:
+- Read TEST*.xml files to "verify" results
+- Parse build/reports for confirmation
+- Run additional commands to check test outcomes
+
+TEST*.xml and HTML reports are for human debugging, not for Claude verification.
+
 ---
 
 ## 3. Detailed Test Results (XML)

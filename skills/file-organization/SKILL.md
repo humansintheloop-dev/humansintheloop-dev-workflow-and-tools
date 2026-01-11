@@ -9,20 +9,23 @@ When reorganizing files, moving files, or renaming files, follow these guideline
 
 ## Moving/Renaming Files
 
-Use `mv` via Bash instead of Write + delete:
+Use `git mv` or `mv` via Bash instead of Write + delete:
 
 ```bash
-mv old/path/File.java new/path/File.java
+git mv old/path/File.java new/path/File.java
 ```
 
 Then use Edit to update any necessary content (e.g., package declarations).
 
 ## Why This Matters
 
+- Preserves git history - changes can be tracked across renames
 - Simpler: One command instead of multiple tool calls
 - Preserves file metadata (creation time, permissions)
 - Conceptually cleaner: A move operation should be expressed as a move
 - Less error-prone: No risk of forgetting to delete the old file
+
+**IMPORTANT**: Never recreate files from scratch when the original exists. Move the file first, then edit its contents.
 
 ## Package Reorganization Example
 

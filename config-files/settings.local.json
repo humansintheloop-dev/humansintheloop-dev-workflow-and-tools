@@ -30,7 +30,11 @@
       "Bash(mv:*)",
       "Bash(rmdir:*)",
       "Bash(tree:*)",
-      "Skill(idea-to-code:*)"
+      "Skill(idea-to-code:*)",
+      "Bash(chmod:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(gh run:*)",
+      "Bash(git mv:*)"
     ],
     "deny": [
       "Bash(docker compose down:*)",

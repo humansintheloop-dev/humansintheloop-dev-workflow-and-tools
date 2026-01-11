@@ -36,6 +36,7 @@ Structure of the plan:
 
 - The plan is a markdown document in the same directory as @${IDEA_FILE}.
 - The plan MUST include an "Instructions for Coding Agent" section at the top that tells the agent to:
+  - IMPORTANT: Use simple commands that you have permission to execute. Avoid complex commands that may fail due to permission issues.
   - ALWAYS Use the `idea-to-code:plan-tracking` skill to track task completion
   - ALWAYS Write code using TDD
     - Use the `idea-to-code:tdd` skill when implementing code

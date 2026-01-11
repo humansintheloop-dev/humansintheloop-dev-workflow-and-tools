@@ -141,7 +141,16 @@ When tests cannot run (environment error):
 5. If Gradle cannot be run, the agent must enter BLOCKED and request user-provided output
 6. The agent must not move to GREEN, VERIFY, or COMPLETE without real evidence
 
-## 6. Test Failure Investigation
+## 6. Tests Are Sacred
+
+NEVER delete or remove tests to make a build pass. If tests fail:
+1. Investigate why they fail
+2. Fix the underlying issue (missing dependencies, configuration, etc.)
+3. If a test is genuinely obsolete, discuss with the user before removal
+
+Deleting tests hides broken functionality and is never an acceptable solution.
+
+## 7. Test Failure Investigation
 
 NEVER ignore test failures. When tests fail:
 
@@ -163,7 +172,7 @@ Never assume a fix is correct without running the test to verify.
 
 ---
 
-## 7. Summary
+## 8. Summary
 
 - Tests are JUnit 5 `@Test` methods in Java only  
 - Tests are executed exclusively via `./gradlew test` on macOS  

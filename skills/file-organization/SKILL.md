@@ -40,6 +40,14 @@ mv src/main/java/com/example/oldpackage/MyClass.java src/main/java/com/example/n
 # To: package com.example.newpackage;
 ```
 
+## Refactoring Cleanup
+
+When moving files during refactoring:
+1. Move files to new location
+2. Verify build passes in new location
+3. Delete the old empty directories immediately
+4. Don't ask - empty directories after a move serve no purpose
+
 ## When to Use Write
 
 Reserve the Write tool for:

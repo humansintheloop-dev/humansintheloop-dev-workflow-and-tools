@@ -13,6 +13,31 @@ A GenAI coding agent must write code iteratively using TDD.
 The developer must carefully review any GenAI-generated code and provide prompt feedback.
 For example, the scripts described below run `claude` interactively, which enables prompt intervention by the developer.
 
+== The idea to code workflow
+
+My GenAI-assisted idea to code workflow consists of the following steps:
+
+. Exploring an idea - an interactive, GenAI-driven Q&A session to flesh out an idea
+. Creating a specification - GenAI creates a specification from the Q&A session
+. Optionally creating user stories and scenarios - it's sometimes useful to create user stories/scenarios
+. Creating an implementation plan - a sequence tasks that are prompts for a coding agent
+. Executing the implementation plan - running the coding agent to execute the plan
+
+To use this workflow simply run link:./docs/scripts/idea-to-code.adoc[idea-to-code.sh]:
+
+[source,bash]
+----
+./idea-to-code.sh ~/ideas/my-new-idea
+----
+
+where `~/ideas/my-new-idea` is a directory that will contain the idea, spec, and implementation plan.
+
+=== An example
+
+Let's look at the example scenario - the development of https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree[`loctree`], a terminal user interface (TUI) application that provides an interactive, hierarchical view of lines of code (LOC) counts for a given directory structure.
+
+See link:./docs/idea-to-code-workflow.adoc[idea to code workflow]
+
 == Installation
 
 === Prerequisites
@@ -94,31 +119,6 @@ cd genai-development-workflow
 ----
 
 NOTE: Even if you install via plugin, you still need to clone the repository to use the workflow scripts.
-
-== The idea to code workflow
-
-My GenAI-assisted idea to code workflow consists of the following steps:
-
-. Exploring an idea - an interactive, GenAI-driven Q&A session to flesh out an idea
-. Creating a specification - GenAI creates a specification from the Q&A session
-. Optionally creating user stories and scenarios - it's sometimes useful to create user stories/scenarios
-. Creating an implementation plan - a sequence tasks that are prompts for a coding agent
-. Executing the implementation plan - running the coding agent to execute the plan
-
-To use this workflow simply run link:./docs/scripts/idea-to-code.adoc[idea-to-code.sh]:
-
-[source,bash]
-----
-./idea-to-code.sh ~/ideas/my-new-idea
-----
-
-where `~/ideas/my-new-idea` is a directory that will contain the idea, spec, and implementation plan.
-
-=== An example
-
-Let's look at the example scenario - the development of https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree[`loctree`], a terminal user interface (TUI) application that provides an interactive, hierarchical view of lines of code (LOC) counts for a given directory structure.
-
-See link:./docs/idea-to-code-workflow.adoc[idea to code workflow]
 
 == Acknowledgement
 

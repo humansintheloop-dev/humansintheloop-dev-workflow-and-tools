@@ -9,7 +9,7 @@ image::./idea-to-code.png[]
 * Refines an idea (feature, bug fix, ...) into a specification and implementation plan
 * Interactively executes the implementation plan using test-driven development (TDD), with human oversight
 * Constrains GenAI interactions with explicit development and debugging instructions
-* Implements a feedback loop for continually improving how Claude operates.
+* Implements a feedback loop for continually improving how Claude Code operates
 
 == Why humans in the loop development?
 
@@ -45,10 +45,21 @@ To use this workflow simply run link:./docs/scripts/idea-to-code.adoc[idea-to-co
 
 [source,bash]
 ----
-./idea-to-code.sh ~/ideas/my-new-idea
+./idea-to-code.sh ~/ideas/some-feature
 ----
 
-where `~/ideas/my-new-idea` is a directory that will contain the idea, spec, and implementation plan.
+where `~/ideas/some-feature` is a directory that will contain the idea, spec, and implementation plan.
+
+The workflow creates the following files in that directory:
+
+* `some-feature-idea.md` - the initial idea
+* `some-feature-discussion.md` - the Q&A discussion
+* `some-feature-spec.md` - the specification
+* `some-feature-plan.md` - the plan consisting of tasks, which are marked as completed (`[ ] -> [x]`) as the plan is executed
+
+Note: the file name is prefixed with the directory name.
+
+For example, see https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/tree/master/docs/features/loc-outliner[humansintheloop-dev-examples-loctree/docs/features/loc-outliner], which is described in more detail below.
 
 === Guiding Claude code
 

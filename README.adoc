@@ -2,6 +2,8 @@
 
 Idea to Code is a disciplined, human-in-the-loop Claude Code operating model.
 
+image::./idea-to-code.png[]
+
 == Key features
 
 * Refines an idea (feature, bug fix, ...) into a specification and implementation plan

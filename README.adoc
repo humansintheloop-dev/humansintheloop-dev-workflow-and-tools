@@ -1,26 +1,42 @@
-= Humans in the loop idea to code workflow and tools
+= Idea to Code
 
-My GenAI-assisted idea to code workflow and supporting tools (Claude custom commands and link:docs/scripts/scripts.adoc[shell scripts] that run Claude).
+Idea to Code is a disciplined, human-in-the-loop Claude Code operating model.
 
-== About humans in the loop development
+== Key features
 
-If you want quality software then must be developed by human developers - GenAI plays the role of an assistant, not a developer.
+* Refines an idea (feature, bug fix, ...) into a specification and implementation plan
+* Interactively executes the implementation plan using test-driven development (TDD), with human oversight
+* Constrains GenAI interactions with explicit development and debugging instructions
+* Implements a feedback loop for continually improving how Claude operates.
+
+== Why humans in the loop development?
+
+If you want quality software then must be developed by human developers - GenAI is a tool, not a developer.
 
 **The human developer is responsible for the delivered software**
 
 A GenAI coding agent must write code iteratively using TDD.
-
 The developer must carefully review any GenAI-generated code and provide prompt feedback.
-For example, the scripts described below run `claude` interactively, which enables prompt intervention by the developer.
 
-== The idea to code workflow
 
-My GenAI-assisted idea to code workflow consists of the following steps:
+== About Idea to Code
 
-. Exploring an idea - an interactive, GenAI-driven Q&A session to flesh out an idea
+Idea to Code consists of the following:
+
+* The `idea-to-code.sh` script that implements the idea to code workflow
+* A Claude Code plugin that provides skills, commands and hooks
+* Template `CLAUDE.md` and `.settings.local.json`
+* Supporting scripts
+
+Let's look at the key features starting with the idea to code workflow.
+
+=== The idea to code workflow
+
+The idea to code workflow consists of the following steps:
+
+. Exploring an idea - an interactive, Claude Code-driven Q&A session to flesh out an idea
 . Creating a specification - GenAI creates a specification from the Q&A session
-. Optionally creating user stories and scenarios - it's sometimes useful to create user stories/scenarios
-. Creating an implementation plan - a sequence tasks that are prompts for a coding agent
+. Creating an implementation plan - a sequence tasks that are prompts for Claude Code
 . Executing the implementation plan - running the coding agent to execute the plan
 
 To use this workflow simply run link:./docs/scripts/idea-to-code.adoc[idea-to-code.sh]:
@@ -32,11 +48,51 @@ To use this workflow simply run link:./docs/scripts/idea-to-code.adoc[idea-to-co
 
 where `~/ideas/my-new-idea` is a directory that will contain the idea, spec, and implementation plan.
 
-=== An example
+=== Guiding Claude code
 
-Let's look at the example scenario - the development of https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree[`loctree`], a terminal user interface (TUI) application that provides an interactive, hierarchical view of lines of code (LOC) counts for a given directory structure.
+Claude code needs guidelines.
+This project defines the `idea-to-code` Claude Code plugin along with template `CLAUDE.md` and `.settings.local.json` files.
+The plugin defines various skills, commands and hooks.
+Key skills include:
 
-See link:./docs/idea-to-code-workflow.adoc[idea to code workflow]
+* `tdd` - implements a TDD red-green-refactor workflow
+* `commit-guidelines` - structures the Git commit message
+* ...
+
+Key commands are:
+
+* `commit-changes` - commits staged and unstaged changes
+* `claude-issue-report` - described below
+
+There are also session tracking hooks, which are described below.
+
+=== Improving how Claude Code operates
+
+Claude Code regularly makes mistakes and, unlike a human, will repeatedly make the same mistake again.
+It's essential, therefore, to continue update the plugin to improve how Claude Code operates.
+
+To support continuous improvement, the `idea-to-code` Claude Code plugin provides the following capabilities:
+
+* `claude-issue-report` - a slash command that reports an issue in `.claude/issues` 
+* hooks - record the Claude sessions (`.claude/sessions`) and associate filed issues with the session
+
+NOTE: it's useful to create symbolic links from `.claude/issues` and `.claude/sessions` to project-specific subdirectory in a centralized location, e.g. `~/hitl-tracking`.
+
+In addition, there's are the following scripts:
+
+* `workflow-scripts/review-issues.sh` script - analyzes filed issues and updates the Claude Code plugin
+* `workflow-scripts/update-claude-files-from-project.sh` - updates the template files with changes made to a project's `CLAUDE.md` and `.settings.local.json`
+* `workflow-scripts/workflow-scripts/update-project-claude-files.sh` - updates a project's `CLAUDE.md` and `.settings.local.json` from the template files.
+
+=== Examples
+
+Here's some examples
+
+* https://github.com/eventuate-platform/eventuate-tram-spring-micrometer-tracing/tree/master[eventuate-tram-spring-micrometer-tracing/tree/master] - provides distributed tracing support for Eventuate Tram using Micrometer Tracing.
+Here's the https://github.com/eventuate-platform/eventuate-tram-spring-micrometer-tracing/blob/master/docs/features/use-micrometer-tracing/use-micrometer-tracing-idea.txt[idea file].
+
+* https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree[`loctree`], a GoLang terminal user interface (TUI) application that provides an interactive, hierarchical view of lines of code (LOC) counts for a given directory structure. 
+See link:./docs/idea-to-code-workflow.adoc[idea to code workflow for Loctree]
 
 == Installation
 
@@ -44,9 +100,9 @@ See link:./docs/idea-to-code-workflow.adoc[idea to code workflow]
 
 Install Claude Code - see https://microservices.io/post/architecture/2025/07/09/vibe-coding-good-almost-other-part-2.html[Vibe coding: the good, the almost, and the @#$%** - Part 2] for getting started.
 
-=== Installing the Slash Commands
+=== Installing the Idea to Code plugin
 
-The workflow uses custom slash commands that need to be installed. You can install using either slash commands (inside a Claude Code session) or shell commands.
+You can install using either slash commands (inside a Claude Code session) or shell commands.
 
 ==== Option 1: Install from GitHub (Published Plugin)
 

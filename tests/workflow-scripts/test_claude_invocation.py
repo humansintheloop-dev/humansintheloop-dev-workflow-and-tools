@@ -617,3 +617,62 @@ class TestPRPolling:
         from implement_with_worktree import is_pr_complete
 
         assert is_pr_complete("OPEN") is False
+
+
+@pytest.mark.unit
+class TestCleanupOperations:
+    """Test cleanup operations (worktree and branch removal)."""
+
+    def test_remove_worktree_calls_git_worktree_remove(self, mocker):
+        """Should call git worktree remove with correct path."""
+        from implement_with_worktree import remove_worktree
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+
+        result = remove_worktree("/path/to/worktree")
+
+        assert result is True
+        call_args = mock_run.call_args[0][0]
+        assert "git" in call_args
+        assert "worktree" in call_args
+        assert "remove" in call_args
+        assert "/path/to/worktree" in call_args
+
+    def test_remove_worktree_returns_false_on_failure(self, mocker):
+        """Should return False when worktree removal fails."""
+        from implement_with_worktree import remove_worktree
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 1
+
+        result = remove_worktree("/path/to/worktree")
+
+        assert result is False
+
+    def test_delete_local_branch_calls_git_branch_d(self, mocker):
+        """Should call git branch -D to delete local branch."""
+        from implement_with_worktree import delete_local_branch
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+
+        result = delete_local_branch("idea/my-feature/integration")
+
+        assert result is True
+        call_args = mock_run.call_args[0][0]
+        assert "git" in call_args
+        assert "branch" in call_args
+        assert "-D" in call_args
+        assert "idea/my-feature/integration" in call_args
+
+    def test_delete_local_branch_returns_false_on_failure(self, mocker):
+        """Should return False when branch deletion fails."""
+        from implement_with_worktree import delete_local_branch
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 1
+
+        result = delete_local_branch("idea/my-feature/integration")
+
+        assert result is False

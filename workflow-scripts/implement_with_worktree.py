@@ -752,6 +752,44 @@ def is_pr_complete(state: str) -> bool:
     return state in ("MERGED", "CLOSED")
 
 
+# Cleanup Functions
+
+def remove_worktree(worktree_path: str) -> bool:
+    """Remove a git worktree.
+
+    Args:
+        worktree_path: Path to the worktree to remove
+
+    Returns:
+        True if successful, False otherwise
+    """
+    result = subprocess.run(
+        ["git", "worktree", "remove", worktree_path],
+        capture_output=True,
+        text=True
+    )
+
+    return result.returncode == 0
+
+
+def delete_local_branch(branch_name: str) -> bool:
+    """Delete a local git branch.
+
+    Args:
+        branch_name: Name of the branch to delete
+
+    Returns:
+        True if successful, False otherwise
+    """
+    result = subprocess.run(
+        ["git", "branch", "-D", branch_name],
+        capture_output=True,
+        text=True
+    )
+
+    return result.returncode == 0
+
+
 # Task Parsing Functions
 
 def parse_tasks_from_plan(plan_content: str) -> List[str]:

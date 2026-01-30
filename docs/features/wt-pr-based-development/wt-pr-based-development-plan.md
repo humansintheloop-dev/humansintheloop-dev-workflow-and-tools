@@ -339,17 +339,17 @@ Handle completion of all tasks and poll for feedback until PR is merged/closed.
 
 Optional cleanup of worktree and local branches.
 
-- [ ] **Task 9.1: Remove worktree when --cleanup flag provided and PR complete**
-  - [ ] Only perform cleanup if `--cleanup` flag was provided
-  - [ ] Only cleanup after PR is merged or closed
-  - [ ] Run `git worktree remove <worktree-path>`
-  - [ ] Verify: worktree directory removed
+- [x] **Task 9.1: Remove worktree when --cleanup flag provided and PR complete**
+  - [x] Only perform cleanup if `--cleanup` flag was provided
+  - [x] Only cleanup after PR is merged or closed
+  - [x] Run `git worktree remove <worktree-path>`
+  - [x] Verify: worktree directory removed
 
-- [ ] **Task 9.2: Delete local branches when --cleanup flag provided**
-  - [ ] Delete local integration branch
-  - [ ] Delete local slice branch(es)
-  - [ ] Do not delete remote branches (GitHub handles via PR)
-  - [ ] Verify: local branches deleted, remote branches remain
+- [x] **Task 9.2: Delete local branches when --cleanup flag provided**
+  - [x] Delete local integration branch
+  - [x] Delete local slice branch(es)
+  - [x] Do not delete remote branches (GitHub handles via PR)
+  - [x] Verify: local branches deleted, remote branches remain
 
 - [ ] **Task 9.3: Integration test for cleanup**
   - [ ] Create test repository, run script to create worktree and branches

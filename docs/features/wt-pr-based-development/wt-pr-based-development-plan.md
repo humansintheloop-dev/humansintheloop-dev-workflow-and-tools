@@ -165,12 +165,12 @@ Create or reuse GitHub Draft PR for the slice branch.
 
 Parse tasks from plan file and execute with Claude Code.
 
-- [ ] **Task 5.1: Parse uncompleted tasks from plan file**
-  - [ ] Read plan file from idea directory
-  - [ ] Extract tasks matching pattern `- [ ]` (unchecked checkboxes)
-  - [ ] Return list of task descriptions in order
-  - [ ] Skip already-completed tasks (matching `- [x]`)
-  - [ ] Verify: correctly parses mix of completed and uncompleted tasks
+- [x] **Task 5.1: Parse uncompleted tasks from plan file**
+  - [x] Read plan file from idea directory
+  - [x] Extract tasks matching pattern `- [ ]` (unchecked checkboxes)
+  - [x] Return list of task descriptions in order
+  - [x] Skip already-completed tasks (matching `- [x]`)
+  - [x] Verify: correctly parses mix of completed and uncompleted tasks
 
 - [ ] **Task 5.2: Invoke Claude Code interactively for task**
   - [ ] Build Claude command with `implement-plan.md` template

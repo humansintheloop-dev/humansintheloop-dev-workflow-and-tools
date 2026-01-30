@@ -13,7 +13,7 @@ import os
 import re
 import subprocess
 import sys
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from git import Repo
 from git.exc import InvalidGitRepositoryError
@@ -372,6 +372,60 @@ def is_pr_draft(pr_number: int) -> bool:
 
     data = json.loads(result.stdout)
     return data.get("isDraft", False)
+
+
+# Task Parsing Functions
+
+def parse_tasks_from_plan(plan_content: str) -> List[str]:
+    """Parse uncompleted top-level tasks from a plan file content.
+
+    Tasks are identified by lines starting with "- [ ]" (uncompleted checkbox)
+    and containing bold text (** markers), which distinguishes main tasks from subtasks.
+
+    Args:
+        plan_content: The full content of the plan file
+
+    Returns:
+        List of task descriptions (the text after the checkbox)
+    """
+    tasks = []
+    # Match lines that start with "- [ ]" and contain bold text (**...**)
+    # This distinguishes main tasks from subtasks
+    pattern = r'^- \[ \] (\*\*.+\*\*.*)$'
+
+    for line in plan_content.split('\n'):
+        match = re.match(pattern, line.strip())
+        if match:
+            task_text = match.group(1)
+            tasks.append(task_text)
+
+    return tasks
+
+
+def get_first_task_name(plan_content: str) -> str:
+    """Get the name of the first uncompleted task for slice naming.
+
+    Args:
+        plan_content: The full content of the plan file
+
+    Returns:
+        The first task name, or "implementation" if no tasks found
+    """
+    tasks = parse_tasks_from_plan(plan_content)
+    if not tasks:
+        return "implementation"
+
+    # Extract a usable name from the task description
+    # Remove markdown formatting like **bold**
+    task = tasks[0]
+    task = re.sub(r'\*\*([^*]+)\*\*', r'\1', task)
+
+    # Try to extract the task title (after "Task X.X:")
+    title_match = re.search(r'Task \d+\.\d+:\s*(.+)', task)
+    if title_match:
+        return title_match.group(1).strip()
+
+    return task.strip()
 
 
 def main():

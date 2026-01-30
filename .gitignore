@@ -9,4 +9,4 @@ tests/kafka-security-poc/kafka-security-poc-plan.md
 tests/kafka-security-poc/kafka-security-poc-sessionID.txt
 tests/kafka-security-poc/kafka-security-poc-spec.md
 repomix-output.xml
-*-sessionID.text
+*-sessionID.txt

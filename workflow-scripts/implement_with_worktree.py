@@ -672,6 +672,32 @@ def update_slice_after_rebase(slice_branch: str) -> bool:
     return result.returncode == 0
 
 
+def get_rebase_conflict_message(integration_branch: str) -> str:
+    """Generate a message explaining rebase conflict and how to resolve it.
+
+    Args:
+        integration_branch: The integration branch that had conflicts
+
+    Returns:
+        A human-readable message with instructions
+    """
+    return f"""
+Rebase conflict detected on {integration_branch}!
+
+The main branch has advanced and there are conflicts that require manual resolution.
+
+To resolve:
+1. Navigate to the worktree directory
+2. Run: git rebase origin/main
+3. Resolve the conflicts in each file
+4. Run: git add <resolved-files>
+5. Run: git rebase --continue
+6. Re-run this script to continue
+
+The script will now pause. Press Enter when ready to exit, or Ctrl+C to abort.
+"""
+
+
 # Task Parsing Functions
 
 def parse_tasks_from_plan(plan_content: str) -> List[str]:

@@ -286,12 +286,12 @@ Detect and handle when main branch advances during execution.
   - [x] Force-push slice branch after rebase
   - [x] Verify: clean rebase completes without user intervention
 
-- [ ] **Task 7.3: Pause and notify user when rebase has conflicts**
-  - [ ] Detect rebase conflict (non-zero exit from rebase)
-  - [ ] Abort the rebase attempt
-  - [ ] Display clear message explaining the conflict
-  - [ ] Pause execution (wait for user input or exit)
-  - [ ] Verify: conflict triggers pause with clear message
+- [x] **Task 7.3: Pause and notify user when rebase has conflicts**
+  - [x] Detect rebase conflict (non-zero exit from rebase)
+  - [x] Abort the rebase attempt
+  - [x] Display clear message explaining the conflict
+  - [x] Pause execution (wait for user input or exit)
+  - [x] Verify: conflict triggers pause with clear message
 
 - [ ] **Task 7.4: Integration test for main branch advancement**
   - [ ] Create test repository, run script to create integration branch

@@ -502,3 +502,26 @@ class TestRebaseOperations:
         # Verify force-with-lease was used
         call_args = mock_run.call_args[0][0]
         assert "--force-with-lease" in call_args
+
+
+@pytest.mark.unit
+class TestRebaseConflictHandling:
+    """Test handling of rebase conflicts."""
+
+    def test_handle_rebase_conflict_returns_message(self):
+        """Should return a message explaining the conflict."""
+        from implement_with_worktree import get_rebase_conflict_message
+
+        message = get_rebase_conflict_message("idea/my-feature/integration")
+
+        assert "conflict" in message.lower()
+        assert "idea/my-feature/integration" in message
+
+    def test_handle_rebase_conflict_includes_instructions(self):
+        """Should include instructions for manual resolution."""
+        from implement_with_worktree import get_rebase_conflict_message
+
+        message = get_rebase_conflict_message("idea/my-feature/integration")
+
+        # Should tell user what to do
+        assert "manual" in message.lower() or "resolve" in message.lower()

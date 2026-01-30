@@ -616,6 +616,62 @@ def get_remote_main_head(remote: str = "origin", branch: str = "main") -> str:
     return result.stdout.split()[0]
 
 
+def rebase_integration_branch(integration_branch: str, base_branch: str = "main") -> bool:
+    """Attempt to rebase the integration branch onto the updated main.
+
+    If rebase has conflicts, aborts the rebase and returns False.
+
+    Args:
+        integration_branch: The integration branch name
+        base_branch: The branch to rebase onto (default: "main")
+
+    Returns:
+        True if rebase succeeded, False if there were conflicts
+    """
+    # Checkout integration branch first
+    subprocess.run(
+        ["git", "checkout", integration_branch],
+        capture_output=True,
+        text=True
+    )
+
+    # Attempt rebase
+    result = subprocess.run(
+        ["git", "rebase", f"origin/{base_branch}"],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        # Rebase failed, abort it
+        subprocess.run(
+            ["git", "rebase", "--abort"],
+            capture_output=True,
+            text=True
+        )
+        return False
+
+    return True
+
+
+def update_slice_after_rebase(slice_branch: str) -> bool:
+    """Force push the slice branch after a successful rebase.
+
+    Args:
+        slice_branch: The slice branch name
+
+    Returns:
+        True if push succeeded, False otherwise
+    """
+    result = subprocess.run(
+        ["git", "push", "--force-with-lease", "origin", slice_branch],
+        capture_output=True,
+        text=True
+    )
+
+    return result.returncode == 0
+
+
 # Task Parsing Functions
 
 def parse_tasks_from_plan(plan_content: str) -> List[str]:

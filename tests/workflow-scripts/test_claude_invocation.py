@@ -437,3 +437,68 @@ class TestMainBranchAdvancement:
         assert len(calls) == 2
         assert "fetch" in calls[0]
         assert "ls-remote" in calls[1]
+
+
+@pytest.mark.unit
+class TestRebaseOperations:
+    """Test rebase operations for main branch advancement."""
+
+    def test_rebase_integration_branch_success(self, mocker):
+        """Should return True when rebase succeeds."""
+        from implement_with_worktree import rebase_integration_branch
+
+        # Mock subprocess.run to simulate successful rebase
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+
+        result = rebase_integration_branch("idea/my-feature/integration")
+
+        assert result is True
+
+    def test_rebase_integration_branch_returns_false_on_conflict(self, mocker):
+        """Should return False when rebase has conflicts."""
+        from implement_with_worktree import rebase_integration_branch
+
+        # Mock subprocess.run to simulate rebase conflict
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 1
+
+        result = rebase_integration_branch("idea/my-feature/integration")
+
+        assert result is False
+
+    def test_rebase_integration_branch_aborts_on_conflict(self, mocker):
+        """Should abort rebase when conflicts occur."""
+        from implement_with_worktree import rebase_integration_branch
+
+        calls = []
+        def mock_run(cmd, **kwargs):
+            calls.append(cmd)
+            result = mocker.MagicMock()
+            # First call (rebase) fails, second call (abort) succeeds
+            if "rebase" in cmd and "--abort" not in cmd:
+                result.returncode = 1
+            else:
+                result.returncode = 0
+            return result
+
+        mocker.patch('implement_with_worktree.subprocess.run', side_effect=mock_run)
+
+        rebase_integration_branch("idea/my-feature/integration")
+
+        # Verify abort was called after failed rebase
+        abort_calls = [c for c in calls if "--abort" in c]
+        assert len(abort_calls) == 1
+
+    def test_update_slice_after_rebase_force_pushes(self, mocker):
+        """Should force push slice branch after rebase."""
+        from implement_with_worktree import update_slice_after_rebase
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+
+        update_slice_after_rebase("idea/my-feature/01-setup")
+
+        # Verify force-with-lease was used
+        call_args = mock_run.call_args[0][0]
+        assert "--force-with-lease" in call_args

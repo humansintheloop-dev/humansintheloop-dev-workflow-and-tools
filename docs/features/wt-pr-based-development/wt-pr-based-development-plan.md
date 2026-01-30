@@ -280,11 +280,11 @@ Detect and handle when main branch advances during execution.
   - [x] Return boolean indicating whether main has new commits
   - [x] Verify: correctly detects main advancement
 
-- [ ] **Task 7.2: Auto-rebase integration branch when rebase is clean**
-  - [ ] Attempt `git rebase main` on integration branch
-  - [ ] If successful, update slice branch to track rebased integration
-  - [ ] Force-push slice branch after rebase
-  - [ ] Verify: clean rebase completes without user intervention
+- [x] **Task 7.2: Auto-rebase integration branch when rebase is clean**
+  - [x] Attempt `git rebase main` on integration branch
+  - [x] If successful, update slice branch to track rebased integration
+  - [x] Force-push slice branch after rebase
+  - [x] Verify: clean rebase completes without user intervention
 
 - [ ] **Task 7.3: Pause and notify user when rebase has conflicts**
   - [ ] Detect rebase conflict (non-zero exit from rebase)

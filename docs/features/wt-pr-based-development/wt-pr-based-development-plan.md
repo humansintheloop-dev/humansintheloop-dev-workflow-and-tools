@@ -154,10 +154,10 @@ Create or reuse GitHub Draft PR for the slice branch.
   - [x] Store PR number in state or detect from `gh pr list`
   - [x] Verify: first run creates Draft PR, second run reuses it
 
-- [ ] **Task 4.2: Detect PR Draft state before push operations**
-  - [ ] Use `gh pr view` to check if PR is still in Draft state
-  - [ ] Return boolean indicating Draft status
-  - [ ] Verify: function correctly identifies Draft vs Ready PRs
+- [x] **Task 4.2: Detect PR Draft state before push operations**
+  - [x] Use `gh pr view` to check if PR is still in Draft state
+  - [x] Return boolean indicating Draft status
+  - [x] Verify: function correctly identifies Draft vs Ready PRs
 
 ---
 

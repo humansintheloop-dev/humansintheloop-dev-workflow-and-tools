@@ -428,6 +428,65 @@ def get_first_task_name(plan_content: str) -> str:
     return task.strip()
 
 
+# Claude Invocation Functions
+
+def build_claude_command(
+    idea_directory: str,
+    task_description: str,
+    prompt_template: str
+) -> List[str]:
+    """Build the command to invoke Claude Code for a task.
+
+    Args:
+        idea_directory: Path to the idea directory
+        task_description: The task to implement
+        prompt_template: Name of the prompt template file
+
+    Returns:
+        Command as a list suitable for subprocess
+    """
+    # Build the prompt that will be passed to Claude
+    prompt = f"""You are implementing the following application:
+
+* Idea: @{idea_directory}/*-idea.*
+* Specification: @{idea_directory}/*-spec.md
+* Implementation tasks: @{idea_directory}/*-plan.md
+
+Your task:
+
+{task_description}
+
+Follow the active TDD and plan-tracking skills:
+
+Do not work on future tasks until the current one is complete.
+If all tasks are complete, stop and report success.
+"""
+
+    return [
+        "claude",
+        "--print", prompt_template,
+        "-p", prompt
+    ]
+
+
+def check_claude_success(exit_code: int, head_before: str, head_after: str) -> bool:
+    """Check if Claude invocation was successful.
+
+    Success requires:
+    1. Exit code of 0
+    2. HEAD advanced (a commit was made)
+
+    Args:
+        exit_code: The exit code from Claude
+        head_before: Git HEAD SHA before invocation
+        head_after: Git HEAD SHA after invocation
+
+    Returns:
+        True if successful, False otherwise
+    """
+    return exit_code == 0 and head_before != head_after
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Implement a development plan using Git worktrees and GitHub Draft PRs"

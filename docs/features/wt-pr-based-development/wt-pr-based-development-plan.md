@@ -172,12 +172,12 @@ Parse tasks from plan file and execute with Claude Code.
   - [x] Skip already-completed tasks (matching `- [x]`)
   - [x] Verify: correctly parses mix of completed and uncompleted tasks
 
-- [ ] **Task 5.2: Invoke Claude Code interactively for task**
-  - [ ] Build Claude command with `implement-plan.md` template
-  - [ ] Pass current task context to Claude
-  - [ ] Run Claude interactively (not capturing output, user sees everything)
-  - [ ] Capture exit code
-  - [ ] Verify: Claude invocation command is correctly formed
+- [x] **Task 5.2: Invoke Claude Code interactively for task**
+  - [x] Build Claude command with `implement-plan.md` template
+  - [x] Pass current task context to Claude
+  - [x] Run Claude interactively (not capturing output, user sees everything)
+  - [x] Capture exit code
+  - [x] Verify: Claude invocation command is correctly formed
 
 - [ ] **Task 5.3: Verify task success via exit code and HEAD advancement**
   - [ ] Record HEAD before Claude invocation

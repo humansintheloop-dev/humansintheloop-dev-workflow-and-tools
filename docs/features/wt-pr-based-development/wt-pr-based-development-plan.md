@@ -153,13 +153,13 @@ Create or reuse integration branch, worktree, and slice branch.
   - [x] Checkout slice branch in worktree
   - [x] Verify: slice branch created with correct format (e.g., `idea/my-feature/01-project-setup`)
 
-- [ ] **Task 3.4: Integration test for git infrastructure setup**
-  - [ ] Create local test git repository with valid idea directory
-  - [ ] Run script and verify integration branch `idea/<idea-name>/integration` exists
-  - [ ] Verify worktree directory created at `../<repo-name>-wt-<idea-name>`
-  - [ ] Verify slice branch created with correct pattern
-  - [ ] Run script again, verify branches and worktree are reused (not duplicated)
-  - [ ] Verify: tests run actual script and check git state with GitPython
+- [x] **Task 3.4: Integration test for git infrastructure setup**
+  - [x] Create local test git repository with valid idea directory
+  - [x] Run script and verify integration branch `idea/<idea-name>/integration` exists
+  - [x] Verify worktree directory created at `../<repo-name>-wt-<idea-name>`
+  - [x] Verify slice branch created with correct pattern
+  - [x] Run script again, verify branches and worktree are reused (not duplicated)
+  - [x] Verify: tests run actual script and check git state with GitPython
 
 ---
 

@@ -469,6 +469,22 @@ If all tasks are complete, stop and report success.
     ]
 
 
+def build_push_command(branch_name: str, force: bool = False) -> List[str]:
+    """Build the git push command for the slice branch.
+
+    Args:
+        branch_name: The branch name to push
+        force: If True, use --force-with-lease for safe force push
+
+    Returns:
+        Command as a list suitable for subprocess
+    """
+    cmd = ["git", "push", "origin", branch_name]
+    if force:
+        cmd.insert(2, "--force-with-lease")
+    return cmd
+
+
 def check_claude_success(exit_code: int, head_before: str, head_after: str) -> bool:
     """Check if Claude invocation was successful.
 
@@ -515,6 +531,29 @@ def main():
 
     # Initialize or load state
     state = init_or_load_state(args.idea_directory, idea_name)
+
+    # Get repo from idea directory
+    repo = Repo(args.idea_directory, search_parent_directories=True)
+
+    # Create or reuse integration branch
+    integration_branch = ensure_integration_branch(repo, idea_name)
+    print(f"Integration branch: {integration_branch}")
+
+    # Create or reuse worktree
+    worktree_path = ensure_worktree(repo, idea_name, integration_branch)
+    print(f"Worktree: {worktree_path}")
+
+    # Read plan file to get first task name for slice naming
+    plan_file = os.path.join(args.idea_directory, f"{idea_name}-plan.md")
+    with open(plan_file, "r") as f:
+        plan_content = f.read()
+    first_task_name = get_first_task_name(plan_content)
+
+    # Create or reuse slice branch
+    slice_branch = ensure_slice_branch(
+        repo, idea_name, state["slice_number"], first_task_name, integration_branch
+    )
+    print(f"Slice branch: {slice_branch}")
 
     # For now, just print the parsed arguments (implementation will come in later tasks)
     print(f"Idea directory: {args.idea_directory}")

@@ -11,7 +11,7 @@ When copying or moving files:
 
 ## Skills
 
-Always invoke the relevant skill before performing these actions:
+IMPORTANT: Always invoke the relevant skill before performing these actions:
 
 - **Before creating git commits**: Use the `idea-to-code:commit-guidelines` skill
 - **When practicing TDD**: Use the `idea-to-code:tdd` skill
@@ -26,7 +26,7 @@ Always invoke the relevant skill before performing these actions:
 
 ## Tool Selection
 
-Before running any Bash command, ask: "Is there a specialized tool for this?"
+IMPORTANT: Before running any Bash command, ask: "Is there a specialized tool for this?"
 
 - File search → Glob (NOT find or ls)
 - Content search → Grep (NOT grep or rg)
@@ -36,7 +36,7 @@ The specialized tools are faster, have correct permissions, and provide better o
 
 ## Git Commands
 
-Always run git commands from the project root directory. If you need to operate on the repository, cd to the root directory first rather than using `git -C`. This prevents accidentally committing files outside the project root.
+IMPORTANT: Always run git commands from the project root directory. If you need to operate on the repository, cd to the root directory first rather than using `git -C`. This prevents accidentally committing files outside the project root.
 
 ## Pattern-Based Fixes
 

@@ -42,6 +42,5 @@
       "Bash(docker rm:*)"
     ],
     "ask": []
-  },
-  "terminalCompletion": false
+  }
 }

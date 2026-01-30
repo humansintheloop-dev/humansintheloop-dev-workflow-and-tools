@@ -320,18 +320,18 @@ Handle completion of all tasks and poll for feedback until PR is merged/closed.
   - [x] Display countdown/status during wait
   - [x] Verify: polling loop runs at correct interval
 
-- [ ] **Task 8.3: Exit when PR is merged or closed**
-  - [ ] Check PR state via `gh pr view` during each poll
-  - [ ] Exit with success message when PR is merged
-  - [ ] Exit with message when PR is closed (not merged)
-  - [ ] Verify: script exits cleanly on PR merge
+- [x] **Task 8.3: Exit when PR is merged or closed**
+  - [x] Check PR state via `gh pr view` during each poll
+  - [x] Exit with success message when PR is merged
+  - [x] Exit with message when PR is closed (not merged)
+  - [x] Verify: script exits cleanly on PR merge
 
-- [ ] **Task 8.4: Integration test for completion and polling**
-  - [ ] Create test repository with plan where all tasks are completed
-  - [ ] Run script, verify PR is marked ready for review (`gh pr ready` called)
-  - [ ] Test merge scenario: merge PR via `gh pr merge`, verify script exits with success
-  - [ ] Test close scenario: close PR via `gh pr close`, verify script exits with message
-  - [ ] Verify: tests use real GitHub PR state transitions
+- [x] **Task 8.4: Integration test for completion and polling**
+  - [x] Create test repository with plan where all tasks are completed
+  - [x] Run script, verify PR is marked ready for review (`gh pr ready` called)
+  - [x] Test merge scenario: merge PR via `gh pr merge`, verify script exits with success
+  - [x] Test close scenario: close PR via `gh pr close`, verify script exits with message
+  - [x] Verify: tests use real GitHub PR state transitions
 
 ---
 

@@ -676,3 +676,44 @@ class TestMainBranchAdvancementIntegration:
             assert has_main_advanced(original_head, current_head) is True
         finally:
             os.chdir(original_cwd)
+
+
+@pytest.mark.integration
+class TestPRCompletionIntegration:
+    """Test PR completion detection with real GitHub PRs."""
+
+    def test_get_pr_state_returns_valid_state(self, github_test_repo_with_pr_and_comments):
+        """Should return valid state for a real PR."""
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
+        from implement_with_worktree import get_pr_state
+
+        pr_number = github_test_repo_with_pr_and_comments["pr_number"]
+        tmpdir = github_test_repo_with_pr_and_comments["tmpdir"]
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmpdir)
+            state = get_pr_state(pr_number)
+        finally:
+            os.chdir(original_cwd)
+
+        assert state == "OPEN", f"Expected OPEN state, got {state}"
+
+    def test_is_pr_complete_returns_false_for_open_pr(self, github_test_repo_with_pr_and_comments):
+        """Should return False for an open PR."""
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
+        from implement_with_worktree import get_pr_state, is_pr_complete
+
+        pr_number = github_test_repo_with_pr_and_comments["pr_number"]
+        tmpdir = github_test_repo_with_pr_and_comments["tmpdir"]
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmpdir)
+            state = get_pr_state(pr_number)
+        finally:
+            os.chdir(original_cwd)
+
+        assert is_pr_complete(state) is False

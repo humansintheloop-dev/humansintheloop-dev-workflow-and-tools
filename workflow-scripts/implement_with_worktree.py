@@ -474,6 +474,68 @@ def push_branch_to_remote(branch_name: str) -> bool:
     return True
 
 
+# Feedback Detection Functions
+
+def fetch_pr_comments(pr_number: int) -> List[Dict[str, Any]]:
+    """Fetch comments on a PR from GitHub API.
+
+    Args:
+        pr_number: The PR number to fetch comments for
+
+    Returns:
+        List of comment dictionaries with 'id' and 'body' fields
+    """
+    result = subprocess.run(
+        ["gh", "api", f"repos/{{owner}}/{{repo}}/pulls/{pr_number}/comments",
+         "--jq", "."],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        return []
+
+    return json.loads(result.stdout)
+
+
+def fetch_pr_reviews(pr_number: int) -> List[Dict[str, Any]]:
+    """Fetch reviews on a PR from GitHub API.
+
+    Args:
+        pr_number: The PR number to fetch reviews for
+
+    Returns:
+        List of review dictionaries with 'id' and 'state' fields
+    """
+    result = subprocess.run(
+        ["gh", "api", f"repos/{{owner}}/{{repo}}/pulls/{pr_number}/reviews",
+         "--jq", "."],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        return []
+
+    return json.loads(result.stdout)
+
+
+def get_new_feedback(
+    all_feedback: List[Dict[str, Any]],
+    processed_ids: List[int]
+) -> List[Dict[str, Any]]:
+    """Filter feedback to only include items not yet processed.
+
+    Args:
+        all_feedback: List of feedback items (comments or reviews)
+        processed_ids: List of IDs that have already been processed
+
+    Returns:
+        List of feedback items with IDs not in processed_ids
+    """
+    return [f for f in all_feedback if f.get("id") not in processed_ids]
+
+
 # Task Parsing Functions
 
 def parse_tasks_from_plan(plan_content: str) -> List[str]:

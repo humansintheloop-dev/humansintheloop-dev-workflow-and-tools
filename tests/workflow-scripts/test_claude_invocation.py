@@ -223,3 +223,67 @@ class TestFeedbackTemplate:
             content = f.read()
         assert 'FEEDBACK_TYPE' in content, \
             "Template should have FEEDBACK_TYPE placeholder"
+
+
+@pytest.mark.unit
+class TestFeedbackDetection:
+    """Test detection of new PR comments and reviews."""
+
+    def test_fetch_pr_comments_returns_list(self, mocker):
+        """Should return list of comments from GitHub API."""
+        from implement_with_worktree import fetch_pr_comments
+
+        # Mock subprocess.run to return sample comments
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = '[{"id": 1, "body": "Fix this"}, {"id": 2, "body": "And this"}]'
+
+        comments = fetch_pr_comments(123)
+
+        assert len(comments) == 2
+        assert comments[0]["id"] == 1
+        assert comments[1]["id"] == 2
+
+    def test_fetch_pr_reviews_returns_list(self, mocker):
+        """Should return list of reviews from GitHub API."""
+        from implement_with_worktree import fetch_pr_reviews
+
+        # Mock subprocess.run to return sample reviews
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = '[{"id": 100, "state": "CHANGES_REQUESTED"}]'
+
+        reviews = fetch_pr_reviews(123)
+
+        assert len(reviews) == 1
+        assert reviews[0]["id"] == 100
+
+    def test_get_new_comments_filters_processed(self):
+        """Should return only comments not in processed_comment_ids."""
+        from implement_with_worktree import get_new_feedback
+
+        all_comments = [
+            {"id": 1, "body": "Already processed"},
+            {"id": 2, "body": "New comment"},
+            {"id": 3, "body": "Another new one"}
+        ]
+        processed_ids = [1]
+
+        new_comments = get_new_feedback(all_comments, processed_ids)
+
+        assert len(new_comments) == 2
+        assert all(c["id"] not in processed_ids for c in new_comments)
+
+    def test_get_new_comments_returns_empty_if_all_processed(self):
+        """Should return empty list if all comments are processed."""
+        from implement_with_worktree import get_new_feedback
+
+        all_comments = [
+            {"id": 1, "body": "Processed"},
+            {"id": 2, "body": "Also processed"}
+        ]
+        processed_ids = [1, 2]
+
+        new_comments = get_new_feedback(all_comments, processed_ids)
+
+        assert len(new_comments) == 0

@@ -240,11 +240,11 @@ Detect and handle PR feedback (reviews, comments, status checks).
   - [x] Instructions for Claude to address feedback and commit fix
   - [x] Verify: template file exists with required placeholders
 
-- [ ] **Task 6.2: Detect new review comments and reviews**
-  - [ ] Use `gh api` to fetch PR comments and reviews
-  - [ ] Compare IDs against `processed_comment_ids` and `processed_review_ids` in state
-  - [ ] Return list of new (unprocessed) feedback items
-  - [ ] Verify: correctly identifies new vs already-processed feedback
+- [x] **Task 6.2: Detect new review comments and reviews**
+  - [x] Use `gh api` to fetch PR comments and reviews
+  - [x] Compare IDs against `processed_comment_ids` and `processed_review_ids` in state
+  - [x] Return list of new (unprocessed) feedback items
+  - [x] Verify: correctly identifies new vs already-processed feedback
 
 - [ ] **Task 6.3: Detect failed status checks**
   - [ ] Use `gh pr checks` to get status check results

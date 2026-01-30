@@ -176,3 +176,50 @@ class TestPushToSliceBranch:
         )
 
         assert result is False
+
+
+@pytest.mark.unit
+class TestFeedbackTemplate:
+    """Test wt-handle-feedback.md prompt template."""
+
+    def test_feedback_template_exists(self):
+        """Template file should exist in prompt-templates directory."""
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            '../../prompt-templates/wt-handle-feedback.md'
+        )
+        assert os.path.exists(template_path), \
+            f"Template not found at {template_path}"
+
+    def test_feedback_template_has_pr_url_placeholder(self):
+        """Template should have placeholder for PR URL."""
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            '../../prompt-templates/wt-handle-feedback.md'
+        )
+        with open(template_path, 'r') as f:
+            content = f.read()
+        assert 'PR_URL' in content, \
+            "Template should have PR_URL placeholder"
+
+    def test_feedback_template_has_feedback_content_placeholder(self):
+        """Template should have placeholder for feedback content."""
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            '../../prompt-templates/wt-handle-feedback.md'
+        )
+        with open(template_path, 'r') as f:
+            content = f.read()
+        assert 'FEEDBACK_CONTENT' in content, \
+            "Template should have FEEDBACK_CONTENT placeholder"
+
+    def test_feedback_template_has_feedback_type_placeholder(self):
+        """Template should have placeholder for feedback type."""
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            '../../prompt-templates/wt-handle-feedback.md'
+        )
+        with open(template_path, 'r') as f:
+            content = f.read()
+        assert 'FEEDBACK_TYPE' in content, \
+            "Template should have FEEDBACK_TYPE placeholder"

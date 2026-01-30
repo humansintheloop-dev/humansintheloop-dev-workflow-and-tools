@@ -234,11 +234,11 @@ Parse tasks from plan file and execute with Claude Code.
 
 Detect and handle PR feedback (reviews, comments, status checks).
 
-- [ ] **Task 6.1: Create wt-handle-feedback.md prompt template**
-  - [ ] Create `prompt-templates/wt-handle-feedback.md`
-  - [ ] Template receives: PR URL, feedback content, feedback type
-  - [ ] Instructions for Claude to address feedback and commit fix
-  - [ ] Verify: template file exists with required placeholders
+- [x] **Task 6.1: Create wt-handle-feedback.md prompt template**
+  - [x] Create `prompt-templates/wt-handle-feedback.md`
+  - [x] Template receives: PR URL, feedback content, feedback type
+  - [x] Instructions for Claude to address feedback and commit fix
+  - [x] Verify: template file exists with required placeholders
 
 - [ ] **Task 6.2: Detect new review comments and reviews**
   - [ ] Use `gh api` to fetch PR comments and reviews

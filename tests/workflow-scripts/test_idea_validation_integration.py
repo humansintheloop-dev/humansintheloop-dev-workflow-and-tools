@@ -105,7 +105,7 @@ class TestValidIdeaDirectory:
             repo.index.add([rel_path])
         repo.index.commit("Add idea files")
 
-        result = run_script(idea_dir)
+        result = run_script(idea_dir, setup_only=True)
 
         # Script should succeed (exit 0) or at least create state file before failing
         # on later steps (like GitHub operations)

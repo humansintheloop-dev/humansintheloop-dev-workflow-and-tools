@@ -114,7 +114,7 @@ def github_test_repo():
     6. Deletes the GitHub repo on cleanup
     """
     # Generate unique repo name
-    repo_name = f"test-wt-integration-{uuid.uuid4().hex[:8]}"
+    repo_name = f"test-tmp-wt-integration-{uuid.uuid4().hex[:8]}"
 
     # Create GitHub repo
     result = create_github_repo(repo_name)
@@ -194,7 +194,7 @@ class TestDraftPRCreation:
         initial_count = get_pr_count(repo_full_name)
 
         # Run the script to set up infrastructure (branches, worktree)
-        run_script(idea_dir, cwd=tmpdir)
+        run_script(idea_dir, cwd=tmpdir, setup_only=True)
 
         # Find the worktree directory
         repo_name = os.path.basename(tmpdir)
@@ -240,7 +240,7 @@ class TestDraftPRCreation:
         )
 
         # Run the script again - now it should create the PR
-        result = run_script(idea_dir, cwd=tmpdir)
+        result = run_script(idea_dir, cwd=tmpdir, setup_only=True)
 
         # Get new PR count
         new_count = get_pr_count(repo_full_name)
@@ -262,7 +262,7 @@ class TestPRContent:
         repo_full_name = github_test_repo["repo_full_name"]
 
         # Run the script (may reuse existing PR from previous test)
-        run_script(idea_dir, cwd=tmpdir)
+        run_script(idea_dir, cwd=tmpdir, setup_only=True)
 
         # Get PR details (assume PR #1)
         pr_details = get_pr_details(repo_full_name, 1)
@@ -293,11 +293,11 @@ class TestPRReuse:
         repo_full_name = github_test_repo["repo_full_name"]
 
         # First run (may already have run in previous tests)
-        run_script(idea_dir, cwd=tmpdir)
+        run_script(idea_dir, cwd=tmpdir, setup_only=True)
         first_count = get_pr_count(repo_full_name)
 
         # Second run
-        run_script(idea_dir, cwd=tmpdir)
+        run_script(idea_dir, cwd=tmpdir, setup_only=True)
         second_count = get_pr_count(repo_full_name)
 
         assert first_count == second_count, \

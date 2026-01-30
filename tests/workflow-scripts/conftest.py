@@ -15,18 +15,25 @@ SCRIPT_PATH = os.path.join(
 )
 
 
-def run_script(idea_dir, cwd=None):
+def run_script(idea_dir, cwd=None, setup_only=False, mock_claude=None):
     """Run the implement-with-worktree.sh script.
 
     Args:
         idea_dir: Path to the idea directory
         cwd: Working directory for the script (optional)
+        setup_only: If True, add --setup-only flag (skip task execution)
+        mock_claude: Path to mock Claude script (optional)
 
     Returns:
         subprocess.CompletedProcess with stdout, stderr, and returncode
     """
+    cmd = [SCRIPT_PATH, idea_dir]
+    if setup_only:
+        cmd.append("--setup-only")
+    if mock_claude:
+        cmd.extend(["--mock-claude", mock_claude])
     return subprocess.run(
-        [SCRIPT_PATH, idea_dir],
+        cmd,
         capture_output=True,
         text=True,
         cwd=cwd

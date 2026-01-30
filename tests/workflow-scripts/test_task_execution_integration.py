@@ -16,34 +16,71 @@ from git import Repo
 from conftest import SCRIPT_PATH
 
 
-def create_mock_claude_script(tmpdir):
-    """Create a mock Claude script that creates a commit.
+def create_mock_claude_script_that_marks_tasks_complete(tmpdir, idea_name):
+    """Create a mock Claude script that marks tasks complete and commits.
+
+    This script simulates what real Claude would do:
+    1. Mark the current task as complete in the plan file
+    2. Create a commit with the changes
 
     Args:
         tmpdir: Directory to create the script in
+        idea_name: Name of the idea (used to find plan file)
 
     Returns:
         Path to the mock script
     """
-    mock_script = os.path.join(tmpdir, "mock-claude.sh")
+    mock_script = os.path.join(tmpdir, "mock-claude-complete.sh")
     with open(mock_script, "w") as f:
-        f.write("""#!/bin/bash
-# Mock Claude script for testing
-# Creates an empty commit to simulate Claude's work
+        # The script runs in the worktree, so use relative path to find plan file
+        # Use awk for portable first-occurrence replacement
+        f.write(f"""#!/bin/bash
+set -e  # Exit on error
 
-git commit --allow-empty -m "Mock Claude commit for task: $1"
-exit 0
+# Mock Claude script that marks tasks complete
+# Receives task description as $1
+# Runs in the worktree directory
+
+TASK_DESC="$1"
+IDEA_NAME="{idea_name}"
+
+# Find the plan file in the worktree (relative path from worktree root)
+PLAN_FILE="$IDEA_NAME/$IDEA_NAME-plan.md"
+
+# Mark the first unchecked task as complete using awk
+# This replaces only the first occurrence of "- [ ] **Task" with "- [x] **Task"
+awk '!done && /- \\[ \\] \\*\\*Task/ {{sub(/- \\[ \\] \\*\\*Task/, "- [x] **Task"); done=1}} 1' "$PLAN_FILE" > "$PLAN_FILE.tmp"
+mv "$PLAN_FILE.tmp" "$PLAN_FILE"
+
+# Stage and commit the change
+git add "$PLAN_FILE"
+git commit -m "Complete task: $TASK_DESC"
 """)
     # Make executable
     os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
     return mock_script
 
 
-# Test idea directory source
-TEST_IDEA_SOURCE = os.path.join(
-    os.path.dirname(__file__),
-    '../kafka-security-poc'
-)
+# Simple plan content for testing sequential execution
+SIMPLE_PLAN_CONTENT = """# Simple Test Plan
+
+## Instructions for Coding Agent
+
+- Use TDD
+
+---
+
+## Steel Thread 1 – Test Tasks
+
+- [ ] **Task 1: First task**
+  - [ ] Do something first
+
+- [ ] **Task 2: Second task**
+  - [ ] Do something second
+
+- [ ] **Task 3: Third task**
+  - [ ] Do something third
+"""
 
 
 def create_github_repo(repo_name):
@@ -80,10 +117,81 @@ def delete_github_repo(repo_full_name):
     )
 
 
-@pytest.fixture(scope="module")
-def github_test_repo_with_plan():
-    """Create a GitHub repository with a plan file containing uncompleted tasks."""
-    repo_name = f"test-task-exec-{uuid.uuid4().hex[:8]}"
+@pytest.mark.integration
+class TestTaskDetectionAndExecution:
+    """Test that script detects and executes tasks from plan file."""
+
+    def test_script_outputs_first_task(self, github_test_repo_with_simple_plan):
+        """Script should output the first uncompleted task it will execute."""
+        tmpdir = github_test_repo_with_simple_plan["tmpdir"]
+        idea_dir = github_test_repo_with_simple_plan["idea_dir"]
+        idea_name = github_test_repo_with_simple_plan["idea_name"]
+
+        # Create mock Claude script that marks tasks complete
+        mock_script = create_mock_claude_script_that_marks_tasks_complete(tmpdir, idea_name)
+
+        # Run the script with mock Claude
+        result = subprocess.run(
+            [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
+            capture_output=True,
+            text=True,
+            cwd=tmpdir,
+            timeout=120
+        )
+
+        # The script should output information about the task it's about to execute
+        assert "Executing task:" in result.stdout, \
+            f"Script didn't output task info. stdout: {result.stdout}, stderr: {result.stderr}"
+
+    def test_script_uses_mock_claude(self, github_test_repo_with_simple_plan):
+        """Script should use mock Claude when --mock-claude is provided."""
+        tmpdir = github_test_repo_with_simple_plan["tmpdir"]
+        idea_dir = github_test_repo_with_simple_plan["idea_dir"]
+        idea_name = github_test_repo_with_simple_plan["idea_name"]
+
+        # Create mock Claude script that marks tasks complete
+        mock_script = create_mock_claude_script_that_marks_tasks_complete(tmpdir, idea_name)
+
+        # Run the script with mock Claude
+        result = subprocess.run(
+            [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
+            capture_output=True,
+            text=True,
+            cwd=tmpdir,
+            timeout=120
+        )
+
+        # The script should indicate it's using mock Claude
+        assert "Using mock Claude" in result.stdout, \
+            f"Script didn't use mock Claude. stdout: {result.stdout}, stderr: {result.stderr}"
+
+    def test_mock_claude_creates_commit(self, github_test_repo_with_simple_plan):
+        """Mock Claude should create a commit that gets pushed."""
+        tmpdir = github_test_repo_with_simple_plan["tmpdir"]
+        idea_dir = github_test_repo_with_simple_plan["idea_dir"]
+        idea_name = github_test_repo_with_simple_plan["idea_name"]
+
+        # Create mock Claude script that marks tasks complete
+        mock_script = create_mock_claude_script_that_marks_tasks_complete(tmpdir, idea_name)
+
+        # Run the script with mock Claude
+        result = subprocess.run(
+            [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
+            capture_output=True,
+            text=True,
+            cwd=tmpdir,
+            timeout=120
+        )
+
+        # The script should report task completed successfully
+        assert "Task completed successfully" in result.stdout, \
+            f"Task didn't complete. stdout: {result.stdout}, stderr: {result.stderr}"
+
+
+@pytest.fixture(scope="function")
+def github_test_repo_with_simple_plan():
+    """Create a GitHub repository with a simple 3-task plan for testing sequential execution."""
+    repo_name = f"test-tmp-seq-exec-{uuid.uuid4().hex[:8]}"
 
     result = create_github_repo(repo_name)
     if result is None:
@@ -108,17 +216,31 @@ def github_test_repo_with_plan():
         repo.index.add(["README.md"])
         repo.index.commit("Initial commit")
 
-        # Copy test idea directory
-        idea_dest = os.path.join(tmpdir, "kafka-security-poc")
-        shutil.copytree(TEST_IDEA_SOURCE, idea_dest)
+        # Create simple idea directory with minimal files
+        idea_name = "simple-test"
+        idea_dir = os.path.join(tmpdir, idea_name)
+        os.makedirs(idea_dir)
+
+        # Create required idea files
+        with open(os.path.join(idea_dir, f"{idea_name}-idea.md"), "w") as f:
+            f.write("# Simple Test Idea\n\nA simple test idea.")
+
+        with open(os.path.join(idea_dir, f"{idea_name}-discussion.md"), "w") as f:
+            f.write("# Discussion\n\nNo discussion needed.")
+
+        with open(os.path.join(idea_dir, f"{idea_name}-spec.md"), "w") as f:
+            f.write("# Specification\n\nSimple spec.")
+
+        plan_path = os.path.join(idea_dir, f"{idea_name}-plan.md")
+        with open(plan_path, "w") as f:
+            f.write(SIMPLE_PLAN_CONTENT)
 
         # Add and commit idea files
-        for root, dirs, files in os.walk(idea_dest):
-            for file in files:
-                filepath = os.path.join(root, file)
-                rel_path = os.path.relpath(filepath, tmpdir)
-                repo.index.add([rel_path])
-        repo.index.commit("Add test idea files")
+        for filename in os.listdir(idea_dir):
+            filepath = os.path.join(idea_dir, filename)
+            rel_path = os.path.relpath(filepath, tmpdir)
+            repo.index.add([rel_path])
+        repo.index.commit("Add simple test idea files")
 
         # Push to GitHub
         repo.remote("origin").push("HEAD:main")
@@ -126,7 +248,9 @@ def github_test_repo_with_plan():
         yield {
             "tmpdir": tmpdir,
             "repo_full_name": repo_full_name,
-            "idea_dir": idea_dest,
+            "idea_dir": idea_dir,
+            "idea_name": idea_name,
+            "plan_path": plan_path,
             "repo": repo
         }
 
@@ -137,66 +261,105 @@ def github_test_repo_with_plan():
 
 
 @pytest.mark.integration
-class TestTaskDetectionAndExecution:
-    """Test that script detects and executes tasks from plan file."""
+class TestSequentialTaskExecution:
+    """Test that script executes all tasks sequentially until complete."""
 
-    def test_script_outputs_first_task(self, github_test_repo_with_plan):
-        """Script should output the first uncompleted task it will execute."""
-        tmpdir = github_test_repo_with_plan["tmpdir"]
-        idea_dir = github_test_repo_with_plan["idea_dir"]
+    def test_executes_all_tasks_until_complete(self, github_test_repo_with_simple_plan):
+        """Script should execute tasks one by one until all are complete."""
+        tmpdir = github_test_repo_with_simple_plan["tmpdir"]
+        idea_dir = github_test_repo_with_simple_plan["idea_dir"]
+        idea_name = github_test_repo_with_simple_plan["idea_name"]
 
-        # Create mock Claude script
-        mock_script = create_mock_claude_script(tmpdir)
+        # Create mock Claude script that marks tasks complete
+        mock_script = create_mock_claude_script_that_marks_tasks_complete(
+            tmpdir, idea_name
+        )
 
         # Run the script with mock Claude
         result = subprocess.run(
             [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
             capture_output=True,
             text=True,
-            cwd=tmpdir
+            cwd=tmpdir,
+            timeout=120  # 2 minute timeout
         )
 
-        # The script should output information about the task it's about to execute
+        # Verify all 3 tasks were executed
         assert "Executing task:" in result.stdout, \
-            f"Script didn't output task info. stdout: {result.stdout}, stderr: {result.stderr}"
+            f"No tasks executed. stdout: {result.stdout}, stderr: {result.stderr}"
 
-    def test_script_uses_mock_claude(self, github_test_repo_with_plan):
-        """Script should use mock Claude when --mock-claude is provided."""
-        tmpdir = github_test_repo_with_plan["tmpdir"]
-        idea_dir = github_test_repo_with_plan["idea_dir"]
+        # Count how many tasks were executed
+        task_count = result.stdout.count("Executing task:")
+        assert task_count == 3, \
+            f"Expected 3 tasks executed, got {task_count}. stdout: {result.stdout}, stderr: {result.stderr}"
 
-        # Create mock Claude script
-        mock_script = create_mock_claude_script(tmpdir)
+        # Verify script completed successfully
+        assert result.returncode == 0, \
+            f"Script failed with code {result.returncode}. stderr: {result.stderr}"
+
+    def test_tasks_executed_in_order(self, github_test_repo_with_simple_plan):
+        """Script should execute tasks in order (Task 1, Task 2, Task 3)."""
+        tmpdir = github_test_repo_with_simple_plan["tmpdir"]
+        idea_dir = github_test_repo_with_simple_plan["idea_dir"]
+        idea_name = github_test_repo_with_simple_plan["idea_name"]
+
+        # Create mock Claude script that marks tasks complete
+        mock_script = create_mock_claude_script_that_marks_tasks_complete(
+            tmpdir, idea_name
+        )
 
         # Run the script with mock Claude
         result = subprocess.run(
             [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
             capture_output=True,
             text=True,
-            cwd=tmpdir
+            cwd=tmpdir,
+            timeout=120
         )
 
-        # The script should indicate it's using mock Claude
-        assert "Using mock Claude" in result.stdout, \
-            f"Script didn't use mock Claude. stdout: {result.stdout}, stderr: {result.stderr}"
+        # Verify tasks were executed in order
+        stdout = result.stdout
+        task1_pos = stdout.find("Task 1")
+        task2_pos = stdout.find("Task 2")
+        task3_pos = stdout.find("Task 3")
 
-    def test_mock_claude_creates_commit(self, github_test_repo_with_plan):
-        """Mock Claude should create a commit that gets pushed."""
-        tmpdir = github_test_repo_with_plan["tmpdir"]
-        idea_dir = github_test_repo_with_plan["idea_dir"]
-        repo_full_name = github_test_repo_with_plan["repo_full_name"]
+        assert task1_pos < task2_pos < task3_pos, \
+            f"Tasks not in order. Positions: Task1={task1_pos}, Task2={task2_pos}, Task3={task3_pos}"
 
-        # Create mock Claude script
-        mock_script = create_mock_claude_script(tmpdir)
+    def test_plan_file_updated_after_completion(self, github_test_repo_with_simple_plan):
+        """Plan file in worktree should have all tasks marked complete after script finishes."""
+        tmpdir = github_test_repo_with_simple_plan["tmpdir"]
+        idea_dir = github_test_repo_with_simple_plan["idea_dir"]
+        idea_name = github_test_repo_with_simple_plan["idea_name"]
+
+        # Create mock Claude script that marks tasks complete
+        mock_script = create_mock_claude_script_that_marks_tasks_complete(
+            tmpdir, idea_name
+        )
 
         # Run the script with mock Claude
-        result = subprocess.run(
+        subprocess.run(
             [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
             capture_output=True,
             text=True,
-            cwd=tmpdir
+            cwd=tmpdir,
+            timeout=120
         )
 
-        # The script should report task completed successfully
-        assert "Task completed successfully" in result.stdout, \
-            f"Task didn't complete. stdout: {result.stdout}, stderr: {result.stderr}"
+        # Read the plan file from the worktree and verify all tasks are marked complete
+        # The worktree is at ../<repo-name>-wt-<idea-name>
+        repo_name = os.path.basename(tmpdir)
+        worktree_path = os.path.join(os.path.dirname(tmpdir), f"{repo_name}-wt-{idea_name}")
+        worktree_plan_path = os.path.join(worktree_path, idea_name, f"{idea_name}-plan.md")
+
+        with open(worktree_plan_path, 'r') as f:
+            plan_content = f.read()
+
+        # Count uncompleted vs completed tasks
+        uncompleted = plan_content.count("- [ ] **Task")
+        completed = plan_content.count("- [x] **Task")
+
+        assert uncompleted == 0, \
+            f"Expected 0 uncompleted tasks, found {uncompleted}"
+        assert completed == 3, \
+            f"Expected 3 completed tasks, found {completed}"

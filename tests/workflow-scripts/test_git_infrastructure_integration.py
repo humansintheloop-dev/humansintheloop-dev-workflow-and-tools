@@ -40,7 +40,7 @@ class TestIntegrationBranchCreation:
         tmpdir, repo = test_git_repo_with_commit
         idea_dir = create_valid_idea_directory(tmpdir, repo)
 
-        result = run_script(idea_dir, cwd=tmpdir)
+        result = run_script(idea_dir, cwd=tmpdir, setup_only=True)
 
         # Reload repo to see new branches
         repo = Repo(tmpdir)
@@ -65,7 +65,7 @@ class TestWorktreeCreation:
         parent_dir = os.path.dirname(tmpdir)
         expected_worktree = os.path.join(parent_dir, f"{repo_name}-wt-test-feature")
 
-        result = run_script(idea_dir, cwd=tmpdir)
+        result = run_script(idea_dir, cwd=tmpdir, setup_only=True)
 
         assert os.path.isdir(expected_worktree), \
             f"Worktree not created at {expected_worktree}. stderr: {result.stderr}"
@@ -80,7 +80,7 @@ class TestSliceBranchCreation:
         tmpdir, repo = test_git_repo_with_commit
         idea_dir = create_valid_idea_directory(tmpdir, repo)
 
-        result = run_script(idea_dir, cwd=tmpdir)
+        result = run_script(idea_dir, cwd=tmpdir, setup_only=True)
 
         # Reload repo to see new branches
         repo = Repo(tmpdir)
@@ -108,14 +108,14 @@ class TestInfrastructureReuse:
         idea_dir = create_valid_idea_directory(tmpdir, repo)
 
         # First run
-        run_script(idea_dir, cwd=tmpdir)
+        run_script(idea_dir, cwd=tmpdir, setup_only=True)
 
         # Get branch count after first run
         repo = Repo(tmpdir)
         first_run_branches = [b.name for b in repo.branches]
 
         # Second run
-        run_script(idea_dir, cwd=tmpdir)
+        run_script(idea_dir, cwd=tmpdir, setup_only=True)
 
         # Get branch count after second run
         repo = Repo(tmpdir)

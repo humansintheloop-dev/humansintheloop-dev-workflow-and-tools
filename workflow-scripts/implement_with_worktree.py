@@ -649,6 +649,11 @@ def main():
         metavar="SCRIPT",
         help="Use mock script instead of Claude (for testing)"
     )
+    parser.add_argument(
+        "--setup-only",
+        action="store_true",
+        help="Only set up infrastructure (branches, worktree, PR), don't execute tasks"
+    )
 
     args = parser.parse_args()
 
@@ -676,10 +681,16 @@ def main():
     print(f"Worktree: {worktree_path}")
 
     # Read plan file to get first task name for slice naming
-    plan_file = os.path.join(args.idea_directory, f"{idea_name}-plan.md")
-    with open(plan_file, "r") as f:
+    # Use the original idea directory path for initial read
+    original_plan_file = os.path.join(args.idea_directory, f"{idea_name}-plan.md")
+    with open(original_plan_file, "r") as f:
         plan_content = f.read()
     first_task_name = get_first_task_name(plan_content)
+
+    # Calculate the plan file path in the worktree for the task execution loop
+    # The idea directory structure is preserved in the worktree
+    idea_dir_relpath = os.path.relpath(args.idea_directory, repo.working_tree_dir)
+    worktree_plan_file = os.path.join(worktree_path, idea_dir_relpath, f"{idea_name}-plan.md")
 
     # Create or reuse slice branch
     slice_branch = ensure_slice_branch(
@@ -702,53 +713,74 @@ def main():
     if pr_number:
         print(f"PR: #{pr_number}")
 
-    # Parse tasks from plan file
-    tasks = parse_tasks_from_plan(plan_content)
-    if not tasks:
-        print("No uncompleted tasks found in plan file.")
+    # Skip task execution if --setup-only was provided
+    if args.setup_only:
+        print("Setup complete. Exiting (--setup-only mode).")
         return
 
-    print(f"Found {len(tasks)} uncompleted task(s)")
+    # Execute tasks one by one until all are complete
+    while True:
+        # Re-read plan file from the worktree to get current uncompleted tasks
+        with open(worktree_plan_file, "r") as f:
+            plan_content = f.read()
 
-    # Execute first uncompleted task
-    # (Full loop implementation will come in later tasks)
-    current_task = tasks[0]
-    print(f"Executing task: {current_task}")
+        tasks = parse_tasks_from_plan(plan_content)
+        if not tasks:
+            print("All tasks completed!")
+            break
 
-    # Get HEAD before Claude invocation
-    head_before = worktree_repo.head.commit.hexsha
+        tasks_before = len(tasks)
+        print(f"Found {tasks_before} uncompleted task(s)")
 
-    # Build and run Claude command (or mock script for testing)
-    if args.mock_claude:
-        claude_cmd = [args.mock_claude, current_task]
-        print(f"Using mock Claude: {args.mock_claude}")
-    else:
-        claude_cmd = build_claude_command(
-            args.idea_directory,
-            current_task,
-            "implement-plan.md"
-        )
-        print(f"Invoking Claude: {' '.join(claude_cmd)}")
+        # Execute next uncompleted task
+        current_task = tasks[0]
+        print(f"Executing task: {current_task}")
 
-    # Run Claude (or mock) interactively
-    claude_result = subprocess.run(claude_cmd, cwd=worktree_path)
+        # Get HEAD before Claude invocation
+        head_before = worktree_repo.head.commit.hexsha
 
-    # Get HEAD after Claude invocation
-    head_after = worktree_repo.head.commit.hexsha
+        # Build and run Claude command (or mock script for testing)
+        if args.mock_claude:
+            claude_cmd = [args.mock_claude, current_task]
+            print(f"Using mock Claude: {args.mock_claude}")
+        else:
+            claude_cmd = build_claude_command(
+                args.idea_directory,
+                current_task,
+                "implement-plan.md"
+            )
+            print(f"Invoking Claude: {' '.join(claude_cmd)}")
 
-    # Verify success
-    if not check_claude_success(claude_result.returncode, head_before, head_after):
-        print(f"Error: Task execution failed.", file=sys.stderr)
-        print(f"  Exit code: {claude_result.returncode}", file=sys.stderr)
-        print(f"  HEAD before: {head_before}", file=sys.stderr)
-        print(f"  HEAD after: {head_after}", file=sys.stderr)
-        sys.exit(1)
+        # Run Claude (or mock) interactively
+        claude_result = subprocess.run(claude_cmd, cwd=worktree_path)
 
-    print(f"Task completed successfully. Pushing changes...")
+        # Get HEAD after Claude invocation
+        head_after = worktree_repo.head.commit.hexsha
 
-    # Push the commit
-    if pr_number and not push_to_slice_branch(slice_branch, pr_number):
-        print("Warning: Could not push commit to slice branch", file=sys.stderr)
+        # Re-read plan to check if task was marked complete
+        with open(worktree_plan_file, "r") as f:
+            updated_plan_content = f.read()
+        tasks_after = len(parse_tasks_from_plan(updated_plan_content))
+
+        # Verify success: exit code 0, HEAD advanced, AND task count decreased
+        if not check_claude_success(claude_result.returncode, head_before, head_after):
+            print(f"Error: Task execution failed.", file=sys.stderr)
+            print(f"  Exit code: {claude_result.returncode}", file=sys.stderr)
+            print(f"  HEAD before: {head_before}", file=sys.stderr)
+            print(f"  HEAD after: {head_after}", file=sys.stderr)
+            sys.exit(1)
+
+        if tasks_after >= tasks_before:
+            print(f"Error: Task was not marked complete in plan file.", file=sys.stderr)
+            print(f"  Tasks before: {tasks_before}", file=sys.stderr)
+            print(f"  Tasks after: {tasks_after}", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Task completed successfully. Pushing changes...")
+
+        # Push the commit
+        if pr_number and not push_to_slice_branch(slice_branch, pr_number):
+            print("Warning: Could not push commit to slice branch", file=sys.stderr)
 
 
 if __name__ == "__main__":

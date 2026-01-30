@@ -3,17 +3,11 @@
 These tests run the actual shell script and verify its behavior.
 """
 
-import os
 import subprocess
 
 import pytest
 
-
-# Path to the shell script
-SCRIPT_PATH = os.path.join(
-    os.path.dirname(__file__),
-    '../../workflow-scripts/implement-with-worktree.sh'
-)
+from conftest import SCRIPT_PATH
 
 
 @pytest.mark.integration

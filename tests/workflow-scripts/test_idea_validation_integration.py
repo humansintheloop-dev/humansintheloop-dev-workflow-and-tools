@@ -5,28 +5,10 @@ These tests run the actual shell script against real test repositories.
 
 import json
 import os
-import subprocess
-import tempfile
 
 import pytest
-from git import Repo
 
-
-# Path to the shell script
-SCRIPT_PATH = os.path.join(
-    os.path.dirname(__file__),
-    '../../workflow-scripts/implement-with-worktree.sh'
-)
-
-
-@pytest.fixture
-def test_git_repo():
-    """Create a temporary git repository for testing."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        repo = Repo.init(tmpdir)
-        repo.config_writer().set_value("user", "email", "test@test.com").release()
-        repo.config_writer().set_value("user", "name", "Test").release()
-        yield tmpdir, repo
+from conftest import run_script
 
 
 @pytest.mark.integration
@@ -35,11 +17,7 @@ class TestNonExistentDirectory:
 
     def test_nonexistent_directory_returns_error(self):
         """Running script with non-existent directory should return error."""
-        result = subprocess.run(
-            [SCRIPT_PATH, '/nonexistent/path/to/idea'],
-            capture_output=True,
-            text=True
-        )
+        result = run_script('/nonexistent/path/to/idea')
 
         assert result.returncode != 0
         assert "not found" in result.stderr.lower() or "directory" in result.stderr.lower()
@@ -66,11 +44,7 @@ class TestIncompleteIdeaDirectory:
         repo.index.add([os.path.relpath(idea_file, tmpdir)])
         repo.index.commit("Add idea file")
 
-        result = subprocess.run(
-            [SCRIPT_PATH, idea_dir],
-            capture_output=True,
-            text=True
-        )
+        result = run_script(idea_dir)
 
         assert result.returncode != 0
         # Should mention missing files
@@ -101,11 +75,7 @@ class TestUncommittedIdeaFiles:
 
         # Don't commit - files are untracked
 
-        result = subprocess.run(
-            [SCRIPT_PATH, idea_dir],
-            capture_output=True,
-            text=True
-        )
+        result = run_script(idea_dir)
 
         assert result.returncode != 0
         assert "uncommitted" in result.stderr.lower() or "untracked" in result.stderr.lower()
@@ -135,11 +105,7 @@ class TestValidIdeaDirectory:
             repo.index.add([rel_path])
         repo.index.commit("Add idea files")
 
-        result = subprocess.run(
-            [SCRIPT_PATH, idea_dir],
-            capture_output=True,
-            text=True
-        )
+        result = run_script(idea_dir)
 
         # Script should succeed (exit 0) or at least create state file before failing
         # on later steps (like GitHub operations)

@@ -4,18 +4,11 @@ These tests run the actual shell script and verify git infrastructure is created
 """
 
 import os
-import subprocess
-import tempfile
 
 import pytest
 from git import Repo
 
-
-# Path to the shell script
-SCRIPT_PATH = os.path.join(
-    os.path.dirname(__file__),
-    '../../workflow-scripts/implement-with-worktree.sh'
-)
+from conftest import run_script
 
 
 def create_valid_idea_directory(tmpdir, repo, idea_name="test-feature"):
@@ -38,39 +31,16 @@ def create_valid_idea_directory(tmpdir, repo, idea_name="test-feature"):
     return idea_dir
 
 
-@pytest.fixture
-def test_git_repo():
-    """Create a temporary git repository for testing."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        repo = Repo.init(tmpdir)
-        repo.config_writer().set_value("user", "email", "test@test.com").release()
-        repo.config_writer().set_value("user", "name", "Test").release()
-
-        # Need an initial commit before we can create branches
-        readme = os.path.join(tmpdir, "README.md")
-        with open(readme, "w") as f:
-            f.write("# Test Repo")
-        repo.index.add(["README.md"])
-        repo.index.commit("Initial commit")
-
-        yield tmpdir, repo
-
-
 @pytest.mark.integration
 class TestIntegrationBranchCreation:
     """Test that script creates integration branch."""
 
-    def test_integration_branch_created(self, test_git_repo):
+    def test_integration_branch_created(self, test_git_repo_with_commit):
         """Running script should create integration branch."""
-        tmpdir, repo = test_git_repo
+        tmpdir, repo = test_git_repo_with_commit
         idea_dir = create_valid_idea_directory(tmpdir, repo)
 
-        result = subprocess.run(
-            [SCRIPT_PATH, idea_dir],
-            capture_output=True,
-            text=True,
-            cwd=tmpdir
-        )
+        result = run_script(idea_dir, cwd=tmpdir)
 
         # Reload repo to see new branches
         repo = Repo(tmpdir)
@@ -85,9 +55,9 @@ class TestIntegrationBranchCreation:
 class TestWorktreeCreation:
     """Test that script creates worktree."""
 
-    def test_worktree_directory_created(self, test_git_repo):
+    def test_worktree_directory_created(self, test_git_repo_with_commit):
         """Running script should create worktree directory."""
-        tmpdir, repo = test_git_repo
+        tmpdir, repo = test_git_repo_with_commit
         repo_name = os.path.basename(tmpdir)
         idea_dir = create_valid_idea_directory(tmpdir, repo)
 
@@ -95,12 +65,7 @@ class TestWorktreeCreation:
         parent_dir = os.path.dirname(tmpdir)
         expected_worktree = os.path.join(parent_dir, f"{repo_name}-wt-test-feature")
 
-        result = subprocess.run(
-            [SCRIPT_PATH, idea_dir],
-            capture_output=True,
-            text=True,
-            cwd=tmpdir
-        )
+        result = run_script(idea_dir, cwd=tmpdir)
 
         assert os.path.isdir(expected_worktree), \
             f"Worktree not created at {expected_worktree}. stderr: {result.stderr}"
@@ -110,17 +75,12 @@ class TestWorktreeCreation:
 class TestSliceBranchCreation:
     """Test that script creates slice branch."""
 
-    def test_slice_branch_created_with_correct_pattern(self, test_git_repo):
+    def test_slice_branch_created_with_correct_pattern(self, test_git_repo_with_commit):
         """Running script should create slice branch with correct pattern."""
-        tmpdir, repo = test_git_repo
+        tmpdir, repo = test_git_repo_with_commit
         idea_dir = create_valid_idea_directory(tmpdir, repo)
 
-        result = subprocess.run(
-            [SCRIPT_PATH, idea_dir],
-            capture_output=True,
-            text=True,
-            cwd=tmpdir
-        )
+        result = run_script(idea_dir, cwd=tmpdir)
 
         # Reload repo to see new branches
         repo = Repo(tmpdir)
@@ -142,30 +102,20 @@ class TestSliceBranchCreation:
 class TestInfrastructureReuse:
     """Test that running script again reuses existing infrastructure."""
 
-    def test_branches_reused_not_duplicated(self, test_git_repo):
+    def test_branches_reused_not_duplicated(self, test_git_repo_with_commit):
         """Running script twice should reuse branches, not create duplicates."""
-        tmpdir, repo = test_git_repo
+        tmpdir, repo = test_git_repo_with_commit
         idea_dir = create_valid_idea_directory(tmpdir, repo)
 
         # First run
-        subprocess.run(
-            [SCRIPT_PATH, idea_dir],
-            capture_output=True,
-            text=True,
-            cwd=tmpdir
-        )
+        run_script(idea_dir, cwd=tmpdir)
 
         # Get branch count after first run
         repo = Repo(tmpdir)
         first_run_branches = [b.name for b in repo.branches]
 
         # Second run
-        subprocess.run(
-            [SCRIPT_PATH, idea_dir],
-            capture_output=True,
-            text=True,
-            cwd=tmpdir
-        )
+        run_script(idea_dir, cwd=tmpdir)
 
         # Get branch count after second run
         repo = Repo(tmpdir)

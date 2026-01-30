@@ -107,12 +107,12 @@ Validate the idea directory structure and manage persistent state.
   - [x] Exit with error message if files have uncommitted changes
   - [x] Verify: uncommitted changes to idea files trigger error
 
-- [ ] **Task 2.4: State file initializes if not exists and loads if exists**
-  - [ ] State file location: `<idea-directory>/<idea-name>-wt-state.json`
-  - [ ] Initialize with: `{"slice_number": 1, "processed_comment_ids": [], "processed_review_ids": []}`
-  - [ ] Load existing state file and validate JSON structure
-  - [ ] Provide functions to update and save state
-  - [ ] Verify: first run creates state file, subsequent run loads it
+- [x] **Task 2.4: State file initializes if not exists and loads if exists**
+  - [x] State file location: `<idea-directory>/<idea-name>-wt-state.json`
+  - [x] Initialize with: `{"slice_number": 1, "processed_comment_ids": [], "processed_review_ids": []}`
+  - [x] Load existing state file and validate JSON structure
+  - [x] Provide functions to update and save state
+  - [x] Verify: first run creates state file, subsequent run loads it
 
 ---
 

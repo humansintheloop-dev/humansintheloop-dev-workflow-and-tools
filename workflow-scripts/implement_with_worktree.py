@@ -8,8 +8,10 @@ from creating Git infrastructure through task execution with Claude Code.
 
 import argparse
 import glob
+import json
 import os
 import sys
+from typing import Dict, Any
 
 from git import Repo
 from git.exc import InvalidGitRepositoryError
@@ -136,6 +138,57 @@ def validate_idea_files_committed(idea_directory: str, idea_name: str) -> None:
         sys.exit(1)
 
 
+def get_state_file_path(idea_directory: str, idea_name: str) -> str:
+    """Return the path to the state file for the given idea."""
+    return os.path.join(idea_directory, f"{idea_name}-wt-state.json")
+
+
+def init_or_load_state(idea_directory: str, idea_name: str) -> Dict[str, Any]:
+    """Initialize or load the state file.
+
+    If the state file doesn't exist, creates it with default values.
+    If it exists, loads and returns its contents.
+
+    Args:
+        idea_directory: Path to the idea directory
+        idea_name: Name of the idea
+
+    Returns:
+        Dictionary containing the state
+    """
+    state_file = get_state_file_path(idea_directory, idea_name)
+
+    if os.path.isfile(state_file):
+        with open(state_file, "r") as f:
+            return json.load(f)
+
+    # Default state for new file
+    default_state = {
+        "slice_number": 1,
+        "processed_comment_ids": [],
+        "processed_review_ids": []
+    }
+
+    # Write default state to file
+    with open(state_file, "w") as f:
+        json.dump(default_state, f, indent=2)
+
+    return default_state
+
+
+def save_state(idea_directory: str, idea_name: str, state: Dict[str, Any]) -> None:
+    """Save the state to the state file.
+
+    Args:
+        idea_directory: Path to the idea directory
+        idea_name: Name of the idea
+        state: State dictionary to save
+    """
+    state_file = get_state_file_path(idea_directory, idea_name)
+    with open(state_file, "w") as f:
+        json.dump(state, f, indent=2)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Implement a development plan using Git worktrees and GitHub Draft PRs"
@@ -162,10 +215,14 @@ def main():
     # Validate idea files are committed to Git
     validate_idea_files_committed(args.idea_directory, idea_name)
 
+    # Initialize or load state
+    state = init_or_load_state(args.idea_directory, idea_name)
+
     # For now, just print the parsed arguments (implementation will come in later tasks)
     print(f"Idea directory: {args.idea_directory}")
     print(f"Idea name: {idea_name}")
     print(f"Cleanup: {args.cleanup}")
+    print(f"State: {state}")
 
 
 if __name__ == "__main__":

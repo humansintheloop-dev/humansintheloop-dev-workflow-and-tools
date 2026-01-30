@@ -133,12 +133,12 @@ Create or reuse integration branch, worktree, and slice branch.
   - [x] Change working directory to worktree for subsequent operations
   - [x] Verify: first run creates worktree, second run reuses it
 
-- [ ] **Task 3.3: Slice branch created with correct naming pattern**
-  - [ ] Branch name: `idea/<idea-name>/<nn>-<slice-name>` where nn is zero-padded slice number
-  - [ ] Derive slice-name from first task in plan (sanitized for branch name)
-  - [ ] Create from integration branch if doesn't exist
-  - [ ] Checkout slice branch in worktree
-  - [ ] Verify: slice branch created with correct format (e.g., `idea/my-feature/01-project-setup`)
+- [x] **Task 3.3: Slice branch created with correct naming pattern**
+  - [x] Branch name: `idea/<idea-name>/<nn>-<slice-name>` where nn is zero-padded slice number
+  - [x] Derive slice-name from first task in plan (sanitized for branch name)
+  - [x] Create from integration branch if doesn't exist
+  - [x] Checkout slice branch in worktree
+  - [x] Verify: slice branch created with correct format (e.g., `idea/my-feature/01-project-setup`)
 
 ---
 

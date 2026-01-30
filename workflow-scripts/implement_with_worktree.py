@@ -10,6 +10,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import sys
 from typing import Dict, Any
 
@@ -236,6 +237,58 @@ def ensure_worktree(repo: Repo, idea_name: str, branch_name: str) -> str:
         repo.git.worktree("add", worktree_path, branch_name)
 
     return worktree_path
+
+
+def sanitize_branch_name(name: str) -> str:
+    """Sanitize a string for use in a Git branch name.
+
+    Args:
+        name: The string to sanitize
+
+    Returns:
+        A sanitized string suitable for a branch name
+    """
+    # Convert to lowercase
+    result = name.lower()
+    # Replace any non-alphanumeric characters with dashes
+    result = re.sub(r'[^a-z0-9]+', '-', result)
+    # Collapse multiple dashes
+    result = re.sub(r'-+', '-', result)
+    # Strip leading and trailing dashes
+    result = result.strip('-')
+    return result
+
+
+def ensure_slice_branch(
+    repo: Repo,
+    idea_name: str,
+    slice_number: int,
+    slice_name: str,
+    integration_branch: str
+) -> str:
+    """Ensure the slice branch exists, creating it if necessary.
+
+    Args:
+        repo: GitPython Repo object
+        idea_name: Name of the idea
+        slice_number: The slice number (will be zero-padded)
+        slice_name: Name for this slice (will be sanitized)
+        integration_branch: The integration branch to create from
+
+    Returns:
+        The slice branch name
+    """
+    sanitized_name = sanitize_branch_name(slice_name)
+    branch_name = f"idea/{idea_name}/{slice_number:02d}-{sanitized_name}"
+
+    # Check if branch already exists
+    existing_branches = [b.name for b in repo.branches]
+    if branch_name not in existing_branches:
+        # Create the branch from integration branch
+        integration_ref = repo.heads[integration_branch]
+        repo.create_head(branch_name, integration_ref)
+
+    return branch_name
 
 
 def main():

@@ -174,3 +174,128 @@ class TestWorktree:
 
             expected_path = os.path.join(tmpdir, "genai-development-workflow-wt-wt-pr-based-development")
             assert worktree_path == expected_path
+
+
+@pytest.mark.unit
+class TestSliceBranch:
+    """Test slice branch creation and naming."""
+
+    def test_create_slice_branch(self):
+        """Should create slice branch with correct naming."""
+        from implement_with_worktree import ensure_slice_branch
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = Repo.init(tmpdir)
+            repo.config_writer().set_value("user", "email", "test@test.com").release()
+            repo.config_writer().set_value("user", "name", "Test").release()
+
+            # Create an initial commit
+            test_file = os.path.join(tmpdir, "README.md")
+            with open(test_file, "w") as f:
+                f.write("# Test")
+            repo.index.add(["README.md"])
+            repo.index.commit("Initial commit")
+
+            # Create integration branch
+            repo.create_head("idea/my-feature/integration")
+
+            branch_name = ensure_slice_branch(
+                repo,
+                "my-feature",
+                slice_number=1,
+                slice_name="project-setup",
+                integration_branch="idea/my-feature/integration"
+            )
+
+            assert branch_name == "idea/my-feature/01-project-setup"
+            assert "idea/my-feature/01-project-setup" in [b.name for b in repo.branches]
+
+    def test_slice_branch_zero_padded_number(self):
+        """Slice number should be zero-padded to 2 digits."""
+        from implement_with_worktree import ensure_slice_branch
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = Repo.init(tmpdir)
+            repo.config_writer().set_value("user", "email", "test@test.com").release()
+            repo.config_writer().set_value("user", "name", "Test").release()
+
+            # Create an initial commit
+            test_file = os.path.join(tmpdir, "README.md")
+            with open(test_file, "w") as f:
+                f.write("# Test")
+            repo.index.add(["README.md"])
+            repo.index.commit("Initial commit")
+
+            repo.create_head("idea/my-feature/integration")
+
+            branch_name = ensure_slice_branch(
+                repo,
+                "my-feature",
+                slice_number=5,
+                slice_name="feedback-handling",
+                integration_branch="idea/my-feature/integration"
+            )
+
+            assert branch_name == "idea/my-feature/05-feedback-handling"
+
+    def test_reuse_existing_slice_branch(self):
+        """Should reuse slice branch if it already exists."""
+        from implement_with_worktree import ensure_slice_branch
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = Repo.init(tmpdir)
+            repo.config_writer().set_value("user", "email", "test@test.com").release()
+            repo.config_writer().set_value("user", "name", "Test").release()
+
+            # Create an initial commit
+            test_file = os.path.join(tmpdir, "README.md")
+            with open(test_file, "w") as f:
+                f.write("# Test")
+            repo.index.add(["README.md"])
+            repo.index.commit("Initial commit")
+
+            repo.create_head("idea/my-feature/integration")
+            # Create slice branch manually
+            repo.create_head("idea/my-feature/01-project-setup")
+
+            branch_name = ensure_slice_branch(
+                repo,
+                "my-feature",
+                slice_number=1,
+                slice_name="project-setup",
+                integration_branch="idea/my-feature/integration"
+            )
+
+            assert branch_name == "idea/my-feature/01-project-setup"
+            # Should still have exactly one branch with that name
+            matching = [b for b in repo.branches if b.name == "idea/my-feature/01-project-setup"]
+            assert len(matching) == 1
+
+
+@pytest.mark.unit
+class TestSliceNameSanitization:
+    """Test sanitizing task names for branch names."""
+
+    def test_sanitize_simple_name(self):
+        """Simple names should pass through with lowercase."""
+        from implement_with_worktree import sanitize_branch_name
+
+        assert sanitize_branch_name("Project Setup") == "project-setup"
+
+    def test_sanitize_removes_special_chars(self):
+        """Special characters should be removed or replaced."""
+        from implement_with_worktree import sanitize_branch_name
+
+        assert sanitize_branch_name("Task 1.1: Create files") == "task-1-1-create-files"
+
+    def test_sanitize_collapses_multiple_dashes(self):
+        """Multiple dashes should be collapsed to one."""
+        from implement_with_worktree import sanitize_branch_name
+
+        assert sanitize_branch_name("foo---bar") == "foo-bar"
+
+    def test_sanitize_strips_leading_trailing_dashes(self):
+        """Leading and trailing dashes should be stripped."""
+        from implement_with_worktree import sanitize_branch_name
+
+        assert sanitize_branch_name("--foo-bar--") == "foo-bar"

@@ -73,11 +73,11 @@ pytest tests/workflow-scripts/ -m integration
 
 Set up the Python venv infrastructure, basic CLI structure, and test framework.
 
-- [ ] **Task 1.1: Python venv helper bootstraps virtual environment**
-  - [ ] Create `workflow-scripts/_python_helper.sh` with `ensure_venv` and `run_python` functions
-  - [ ] Create `workflow-scripts/requirements.txt` with pytest as initial dependency
-  - [ ] Create `workflow-scripts/.gitignore` to exclude `.venv/`
-  - [ ] Verify: sourcing helper and calling `ensure_venv` creates `.venv/` directory
+- [x] **Task 1.1: Python venv helper bootstraps virtual environment**
+  - [x] Create `workflow-scripts/_python_helper.sh` with `ensure_venv` and `run_python` functions
+  - [x] Create `workflow-scripts/requirements.txt` with pytest as initial dependency
+  - [x] Create `workflow-scripts/.gitignore` to exclude `.venv/`
+  - [x] Verify: sourcing helper and calling `ensure_venv` creates `.venv/` directory
 
 - [ ] **Task 1.2: CLI accepts idea-directory argument and --cleanup flag**
   - [ ] Create `workflow-scripts/implement-with-worktree.sh` that sources helper and invokes Python

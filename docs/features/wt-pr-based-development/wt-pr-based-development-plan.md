@@ -102,10 +102,10 @@ Validate the idea directory structure and manage persistent state.
   - [x] Exit with clear error listing missing files
   - [x] Verify: running with incomplete idea directory shows which files are missing
 
-- [ ] **Task 2.3: Script validates idea files are committed to Git**
-  - [ ] Use `git status --porcelain` to check for uncommitted changes to idea files
-  - [ ] Exit with error message if files have uncommitted changes
-  - [ ] Verify: uncommitted changes to idea files trigger error
+- [x] **Task 2.3: Script validates idea files are committed to Git**
+  - [x] Use GitPython to check for uncommitted changes to idea files
+  - [x] Exit with error message if files have uncommitted changes
+  - [x] Verify: uncommitted changes to idea files trigger error
 
 - [ ] **Task 2.4: State file initializes if not exists and loads if exists**
   - [ ] State file location: `<idea-directory>/<idea-name>-wt-state.json`

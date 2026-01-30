@@ -11,6 +11,9 @@ import glob
 import os
 import sys
 
+from git import Repo
+from git.exc import InvalidGitRepositoryError
+
 
 def validate_idea_directory(idea_directory: str) -> str:
     """Validate that the idea directory exists and return the idea name.
@@ -69,6 +72,70 @@ def validate_idea_files(idea_directory: str, idea_name: str) -> None:
         sys.exit(1)
 
 
+def validate_idea_files_committed(idea_directory: str, idea_name: str) -> None:
+    """Validate that all idea files are committed to Git.
+
+    Args:
+        idea_directory: Path to the idea directory
+        idea_name: Name of the idea (used for file naming)
+
+    Raises:
+        SystemExit: If any idea files have uncommitted changes or are untracked
+    """
+    try:
+        # Find the git repository root by searching up from idea_directory
+        repo = Repo(idea_directory, search_parent_directories=True)
+    except InvalidGitRepositoryError:
+        print(f"Error: {idea_directory} is not in a Git repository", file=sys.stderr)
+        sys.exit(1)
+
+    repo_root = repo.working_tree_dir
+
+    # Build list of idea file patterns to check
+    idea_files_patterns = [
+        f"{idea_name}-idea.*",
+        f"{idea_name}-discussion.md",
+        f"{idea_name}-spec.md",
+        f"{idea_name}-plan.md",
+    ]
+
+    # Get all files in the idea directory that match our patterns
+    idea_files = []
+    for pattern in idea_files_patterns:
+        matches = glob.glob(os.path.join(idea_directory, pattern))
+        for match in matches:
+            rel_path = os.path.relpath(match, repo_root)
+            idea_files.append(rel_path)
+
+    # Check for uncommitted changes using GitPython
+    uncommitted = []
+
+    # Check for modified files (staged or unstaged)
+    changed_files = [item.a_path for item in repo.index.diff(None)]  # Unstaged changes
+
+    # Check staged changes - but only if there are commits (HEAD exists)
+    try:
+        changed_files += [item.a_path for item in repo.index.diff("HEAD")]
+    except Exception:
+        # No commits yet - all tracked files are staged but not committed
+        pass
+
+    # Check for untracked files
+    untracked = repo.untracked_files
+
+    for idea_file in idea_files:
+        if idea_file in changed_files:
+            uncommitted.append(idea_file)
+        elif idea_file in untracked:
+            uncommitted.append(idea_file)
+
+    if uncommitted:
+        print(f"Error: Idea files have uncommitted changes:", file=sys.stderr)
+        for f in uncommitted:
+            print(f"  - {f}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Implement a development plan using Git worktrees and GitHub Draft PRs"
@@ -91,6 +158,9 @@ def main():
 
     # Validate required idea files exist
     validate_idea_files(args.idea_directory, idea_name)
+
+    # Validate idea files are committed to Git
+    validate_idea_files_committed(args.idea_directory, idea_name)
 
     # For now, just print the parsed arguments (implementation will come in later tasks)
     print(f"Idea directory: {args.idea_directory}")

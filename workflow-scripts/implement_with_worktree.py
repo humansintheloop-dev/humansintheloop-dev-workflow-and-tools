@@ -663,6 +663,44 @@ If all tasks are complete, stop and report success.
     ]
 
 
+def build_feedback_command(
+    pr_url: str,
+    feedback_type: str,
+    feedback_content: str
+) -> List[str]:
+    """Build the command to invoke Claude Code for handling feedback.
+
+    Args:
+        pr_url: The PR URL
+        feedback_type: Type of feedback (review_comment, review, check_failure)
+        feedback_content: The feedback content to address
+
+    Returns:
+        Command as a list suitable for subprocess
+    """
+    prompt = f"""You are addressing feedback on a pull request.
+
+* PR URL: {pr_url}
+* Feedback type: {feedback_type}
+
+The feedback to address:
+
+{feedback_content}
+
+Your task:
+
+1. Understand the feedback and what changes are being requested
+2. Make the necessary code changes to address the feedback
+3. Commit your changes with a clear message explaining how you addressed the feedback
+"""
+
+    return [
+        "claude",
+        "--print", "wt-handle-feedback.md",
+        "-p", prompt
+    ]
+
+
 def build_push_command(branch_name: str, force: bool = False) -> List[str]:
     """Build the git push command for the slice branch.
 

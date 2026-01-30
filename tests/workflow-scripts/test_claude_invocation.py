@@ -331,3 +331,46 @@ class TestStatusCheckDetection:
         failed = fetch_failed_checks(123)
 
         assert len(failed) == 0
+
+
+@pytest.mark.unit
+class TestFeedbackHandling:
+    """Test handling feedback with Claude."""
+
+    def test_build_feedback_command_uses_feedback_template(self):
+        """Should use wt-handle-feedback.md template."""
+        from implement_with_worktree import build_feedback_command
+
+        cmd = build_feedback_command(
+            pr_url="https://github.com/owner/repo/pull/123",
+            feedback_type="review_comment",
+            feedback_content="Please fix the typo"
+        )
+
+        assert "wt-handle-feedback.md" in " ".join(cmd)
+
+    def test_build_feedback_command_includes_pr_url(self):
+        """Should include PR URL in command."""
+        from implement_with_worktree import build_feedback_command
+
+        cmd = build_feedback_command(
+            pr_url="https://github.com/owner/repo/pull/123",
+            feedback_type="review_comment",
+            feedback_content="Please fix the typo"
+        )
+
+        cmd_str = " ".join(cmd)
+        assert "https://github.com/owner/repo/pull/123" in cmd_str
+
+    def test_build_feedback_command_includes_feedback_content(self):
+        """Should include feedback content in command."""
+        from implement_with_worktree import build_feedback_command
+
+        cmd = build_feedback_command(
+            pr_url="https://github.com/owner/repo/pull/123",
+            feedback_type="review_comment",
+            feedback_content="Please fix the typo"
+        )
+
+        cmd_str = " ".join(cmd)
+        assert "Please fix the typo" in cmd_str

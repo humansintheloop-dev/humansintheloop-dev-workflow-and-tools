@@ -252,13 +252,13 @@ Detect and handle PR feedback (reviews, comments, status checks).
   - [x] Treat failures as feedback requiring handling
   - [x] Verify: correctly detects failed status checks
 
-- [ ] **Task 6.4: Handle feedback with Claude using feedback template**
-  - [ ] Invoke Claude with `wt-handle-feedback.md` template
-  - [ ] Pass feedback content and context
-  - [ ] Verify success (exit code + HEAD advanced)
-  - [ ] Push fix commit
-  - [ ] Update state with processed feedback IDs
-  - [ ] Verify: feedback triggers Claude invocation and state update
+- [x] **Task 6.4: Handle feedback with Claude using feedback template**
+  - [x] Invoke Claude with `wt-handle-feedback.md` template
+  - [x] Pass feedback content and context
+  - [x] Verify success (exit code + HEAD advanced)
+  - [x] Push fix commit
+  - [x] Update state with processed feedback IDs
+  - [x] Verify: feedback triggers Claude invocation and state update
 
 - [ ] **Task 6.5: Integration test for feedback handling**
   - [ ] Create test GitHub repository with PR that has review comments

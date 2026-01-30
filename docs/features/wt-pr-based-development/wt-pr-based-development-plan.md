@@ -417,7 +417,31 @@ Ensure clean interrupt handling and seamless resume after restart.
 
 ---
 
+## Steel Thread 12: End-to-End Test Script
+
+Create a standalone test script for manual/CI testing of the complete workflow.
+
+- [ ] **Task 12.1: Create test-implement-with-worktree.sh script**
+  - [ ] Create `workflow-scripts/test-implement-with-worktree.sh`
+  - [ ] Script creates a temporary directory for the test
+  - [ ] Script initializes git repo in temp directory
+  - [ ] Script copies `config-files/CLAUDE.md` to repo root as `CLAUDE.md`
+  - [ ] Script copies `config-files/settings.local.json` to `.claude/settings.local.json`
+  - [ ] Script edits `settings.local.json` to add "git commit" to allowed permissions
+  - [ ] Script copies `tests/kafka-security-poc` as the test idea directory
+  - [ ] Script commits all files
+  - [ ] Script creates GitHub repository using `gh repo create <name> --private --source .`
+  - [ ] Script runs `implement-with-worktree.sh` with the test idea
+  - [ ] Script runs real Claude Code to execute tasks
+  - [ ] Script verifies tasks are executed successfully
+
+---
+
 ## Change History
+
+### 2026-01-30: Added Steel Thread 12 for end-to-end test script
+
+Added Task 12.1 to create `test-implement-with-worktree.sh` - a standalone test script that creates a temporary GitHub repository, uses `tests/kafka-security-poc` as the test idea, and runs the full workflow with mock Claude for manual or CI testing.
 
 ### 2026-01-30: Added integration test tasks to each steel thread
 

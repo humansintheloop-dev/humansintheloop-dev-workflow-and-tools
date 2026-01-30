@@ -568,6 +568,54 @@ def fetch_failed_checks(pr_number: int) -> List[Dict[str, Any]]:
     return failed
 
 
+# Main Branch Advancement Functions
+
+def has_main_advanced(original_head: str, current_head: str) -> bool:
+    """Check if the main branch has advanced since we started.
+
+    Args:
+        original_head: The HEAD SHA of main at start
+        current_head: The current HEAD SHA of main
+
+    Returns:
+        True if main has new commits, False otherwise
+    """
+    return original_head != current_head
+
+
+def get_remote_main_head(remote: str = "origin", branch: str = "main") -> str:
+    """Get the current HEAD SHA of the remote main branch.
+
+    Fetches from the remote first to ensure we have the latest refs.
+
+    Args:
+        remote: The remote name (default: "origin")
+        branch: The branch name (default: "main")
+
+    Returns:
+        The SHA of the remote main branch HEAD
+    """
+    # Fetch from remote first
+    subprocess.run(
+        ["git", "fetch", remote, branch],
+        capture_output=True,
+        text=True
+    )
+
+    # Get the HEAD SHA using ls-remote
+    result = subprocess.run(
+        ["git", "ls-remote", remote, f"refs/heads/{branch}"],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0 or not result.stdout.strip():
+        return ""
+
+    # Output format: "SHA\trefs/heads/branch"
+    return result.stdout.split()[0]
+
+
 # Task Parsing Functions
 
 def parse_tasks_from_plan(plan_content: str) -> List[str]:

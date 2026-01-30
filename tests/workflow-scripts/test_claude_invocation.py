@@ -374,3 +374,66 @@ class TestFeedbackHandling:
 
         cmd_str = " ".join(cmd)
         assert "Please fix the typo" in cmd_str
+
+
+@pytest.mark.unit
+class TestMainBranchAdvancement:
+    """Test detection of main branch advancement."""
+
+    def test_has_main_advanced_returns_false_if_same(self):
+        """Should return False when main branch HEAD hasn't changed."""
+        from implement_with_worktree import has_main_advanced
+
+        assert has_main_advanced(
+            original_head="abc123",
+            current_head="abc123"
+        ) is False
+
+    def test_has_main_advanced_returns_true_if_different(self):
+        """Should return True when main branch HEAD has changed."""
+        from implement_with_worktree import has_main_advanced
+
+        assert has_main_advanced(
+            original_head="abc123",
+            current_head="def456"
+        ) is True
+
+    def test_get_remote_main_head_returns_sha(self, mocker):
+        """Should return the SHA of origin/main."""
+        from implement_with_worktree import get_remote_main_head
+
+        # Mock subprocess.run to simulate git fetch and ls-remote
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = "abc123def456\trefs/heads/main\n"
+
+        sha = get_remote_main_head()
+
+        assert sha == "abc123def456"
+        # Called twice: once for fetch, once for ls-remote
+        assert mock_run.call_count == 2
+
+    def test_get_remote_main_head_fetches_first(self, mocker):
+        """Should fetch from origin before getting HEAD."""
+        from implement_with_worktree import get_remote_main_head
+
+        # Track all subprocess calls
+        calls = []
+        def mock_run(*args, **kwargs):
+            calls.append(args[0])
+            result = mocker.MagicMock()
+            result.returncode = 0
+            if "fetch" in args[0]:
+                result.stdout = ""
+            else:
+                result.stdout = "abc123\trefs/heads/main\n"
+            return result
+
+        mocker.patch('implement_with_worktree.subprocess.run', side_effect=mock_run)
+
+        get_remote_main_head()
+
+        # Verify fetch was called before ls-remote
+        assert len(calls) == 2
+        assert "fetch" in calls[0]
+        assert "ls-remote" in calls[1]

@@ -274,11 +274,11 @@ Detect and handle PR feedback (reviews, comments, status checks).
 
 Detect and handle when main branch advances during execution.
 
-- [ ] **Task 7.1: Detect when main branch has advanced**
-  - [ ] Track main branch HEAD at start of execution
-  - [ ] After each task, fetch and compare current main HEAD
-  - [ ] Return boolean indicating whether main has new commits
-  - [ ] Verify: correctly detects main advancement
+- [x] **Task 7.1: Detect when main branch has advanced**
+  - [x] Track main branch HEAD at start of execution
+  - [x] After each task, fetch and compare current main HEAD
+  - [x] Return boolean indicating whether main has new commits
+  - [x] Verify: correctly detects main advancement
 
 - [ ] **Task 7.2: Auto-rebase integration branch when rebase is clean**
   - [ ] Attempt `git rebase main` on integration branch

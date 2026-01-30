@@ -86,6 +86,11 @@ Set up the Python venv infrastructure, basic CLI structure, and test framework.
   - [x] Script accepts optional `--cleanup` flag
   - [x] Verify: `./implement-with-worktree.sh` shows usage, `./implement-with-worktree.sh some/path` runs without argument error
 
+- [x] **Task 1.3: Integration test for CLI skeleton**
+  - [x] Create test that runs `implement-with-worktree.sh` with no arguments and verifies usage output
+  - [x] Create test that runs script with `--help` and verifies help text
+  - [x] Verify: tests run the actual shell script and check exit codes/output
+
 ---
 
 ## Steel Thread 2: Idea Validation and State Management
@@ -114,6 +119,14 @@ Validate the idea directory structure and manage persistent state.
   - [x] Provide functions to update and save state
   - [x] Verify: first run creates state file, subsequent run loads it
 
+- [ ] **Task 2.5: Integration test for idea validation**
+  - [ ] Create local test git repository with test idea directory
+  - [ ] Run script with non-existent directory, verify error message and exit code
+  - [ ] Run script with incomplete idea directory (missing files), verify error lists missing files
+  - [ ] Run script with uncommitted idea files, verify error message
+  - [ ] Run script with valid committed idea directory, verify state file created
+  - [ ] Verify: tests run actual script against real test repository
+
 ---
 
 ## Steel Thread 3: Git Infrastructure Setup
@@ -140,6 +153,14 @@ Create or reuse integration branch, worktree, and slice branch.
   - [x] Checkout slice branch in worktree
   - [x] Verify: slice branch created with correct format (e.g., `idea/my-feature/01-project-setup`)
 
+- [ ] **Task 3.4: Integration test for git infrastructure setup**
+  - [ ] Create local test git repository with valid idea directory
+  - [ ] Run script and verify integration branch `idea/<idea-name>/integration` exists
+  - [ ] Verify worktree directory created at `../<repo-name>-wt-<idea-name>`
+  - [ ] Verify slice branch created with correct pattern
+  - [ ] Run script again, verify branches and worktree are reused (not duplicated)
+  - [ ] Verify: tests run actual script and check git state with GitPython
+
 ---
 
 ## Steel Thread 4: GitHub Draft PR Management
@@ -158,6 +179,13 @@ Create or reuse GitHub Draft PR for the slice branch.
   - [x] Use `gh pr view` to check if PR is still in Draft state
   - [x] Return boolean indicating Draft status
   - [x] Verify: function correctly identifies Draft vs Ready PRs
+
+- [ ] **Task 4.3: Integration test for GitHub PR management**
+  - [ ] Create test GitHub repository (use pytest fixture with cleanup)
+  - [ ] Run script with valid idea directory, verify Draft PR created on GitHub
+  - [ ] Verify PR title and body contain expected content
+  - [ ] Run script again, verify existing PR is reused (PR count unchanged)
+  - [ ] Verify: tests use real GitHub API via `gh` CLI
 
 ---
 
@@ -179,19 +207,26 @@ Parse tasks from plan file and execute with Claude Code.
   - [x] Capture exit code
   - [x] Verify: Claude invocation command is correctly formed
 
-- [ ] **Task 5.3: Verify task success via exit code and HEAD advancement**
-  - [ ] Record HEAD before Claude invocation
-  - [ ] After Claude exits, compare HEAD to recorded value
-  - [ ] Success requires: exit code 0 AND HEAD advanced
-  - [ ] Display clear error message on failure
-  - [ ] Exit script if verification fails
-  - [ ] Verify: detects both exit code failures and no-commit failures
+- [x] **Task 5.3: Verify task success via exit code and HEAD advancement**
+  - [x] Record HEAD before Claude invocation
+  - [x] After Claude exits, compare HEAD to recorded value
+  - [x] Success requires: exit code 0 AND HEAD advanced
+  - [x] Display clear error message on failure
+  - [x] Exit script if verification fails
+  - [x] Verify: detects both exit code failures and no-commit failures
 
 - [ ] **Task 5.4: Push commit to slice branch after successful task**
   - [ ] Verify PR still in Draft state before pushing
   - [ ] Push current HEAD to slice branch
   - [ ] Handle push failures gracefully
   - [ ] Verify: commit pushed to remote slice branch
+
+- [ ] **Task 5.5: Integration test for task execution (with mocked Claude)**
+  - [ ] Create test repository with idea directory containing plan with uncompleted tasks
+  - [ ] Mock Claude invocation to simulate success (exit 0) and create a commit
+  - [ ] Run script and verify task is detected from plan
+  - [ ] Verify commit is pushed to slice branch on GitHub
+  - [ ] Verify: tests use real git/GitHub but mock Claude subprocess
 
 ---
 
@@ -225,6 +260,14 @@ Detect and handle PR feedback (reviews, comments, status checks).
   - [ ] Update state with processed feedback IDs
   - [ ] Verify: feedback triggers Claude invocation and state update
 
+- [ ] **Task 6.5: Integration test for feedback handling**
+  - [ ] Create test GitHub repository with PR that has review comments
+  - [ ] Run script with mocked Claude that creates fix commit
+  - [ ] Verify script detects new comments and invokes Claude with feedback template
+  - [ ] Verify processed comment IDs are saved to state file
+  - [ ] Run script again, verify same comments are not reprocessed
+  - [ ] Verify: tests use real GitHub PR with comments, mock Claude
+
 ---
 
 ## Steel Thread 7: Main Branch Advancement
@@ -249,6 +292,14 @@ Detect and handle when main branch advances during execution.
   - [ ] Display clear message explaining the conflict
   - [ ] Pause execution (wait for user input or exit)
   - [ ] Verify: conflict triggers pause with clear message
+
+- [ ] **Task 7.4: Integration test for main branch advancement**
+  - [ ] Create test repository, run script to create integration branch
+  - [ ] Add commits to main branch (simulate main advancing)
+  - [ ] Run script again, verify it detects main advanced
+  - [ ] Test clean rebase scenario: verify integration branch rebased automatically
+  - [ ] Test conflict scenario: create conflicting changes, verify script pauses with message
+  - [ ] Verify: tests use real git operations for rebase scenarios
 
 ---
 
@@ -275,6 +326,13 @@ Handle completion of all tasks and poll for feedback until PR is merged/closed.
   - [ ] Exit with message when PR is closed (not merged)
   - [ ] Verify: script exits cleanly on PR merge
 
+- [ ] **Task 8.4: Integration test for completion and polling**
+  - [ ] Create test repository with plan where all tasks are completed
+  - [ ] Run script, verify PR is marked ready for review (`gh pr ready` called)
+  - [ ] Test merge scenario: merge PR via `gh pr merge`, verify script exits with success
+  - [ ] Test close scenario: close PR via `gh pr close`, verify script exits with message
+  - [ ] Verify: tests use real GitHub PR state transitions
+
 ---
 
 ## Steel Thread 9: Cleanup
@@ -292,6 +350,13 @@ Optional cleanup of worktree and local branches.
   - [ ] Delete local slice branch(es)
   - [ ] Do not delete remote branches (GitHub handles via PR)
   - [ ] Verify: local branches deleted, remote branches remain
+
+- [ ] **Task 9.3: Integration test for cleanup**
+  - [ ] Create test repository, run script to create worktree and branches
+  - [ ] Merge PR to complete workflow
+  - [ ] Run script with `--cleanup` flag, verify worktree directory removed
+  - [ ] Verify local branches deleted but remote branches remain
+  - [ ] Verify: tests check filesystem and git state after cleanup
 
 ---
 
@@ -313,6 +378,16 @@ Handle edge case where PR exits Draft state unexpectedly.
   - [ ] Push commits to new slice
   - [ ] Verify: no commits lost, work continues on new slice
 
+- [ ] **Task 10.3: Integration test for slice rollover**
+  - [ ] Create test repository with PR in Draft state
+  - [ ] Create local commits on slice branch (not pushed)
+  - [ ] Mark PR as ready via `gh pr ready` (simulate unexpected state change)
+  - [ ] Run script, verify it detects PR is no longer Draft
+  - [ ] Verify new slice branch created with incremented number
+  - [ ] Verify unpushed commits preserved on new slice
+  - [ ] Verify new Draft PR created for new slice
+  - [ ] Verify: tests check commit preservation and new PR creation
+
 ---
 
 ## Steel Thread 11: Interrupt Handling and Resumability
@@ -332,9 +407,34 @@ Ensure clean interrupt handling and seamless resume after restart.
   - [ ] Do not reprocess already-handled feedback
   - [ ] Verify: restart after interrupt continues from correct point
 
+- [ ] **Task 11.3: Integration test for interrupt handling and resumability**
+  - [ ] Create test repository, run script partially (complete some tasks)
+  - [ ] Simulate interrupt (kill process or send SIGINT)
+  - [ ] Verify state file is saved and git is in consistent state
+  - [ ] Run script again, verify it resumes from correct task (not from beginning)
+  - [ ] Verify already-processed feedback is not reprocessed
+  - [ ] Verify: tests check state persistence and correct resume behavior
+
 ---
 
 ## Change History
+
+### 2026-01-30: Added integration test tasks to each steel thread
+
+Added explicit integration test tasks to each steel thread to ensure the script is wired together and behaves correctly end-to-end:
+- Task 1.3: Integration test for CLI skeleton
+- Task 2.5: Integration test for idea validation
+- Task 3.4: Integration test for git infrastructure setup
+- Task 4.3: Integration test for GitHub PR management
+- Task 5.5: Integration test for task execution (with mocked Claude)
+- Task 6.5: Integration test for feedback handling
+- Task 7.4: Integration test for main branch advancement
+- Task 8.4: Integration test for completion and polling
+- Task 9.3: Integration test for cleanup
+- Task 10.3: Integration test for slice rollover
+- Task 11.3: Integration test for interrupt handling and resumability
+
+These tasks run the actual `implement-with-worktree.sh` script against real test repositories and verify observable behavior, addressing the gap where unit-tested functions weren't wired into main().
 
 ### 2026-01-30: Added Testing Strategy section
 

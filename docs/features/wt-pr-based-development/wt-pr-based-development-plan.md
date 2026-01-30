@@ -119,13 +119,13 @@ Validate the idea directory structure and manage persistent state.
   - [x] Provide functions to update and save state
   - [x] Verify: first run creates state file, subsequent run loads it
 
-- [ ] **Task 2.5: Integration test for idea validation**
-  - [ ] Create local test git repository with test idea directory
-  - [ ] Run script with non-existent directory, verify error message and exit code
-  - [ ] Run script with incomplete idea directory (missing files), verify error lists missing files
-  - [ ] Run script with uncommitted idea files, verify error message
-  - [ ] Run script with valid committed idea directory, verify state file created
-  - [ ] Verify: tests run actual script against real test repository
+- [x] **Task 2.5: Integration test for idea validation**
+  - [x] Create local test git repository with test idea directory
+  - [x] Run script with non-existent directory, verify error message and exit code
+  - [x] Run script with incomplete idea directory (missing files), verify error lists missing files
+  - [x] Run script with uncommitted idea files, verify error message
+  - [x] Run script with valid committed idea directory, verify state file created
+  - [x] Verify: tests run actual script against real test repository
 
 ---
 

@@ -619,3 +619,60 @@ class TestFeedbackDetectionIntegration:
         new_feedback_after = get_new_feedback(comments, reloaded_state["processed_comment_ids"])
         assert len(new_feedback_after) == 0, \
             "No new feedback should exist after marking all as processed"
+
+
+@pytest.mark.integration
+class TestMainBranchAdvancementIntegration:
+    """Test main branch advancement detection with real git operations."""
+
+    def test_get_remote_main_head_returns_valid_sha(self, github_test_repo_with_simple_plan):
+        """Should return a valid SHA for origin/main."""
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
+        from implement_with_worktree import get_remote_main_head
+
+        tmpdir = github_test_repo_with_simple_plan["tmpdir"]
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmpdir)
+            sha = get_remote_main_head()
+        finally:
+            os.chdir(original_cwd)
+
+        # SHA should be 40 hex characters
+        assert len(sha) == 40, f"Expected 40-char SHA, got {len(sha)}: {sha}"
+        assert all(c in '0123456789abcdef' for c in sha), \
+            f"SHA should be hex: {sha}"
+
+    def test_has_main_advanced_detects_new_commits(self, github_test_repo_with_simple_plan):
+        """Should detect when main has new commits after initial check."""
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
+        from implement_with_worktree import get_remote_main_head, has_main_advanced
+
+        tmpdir = github_test_repo_with_simple_plan["tmpdir"]
+        repo = github_test_repo_with_simple_plan["repo"]
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmpdir)
+
+            # Get initial HEAD
+            original_head = get_remote_main_head()
+
+            # Add a commit to main and push
+            readme = os.path.join(tmpdir, "README.md")
+            with open(readme, "a") as f:
+                f.write("\n\nNew content")
+            repo.index.add(["README.md"])
+            repo.index.commit("Add new content to main")
+            repo.remote("origin").push("HEAD:main")
+
+            # Get new HEAD
+            current_head = get_remote_main_head()
+
+            # Should detect advancement
+            assert has_main_advanced(original_head, current_head) is True
+        finally:
+            os.chdir(original_cwd)

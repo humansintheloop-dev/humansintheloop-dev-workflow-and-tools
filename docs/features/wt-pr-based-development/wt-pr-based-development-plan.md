@@ -293,13 +293,13 @@ Detect and handle when main branch advances during execution.
   - [x] Pause execution (wait for user input or exit)
   - [x] Verify: conflict triggers pause with clear message
 
-- [ ] **Task 7.4: Integration test for main branch advancement**
-  - [ ] Create test repository, run script to create integration branch
-  - [ ] Add commits to main branch (simulate main advancing)
-  - [ ] Run script again, verify it detects main advanced
-  - [ ] Test clean rebase scenario: verify integration branch rebased automatically
-  - [ ] Test conflict scenario: create conflicting changes, verify script pauses with message
-  - [ ] Verify: tests use real git operations for rebase scenarios
+- [x] **Task 7.4: Integration test for main branch advancement**
+  - [x] Create test repository, run script to create integration branch
+  - [x] Add commits to main branch (simulate main advancing)
+  - [x] Run script again, verify it detects main advanced
+  - [x] Test clean rebase scenario: verify integration branch rebased automatically
+  - [x] Test conflict scenario: create conflicting changes, verify script pauses with message
+  - [x] Verify: tests use real git operations for rebase scenarios
 
 ---
 

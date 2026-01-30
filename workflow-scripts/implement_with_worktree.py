@@ -536,6 +536,38 @@ def get_new_feedback(
     return [f for f in all_feedback if f.get("id") not in processed_ids]
 
 
+def fetch_failed_checks(pr_number: int) -> List[Dict[str, Any]]:
+    """Fetch failed status checks for a PR.
+
+    Args:
+        pr_number: The PR number to check
+
+    Returns:
+        List of failed check dictionaries with 'name' field
+    """
+    result = subprocess.run(
+        ["gh", "pr", "checks", str(pr_number), "--json", "name,state",
+         "--jq", '.[] | "\\(.name)\\t\\(.state)"'],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0 or not result.stdout.strip():
+        return []
+
+    failed = []
+    for line in result.stdout.strip().split('\n'):
+        if not line:
+            continue
+        parts = line.split('\t')
+        if len(parts) >= 2:
+            name, state = parts[0], parts[1]
+            if state.lower() == "fail":
+                failed.append({"name": name, "state": state})
+
+    return failed
+
+
 # Task Parsing Functions
 
 def parse_tasks_from_plan(plan_content: str) -> List[str]:

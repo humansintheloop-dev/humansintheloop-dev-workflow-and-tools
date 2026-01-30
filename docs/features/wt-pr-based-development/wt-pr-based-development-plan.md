@@ -246,11 +246,11 @@ Detect and handle PR feedback (reviews, comments, status checks).
   - [x] Return list of new (unprocessed) feedback items
   - [x] Verify: correctly identifies new vs already-processed feedback
 
-- [ ] **Task 6.3: Detect failed status checks**
-  - [ ] Use `gh pr checks` to get status check results
-  - [ ] Identify failed checks
-  - [ ] Treat failures as feedback requiring handling
-  - [ ] Verify: correctly detects failed status checks
+- [x] **Task 6.3: Detect failed status checks**
+  - [x] Use `gh pr checks` to get status check results
+  - [x] Identify failed checks
+  - [x] Treat failures as feedback requiring handling
+  - [x] Verify: correctly detects failed status checks
 
 - [ ] **Task 6.4: Handle feedback with Claude using feedback template**
   - [ ] Invoke Claude with `wt-handle-feedback.md` template

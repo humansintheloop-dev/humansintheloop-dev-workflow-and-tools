@@ -287,3 +287,47 @@ class TestFeedbackDetection:
         new_comments = get_new_feedback(all_comments, processed_ids)
 
         assert len(new_comments) == 0
+
+
+@pytest.mark.unit
+class TestStatusCheckDetection:
+    """Test detection of failed status checks."""
+
+    def test_fetch_failed_checks_returns_failures(self, mocker):
+        """Should return list of failed checks."""
+        from implement_with_worktree import fetch_failed_checks
+
+        # Mock subprocess.run to return check results with failures
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = 'build\tfail\t1234\ntest\tpass\t5678\nlint\tfail\t9012'
+
+        failed = fetch_failed_checks(123)
+
+        assert len(failed) == 2
+        assert failed[0]["name"] == "build"
+        assert failed[1]["name"] == "lint"
+
+    def test_fetch_failed_checks_returns_empty_if_all_pass(self, mocker):
+        """Should return empty list if all checks pass."""
+        from implement_with_worktree import fetch_failed_checks
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = 'build\tpass\t1234\ntest\tpass\t5678'
+
+        failed = fetch_failed_checks(123)
+
+        assert len(failed) == 0
+
+    def test_fetch_failed_checks_handles_no_checks(self, mocker):
+        """Should return empty list if no checks exist."""
+        from implement_with_worktree import fetch_failed_checks
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = ''
+
+        failed = fetch_failed_checks(123)
+
+        assert len(failed) == 0

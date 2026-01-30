@@ -92,10 +92,10 @@ Set up the Python venv infrastructure, basic CLI structure, and test framework.
 
 Validate the idea directory structure and manage persistent state.
 
-- [ ] **Task 2.1: Script validates idea directory exists**
-  - [ ] Exit with clear error message if directory does not exist
-  - [ ] Extract idea-name from directory path (last component)
-  - [ ] Verify: running with non-existent path shows "directory not found" error
+- [x] **Task 2.1: Script validates idea directory exists**
+  - [x] Exit with clear error message if directory does not exist
+  - [x] Extract idea-name from directory path (last component)
+  - [x] Verify: running with non-existent path shows "directory not found" error
 
 - [ ] **Task 2.2: Script validates required idea files exist**
   - [ ] Check for `*-idea.md`, `*-discussion.md`, `*-spec.md`, `*-plan.md`

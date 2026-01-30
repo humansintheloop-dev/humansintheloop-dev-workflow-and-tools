@@ -75,7 +75,7 @@ fi
 
 # Test 6: Python script exists
 echo -n "Test 6: Python script exists... "
-PY_SCRIPT="$REPO_ROOT/workflow-scripts/implement-with-worktree.py"
+PY_SCRIPT="$REPO_ROOT/workflow-scripts/implement_with_worktree.py"
 if [ -f "$PY_SCRIPT" ]; then
     echo "PASS"
 else

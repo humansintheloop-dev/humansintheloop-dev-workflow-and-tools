@@ -718,6 +718,40 @@ def mark_pr_ready(pr_number: int) -> bool:
     return result.returncode == 0
 
 
+def get_pr_state(pr_number: int) -> str:
+    """Get the current state of a PR (OPEN, MERGED, or CLOSED).
+
+    Args:
+        pr_number: The PR number to check
+
+    Returns:
+        The PR state string, or empty string on error
+    """
+    result = subprocess.run(
+        ["gh", "pr", "view", str(pr_number), "--json", "state"],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        return ""
+
+    data = json.loads(result.stdout)
+    return data.get("state", "")
+
+
+def is_pr_complete(state: str) -> bool:
+    """Check if a PR state indicates completion.
+
+    Args:
+        state: The PR state (OPEN, MERGED, or CLOSED)
+
+    Returns:
+        True if PR is merged or closed, False if still open
+    """
+    return state in ("MERGED", "CLOSED")
+
+
 # Task Parsing Functions
 
 def parse_tasks_from_plan(plan_content: str) -> List[str]:

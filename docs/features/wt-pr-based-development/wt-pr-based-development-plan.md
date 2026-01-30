@@ -313,12 +313,12 @@ Handle completion of all tasks and poll for feedback until PR is merged/closed.
   - [x] Display message indicating PR is ready for review
   - [x] Verify: PR transitions from Draft to Ready
 
-- [ ] **Task 8.2: Poll for feedback every 60 seconds after marking ready**
-  - [ ] Enter polling loop after marking PR ready
-  - [ ] Check for new feedback (reviews, comments, checks) each iteration
-  - [ ] Handle new feedback with Claude (same as during task execution)
-  - [ ] Display countdown/status during wait
-  - [ ] Verify: polling loop runs at correct interval
+- [x] **Task 8.2: Poll for feedback every 60 seconds after marking ready**
+  - [x] Enter polling loop after marking PR ready
+  - [x] Check for new feedback (reviews, comments, checks) each iteration
+  - [x] Handle new feedback with Claude (same as during task execution)
+  - [x] Display countdown/status during wait
+  - [x] Verify: polling loop runs at correct interval
 
 - [ ] **Task 8.3: Exit when PR is merged or closed**
   - [ ] Check PR state via `gh pr view` during each poll

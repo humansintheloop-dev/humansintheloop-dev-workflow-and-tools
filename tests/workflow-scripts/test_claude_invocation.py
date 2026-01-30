@@ -558,3 +558,62 @@ class TestPRReadyForReview:
         result = mark_pr_ready(123)
 
         assert result is False
+
+
+@pytest.mark.unit
+class TestPRPolling:
+    """Test PR polling for feedback."""
+
+    def test_get_pr_state_returns_open(self, mocker):
+        """Should return PR state from GitHub."""
+        from implement_with_worktree import get_pr_state
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = '{"state": "OPEN"}'
+
+        state = get_pr_state(123)
+
+        assert state == "OPEN"
+
+    def test_get_pr_state_returns_merged(self, mocker):
+        """Should return MERGED state when PR is merged."""
+        from implement_with_worktree import get_pr_state
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = '{"state": "MERGED"}'
+
+        state = get_pr_state(123)
+
+        assert state == "MERGED"
+
+    def test_get_pr_state_returns_closed(self, mocker):
+        """Should return CLOSED state when PR is closed."""
+        from implement_with_worktree import get_pr_state
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = '{"state": "CLOSED"}'
+
+        state = get_pr_state(123)
+
+        assert state == "CLOSED"
+
+    def test_is_pr_complete_true_when_merged(self):
+        """Should return True when PR is merged."""
+        from implement_with_worktree import is_pr_complete
+
+        assert is_pr_complete("MERGED") is True
+
+    def test_is_pr_complete_true_when_closed(self):
+        """Should return True when PR is closed."""
+        from implement_with_worktree import is_pr_complete
+
+        assert is_pr_complete("CLOSED") is True
+
+    def test_is_pr_complete_false_when_open(self):
+        """Should return False when PR is still open."""
+        from implement_with_worktree import is_pr_complete
+
+        assert is_pr_complete("OPEN") is False

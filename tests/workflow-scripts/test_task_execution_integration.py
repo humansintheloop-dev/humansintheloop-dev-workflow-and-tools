@@ -363,3 +363,259 @@ class TestSequentialTaskExecution:
             f"Expected 0 uncompleted tasks, found {uncompleted}"
         assert completed == 3, \
             f"Expected 3 completed tasks, found {completed}"
+
+
+# Plan with all tasks already complete for feedback testing
+COMPLETED_PLAN_CONTENT = """# Test Plan (All Complete)
+
+## Instructions for Coding Agent
+
+- Use TDD
+
+---
+
+## Steel Thread 1 – Test Tasks
+
+- [x] **Task 1: Already complete**
+  - [x] This is done
+"""
+
+
+@pytest.fixture(scope="function")
+def github_test_repo_with_pr_and_comments():
+    """Create a GitHub repository with a PR that has review comments."""
+    repo_name = f"test-tmp-feedback-{uuid.uuid4().hex[:8]}"
+
+    result = create_github_repo(repo_name)
+    if result is None:
+        pytest.skip("Could not create GitHub repository")
+
+    repo_full_name, clone_url = result
+    tmpdir = None
+
+    try:
+        tmpdir = tempfile.mkdtemp()
+
+        # Clone
+        subprocess.run(["git", "clone", clone_url, tmpdir], capture_output=True)
+
+        repo = Repo(tmpdir)
+        repo.config_writer().set_value("user", "email", "test@test.com").release()
+        repo.config_writer().set_value("user", "name", "Test").release()
+
+        # Initial commit on main
+        readme = os.path.join(tmpdir, "README.md")
+        with open(readme, "w") as f:
+            f.write(f"# {repo_name}\n\nInitial content.")
+        repo.index.add(["README.md"])
+        repo.index.commit("Initial commit")
+
+        # Push main
+        repo.remote("origin").push("HEAD:main")
+
+        # Create idea directory with completed plan
+        idea_name = "feedback-test"
+        idea_dir = os.path.join(tmpdir, idea_name)
+        os.makedirs(idea_dir)
+
+        with open(os.path.join(idea_dir, f"{idea_name}-idea.md"), "w") as f:
+            f.write("# Feedback Test Idea\n\nTesting feedback handling.")
+
+        with open(os.path.join(idea_dir, f"{idea_name}-discussion.md"), "w") as f:
+            f.write("# Discussion\n\nNo discussion needed.")
+
+        with open(os.path.join(idea_dir, f"{idea_name}-spec.md"), "w") as f:
+            f.write("# Specification\n\nSimple spec.")
+
+        plan_path = os.path.join(idea_dir, f"{idea_name}-plan.md")
+        with open(plan_path, "w") as f:
+            f.write(COMPLETED_PLAN_CONTENT)
+
+        # Add and commit idea files
+        for filename in os.listdir(idea_dir):
+            filepath = os.path.join(idea_dir, filename)
+            rel_path = os.path.relpath(filepath, tmpdir)
+            repo.index.add([rel_path])
+        repo.index.commit("Add feedback test idea files")
+
+        # Create feature branch with a change
+        feature_branch = "feature/test-change"
+        repo.create_head(feature_branch)
+        repo.heads[feature_branch].checkout()
+
+        # Make a change on the feature branch
+        with open(readme, "w") as f:
+            f.write(f"# {repo_name}\n\nModified content for PR.")
+        repo.index.add(["README.md"])
+        repo.index.commit("Update README")
+
+        # Push feature branch
+        repo.remote("origin").push(f"{feature_branch}:{feature_branch}")
+
+        # Create a PR using gh CLI
+        pr_result = subprocess.run(
+            ["gh", "pr", "create",
+             "--title", "Test PR for feedback",
+             "--body", "This PR is for testing feedback detection.",
+             "--head", feature_branch,
+             "--base", "main",
+             "--repo", repo_full_name],
+            capture_output=True,
+            text=True,
+            cwd=tmpdir
+        )
+
+        if pr_result.returncode != 0:
+            pytest.skip(f"Could not create PR: {pr_result.stderr}")
+
+        # Parse PR number from URL
+        pr_url = pr_result.stdout.strip()
+        pr_number = int(pr_url.split("/")[-1])
+
+        # Add a review comment to the PR using gh api
+        comment_result = subprocess.run(
+            ["gh", "api",
+             f"repos/{repo_full_name}/pulls/{pr_number}/comments",
+             "-X", "POST",
+             "-f", "body=Please fix this typo",
+             "-f", "commit_id=" + repo.head.commit.hexsha,
+             "-f", "path=README.md",
+             "-F", "line=2"],
+            capture_output=True,
+            text=True,
+            cwd=tmpdir
+        )
+
+        # Also add a regular issue comment (simpler)
+        issue_comment_result = subprocess.run(
+            ["gh", "pr", "comment", str(pr_number),
+             "--body", "This needs more work",
+             "--repo", repo_full_name],
+            capture_output=True,
+            text=True,
+            cwd=tmpdir
+        )
+
+        yield {
+            "tmpdir": tmpdir,
+            "repo_full_name": repo_full_name,
+            "idea_dir": idea_dir,
+            "idea_name": idea_name,
+            "plan_path": plan_path,
+            "repo": repo,
+            "pr_number": pr_number,
+            "pr_url": pr_url,
+            "feature_branch": feature_branch
+        }
+
+    finally:
+        delete_github_repo(repo_full_name)
+        if tmpdir:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+@pytest.mark.integration
+class TestFeedbackDetectionIntegration:
+    """Test feedback detection with real GitHub PRs."""
+
+    def test_fetch_pr_comments_returns_comments(self, github_test_repo_with_pr_and_comments):
+        """Should fetch review comments from a real PR."""
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
+        from implement_with_worktree import fetch_pr_comments
+
+        pr_number = github_test_repo_with_pr_and_comments["pr_number"]
+        tmpdir = github_test_repo_with_pr_and_comments["tmpdir"]
+
+        # Change to repo directory so gh uses correct context
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmpdir)
+            comments = fetch_pr_comments(pr_number)
+        finally:
+            os.chdir(original_cwd)
+
+        # Should have at least one review comment
+        assert len(comments) >= 1, \
+            f"Expected at least 1 comment, got {len(comments)}"
+
+    def test_get_new_feedback_filters_processed(self, github_test_repo_with_pr_and_comments):
+        """Should filter out already-processed feedback."""
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
+        from implement_with_worktree import fetch_pr_comments, get_new_feedback
+
+        pr_number = github_test_repo_with_pr_and_comments["pr_number"]
+        tmpdir = github_test_repo_with_pr_and_comments["tmpdir"]
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmpdir)
+            comments = fetch_pr_comments(pr_number)
+        finally:
+            os.chdir(original_cwd)
+
+        if not comments:
+            pytest.skip("No comments found on PR")
+
+        # Mark all comments as processed
+        processed_ids = [c["id"] for c in comments]
+
+        # Get new feedback (should be empty)
+        new_feedback = get_new_feedback(comments, processed_ids)
+
+        assert len(new_feedback) == 0, \
+            f"Expected 0 new feedback after marking all processed, got {len(new_feedback)}"
+
+    def test_state_file_tracks_processed_comments(self, github_test_repo_with_pr_and_comments):
+        """State file should be able to track processed comment IDs."""
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
+        from implement_with_worktree import (
+            init_or_load_state, save_state, fetch_pr_comments, get_new_feedback
+        )
+
+        idea_dir = github_test_repo_with_pr_and_comments["idea_dir"]
+        idea_name = github_test_repo_with_pr_and_comments["idea_name"]
+        pr_number = github_test_repo_with_pr_and_comments["pr_number"]
+        tmpdir = github_test_repo_with_pr_and_comments["tmpdir"]
+
+        # Initialize state
+        state = init_or_load_state(idea_dir, idea_name)
+        assert state["processed_comment_ids"] == [], \
+            "New state should have empty processed_comment_ids"
+
+        # Fetch comments
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmpdir)
+            comments = fetch_pr_comments(pr_number)
+        finally:
+            os.chdir(original_cwd)
+
+        if not comments:
+            pytest.skip("No comments found on PR")
+
+        # Get new feedback (all should be new)
+        new_feedback = get_new_feedback(comments, state["processed_comment_ids"])
+        assert len(new_feedback) == len(comments), \
+            "All comments should be new initially"
+
+        # Process feedback by adding IDs to state
+        for comment in new_feedback:
+            state["processed_comment_ids"].append(comment["id"])
+
+        # Save state
+        save_state(idea_dir, idea_name, state)
+
+        # Reload state
+        reloaded_state = init_or_load_state(idea_dir, idea_name)
+
+        # Verify processed IDs were persisted
+        assert len(reloaded_state["processed_comment_ids"]) == len(comments), \
+            "Processed comment IDs should be persisted"
+
+        # Get new feedback again (should be empty now)
+        new_feedback_after = get_new_feedback(comments, reloaded_state["processed_comment_ids"])
+        assert len(new_feedback_after) == 0, \
+            "No new feedback should exist after marking all as processed"

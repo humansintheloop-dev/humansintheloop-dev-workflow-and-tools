@@ -260,13 +260,13 @@ Detect and handle PR feedback (reviews, comments, status checks).
   - [x] Update state with processed feedback IDs
   - [x] Verify: feedback triggers Claude invocation and state update
 
-- [ ] **Task 6.5: Integration test for feedback handling**
-  - [ ] Create test GitHub repository with PR that has review comments
-  - [ ] Run script with mocked Claude that creates fix commit
-  - [ ] Verify script detects new comments and invokes Claude with feedback template
-  - [ ] Verify processed comment IDs are saved to state file
-  - [ ] Run script again, verify same comments are not reprocessed
-  - [ ] Verify: tests use real GitHub PR with comments, mock Claude
+- [x] **Task 6.5: Integration test for feedback handling**
+  - [x] Create test GitHub repository with PR that has review comments
+  - [x] Run script with mocked Claude that creates fix commit
+  - [x] Verify script detects new comments and invokes Claude with feedback template
+  - [x] Verify processed comment IDs are saved to state file
+  - [x] Run script again, verify same comments are not reprocessed
+  - [x] Verify: tests use real GitHub PR with comments, mock Claude
 
 ---
 

@@ -14,6 +14,61 @@
 
 ---
 
+## Testing Strategy
+
+### Test Location and Organization
+
+- Tests live in `tests/workflow-scripts/`
+- Use pytest markers to distinguish test types:
+  - `@pytest.mark.unit` - Fast unit tests (no external dependencies)
+  - `@pytest.mark.integration` - Slower tests requiring git/GitHub
+
+### Unit Tests
+
+Unit tests with pytest for pure Python functions:
+- State management (load, save, update)
+- Task parsing from plan files
+- Branch name generation and sanitization
+- Command construction (verify correct arguments without executing)
+
+### Integration Tests
+
+Integration tests use real repositories:
+
+| Component | Approach |
+|-----------|----------|
+| Git operations | Real local test repository |
+| GitHub operations | Real GitHub repository (created per test session, deleted at end) |
+| Shell scripts | Tested indirectly via Python integration tests |
+| Claude invocations | Mocked (verify command construction, simulate success/failure outcomes) |
+
+### Test Data
+
+- Use `tests/kafka-security-poc` as the test idea directory
+- Test repository created fresh per test session for isolation
+
+### Test Repository Initialization
+
+When creating the test GitHub repository, the test setup must:
+1. Copy `config-files/CLAUDE.md` to the repo root as `CLAUDE.md`
+2. Copy `config-files/settings.local.json` to `.claude/settings.local.json`
+3. Add "git commit" to the allowed permissions in settings
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest tests/workflow-scripts/
+
+# Run only fast unit tests
+pytest tests/workflow-scripts/ -m unit
+
+# Run integration tests (requires GitHub auth)
+pytest tests/workflow-scripts/ -m integration
+```
+
+---
+
 ## Steel Thread 1: Project Setup and CLI Skeleton
 
 Set up the Python venv infrastructure, basic CLI structure, and test framework.
@@ -276,3 +331,20 @@ Ensure clean interrupt handling and seamless resume after restart.
   - [ ] Start from first uncompleted task in plan
   - [ ] Do not reprocess already-handled feedback
   - [ ] Verify: restart after interrupt continues from correct point
+
+---
+
+## Change History
+
+### 2026-01-30: Added Testing Strategy section
+
+Added comprehensive testing strategy based on discussion:
+- Unit tests with pytest for pure Python functions
+- Integration tests using real git repositories
+- GitHub integration tests using real GitHub repo (created per session, deleted at end)
+- Shell scripts tested indirectly through Python tests
+- Claude invocations mocked (verify command, simulate outcomes)
+- Tests located in `tests/workflow-scripts/`
+- Pytest markers (`unit`, `integration`) for selective test execution
+- `tests/kafka-security-poc` as test idea directory
+- Test repo initialization: copy `config-files/CLAUDE.md` and `config-files/settings.local.json`, add "git commit" permission

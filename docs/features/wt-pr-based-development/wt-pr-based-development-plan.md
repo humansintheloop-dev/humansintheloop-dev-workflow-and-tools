@@ -79,12 +79,12 @@ Set up the Python venv infrastructure, basic CLI structure, and test framework.
   - [x] Create `workflow-scripts/.gitignore` to exclude `.venv/`
   - [x] Verify: sourcing helper and calling `ensure_venv` creates `.venv/` directory
 
-- [ ] **Task 1.2: CLI accepts idea-directory argument and --cleanup flag**
-  - [ ] Create `workflow-scripts/implement-with-worktree.sh` that sources helper and invokes Python
-  - [ ] Create `workflow-scripts/implement-with-worktree.py` with argument parsing (argparse)
-  - [ ] Script exits with error if no idea-directory provided
-  - [ ] Script accepts optional `--cleanup` flag
-  - [ ] Verify: `./implement-with-worktree.sh` shows usage, `./implement-with-worktree.sh some/path` runs without argument error
+- [x] **Task 1.2: CLI accepts idea-directory argument and --cleanup flag**
+  - [x] Create `workflow-scripts/implement-with-worktree.sh` that sources helper and invokes Python
+  - [x] Create `workflow-scripts/implement-with-worktree.py` with argument parsing (argparse)
+  - [x] Script exits with error if no idea-directory provided
+  - [x] Script accepts optional `--cleanup` flag
+  - [x] Verify: `./implement-with-worktree.sh` shows usage, `./implement-with-worktree.sh some/path` runs without argument error
 
 ---
 

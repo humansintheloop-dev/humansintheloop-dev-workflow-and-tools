@@ -307,11 +307,11 @@ Detect and handle when main branch advances during execution.
 
 Handle completion of all tasks and poll for feedback until PR is merged/closed.
 
-- [ ] **Task 8.1: Mark PR ready for review when all tasks complete**
-  - [ ] Detect when no uncompleted tasks remain in plan
-  - [ ] Run `gh pr ready` to convert Draft to Ready
-  - [ ] Display message indicating PR is ready for review
-  - [ ] Verify: PR transitions from Draft to Ready
+- [x] **Task 8.1: Mark PR ready for review when all tasks complete**
+  - [x] Detect when no uncompleted tasks remain in plan
+  - [x] Run `gh pr ready` to convert Draft to Ready
+  - [x] Display message indicating PR is ready for review
+  - [x] Verify: PR transitions from Draft to Ready
 
 - [ ] **Task 8.2: Poll for feedback every 60 seconds after marking ready**
   - [ ] Enter polling loop after marking PR ready

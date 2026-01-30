@@ -698,6 +698,26 @@ The script will now pause. Press Enter when ready to exit, or Ctrl+C to abort.
 """
 
 
+# PR Completion Functions
+
+def mark_pr_ready(pr_number: int) -> bool:
+    """Mark a PR as ready for review (convert from Draft to Ready).
+
+    Args:
+        pr_number: The PR number to mark as ready
+
+    Returns:
+        True if successful, False otherwise
+    """
+    result = subprocess.run(
+        ["gh", "pr", "ready", str(pr_number)],
+        capture_output=True,
+        text=True
+    )
+
+    return result.returncode == 0
+
+
 # Task Parsing Functions
 
 def parse_tasks_from_plan(plan_content: str) -> List[str]:

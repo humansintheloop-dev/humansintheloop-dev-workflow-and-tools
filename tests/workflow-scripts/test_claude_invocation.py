@@ -525,3 +525,36 @@ class TestRebaseConflictHandling:
 
         # Should tell user what to do
         assert "manual" in message.lower() or "resolve" in message.lower()
+
+
+@pytest.mark.unit
+class TestPRReadyForReview:
+    """Test marking PR as ready for review."""
+
+    def test_mark_pr_ready_calls_gh_pr_ready(self, mocker):
+        """Should call gh pr ready with PR number."""
+        from implement_with_worktree import mark_pr_ready
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+
+        result = mark_pr_ready(123)
+
+        assert result is True
+        mock_run.assert_called_once()
+        call_args = mock_run.call_args[0][0]
+        assert "gh" in call_args
+        assert "pr" in call_args
+        assert "ready" in call_args
+        assert "123" in call_args
+
+    def test_mark_pr_ready_returns_false_on_failure(self, mocker):
+        """Should return False when gh pr ready fails."""
+        from implement_with_worktree import mark_pr_ready
+
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 1
+
+        result = mark_pr_ready(123)
+
+        assert result is False

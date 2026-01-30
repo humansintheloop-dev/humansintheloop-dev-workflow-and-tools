@@ -351,12 +351,12 @@ Optional cleanup of worktree and local branches.
   - [x] Do not delete remote branches (GitHub handles via PR)
   - [x] Verify: local branches deleted, remote branches remain
 
-- [ ] **Task 9.3: Integration test for cleanup**
-  - [ ] Create test repository, run script to create worktree and branches
-  - [ ] Merge PR to complete workflow
-  - [ ] Run script with `--cleanup` flag, verify worktree directory removed
-  - [ ] Verify local branches deleted but remote branches remain
-  - [ ] Verify: tests check filesystem and git state after cleanup
+- [x] **Task 9.3: Integration test for cleanup**
+  - [x] Create test repository, run script to create worktree and branches
+  - [x] Merge PR to complete workflow
+  - [x] Run script with `--cleanup` flag, verify worktree directory removed
+  - [x] Verify local branches deleted but remote branches remain
+  - [x] Verify: tests check filesystem and git state after cleanup
 
 ---
 
@@ -364,29 +364,29 @@ Optional cleanup of worktree and local branches.
 
 Handle edge case where PR exits Draft state unexpectedly.
 
-- [ ] **Task 10.1: Detect PR exited Draft state before push**
-  - [ ] Before each push, check PR is still Draft
-  - [ ] If not Draft and there are unpushed commits, trigger rollover
-  - [ ] Verify: correctly detects unexpected Ready state with local commits
+- [x] **Task 10.1: Detect PR exited Draft state before push**
+  - [x] Before each push, check PR is still Draft
+  - [x] If not Draft and there are unpushed commits, trigger rollover
+  - [x] Verify: correctly detects unexpected Ready state with local commits
 
-- [ ] **Task 10.2: Preserve unpushed commits and create new slice**
-  - [ ] Record unpushed commits in integration branch
-  - [ ] Reset old slice branch to match remote (discard local-only changes on that branch)
-  - [ ] Increment slice number in state
-  - [ ] Create new slice branch from integration (includes preserved commits)
-  - [ ] Create new Draft PR for new slice
-  - [ ] Push commits to new slice
-  - [ ] Verify: no commits lost, work continues on new slice
+- [x] **Task 10.2: Preserve unpushed commits and create new slice**
+  - [x] Record unpushed commits in integration branch
+  - [x] Reset old slice branch to match remote (discard local-only changes on that branch)
+  - [x] Increment slice number in state
+  - [x] Create new slice branch from integration (includes preserved commits)
+  - [x] Create new Draft PR for new slice
+  - [x] Push commits to new slice
+  - [x] Verify: no commits lost, work continues on new slice
 
-- [ ] **Task 10.3: Integration test for slice rollover**
-  - [ ] Create test repository with PR in Draft state
-  - [ ] Create local commits on slice branch (not pushed)
-  - [ ] Mark PR as ready via `gh pr ready` (simulate unexpected state change)
-  - [ ] Run script, verify it detects PR is no longer Draft
-  - [ ] Verify new slice branch created with incremented number
-  - [ ] Verify unpushed commits preserved on new slice
-  - [ ] Verify new Draft PR created for new slice
-  - [ ] Verify: tests check commit preservation and new PR creation
+- [x] **Task 10.3: Integration test for slice rollover**
+  - [x] Create test repository with PR in Draft state
+  - [x] Create local commits on slice branch (not pushed)
+  - [x] Mark PR as ready via `gh pr ready` (simulate unexpected state change)
+  - [x] Run script, verify it detects PR is no longer Draft
+  - [x] Verify new slice branch created with incremented number
+  - [x] Verify unpushed commits preserved on new slice
+  - [x] Verify new Draft PR created for new slice
+  - [x] Verify: tests check commit preservation and new PR creation
 
 ---
 

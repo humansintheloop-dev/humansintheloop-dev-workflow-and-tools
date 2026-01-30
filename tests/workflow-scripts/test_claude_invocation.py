@@ -676,3 +676,63 @@ class TestCleanupOperations:
         result = delete_local_branch("idea/my-feature/integration")
 
         assert result is False
+
+
+@pytest.mark.unit
+class TestSliceRollover:
+    """Test slice rollover when PR exits Draft state unexpectedly."""
+
+    def test_should_rollover_true_when_not_draft_with_local_commits(self, mocker):
+        """Should return True when PR is not draft and has unpushed commits."""
+        from implement_with_worktree import should_rollover
+
+        # Mock is_pr_draft to return False (PR is ready, not draft)
+        mocker.patch('implement_with_worktree.is_pr_draft', return_value=False)
+
+        result = should_rollover(pr_number=123, has_unpushed_commits=True)
+
+        assert result is True
+
+    def test_should_rollover_false_when_draft(self, mocker):
+        """Should return False when PR is still in draft state."""
+        from implement_with_worktree import should_rollover
+
+        mocker.patch('implement_with_worktree.is_pr_draft', return_value=True)
+
+        result = should_rollover(pr_number=123, has_unpushed_commits=True)
+
+        assert result is False
+
+    def test_should_rollover_false_when_no_unpushed_commits(self, mocker):
+        """Should return False when there are no unpushed commits."""
+        from implement_with_worktree import should_rollover
+
+        mocker.patch('implement_with_worktree.is_pr_draft', return_value=False)
+
+        result = should_rollover(pr_number=123, has_unpushed_commits=False)
+
+        assert result is False
+
+    def test_generate_next_slice_branch_increments_number(self):
+        """Should generate next slice branch with incremented number."""
+        from implement_with_worktree import generate_next_slice_branch
+
+        next_branch = generate_next_slice_branch(
+            idea_name="my-feature",
+            current_slice_number=1,
+            slice_name="continuation"
+        )
+
+        assert next_branch == "idea/my-feature/02-continuation"
+
+    def test_generate_next_slice_branch_zero_pads(self):
+        """Should zero-pad the slice number."""
+        from implement_with_worktree import generate_next_slice_branch
+
+        next_branch = generate_next_slice_branch(
+            idea_name="my-feature",
+            current_slice_number=9,
+            slice_name="next"
+        )
+
+        assert next_branch == "idea/my-feature/10-next"

@@ -790,6 +790,51 @@ def delete_local_branch(branch_name: str) -> bool:
     return result.returncode == 0
 
 
+# Slice Rollover Functions
+
+def should_rollover(pr_number: int, has_unpushed_commits: bool) -> bool:
+    """Check if we should rollover to a new slice.
+
+    Rollover is needed when:
+    1. The PR is no longer in Draft state (someone marked it ready)
+    2. We have unpushed commits (work that can't be pushed to old slice)
+
+    Args:
+        pr_number: The PR number to check
+        has_unpushed_commits: Whether there are local commits not pushed
+
+    Returns:
+        True if rollover is needed, False otherwise
+    """
+    if not has_unpushed_commits:
+        return False
+
+    if is_pr_draft(pr_number):
+        return False
+
+    return True
+
+
+def generate_next_slice_branch(
+    idea_name: str,
+    current_slice_number: int,
+    slice_name: str
+) -> str:
+    """Generate the branch name for the next slice.
+
+    Args:
+        idea_name: Name of the idea
+        current_slice_number: Current slice number
+        slice_name: Name for the new slice
+
+    Returns:
+        The next slice branch name
+    """
+    next_number = current_slice_number + 1
+    sanitized_name = sanitize_branch_name(slice_name)
+    return f"idea/{idea_name}/{next_number:02d}-{sanitized_name}"
+
+
 # Task Parsing Functions
 
 def parse_tasks_from_plan(plan_content: str) -> List[str]:

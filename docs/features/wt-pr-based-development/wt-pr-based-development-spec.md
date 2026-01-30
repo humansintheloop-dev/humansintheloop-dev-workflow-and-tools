@@ -388,6 +388,7 @@ Location: `<idea-directory>/<idea-name>-wt-state.json`
 | Single concurrent execution | One script instance per idea; no parallel slice work |
 | GitHub-only | Uses `gh` CLI; GitLab/Bitbucket not supported |
 | Python 3.x | Script implemented in Python for cleaner state management and error handling |
+| `gh` CLI with JSON output | Use `--json` flags and `gh api` for structured data; avoids fragile text parsing |
 
 ### Assumptions
 
@@ -551,3 +552,17 @@ Added `_python_helper.sh` and `requirements.txt` for shared Python environment m
 - Zero manual setup for users cloning the repo
 
 Rationale: Support multiple Python scripts with minimal duplication and easy onboarding.
+
+### 2026-01-30: Use `gh` CLI with JSON output
+
+GitHub operations use `gh` CLI with `--json` flags and `gh api` for structured responses:
+```python
+# Example: list PRs with structured output
+result = subprocess.run(
+    ["gh", "pr", "list", "--json", "number,title,isDraft,headRefName"],
+    capture_output=True, text=True
+)
+prs = json.loads(result.stdout)
+```
+
+Rationale: Leverages user's existing `gh auth` setup (no separate token configuration) while giving Python clean JSON to parse instead of fragile text output.

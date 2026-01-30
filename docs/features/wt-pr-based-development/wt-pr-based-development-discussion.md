@@ -346,6 +346,29 @@ Which approach?
 
 ---
 
+## Design Question: GitHub API Access
+
+Given Python implementation, how should we access the GitHub API?
+
+A. **`gh` CLI via subprocess with text parsing** - Simple but fragile output parsing.
+
+B. **PyGithub library** - Native Python, structured responses, but requires separate token setup.
+
+C. **`gh` CLI with JSON output** - Use `--json` flags and `gh api` for structured data; `gh` handles auth.
+
+Which approach?
+
+**Answer:** C - `gh` CLI with JSON output. This leverages the user's existing `gh auth` setup (no separate token configuration) while giving Python clean JSON to parse. Example:
+```python
+result = subprocess.run(
+    ["gh", "pr", "list", "--json", "number,title,isDraft,headRefName"],
+    capture_output=True, text=True
+)
+prs = json.loads(result.stdout)
+```
+
+---
+
 ## Classification
 
 **Type:** C - Platform/infrastructure capability

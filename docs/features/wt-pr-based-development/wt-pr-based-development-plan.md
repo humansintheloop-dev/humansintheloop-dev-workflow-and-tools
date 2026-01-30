@@ -120,11 +120,11 @@ Validate the idea directory structure and manage persistent state.
 
 Create or reuse integration branch, worktree, and slice branch.
 
-- [ ] **Task 3.1: Integration branch created if not exists, reused if exists**
-  - [ ] Branch name: `idea/<idea-name>/integration`
-  - [ ] Create from current HEAD if branch doesn't exist
-  - [ ] Detect and reuse if branch already exists
-  - [ ] Verify: first run creates branch, second run reuses it
+- [x] **Task 3.1: Integration branch created if not exists, reused if exists**
+  - [x] Branch name: `idea/<idea-name>/integration`
+  - [x] Create from current HEAD if branch doesn't exist
+  - [x] Detect and reuse if branch already exists
+  - [x] Verify: first run creates branch, second run reuses it
 
 - [ ] **Task 3.2: Worktree created if not exists, reused if exists**
   - [ ] Worktree path: `../<repo-name>-wt-<idea-name>`

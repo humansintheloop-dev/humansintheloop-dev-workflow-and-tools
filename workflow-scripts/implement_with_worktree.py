@@ -189,6 +189,27 @@ def save_state(idea_directory: str, idea_name: str, state: Dict[str, Any]) -> No
         json.dump(state, f, indent=2)
 
 
+def ensure_integration_branch(repo: Repo, idea_name: str) -> str:
+    """Ensure the integration branch exists, creating it if necessary.
+
+    Args:
+        repo: GitPython Repo object
+        idea_name: Name of the idea
+
+    Returns:
+        The integration branch name
+    """
+    branch_name = f"idea/{idea_name}/integration"
+
+    # Check if branch already exists
+    existing_branches = [b.name for b in repo.branches]
+    if branch_name not in existing_branches:
+        # Create the branch from current HEAD
+        repo.create_head(branch_name)
+
+    return branch_name
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Implement a development plan using Git worktrees and GitHub Draft PRs"

@@ -374,6 +374,106 @@ def is_pr_draft(pr_number: int) -> bool:
     return data.get("isDraft", False)
 
 
+def create_draft_pr(
+    slice_branch: str,
+    title: str,
+    body: str,
+    base_branch: str = "main"
+) -> Optional[int]:
+    """Create a Draft PR for the slice branch.
+
+    Args:
+        slice_branch: The head branch for the PR
+        title: PR title
+        body: PR body/description
+        base_branch: The base branch to merge into
+
+    Returns:
+        PR number if created, None if failed
+    """
+    result = subprocess.run(
+        ["gh", "pr", "create",
+         "--draft",
+         "--title", title,
+         "--body", body,
+         "--head", slice_branch,
+         "--base", base_branch],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        print(f"Error creating PR: {result.stderr}", file=sys.stderr)
+        return None
+
+    # Parse PR number from output URL (e.g., https://github.com/owner/repo/pull/123)
+    url = result.stdout.strip()
+    try:
+        pr_number = int(url.split("/")[-1])
+        return pr_number
+    except (ValueError, IndexError):
+        return None
+
+
+def ensure_draft_pr(
+    slice_branch: str,
+    idea_directory: str,
+    idea_name: str,
+    slice_number: int
+) -> Optional[int]:
+    """Ensure a Draft PR exists for the slice branch.
+
+    Creates a new Draft PR if none exists, otherwise returns the existing PR number.
+
+    Args:
+        slice_branch: The slice branch name
+        idea_directory: Path to the idea directory
+        idea_name: Name of the idea
+        slice_number: Current slice number
+
+    Returns:
+        PR number if exists or created, None if failed
+    """
+    # Check for existing PR
+    existing_pr = find_existing_pr(slice_branch)
+    if existing_pr is not None:
+        print(f"Reusing existing PR #{existing_pr}")
+        return existing_pr
+
+    # Generate PR title and body
+    slice_suffix = slice_branch.split("/")[-1]  # e.g., "01-project-setup"
+    title = generate_pr_title(idea_name, slice_suffix)
+    body = generate_pr_body(idea_directory, idea_name, slice_number)
+
+    # Create new Draft PR
+    pr_number = create_draft_pr(slice_branch, title, body)
+    if pr_number:
+        print(f"Created Draft PR #{pr_number}")
+    return pr_number
+
+
+def push_branch_to_remote(branch_name: str) -> bool:
+    """Push a branch to the remote origin.
+
+    Args:
+        branch_name: The branch name to push
+
+    Returns:
+        True if push succeeded, False otherwise
+    """
+    result = subprocess.run(
+        ["git", "push", "-u", "origin", branch_name],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        print(f"Error pushing branch: {result.stderr}", file=sys.stderr)
+        return False
+
+    return True
+
+
 # Task Parsing Functions
 
 def parse_tasks_from_plan(plan_content: str) -> List[str]:
@@ -581,6 +681,21 @@ def main():
         repo, idea_name, state["slice_number"], first_task_name, integration_branch
     )
     print(f"Slice branch: {slice_branch}")
+
+    # Checkout slice branch in the worktree
+    worktree_repo = Repo(worktree_path)
+    worktree_repo.git.checkout(slice_branch)
+
+    # Push slice branch to remote (needed before creating PR)
+    if not push_branch_to_remote(slice_branch):
+        print("Warning: Could not push slice branch to remote", file=sys.stderr)
+
+    # Create or reuse Draft PR
+    pr_number = ensure_draft_pr(
+        slice_branch, args.idea_directory, idea_name, state["slice_number"]
+    )
+    if pr_number:
+        print(f"PR: #{pr_number}")
 
     # For now, just print the parsed arguments (implementation will come in later tasks)
     print(f"Idea directory: {args.idea_directory}")

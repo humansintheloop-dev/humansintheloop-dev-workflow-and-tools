@@ -180,12 +180,12 @@ Create or reuse GitHub Draft PR for the slice branch.
   - [x] Return boolean indicating Draft status
   - [x] Verify: function correctly identifies Draft vs Ready PRs
 
-- [ ] **Task 4.3: Integration test for GitHub PR management**
-  - [ ] Create test GitHub repository (use pytest fixture with cleanup)
-  - [ ] Run script with valid idea directory, verify Draft PR created on GitHub
-  - [ ] Verify PR title and body contain expected content
-  - [ ] Run script again, verify existing PR is reused (PR count unchanged)
-  - [ ] Verify: tests use real GitHub API via `gh` CLI
+- [x] **Task 4.3: Integration test for GitHub PR management**
+  - [x] Create test GitHub repository (use pytest fixture with cleanup)
+  - [x] Run script with valid idea directory, verify Draft PR created on GitHub
+  - [x] Verify PR title and body contain expected content
+  - [x] Run script again, verify existing PR is reused (PR count unchanged)
+  - [x] Verify: tests use real GitHub API via `gh` CLI
 
 ---
 

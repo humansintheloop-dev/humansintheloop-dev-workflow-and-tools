@@ -221,12 +221,12 @@ Parse tasks from plan file and execute with Claude Code.
   - [x] Handle push failures gracefully
   - [x] Verify: commit pushed to remote slice branch
 
-- [ ] **Task 5.5: Integration test for task execution (with mocked Claude)**
-  - [ ] Create test repository with idea directory containing plan with uncompleted tasks
-  - [ ] Mock Claude invocation to simulate success (exit 0) and create a commit
-  - [ ] Run script and verify task is detected from plan
-  - [ ] Verify commit is pushed to slice branch on GitHub
-  - [ ] Verify: tests use real git/GitHub but mock Claude subprocess
+- [x] **Task 5.5: Integration test for task execution (with mocked Claude)**
+  - [x] Create test repository with idea directory containing plan with uncompleted tasks
+  - [x] Mock Claude invocation to simulate success (exit 0) and create a commit
+  - [x] Run script and verify task is detected from plan
+  - [x] Verify commit is pushed to slice branch on GitHub
+  - [x] Verify: tests use real git/GitHub but mock Claude subprocess
 
 ---
 

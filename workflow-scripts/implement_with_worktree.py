@@ -644,6 +644,11 @@ def main():
         action="store_true",
         help="Perform cleanup (remove worktree, delete local branches) after PR is merged/closed"
     )
+    parser.add_argument(
+        "--mock-claude",
+        metavar="SCRIPT",
+        help="Use mock script instead of Claude (for testing)"
+    )
 
     args = parser.parse_args()
 
@@ -697,11 +702,53 @@ def main():
     if pr_number:
         print(f"PR: #{pr_number}")
 
-    # For now, just print the parsed arguments (implementation will come in later tasks)
-    print(f"Idea directory: {args.idea_directory}")
-    print(f"Idea name: {idea_name}")
-    print(f"Cleanup: {args.cleanup}")
-    print(f"State: {state}")
+    # Parse tasks from plan file
+    tasks = parse_tasks_from_plan(plan_content)
+    if not tasks:
+        print("No uncompleted tasks found in plan file.")
+        return
+
+    print(f"Found {len(tasks)} uncompleted task(s)")
+
+    # Execute first uncompleted task
+    # (Full loop implementation will come in later tasks)
+    current_task = tasks[0]
+    print(f"Executing task: {current_task}")
+
+    # Get HEAD before Claude invocation
+    head_before = worktree_repo.head.commit.hexsha
+
+    # Build and run Claude command (or mock script for testing)
+    if args.mock_claude:
+        claude_cmd = [args.mock_claude, current_task]
+        print(f"Using mock Claude: {args.mock_claude}")
+    else:
+        claude_cmd = build_claude_command(
+            args.idea_directory,
+            current_task,
+            "implement-plan.md"
+        )
+        print(f"Invoking Claude: {' '.join(claude_cmd)}")
+
+    # Run Claude (or mock) interactively
+    claude_result = subprocess.run(claude_cmd, cwd=worktree_path)
+
+    # Get HEAD after Claude invocation
+    head_after = worktree_repo.head.commit.hexsha
+
+    # Verify success
+    if not check_claude_success(claude_result.returncode, head_before, head_after):
+        print(f"Error: Task execution failed.", file=sys.stderr)
+        print(f"  Exit code: {claude_result.returncode}", file=sys.stderr)
+        print(f"  HEAD before: {head_before}", file=sys.stderr)
+        print(f"  HEAD after: {head_after}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Task completed successfully. Pushing changes...")
+
+    # Push the commit
+    if pr_number and not push_to_slice_branch(slice_branch, pr_number):
+        print("Warning: Could not push commit to slice branch", file=sys.stderr)
 
 
 if __name__ == "__main__":

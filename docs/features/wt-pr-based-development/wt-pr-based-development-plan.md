@@ -97,10 +97,10 @@ Validate the idea directory structure and manage persistent state.
   - [x] Extract idea-name from directory path (last component)
   - [x] Verify: running with non-existent path shows "directory not found" error
 
-- [ ] **Task 2.2: Script validates required idea files exist**
-  - [ ] Check for `*-idea.md`, `*-discussion.md`, `*-spec.md`, `*-plan.md`
-  - [ ] Exit with clear error listing missing files
-  - [ ] Verify: running with incomplete idea directory shows which files are missing
+- [x] **Task 2.2: Script validates required idea files exist**
+  - [x] Check for `*-idea.md`, `*-discussion.md`, `*-spec.md`, `*-plan.md`
+  - [x] Exit with clear error listing missing files
+  - [x] Verify: running with incomplete idea directory shows which files are missing
 
 - [ ] **Task 2.3: Script validates idea files are committed to Git**
   - [ ] Use `git status --porcelain` to check for uncommitted changes to idea files

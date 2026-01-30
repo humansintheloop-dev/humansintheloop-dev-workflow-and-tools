@@ -7,6 +7,7 @@ from creating Git infrastructure through task execution with Claude Code.
 """
 
 import argparse
+import glob
 import os
 import sys
 
@@ -31,6 +32,43 @@ def validate_idea_directory(idea_directory: str) -> str:
     return idea_name
 
 
+def validate_idea_files(idea_directory: str, idea_name: str) -> None:
+    """Validate that all required idea files exist.
+
+    Required files:
+    - <idea-name>-idea.md or <idea-name>-idea.txt
+    - <idea-name>-discussion.md
+    - <idea-name>-spec.md
+    - <idea-name>-plan.md
+
+    Args:
+        idea_directory: Path to the idea directory
+        idea_name: Name of the idea (used for file naming)
+
+    Raises:
+        SystemExit: If any required files are missing
+    """
+    missing_files = []
+
+    # Check for idea file (can be .md or .txt)
+    idea_pattern = os.path.join(idea_directory, f"{idea_name}-idea.*")
+    idea_files = glob.glob(idea_pattern)
+    if not idea_files:
+        missing_files.append(f"{idea_name}-idea.md (or .txt)")
+
+    # Check for other required files
+    for suffix in ["discussion.md", "spec.md", "plan.md"]:
+        filepath = os.path.join(idea_directory, f"{idea_name}-{suffix}")
+        if not os.path.isfile(filepath):
+            missing_files.append(f"{idea_name}-{suffix}")
+
+    if missing_files:
+        print(f"Error: Missing required idea files in {idea_directory}:", file=sys.stderr)
+        for f in missing_files:
+            print(f"  - {f}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Implement a development plan using Git worktrees and GitHub Draft PRs"
@@ -50,6 +88,9 @@ def main():
 
     # Validate idea directory exists
     idea_name = validate_idea_directory(args.idea_directory)
+
+    # Validate required idea files exist
+    validate_idea_files(args.idea_directory, idea_name)
 
     # For now, just print the parsed arguments (implementation will come in later tasks)
     print(f"Idea directory: {args.idea_directory}")

@@ -1,5 +1,6 @@
 """Tests for idea directory validation in implement-with-worktree."""
 
+import io
 import os
 import sys
 import tempfile
@@ -46,3 +47,73 @@ class TestIdeaDirectoryValidation:
             idea_name = validate_idea_directory(idea_dir)
 
             assert idea_name == "wt-pr-based-development"
+
+
+@pytest.mark.unit
+class TestIdeaFilesValidation:
+    """Test validation of required idea files."""
+
+    def test_validate_missing_all_files_raises_error(self):
+        """Script should raise error when all required files are missing."""
+        from implement_with_worktree import validate_idea_files
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = os.path.join(tmpdir, "my-feature")
+            os.makedirs(idea_dir)
+
+            with pytest.raises(SystemExit) as exc_info:
+                validate_idea_files(idea_dir, "my-feature")
+
+            assert exc_info.value.code != 0
+
+    def test_validate_missing_some_files_lists_missing(self, capsys):
+        """Error message should list which files are missing."""
+        from implement_with_worktree import validate_idea_files
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = os.path.join(tmpdir, "my-feature")
+            os.makedirs(idea_dir)
+            # Create only the idea file
+            with open(os.path.join(idea_dir, "my-feature-idea.md"), "w") as f:
+                f.write("# My Feature Idea")
+
+            with pytest.raises(SystemExit):
+                validate_idea_files(idea_dir, "my-feature")
+
+            captured = capsys.readouterr()
+            # Should mention the missing files
+            assert "discussion" in captured.err.lower()
+            assert "spec" in captured.err.lower()
+            assert "plan" in captured.err.lower()
+
+    def test_validate_all_files_present_succeeds(self):
+        """Validation should pass when all required files exist."""
+        from implement_with_worktree import validate_idea_files
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = os.path.join(tmpdir, "my-feature")
+            os.makedirs(idea_dir)
+            # Create all required files
+            for suffix in ["idea.md", "discussion.md", "spec.md", "plan.md"]:
+                with open(os.path.join(idea_dir, f"my-feature-{suffix}"), "w") as f:
+                    f.write(f"# {suffix}")
+
+            # Should not raise
+            validate_idea_files(idea_dir, "my-feature")
+
+    def test_validate_accepts_txt_idea_file(self):
+        """Validation should accept .txt extension for idea file."""
+        from implement_with_worktree import validate_idea_files
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = os.path.join(tmpdir, "my-feature")
+            os.makedirs(idea_dir)
+            # Create idea as .txt, others as .md
+            with open(os.path.join(idea_dir, "my-feature-idea.txt"), "w") as f:
+                f.write("My Feature Idea")
+            for suffix in ["discussion.md", "spec.md", "plan.md"]:
+                with open(os.path.join(idea_dir, f"my-feature-{suffix}"), "w") as f:
+                    f.write(f"# {suffix}")
+
+            # Should not raise
+            validate_idea_files(idea_dir, "my-feature")

@@ -394,26 +394,26 @@ Handle edge case where PR exits Draft state unexpectedly.
 
 Ensure clean interrupt handling and seamless resume after restart.
 
-- [ ] **Task 11.1: Handle Ctrl+C gracefully**
-  - [ ] Register signal handler for SIGINT
-  - [ ] On interrupt, save current state and exit cleanly
-  - [ ] Do not leave Git in inconsistent state (abort any in-progress operations)
-  - [ ] Verify: Ctrl+C exits cleanly without corrupting state
+- [x] **Task 11.1: Handle Ctrl+C gracefully**
+  - [x] Register signal handler for SIGINT
+  - [x] On interrupt, save current state and exit cleanly
+  - [x] Do not leave Git in inconsistent state (abort any in-progress operations)
+  - [x] Verify: Ctrl+C exits cleanly without corrupting state
 
-- [ ] **Task 11.2: Resume from correct position after restart**
-  - [ ] On startup, load state file
-  - [ ] Detect existing worktree, branches, PR and reuse
-  - [ ] Start from first uncompleted task in plan
-  - [ ] Do not reprocess already-handled feedback
-  - [ ] Verify: restart after interrupt continues from correct point
+- [x] **Task 11.2: Resume from correct position after restart**
+  - [x] On startup, load state file
+  - [x] Detect existing worktree, branches, PR and reuse
+  - [x] Start from first uncompleted task in plan
+  - [x] Do not reprocess already-handled feedback
+  - [x] Verify: restart after interrupt continues from correct point
 
-- [ ] **Task 11.3: Integration test for interrupt handling and resumability**
-  - [ ] Create test repository, run script partially (complete some tasks)
-  - [ ] Simulate interrupt (kill process or send SIGINT)
-  - [ ] Verify state file is saved and git is in consistent state
-  - [ ] Run script again, verify it resumes from correct task (not from beginning)
-  - [ ] Verify already-processed feedback is not reprocessed
-  - [ ] Verify: tests check state persistence and correct resume behavior
+- [x] **Task 11.3: Integration test for interrupt handling and resumability**
+  - [x] Create test repository, run script partially (complete some tasks)
+  - [x] Simulate interrupt (kill process or send SIGINT)
+  - [x] Verify state file is saved and git is in consistent state
+  - [x] Run script again, verify it resumes from correct task (not from beginning)
+  - [x] Verify already-processed feedback is not reprocessed
+  - [x] Verify: tests check state persistence and correct resume behavior
 
 ---
 

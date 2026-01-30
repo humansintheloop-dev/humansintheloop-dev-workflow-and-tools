@@ -736,3 +736,37 @@ class TestSliceRollover:
         )
 
         assert next_branch == "idea/my-feature/10-next"
+
+
+@pytest.mark.unit
+class TestInterruptHandling:
+    """Test interrupt handling and graceful shutdown."""
+
+    def test_register_signal_handlers_sets_up_sigint(self, mocker):
+        """Should register handler for SIGINT (Ctrl+C)."""
+        import signal
+        from implement_with_worktree import register_signal_handlers
+
+        mock_signal = mocker.patch('implement_with_worktree.signal.signal')
+
+        register_signal_handlers()
+
+        # Verify SIGINT handler was registered
+        calls = [c for c in mock_signal.call_args_list if c[0][0] == signal.SIGINT]
+        assert len(calls) == 1
+
+    def test_cleanup_on_interrupt_saves_state(self, mocker):
+        """Should save state when interrupted."""
+        from implement_with_worktree import cleanup_on_interrupt, save_state
+
+        # Mock save_state
+        mock_save = mocker.patch('implement_with_worktree.save_state')
+
+        # Call cleanup with state info
+        cleanup_on_interrupt(
+            idea_directory="/path/to/idea",
+            idea_name="my-feature",
+            state={"slice_number": 1}
+        )
+
+        mock_save.assert_called_once()

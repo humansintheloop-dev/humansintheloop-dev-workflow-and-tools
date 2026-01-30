@@ -11,6 +11,7 @@ import glob
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 from typing import Dict, Any, Optional, List
@@ -833,6 +834,49 @@ def generate_next_slice_branch(
     next_number = current_slice_number + 1
     sanitized_name = sanitize_branch_name(slice_name)
     return f"idea/{idea_name}/{next_number:02d}-{sanitized_name}"
+
+
+# Interrupt Handling Functions
+
+# Global state for interrupt handler
+_interrupt_state = {
+    "idea_directory": None,
+    "idea_name": None,
+    "state": None
+}
+
+
+def register_signal_handlers():
+    """Register signal handlers for graceful shutdown."""
+    signal.signal(signal.SIGINT, _handle_interrupt)
+
+
+def _handle_interrupt(signum, frame):
+    """Internal handler for SIGINT signal."""
+    print("\nInterrupted! Saving state...")
+    if _interrupt_state["idea_directory"] and _interrupt_state["state"]:
+        cleanup_on_interrupt(
+            _interrupt_state["idea_directory"],
+            _interrupt_state["idea_name"],
+            _interrupt_state["state"]
+        )
+    sys.exit(1)
+
+
+def cleanup_on_interrupt(
+    idea_directory: str,
+    idea_name: str,
+    state: Dict[str, Any]
+) -> None:
+    """Clean up and save state when interrupted.
+
+    Args:
+        idea_directory: Path to the idea directory
+        idea_name: Name of the idea
+        state: Current state to save
+    """
+    save_state(idea_directory, idea_name, state)
+    print("State saved. You can resume by running the script again.")
 
 
 # Task Parsing Functions

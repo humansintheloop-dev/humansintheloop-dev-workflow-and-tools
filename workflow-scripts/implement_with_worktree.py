@@ -210,6 +210,34 @@ def ensure_integration_branch(repo: Repo, idea_name: str) -> str:
     return branch_name
 
 
+def ensure_worktree(repo: Repo, idea_name: str, branch_name: str) -> str:
+    """Ensure the worktree exists, creating it if necessary.
+
+    Args:
+        repo: GitPython Repo object
+        idea_name: Name of the idea
+        branch_name: Branch to checkout in the worktree
+
+    Returns:
+        The absolute path to the worktree directory
+    """
+    # Get repo name from working directory
+    repo_root = repo.working_tree_dir
+    repo_name = os.path.basename(repo_root)
+    parent_dir = os.path.dirname(repo_root)
+
+    # Worktree path: ../<repo-name>-wt-<idea-name>
+    worktree_path = os.path.join(parent_dir, f"{repo_name}-wt-{idea_name}")
+
+    # Check if worktree already exists by checking if the directory exists
+    # and is a valid worktree (has .git file pointing to main repo)
+    if not os.path.isdir(worktree_path):
+        # Create the worktree
+        repo.git.worktree("add", worktree_path, branch_name)
+
+    return worktree_path
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Implement a development plan using Git worktrees and GitHub Draft PRs"

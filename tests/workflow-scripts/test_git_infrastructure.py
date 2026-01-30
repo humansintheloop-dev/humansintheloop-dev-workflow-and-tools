@@ -82,3 +82,95 @@ class TestIntegrationBranch:
             branch_name = ensure_integration_branch(repo, "wt-pr-based-development")
 
             assert branch_name == "idea/wt-pr-based-development/integration"
+
+
+@pytest.mark.unit
+class TestWorktree:
+    """Test worktree creation and reuse."""
+
+    def test_create_worktree_when_not_exists(self):
+        """Should create worktree if it doesn't exist."""
+        from implement_with_worktree import ensure_worktree, ensure_integration_branch
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create main repo
+            repo_path = os.path.join(tmpdir, "my-repo")
+            os.makedirs(repo_path)
+            repo = Repo.init(repo_path)
+            repo.config_writer().set_value("user", "email", "test@test.com").release()
+            repo.config_writer().set_value("user", "name", "Test").release()
+
+            # Create an initial commit
+            test_file = os.path.join(repo_path, "README.md")
+            with open(test_file, "w") as f:
+                f.write("# Test")
+            repo.index.add(["README.md"])
+            repo.index.commit("Initial commit")
+
+            # Create integration branch
+            integration_branch = ensure_integration_branch(repo, "my-feature")
+
+            # Create worktree
+            worktree_path = ensure_worktree(repo, "my-feature", integration_branch)
+
+            expected_path = os.path.join(tmpdir, "my-repo-wt-my-feature")
+            assert worktree_path == expected_path
+            assert os.path.isdir(worktree_path)
+
+    def test_reuse_existing_worktree(self):
+        """Should reuse worktree if it already exists."""
+        from implement_with_worktree import ensure_worktree, ensure_integration_branch
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create main repo
+            repo_path = os.path.join(tmpdir, "my-repo")
+            os.makedirs(repo_path)
+            repo = Repo.init(repo_path)
+            repo.config_writer().set_value("user", "email", "test@test.com").release()
+            repo.config_writer().set_value("user", "name", "Test").release()
+
+            # Create an initial commit
+            test_file = os.path.join(repo_path, "README.md")
+            with open(test_file, "w") as f:
+                f.write("# Test")
+            repo.index.add(["README.md"])
+            repo.index.commit("Initial commit")
+
+            # Create integration branch
+            integration_branch = ensure_integration_branch(repo, "my-feature")
+
+            # Create worktree first time
+            worktree_path1 = ensure_worktree(repo, "my-feature", integration_branch)
+
+            # Call again - should reuse, not error
+            worktree_path2 = ensure_worktree(repo, "my-feature", integration_branch)
+
+            assert worktree_path1 == worktree_path2
+
+    def test_worktree_naming_pattern(self):
+        """Worktree path should follow ../<repo-name>-wt-<idea-name> pattern."""
+        from implement_with_worktree import ensure_worktree, ensure_integration_branch
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create main repo with specific name
+            repo_path = os.path.join(tmpdir, "genai-development-workflow")
+            os.makedirs(repo_path)
+            repo = Repo.init(repo_path)
+            repo.config_writer().set_value("user", "email", "test@test.com").release()
+            repo.config_writer().set_value("user", "name", "Test").release()
+
+            # Create an initial commit
+            test_file = os.path.join(repo_path, "README.md")
+            with open(test_file, "w") as f:
+                f.write("# Test")
+            repo.index.add(["README.md"])
+            repo.index.commit("Initial commit")
+
+            # Create integration branch
+            integration_branch = ensure_integration_branch(repo, "wt-pr-based-development")
+
+            # Create worktree
+            worktree_path = ensure_worktree(repo, "wt-pr-based-development", integration_branch)
+
+            expected_path = os.path.join(tmpdir, "genai-development-workflow-wt-wt-pr-based-development")
+            assert worktree_path == expected_path

@@ -126,12 +126,12 @@ Create or reuse integration branch, worktree, and slice branch.
   - [x] Detect and reuse if branch already exists
   - [x] Verify: first run creates branch, second run reuses it
 
-- [ ] **Task 3.2: Worktree created if not exists, reused if exists**
-  - [ ] Worktree path: `../<repo-name>-wt-<idea-name>`
-  - [ ] Create worktree from integration branch if doesn't exist
-  - [ ] Detect and reuse if worktree already exists
-  - [ ] Change working directory to worktree for subsequent operations
-  - [ ] Verify: first run creates worktree, second run reuses it
+- [x] **Task 3.2: Worktree created if not exists, reused if exists**
+  - [x] Worktree path: `../<repo-name>-wt-<idea-name>`
+  - [x] Create worktree from integration branch if doesn't exist
+  - [x] Detect and reuse if worktree already exists
+  - [x] Change working directory to worktree for subsequent operations
+  - [x] Verify: first run creates worktree, second run reuses it
 
 - [ ] **Task 3.3: Slice branch created with correct naming pattern**
   - [ ] Branch name: `idea/<idea-name>/<nn>-<slice-name>` where nn is zero-padded slice number

@@ -11,8 +11,9 @@ import glob
 import json
 import os
 import re
+import subprocess
 import sys
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from git import Repo
 from git.exc import InvalidGitRepositoryError
@@ -289,6 +290,88 @@ def ensure_slice_branch(
         repo.create_head(branch_name, integration_ref)
 
     return branch_name
+
+
+# GitHub PR Management Functions
+
+def generate_pr_title(idea_name: str, slice_branch_suffix: str) -> str:
+    """Generate a PR title from idea name and slice branch suffix.
+
+    Args:
+        idea_name: Name of the idea
+        slice_branch_suffix: The slice part of the branch name (e.g., "01-project-setup")
+
+    Returns:
+        PR title string
+    """
+    return f"[{idea_name}] {slice_branch_suffix}"
+
+
+def generate_pr_body(idea_directory: str, idea_name: str, slice_number: int) -> str:
+    """Generate a PR body with idea directory reference.
+
+    Args:
+        idea_directory: Path to the idea directory
+        idea_name: Name of the idea
+        slice_number: Current slice number
+
+    Returns:
+        PR body markdown string
+    """
+    return f"""## Slice #{slice_number} for {idea_name}
+
+**Idea directory:** `{idea_directory}`
+
+This PR implements slice #{slice_number} of the development plan.
+"""
+
+
+def find_existing_pr(branch_name: str) -> Optional[int]:
+    """Find an existing PR for the given branch.
+
+    Args:
+        branch_name: The branch name to search for
+
+    Returns:
+        PR number if found, None otherwise
+    """
+    result = subprocess.run(
+        ["gh", "pr", "list", "--json", "number,headRefName,isDraft", "--state", "open"],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        return None
+
+    prs = json.loads(result.stdout)
+    for pr in prs:
+        if pr.get("headRefName") == branch_name:
+            return pr.get("number")
+
+    return None
+
+
+def is_pr_draft(pr_number: int) -> bool:
+    """Check if a PR is in draft state.
+
+    Args:
+        pr_number: The PR number to check
+
+    Returns:
+        True if PR is draft, False if ready for review
+    """
+    result = subprocess.run(
+        ["gh", "pr", "view", str(pr_number), "--json", "isDraft"],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        return False
+
+    data = json.loads(result.stdout)
+    return data.get("isDraft", False)
 
 
 def main():

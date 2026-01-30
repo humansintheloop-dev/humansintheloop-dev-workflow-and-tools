@@ -146,13 +146,13 @@ Create or reuse integration branch, worktree, and slice branch.
 
 Create or reuse GitHub Draft PR for the slice branch.
 
-- [ ] **Task 4.1: Draft PR created if not exists, reused if exists**
-  - [ ] Use `gh pr list` to check for existing PR for slice branch
-  - [ ] Use `gh pr create --draft` to create new Draft PR if none exists
-  - [ ] PR title derived from slice name
-  - [ ] PR body references idea directory and current slice
-  - [ ] Store PR number in state or detect from `gh pr list`
-  - [ ] Verify: first run creates Draft PR, second run reuses it
+- [x] **Task 4.1: Draft PR created if not exists, reused if exists**
+  - [x] Use `gh pr list` to check for existing PR for slice branch
+  - [x] Use `gh pr create --draft` to create new Draft PR if none exists
+  - [x] PR title derived from slice name
+  - [x] PR body references idea directory and current slice
+  - [x] Store PR number in state or detect from `gh pr list`
+  - [x] Verify: first run creates Draft PR, second run reuses it
 
 - [ ] **Task 4.2: Detect PR Draft state before push operations**
   - [ ] Use `gh pr view` to check if PR is still in Draft state

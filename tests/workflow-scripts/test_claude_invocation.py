@@ -98,3 +98,81 @@ class TestClaudeInvocationResult:
         assert check_claude_success(exit_code=1, head_before="abc", head_after="def") is False
         # Both conditions met
         assert check_claude_success(exit_code=0, head_before="abc", head_after="def") is True
+
+
+@pytest.mark.unit
+class TestPushOperations:
+    """Test push operations to slice branch."""
+
+    def test_build_push_command(self):
+        """Should build correct git push command."""
+        from implement_with_worktree import build_push_command
+
+        cmd = build_push_command("idea/my-feature/01-setup")
+
+        assert cmd == ["git", "push", "origin", "idea/my-feature/01-setup"]
+
+    def test_build_push_command_with_force(self):
+        """Should include --force-with-lease when requested."""
+        from implement_with_worktree import build_push_command
+
+        cmd = build_push_command("idea/my-feature/01-setup", force=True)
+
+        assert "--force-with-lease" in cmd
+
+
+@pytest.mark.unit
+class TestPushToSliceBranch:
+    """Test push_to_slice_branch function."""
+
+    def test_push_returns_false_if_pr_not_draft(self, mocker):
+        """Should not push and return False if PR is not in Draft state."""
+        from implement_with_worktree import push_to_slice_branch
+
+        # Mock is_pr_draft to return False (PR is not draft)
+        mocker.patch('implement_with_worktree.is_pr_draft', return_value=False)
+        # Mock subprocess.run to track if it was called
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+
+        result = push_to_slice_branch(
+            slice_branch="idea/my-feature/01-setup",
+            pr_number=123
+        )
+
+        assert result is False
+        mock_run.assert_not_called()
+
+    def test_push_succeeds_when_pr_is_draft(self, mocker):
+        """Should push and return True when PR is in Draft state."""
+        from implement_with_worktree import push_to_slice_branch
+
+        # Mock is_pr_draft to return True
+        mocker.patch('implement_with_worktree.is_pr_draft', return_value=True)
+        # Mock subprocess.run to simulate successful push
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 0
+
+        result = push_to_slice_branch(
+            slice_branch="idea/my-feature/01-setup",
+            pr_number=123
+        )
+
+        assert result is True
+        mock_run.assert_called_once()
+
+    def test_push_returns_false_on_push_failure(self, mocker):
+        """Should return False when git push fails."""
+        from implement_with_worktree import push_to_slice_branch
+
+        # Mock is_pr_draft to return True
+        mocker.patch('implement_with_worktree.is_pr_draft', return_value=True)
+        # Mock subprocess.run to simulate failed push
+        mock_run = mocker.patch('implement_with_worktree.subprocess.run')
+        mock_run.return_value.returncode = 1
+
+        result = push_to_slice_branch(
+            slice_branch="idea/my-feature/01-setup",
+            pr_number=123
+        )
+
+        assert result is False

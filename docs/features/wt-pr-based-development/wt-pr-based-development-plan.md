@@ -215,11 +215,11 @@ Parse tasks from plan file and execute with Claude Code.
   - [x] Exit script if verification fails
   - [x] Verify: detects both exit code failures and no-commit failures
 
-- [ ] **Task 5.4: Push commit to slice branch after successful task**
-  - [ ] Verify PR still in Draft state before pushing
-  - [ ] Push current HEAD to slice branch
-  - [ ] Handle push failures gracefully
-  - [ ] Verify: commit pushed to remote slice branch
+- [x] **Task 5.4: Push commit to slice branch after successful task**
+  - [x] Verify PR still in Draft state before pushing
+  - [x] Push current HEAD to slice branch
+  - [x] Handle push failures gracefully
+  - [x] Verify: commit pushed to remote slice branch
 
 - [ ] **Task 5.5: Integration test for task execution (with mocked Claude)**
   - [ ] Create test repository with idea directory containing plan with uncompleted tasks

@@ -485,6 +485,33 @@ def build_push_command(branch_name: str, force: bool = False) -> List[str]:
     return cmd
 
 
+def push_to_slice_branch(slice_branch: str, pr_number: int, force: bool = False) -> bool:
+    """Push to slice branch after verifying PR is still in Draft state.
+
+    Args:
+        slice_branch: The slice branch name to push to
+        pr_number: The PR number to check Draft state
+        force: If True, use force-with-lease
+
+    Returns:
+        True if push succeeded, False if PR is not Draft or push failed
+    """
+    # Verify PR is still in Draft state
+    if not is_pr_draft(pr_number):
+        print(f"Error: PR #{pr_number} is no longer in Draft state", file=sys.stderr)
+        return False
+
+    # Build and execute push command
+    cmd = build_push_command(slice_branch, force=force)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print(f"Error: Push failed: {result.stderr}", file=sys.stderr)
+        return False
+
+    return True
+
+
 def check_claude_success(exit_code: int, head_before: str, head_after: str) -> bool:
     """Check if Claude invocation was successful.
 

@@ -12,8 +12,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scrip
 class TestClaudeCommandConstruction:
     """Test construction of Claude command (without executing)."""
 
-    def test_build_claude_command_includes_prompt_file(self):
-        """Command should include the prompt template file."""
+    def test_build_claude_command_prompt_template_ignored(self):
+        """The prompt_template parameter is ignored (kept for backward compatibility)."""
         from implement_with_worktree import build_claude_command
 
         cmd = build_claude_command(
@@ -22,7 +22,10 @@ class TestClaudeCommandConstruction:
             prompt_template="implement-plan.md"
         )
 
-        assert "implement-plan.md" in " ".join(cmd)
+        # prompt_template is no longer used - command is just ["claude", prompt]
+        # This test verifies the parameter doesn't cause errors
+        assert cmd[0] == "claude"
+        assert len(cmd) == 2
 
     def test_build_claude_command_includes_idea_directory(self):
         """Command should reference the idea directory."""
@@ -64,6 +67,30 @@ class TestClaudeCommandConstruction:
         assert isinstance(cmd, list)
         assert len(cmd) > 0
         assert cmd[0] == "claude"
+
+    def test_build_claude_command_is_interactive(self):
+        """Command should invoke Claude in interactive mode, not print mode.
+
+        The -p/--print flag makes Claude non-interactive (print and exit).
+        For interactive use, the prompt should be a positional argument.
+        """
+        from implement_with_worktree import build_claude_command
+
+        cmd = build_claude_command(
+            idea_directory="docs/features/my-feature",
+            task_description="Task 1.1: Create config file",
+            prompt_template="implement-plan.md"
+        )
+
+        # Should NOT use -p or --print flags (those make it non-interactive)
+        assert "-p" not in cmd, "Command should not use -p flag for interactive mode"
+        assert "--print" not in cmd, "Command should not use --print flag for interactive mode"
+
+        # Command should be: ["claude", prompt]
+        # where prompt is the second element (positional argument)
+        assert len(cmd) == 2, f"Expected ['claude', prompt], got {cmd}"
+        assert cmd[0] == "claude"
+        assert "Task 1.1" in cmd[1], "Prompt should contain the task description"
 
 
 @pytest.mark.unit

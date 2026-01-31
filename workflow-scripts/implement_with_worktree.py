@@ -940,14 +940,14 @@ def get_first_task_name(plan_content: str) -> str:
 def build_claude_command(
     idea_directory: str,
     task_description: str,
-    prompt_template: str
+    prompt_template: str = None
 ) -> List[str]:
     """Build the command to invoke Claude Code for a task.
 
     Args:
         idea_directory: Path to the idea directory
         task_description: The task to implement
-        prompt_template: Name of the prompt template file
+        prompt_template: Unused, kept for backward compatibility
 
     Returns:
         Command as a list suitable for subprocess
@@ -969,11 +969,8 @@ Do not work on future tasks until the current one is complete.
 If all tasks are complete, stop and report success.
 """
 
-    return [
-        "claude",
-        "--print", prompt_template,
-        "-p", prompt
-    ]
+    # Invoke Claude interactively with prompt as positional argument
+    return ["claude", prompt]
 
 
 def build_feedback_command(

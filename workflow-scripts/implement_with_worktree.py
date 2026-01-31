@@ -967,13 +967,15 @@ def get_worktree_idea_directory(
 
 def build_claude_command(
     idea_directory: str,
-    task_description: str
+    task_description: str,
+    interactive: bool = True
 ) -> List[str]:
     """Build the command to invoke Claude Code for a task.
 
     Args:
         idea_directory: Path to the idea directory
         task_description: The task to implement
+        interactive: If True, run Claude interactively; if False, use -p flag
 
     Returns:
         Command as a list suitable for subprocess
@@ -995,8 +997,12 @@ Do not work on future tasks until the current one is complete.
 If all tasks are complete, stop and report success.
 """
 
-    # Invoke Claude interactively with prompt as positional argument
-    return ["claude", prompt]
+    if interactive:
+        # Invoke Claude interactively with prompt as positional argument
+        return ["claude", prompt]
+    else:
+        # Invoke Claude non-interactively with -p flag
+        return ["claude", "-p", prompt]
 
 
 def build_feedback_command(
@@ -1122,6 +1128,11 @@ def main():
         action="store_true",
         help="Only set up infrastructure (branches, worktree, PR), don't execute tasks"
     )
+    parser.add_argument(
+        "--non-interactive",
+        action="store_true",
+        help="Run Claude in non-interactive mode (uses -p flag)"
+    )
 
     args = parser.parse_args()
 
@@ -1213,7 +1224,8 @@ def main():
         else:
             claude_cmd = build_claude_command(
                 worktree_idea_dir,
-                current_task
+                current_task,
+                interactive=not args.non_interactive
             )
             print(f"Invoking Claude: {' '.join(claude_cmd)}")
 

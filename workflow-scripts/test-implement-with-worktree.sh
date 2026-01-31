@@ -290,8 +290,8 @@ run_implement_with_worktree() {
     cd "$TEMP_DIR"
 
     # Run the script with the test idea directory
-    # The script will invoke Claude Code interactively
-    "$WORKTREE_SCRIPT" "$TEMP_DIR/docs/features/kafka-security-poc"
+    # Use --non-interactive so Claude runs with -p flag (no user interaction)
+    "$WORKTREE_SCRIPT" --non-interactive "$TEMP_DIR/docs/features/kafka-security-poc"
 
     local exit_code=$?
 

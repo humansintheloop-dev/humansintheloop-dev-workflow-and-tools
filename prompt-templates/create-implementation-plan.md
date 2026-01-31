@@ -93,7 +93,11 @@ Format and checklists:
 
 - Represent each steel thread as a top-level markdown section (for example, `## Steel thread 1 – <short description>`).
 - Under each steel thread, define one or more tasks.
-- Each task must start with a checkbox `[ ]` followed by a short, imperative task name.
+- Each task MUST use this exact format: `- [ ] **Task X.Y: Short imperative description**`
+  - X is the steel thread number, Y is the task number within that thread
+  - The task name must be bold (wrapped in `**`)
+  - Example: `- [ ] **Task 1.1: Create project directory structure**`
+  - Example: `- [ ] **Task 2.3: Add Kafka broker service to docker-compose.yml**`
 - Each task's steps should be listed underneath as indented checklist items, each starting with `[ ]`.
 - Do NOT include instructions about how to run TDD/BDD or how to mark items as completed; those behaviors are handled by separate skills.
 - Do NOT wrap tasks or threads in code blocks; the agent will read them directly from the markdown plan.

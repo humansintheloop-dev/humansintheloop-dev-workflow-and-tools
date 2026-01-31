@@ -11,11 +11,11 @@ import glob
 import json
 import os
 import re
-import select
 import shutil
 import signal
 import subprocess
 import sys
+import threading
 from typing import Dict, Any, Optional, List
 
 from git import Repo
@@ -1018,6 +1018,9 @@ class ClaudeResult:
 def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
     """Run Claude command, capturing output while displaying it in real-time.
 
+    Uses threads to read stdout/stderr concurrently, which is more reliable
+    than select() on macOS with subprocess pipes.
+
     Args:
         cmd: Command to run as list
         cwd: Working directory
@@ -1032,48 +1035,40 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
         stderr=subprocess.PIPE
     )
 
-    stdout_chunks = []
-    stderr_chunks = []
+    stdout_chunks: List[str] = []
+    stderr_chunks: List[str] = []
 
-    # Use select for non-blocking reads from both pipes
-    while True:
-        # Wait for data on stdout or stderr (with timeout to check process status)
-        readable, _, _ = select.select(
-            [process.stdout, process.stderr],
-            [],
-            [],
-            0.1  # 100ms timeout
-        )
-
-        for pipe in readable:
+    def read_pipe(pipe, chunks: List[str], output_stream):
+        """Read from pipe and write to output stream in real-time."""
+        while True:
+            # read1() reads available data without blocking for a full buffer
             chunk = pipe.read1(4096) if hasattr(pipe, 'read1') else pipe.read(4096)
-            if chunk:
-                text = chunk.decode('utf-8', errors='replace')
-                if pipe == process.stdout:
-                    stdout_chunks.append(text)
-                    sys.stdout.write(text)
-                    sys.stdout.flush()
-                else:
-                    stderr_chunks.append(text)
-                    sys.stderr.write(text)
-                    sys.stderr.flush()
+            if not chunk:
+                break
+            text = chunk.decode('utf-8', errors='replace')
+            chunks.append(text)
+            output_stream.write(text)
+            output_stream.flush()
 
-        # Check if process has finished and pipes are empty
-        if process.poll() is not None:
-            # Drain any remaining data
-            remaining_stdout = process.stdout.read()
-            remaining_stderr = process.stderr.read()
-            if remaining_stdout:
-                text = remaining_stdout.decode('utf-8', errors='replace')
-                stdout_chunks.append(text)
-                sys.stdout.write(text)
-                sys.stdout.flush()
-            if remaining_stderr:
-                text = remaining_stderr.decode('utf-8', errors='replace')
-                stderr_chunks.append(text)
-                sys.stderr.write(text)
-                sys.stderr.flush()
-            break
+    # Start threads to read stdout and stderr concurrently
+    stdout_thread = threading.Thread(
+        target=read_pipe,
+        args=(process.stdout, stdout_chunks, sys.stdout)
+    )
+    stderr_thread = threading.Thread(
+        target=read_pipe,
+        args=(process.stderr, stderr_chunks, sys.stderr)
+    )
+
+    stdout_thread.start()
+    stderr_thread.start()
+
+    # Wait for process to complete
+    process.wait()
+
+    # Wait for reader threads to finish
+    stdout_thread.join()
+    stderr_thread.join()
 
     return ClaudeResult(
         returncode=process.returncode,

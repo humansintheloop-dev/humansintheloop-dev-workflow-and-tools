@@ -148,27 +148,17 @@ class TestRunClaudeWithOutputCapture:
         """Should capture stdout from Claude process."""
         from implement_with_worktree import run_claude_with_output_capture
 
-        # Mock Popen with proper pipe-like objects
+        # Mock Popen with pipe-like objects
         mock_stdout = mocker.MagicMock()
         mock_stderr = mocker.MagicMock()
 
-        # Control what select returns - stdout is readable first, then nothing
-        select_returns = [
-            ([mock_stdout], [], []),  # stdout readable
-            ([mock_stdout], [], []),  # stdout readable again
-            ([], [], []),              # nothing readable, process done
-        ]
-        mocker.patch('select.select', side_effect=select_returns)
-
-        # Control what read1/read returns
-        mock_stdout.read1.side_effect = [b"line1\n", b"line2\n"]
-        mock_stdout.read.return_value = b""  # No remaining data
-        mock_stderr.read.return_value = b""  # No remaining data
+        # read1() returns data then empty bytes (EOF) to stop the reader thread
+        mock_stdout.read1.side_effect = [b"line1\n", b"line2\n", b""]
+        mock_stderr.read1.side_effect = [b""]  # No stderr
 
         mock_process = mocker.MagicMock()
         mock_process.stdout = mock_stdout
         mock_process.stderr = mock_stderr
-        mock_process.poll.side_effect = [None, None, 0]
         mock_process.returncode = 0
         mocker.patch('implement_with_worktree.subprocess.Popen', return_value=mock_process)
 
@@ -185,22 +175,13 @@ class TestRunClaudeWithOutputCapture:
         mock_stdout = mocker.MagicMock()
         mock_stderr = mocker.MagicMock()
 
-        # Control what select returns - stderr is readable
-        select_returns = [
-            ([mock_stderr], [], []),  # stderr readable
-            ([], [], []),              # nothing readable, process done
-        ]
-        mocker.patch('select.select', side_effect=select_returns)
-
-        # Control what read1/read returns
-        mock_stderr.read1.side_effect = [b"error1\n"]
-        mock_stdout.read.return_value = b""  # No remaining data
-        mock_stderr.read.return_value = b""  # No remaining data
+        # read1() returns data then empty bytes (EOF)
+        mock_stdout.read1.side_effect = [b""]  # No stdout
+        mock_stderr.read1.side_effect = [b"error1\n", b""]
 
         mock_process = mocker.MagicMock()
         mock_process.stdout = mock_stdout
         mock_process.stderr = mock_stderr
-        mock_process.poll.side_effect = [None, 0]
         mock_process.returncode = 1
         mocker.patch('implement_with_worktree.subprocess.Popen', return_value=mock_process)
 

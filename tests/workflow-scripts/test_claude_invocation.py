@@ -12,18 +12,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scrip
 class TestClaudeCommandConstruction:
     """Test construction of Claude command (without executing)."""
 
-    def test_build_claude_command_prompt_template_ignored(self):
-        """The prompt_template parameter is ignored (kept for backward compatibility)."""
+    def test_build_claude_command_basic(self):
+        """Command should be ['claude', prompt] for interactive mode."""
         from implement_with_worktree import build_claude_command
 
         cmd = build_claude_command(
             idea_directory="docs/features/my-feature",
-            task_description="Task 1.1: Create config file",
-            prompt_template="implement-plan.md"
+            task_description="Task 1.1: Create config file"
         )
 
-        # prompt_template is no longer used - command is just ["claude", prompt]
-        # This test verifies the parameter doesn't cause errors
         assert cmd[0] == "claude"
         assert len(cmd) == 2
 
@@ -33,8 +30,7 @@ class TestClaudeCommandConstruction:
 
         cmd = build_claude_command(
             idea_directory="docs/features/my-feature",
-            task_description="Task 1.1: Create config file",
-            prompt_template="implement-plan.md"
+            task_description="Task 1.1: Create config file"
         )
 
         # The command should include a way to pass the idea directory
@@ -47,8 +43,7 @@ class TestClaudeCommandConstruction:
 
         cmd = build_claude_command(
             idea_directory="docs/features/my-feature",
-            task_description="Task 1.1: Create config file",
-            prompt_template="implement-plan.md"
+            task_description="Task 1.1: Create config file"
         )
 
         cmd_str = " ".join(cmd)
@@ -60,8 +55,7 @@ class TestClaudeCommandConstruction:
 
         cmd = build_claude_command(
             idea_directory="docs/features/my-feature",
-            task_description="Task 1.1: Create config file",
-            prompt_template="implement-plan.md"
+            task_description="Task 1.1: Create config file"
         )
 
         assert isinstance(cmd, list)
@@ -78,8 +72,7 @@ class TestClaudeCommandConstruction:
 
         cmd = build_claude_command(
             idea_directory="docs/features/my-feature",
-            task_description="Task 1.1: Create config file",
-            prompt_template="implement-plan.md"
+            task_description="Task 1.1: Create config file"
         )
 
         # Should NOT use -p or --print flags (those make it non-interactive)

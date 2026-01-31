@@ -939,15 +939,13 @@ def get_first_task_name(plan_content: str) -> str:
 
 def build_claude_command(
     idea_directory: str,
-    task_description: str,
-    prompt_template: str = None
+    task_description: str
 ) -> List[str]:
     """Build the command to invoke Claude Code for a task.
 
     Args:
         idea_directory: Path to the idea directory
         task_description: The task to implement
-        prompt_template: Unused, kept for backward compatibility
 
     Returns:
         Command as a list suitable for subprocess
@@ -1183,8 +1181,7 @@ def main():
         else:
             claude_cmd = build_claude_command(
                 args.idea_directory,
-                current_task,
-                "implement-plan.md"
+                current_task
             )
             print(f"Invoking Claude: {' '.join(claude_cmd)}")
 

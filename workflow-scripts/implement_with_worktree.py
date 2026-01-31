@@ -380,7 +380,7 @@ def create_draft_pr(
     title: str,
     body: str,
     base_branch: str = "main"
-) -> Optional[int]:
+) -> int:
     """Create a Draft PR for the slice branch.
 
     Args:
@@ -390,7 +390,10 @@ def create_draft_pr(
         base_branch: The base branch to merge into
 
     Returns:
-        PR number if created, None if failed
+        PR number if created
+
+    Raises:
+        RuntimeError: If PR creation fails
     """
     result = subprocess.run(
         ["gh", "pr", "create",
@@ -404,8 +407,7 @@ def create_draft_pr(
     )
 
     if result.returncode != 0:
-        print(f"Error creating PR: {result.stderr}", file=sys.stderr)
-        return None
+        raise RuntimeError(f"PR creation failed: {result.stderr}")
 
     # Parse PR number from output URL (e.g., https://github.com/owner/repo/pull/123)
     url = result.stdout.strip()
@@ -413,7 +415,7 @@ def create_draft_pr(
         pr_number = int(url.split("/")[-1])
         return pr_number
     except (ValueError, IndexError):
-        return None
+        raise RuntimeError(f"Could not parse PR number from: {url}")
 
 
 def ensure_draft_pr(
@@ -1145,21 +1147,16 @@ def main():
     worktree_repo = Repo(worktree_path)
     worktree_repo.git.checkout(slice_branch)
 
-    # Push slice branch to remote (needed before creating PR)
-    if not push_branch_to_remote(slice_branch):
-        print("Warning: Could not push slice branch to remote", file=sys.stderr)
-
-    # Create or reuse Draft PR
-    pr_number = ensure_draft_pr(
-        slice_branch, args.idea_directory, idea_name, state["slice_number"]
-    )
-    if pr_number:
-        print(f"PR: #{pr_number}")
-
     # Skip task execution if --setup-only was provided
+    # Note: PR creation is deferred until after first push (when there are commits)
     if args.setup_only:
         print("Setup complete. Exiting (--setup-only mode).")
         return
+
+    # Check for existing PR (creation is deferred until after first push)
+    pr_number = find_existing_pr(slice_branch)
+    if pr_number:
+        print(f"Reusing existing PR #{pr_number}")
 
     # Execute tasks one by one until all are complete
     while True:
@@ -1221,9 +1218,17 @@ def main():
 
         print(f"Task completed successfully. Pushing changes...")
 
-        # Push the commit
-        if pr_number and not push_to_slice_branch(slice_branch, pr_number):
-            print("Warning: Could not push commit to slice branch", file=sys.stderr)
+        # Push the commit to slice branch
+        if not push_branch_to_remote(slice_branch):
+            print("Error: Could not push commit to slice branch", file=sys.stderr)
+            sys.exit(1)
+
+        # Create PR after first push if it doesn't exist yet
+        if pr_number is None:
+            pr_number = ensure_draft_pr(
+                slice_branch, args.idea_directory, idea_name, state["slice_number"]
+            )
+            print(f"Created Draft PR #{pr_number}")
 
 
 if __name__ == "__main__":

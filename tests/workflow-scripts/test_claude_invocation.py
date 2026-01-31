@@ -141,6 +141,76 @@ class TestClaudeCommandConstruction:
 
 
 @pytest.mark.unit
+class TestRunClaudeWithOutputCapture:
+    """Test running Claude with output capture and real-time display."""
+
+    def test_run_claude_captures_stdout(self, mocker):
+        """Should capture stdout from Claude process."""
+        from implement_with_worktree import run_claude_with_output_capture
+
+        # Mock Popen with proper pipe-like objects
+        mock_stdout = mocker.MagicMock()
+        mock_stderr = mocker.MagicMock()
+
+        # Control what select returns - stdout is readable first, then nothing
+        select_returns = [
+            ([mock_stdout], [], []),  # stdout readable
+            ([mock_stdout], [], []),  # stdout readable again
+            ([], [], []),              # nothing readable, process done
+        ]
+        mocker.patch('select.select', side_effect=select_returns)
+
+        # Control what read1/read returns
+        mock_stdout.read1.side_effect = [b"line1\n", b"line2\n"]
+        mock_stdout.read.return_value = b""  # No remaining data
+        mock_stderr.read.return_value = b""  # No remaining data
+
+        mock_process = mocker.MagicMock()
+        mock_process.stdout = mock_stdout
+        mock_process.stderr = mock_stderr
+        mock_process.poll.side_effect = [None, None, 0]
+        mock_process.returncode = 0
+        mocker.patch('implement_with_worktree.subprocess.Popen', return_value=mock_process)
+
+        result = run_claude_with_output_capture(["claude", "test"], cwd="/tmp")
+
+        assert "line1" in result.stdout
+        assert "line2" in result.stdout
+        assert result.returncode == 0
+
+    def test_run_claude_captures_stderr(self, mocker):
+        """Should capture stderr from Claude process."""
+        from implement_with_worktree import run_claude_with_output_capture
+
+        mock_stdout = mocker.MagicMock()
+        mock_stderr = mocker.MagicMock()
+
+        # Control what select returns - stderr is readable
+        select_returns = [
+            ([mock_stderr], [], []),  # stderr readable
+            ([], [], []),              # nothing readable, process done
+        ]
+        mocker.patch('select.select', side_effect=select_returns)
+
+        # Control what read1/read returns
+        mock_stderr.read1.side_effect = [b"error1\n"]
+        mock_stdout.read.return_value = b""  # No remaining data
+        mock_stderr.read.return_value = b""  # No remaining data
+
+        mock_process = mocker.MagicMock()
+        mock_process.stdout = mock_stdout
+        mock_process.stderr = mock_stderr
+        mock_process.poll.side_effect = [None, 0]
+        mock_process.returncode = 1
+        mocker.patch('implement_with_worktree.subprocess.Popen', return_value=mock_process)
+
+        result = run_claude_with_output_capture(["claude", "test"], cwd="/tmp")
+
+        assert "error1" in result.stderr
+        assert result.returncode == 1
+
+
+@pytest.mark.unit
 class TestClaudeInvocationResult:
     """Test handling of Claude invocation results."""
 

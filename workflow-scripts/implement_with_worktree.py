@@ -11,6 +11,7 @@ import glob
 import json
 import os
 import re
+import select
 import shutil
 import signal
 import subprocess
@@ -1005,6 +1006,82 @@ If all tasks are complete, stop and report success.
         return ["claude", "-p", prompt]
 
 
+class ClaudeResult:
+    """Result of running Claude with output capture."""
+
+    def __init__(self, returncode: int, stdout: str, stderr: str):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
+    """Run Claude command, capturing output while displaying it in real-time.
+
+    Args:
+        cmd: Command to run as list
+        cwd: Working directory
+
+    Returns:
+        ClaudeResult with returncode, stdout, and stderr
+    """
+    process = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+
+    stdout_chunks = []
+    stderr_chunks = []
+
+    # Use select for non-blocking reads from both pipes
+    while True:
+        # Wait for data on stdout or stderr (with timeout to check process status)
+        readable, _, _ = select.select(
+            [process.stdout, process.stderr],
+            [],
+            [],
+            0.1  # 100ms timeout
+        )
+
+        for pipe in readable:
+            chunk = pipe.read1(4096) if hasattr(pipe, 'read1') else pipe.read(4096)
+            if chunk:
+                text = chunk.decode('utf-8', errors='replace')
+                if pipe == process.stdout:
+                    stdout_chunks.append(text)
+                    sys.stdout.write(text)
+                    sys.stdout.flush()
+                else:
+                    stderr_chunks.append(text)
+                    sys.stderr.write(text)
+                    sys.stderr.flush()
+
+        # Check if process has finished and pipes are empty
+        if process.poll() is not None:
+            # Drain any remaining data
+            remaining_stdout = process.stdout.read()
+            remaining_stderr = process.stderr.read()
+            if remaining_stdout:
+                text = remaining_stdout.decode('utf-8', errors='replace')
+                stdout_chunks.append(text)
+                sys.stdout.write(text)
+                sys.stdout.flush()
+            if remaining_stderr:
+                text = remaining_stderr.decode('utf-8', errors='replace')
+                stderr_chunks.append(text)
+                sys.stderr.write(text)
+                sys.stderr.flush()
+            break
+
+    return ClaudeResult(
+        returncode=process.returncode,
+        stdout=''.join(stdout_chunks),
+        stderr=''.join(stderr_chunks)
+    )
+
+
 def build_feedback_command(
     pr_url: str,
     feedback_type: str,
@@ -1229,8 +1306,8 @@ def main():
             )
             print(f"Invoking Claude: {' '.join(claude_cmd)}")
 
-        # Run Claude (or mock) interactively
-        claude_result = subprocess.run(claude_cmd, cwd=worktree_path)
+        # Run Claude (or mock), capturing output while displaying in real-time
+        claude_result = run_claude_with_output_capture(claude_cmd, cwd=worktree_path)
 
         # Get HEAD after Claude invocation
         head_after = worktree_repo.head.commit.hexsha

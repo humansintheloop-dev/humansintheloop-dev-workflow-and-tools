@@ -8,6 +8,60 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
 
 
+import tempfile
+from git import Repo
+
+
+@pytest.mark.unit
+class TestWorktreeIdeaDirectory:
+    """Test that Claude is invoked with worktree idea directory, not main repo."""
+
+    def test_get_worktree_idea_directory(self):
+        """Should compute the idea directory path within the worktree."""
+        from implement_with_worktree import get_worktree_idea_directory
+
+        worktree_path = "/tmp/my-repo-wt-my-feature"
+        main_repo_idea_dir = "/home/user/my-repo/docs/ideas/my-feature"
+        main_repo_root = "/home/user/my-repo"
+
+        result = get_worktree_idea_directory(
+            worktree_path=worktree_path,
+            main_repo_idea_dir=main_repo_idea_dir,
+            main_repo_root=main_repo_root
+        )
+
+        assert result == "/tmp/my-repo-wt-my-feature/docs/ideas/my-feature"
+
+    def test_claude_prompt_uses_worktree_idea_directory(self, mocker):
+        """Claude command prompt should reference worktree idea dir, not main repo."""
+        from implement_with_worktree import build_claude_command, get_worktree_idea_directory
+
+        # Simulate the paths
+        main_repo_root = "/home/user/my-repo"
+        main_repo_idea_dir = "/home/user/my-repo/kafka-security-poc"
+        worktree_path = "/tmp/my-repo-wt-kafka-security-poc"
+
+        # Get the worktree idea directory (what main() should pass to build_claude_command)
+        worktree_idea_dir = get_worktree_idea_directory(
+            worktree_path=worktree_path,
+            main_repo_idea_dir=main_repo_idea_dir,
+            main_repo_root=main_repo_root
+        )
+
+        # Build command with worktree idea dir
+        cmd = build_claude_command(
+            idea_directory=worktree_idea_dir,
+            task_description="Task 1.1: Create project"
+        )
+
+        # The prompt should reference the worktree path, not main repo
+        prompt = cmd[1]
+        assert worktree_path in prompt, \
+            f"Prompt should use worktree path. Got: {prompt}"
+        assert main_repo_root not in prompt, \
+            f"Prompt should NOT use main repo path. Got: {prompt}"
+
+
 @pytest.mark.unit
 class TestClaudeCommandConstruction:
     """Test construction of Claude command (without executing)."""

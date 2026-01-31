@@ -11,6 +11,7 @@ import glob
 import json
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -237,6 +238,14 @@ def ensure_worktree(repo: Repo, idea_name: str, branch_name: str) -> str:
     if not os.path.isdir(worktree_path):
         # Create the worktree
         repo.git.worktree("add", worktree_path, branch_name)
+
+    # Copy .claude/settings.local.json to worktree if it exists
+    source_settings = os.path.join(repo_root, ".claude", "settings.local.json")
+    if os.path.isfile(source_settings):
+        dest_claude_dir = os.path.join(worktree_path, ".claude")
+        os.makedirs(dest_claude_dir, exist_ok=True)
+        dest_settings = os.path.join(dest_claude_dir, "settings.local.json")
+        shutil.copy2(source_settings, dest_settings)
 
     return worktree_path
 
@@ -937,6 +946,25 @@ def get_first_task_name(plan_content: str) -> str:
 
 # Claude Invocation Functions
 
+def get_worktree_idea_directory(
+    worktree_path: str,
+    main_repo_idea_dir: str,
+    main_repo_root: str
+) -> str:
+    """Compute the idea directory path within the worktree.
+
+    Args:
+        worktree_path: Absolute path to the worktree
+        main_repo_idea_dir: Absolute path to idea directory in main repo
+        main_repo_root: Absolute path to main repo root
+
+    Returns:
+        Absolute path to the idea directory within the worktree
+    """
+    idea_relpath = os.path.relpath(main_repo_idea_dir, main_repo_root)
+    return os.path.join(worktree_path, idea_relpath)
+
+
 def build_claude_command(
     idea_directory: str,
     task_description: str
@@ -1127,10 +1155,14 @@ def main():
         plan_content = f.read()
     first_task_name = get_first_task_name(plan_content)
 
-    # Calculate the plan file path in the worktree for the task execution loop
+    # Calculate paths within the worktree for task execution
     # The idea directory structure is preserved in the worktree
-    idea_dir_relpath = os.path.relpath(args.idea_directory, repo.working_tree_dir)
-    worktree_plan_file = os.path.join(worktree_path, idea_dir_relpath, f"{idea_name}-plan.md")
+    worktree_idea_dir = get_worktree_idea_directory(
+        worktree_path=worktree_path,
+        main_repo_idea_dir=args.idea_directory,
+        main_repo_root=repo.working_tree_dir
+    )
+    worktree_plan_file = os.path.join(worktree_idea_dir, f"{idea_name}-plan.md")
 
     # Create or reuse slice branch
     slice_branch = ensure_slice_branch(
@@ -1180,7 +1212,7 @@ def main():
             print(f"Using mock Claude: {args.mock_claude}")
         else:
             claude_cmd = build_claude_command(
-                args.idea_directory,
+                worktree_idea_dir,
                 current_task
             )
             print(f"Invoking Claude: {' '.join(claude_cmd)}")

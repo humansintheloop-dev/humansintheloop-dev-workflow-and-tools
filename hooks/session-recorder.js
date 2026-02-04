@@ -149,6 +149,19 @@ function formatHeaderTimestamp() {
 }
 
 /**
+ * Formats a timestamp for entry headers: HH:MM:SS
+ * @returns {string} The formatted timestamp
+ */
+function formatEntryTimestamp() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+
+  return `${hours}:${minutes}:${seconds}`;
+}
+
+/**
  * Creates a new session file with the header
  * @param {string} sessionsDir - The sessions directory path
  * @param {string} sessionId - The Claude session ID
@@ -245,9 +258,10 @@ function getCurrentSessionPath() {
  * @returns {string} Formatted markdown string
  */
 function formatUserPrompt(prompt) {
+  const timestamp = formatEntryTimestamp();
   const lines = prompt.split('\n');
   const quotedLines = lines.map(line => `> ${line}`).join('\n');
-  return `**User:**\n${quotedLines}\n\n`;
+  return `**User:** [${timestamp}]\n${quotedLines}\n\n`;
 }
 
 /**
@@ -256,9 +270,10 @@ function formatUserPrompt(prompt) {
  * @returns {string} Formatted markdown string
  */
 function formatClaudeResponse(response) {
+  const timestamp = formatEntryTimestamp();
   const lines = response.split('\n');
   const quotedLines = lines.map(line => `> ${line}`).join('\n');
-  return `**Claude:**\n${quotedLines}\n\n`;
+  return `**Claude:** [${timestamp}]\n${quotedLines}\n\n`;
 }
 
 /**
@@ -444,10 +459,11 @@ function handlePostToolUse(hookInput) {
 
   // Format the tool call
   const toolSummary = formatToolCall(tool_name, tool_input);
+  const timestamp = formatEntryTimestamp();
   debugLog(projectRoot, `Tool summary: ${toolSummary}`);
 
   // Append tool call to session (each tool call gets its own "Tools Used" section for simplicity)
-  const formatted = `**Tools Used:**\n- ${toolSummary}\n\n`;
+  const formatted = `**Tools Used:** [${timestamp}]\n- ${toolSummary}\n\n`;
   appendToSession(formatted);
   debugLog(projectRoot, 'Tool call appended successfully');
 
@@ -455,10 +471,11 @@ function handlePostToolUse(hookInput) {
   if (tool_name === 'Bash' && tool_input?.command && /git\s+commit/.test(tool_input.command)) {
     // Bash tool_response has: stdout, stderr, interrupted (not a success field)
     const bashSuccess = tool_response && !tool_response.interrupted && !tool_response.stderr;
+    const commitTimestamp = formatEntryTimestamp();
     if (bashSuccess) {
       const gitInfo = captureCommitInfo(projectRoot);
       if (gitInfo) {
-        let commitFormatted = `**Git Commit:**\n- SHA: ${gitInfo.sha}\n`;
+        let commitFormatted = `**Git Commit:** [${commitTimestamp}]\n- SHA: ${gitInfo.sha}\n`;
         if (gitInfo.remote) {
           commitFormatted += `- Repository: ${gitInfo.remote}\n`;
         }
@@ -467,7 +484,7 @@ function handlePostToolUse(hookInput) {
         debugLog(projectRoot, 'Git commit info appended successfully');
       }
     } else {
-      appendToSession('**Git Commit Failed**\n\n');
+      appendToSession(`**Git Commit Failed:** [${commitTimestamp}]\n\n`);
       debugLog(projectRoot, 'Git commit failure recorded');
     }
   }
@@ -605,6 +622,7 @@ module.exports = {
   formatUserPrompt,
   formatClaudeResponse,
   formatToolCall,
+  formatEntryTimestamp,
   captureCommitInfo,
   parseTranscript,
   handleUserPromptSubmit,

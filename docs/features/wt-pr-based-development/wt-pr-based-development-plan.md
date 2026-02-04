@@ -1,474 +1,497 @@
-# Implementation Plan: implement-with-worktree
+# Implementation Plan: implement-with-worktree.sh
 
-## Instructions for Coding Agent
+## Idea Type
 
-- **IMPORTANT**: Use simple commands that you have permission to execute. Avoid complex commands that may fail due to permission issues.
-- **ALWAYS** Use the `idea-to-code:plan-tracking` skill to track task completion
-- **ALWAYS** Write code using TDD:
-  - Use the `idea-to-code:tdd` skill when implementing code
-  - NEVER write production code without first writing a failing test
-  - Before using the Write tool on any production file, ask: "Do I have a failing test for this?" If not, write the test first.
-  - When building something that requires scripting, never run scripts or ad-hoc commands that modify state directly. Always update the test script first, then run the test script.
-  - When task direction changes mid-implementation, return to TDD PLANNING state and write a test first
-- **ALWAYS** after completing a task, when tests pass and the task has been marked complete, commit the changes.
+**C. Platform/infrastructure capability** - This is a workflow automation script that implements Git worktree and GitHub Draft PR-based development.
 
 ---
 
-## Testing Strategy
+## Overview
 
-### Test Location and Organization
+This plan implements `implement-with-worktree.sh`, a workflow automation script that orchestrates Git worktree/PR-based development. The script creates Git infrastructure (integration branches, worktrees, slice branches), manages Draft PRs, executes plan tasks via Claude Code, handles PR feedback, and manages the complete PR lifecycle.
 
-- Tests live in `tests/workflow-scripts/`
-- Use pytest markers to distinguish test types:
-  - `@pytest.mark.unit` - Fast unit tests (no external dependencies)
-  - `@pytest.mark.integration` - Slower tests requiring git/GitHub
-
-### Unit Tests
-
-Unit tests with pytest for pure Python functions:
-- State management (load, save, update)
-- Task parsing from plan files
-- Branch name generation and sanitization
-- Command construction (verify correct arguments without executing)
-
-### Integration Tests
-
-Integration tests use real repositories:
-
-| Component | Approach |
-|-----------|----------|
-| Git operations | Real local test repository |
-| GitHub operations | Real GitHub repository (created per test session, deleted at end) |
-| Shell scripts | Tested indirectly via Python integration tests |
-| Claude invocations | Mocked (verify command construction, simulate success/failure outcomes) |
-
-### Test Data
-
-- Use `tests/kafka-security-poc` as the test idea directory
-- Test repository created fresh per test session for isolation
-
-### Test Repository Initialization
-
-When creating the test GitHub repository, the test setup must:
-1. Copy `config-files/CLAUDE.md` to the repo root as `CLAUDE.md`
-2. Copy `config-files/settings.local.json` to `.claude/settings.local.json`
-3. Add "git commit" to the allowed permissions in settings
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest tests/workflow-scripts/
-
-# Run only fast unit tests
-pytest tests/workflow-scripts/ -m unit
-
-# Run integration tests (requires GitHub auth)
-pytest tests/workflow-scripts/ -m integration
-```
+The implementation follows TDD practices - each task includes writing a failing test first, then implementing code to make it pass.
 
 ---
 
-## Steel Thread 1: Project Setup and CLI Skeleton
+## Steel Thread 1: Project Setup and Minimal Entry Point
 
-Set up the Python venv infrastructure, basic CLI structure, and test framework.
+Establishes the Python environment infrastructure and creates a minimal working entry point.
 
-- [x] **Task 1.1: Python venv helper bootstraps virtual environment**
-  - [x] Create `workflow-scripts/_python_helper.sh` with `ensure_venv` and `run_python` functions
-  - [x] Create `workflow-scripts/requirements.txt` with pytest as initial dependency
-  - [x] Create `workflow-scripts/.gitignore` to exclude `.venv/`
-  - [x] Verify: sourcing helper and calling `ensure_venv` creates `.venv/` directory
+- [ ] **Task 1.1: Bash entry script invokes Python with arguments**
+  - TaskType: INFRA
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh --help`
+  - Observable: Exit code 0, stdout contains usage information including `<idea-directory>` and `--cleanup` options
+  - Evidence: `./workflow-scripts/implement-with-worktree.sh --help | grep -q "idea-directory" && echo "PASS"`
+  - Steps:
+    - [ ] Create `workflow-scripts/_python_helper.sh` with `ensure_venv` and `run_python` functions
+    - [ ] Create `workflow-scripts/requirements.txt` with initial dependencies (none required initially)
+    - [ ] Create `workflow-scripts/implement-with-worktree.sh` that sources helper and delegates to Python
+    - [ ] Create `workflow-scripts/implement-with-worktree.py` with argparse CLI that shows help
+    - [ ] Add `.venv/` to `.gitignore` if not already present
 
-- [x] **Task 1.2: CLI accepts idea-directory argument and --cleanup flag**
-  - [x] Create `workflow-scripts/implement-with-worktree.sh` that sources helper and invokes Python
-  - [x] Create `workflow-scripts/implement-with-worktree.py` with argument parsing (argparse)
-  - [x] Script exits with error if no idea-directory provided
-  - [x] Script accepts optional `--cleanup` flag
-  - [x] Verify: `./implement-with-worktree.sh` shows usage, `./implement-with-worktree.sh some/path` runs without argument error
-
-- [x] **Task 1.3: Integration test for CLI skeleton**
-  - [x] Create test that runs `implement-with-worktree.sh` with no arguments and verifies usage output
-  - [x] Create test that runs script with `--help` and verifies help text
-  - [x] Verify: tests run the actual shell script and check exit codes/output
-
----
-
-## Steel Thread 2: Idea Validation and State Management
-
-Validate the idea directory structure and manage persistent state.
-
-- [x] **Task 2.1: Script validates idea directory exists**
-  - [x] Exit with clear error message if directory does not exist
-  - [x] Extract idea-name from directory path (last component)
-  - [x] Verify: running with non-existent path shows "directory not found" error
-
-- [x] **Task 2.2: Script validates required idea files exist**
-  - [x] Check for `*-idea.md`, `*-discussion.md`, `*-spec.md`, `*-plan.md`
-  - [x] Exit with clear error listing missing files
-  - [x] Verify: running with incomplete idea directory shows which files are missing
-
-- [x] **Task 2.3: Script validates idea files are committed to Git**
-  - [x] Use GitPython to check for uncommitted changes to idea files
-  - [x] Exit with error message if files have uncommitted changes
-  - [x] Verify: uncommitted changes to idea files trigger error
-
-- [x] **Task 2.4: State file initializes if not exists and loads if exists**
-  - [x] State file location: `<idea-directory>/<idea-name>-wt-state.json`
-  - [x] Initialize with: `{"slice_number": 1, "processed_comment_ids": [], "processed_review_ids": []}`
-  - [x] Load existing state file and validate JSON structure
-  - [x] Provide functions to update and save state
-  - [x] Verify: first run creates state file, subsequent run loads it
-
-- [x] **Task 2.5: Integration test for idea validation**
-  - [x] Create local test git repository with test idea directory
-  - [x] Run script with non-existent directory, verify error message and exit code
-  - [x] Run script with incomplete idea directory (missing files), verify error lists missing files
-  - [x] Run script with uncommitted idea files, verify error message
-  - [x] Run script with valid committed idea directory, verify state file created
-  - [x] Verify: tests run actual script against real test repository
+- [ ] **Task 1.2: Script validates idea directory argument**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh /nonexistent/path`
+  - Observable: Exit code non-zero, stderr contains error message about directory not existing
+  - Evidence: `! ./workflow-scripts/implement-with-worktree.sh /nonexistent/path 2>&1 | grep -q "does not exist" && echo "PASS"`
+  - Steps:
+    - [ ] Add idea directory path validation in Python
+    - [ ] Return appropriate exit code and error message
 
 ---
 
-## Steel Thread 3: Git Infrastructure Setup
+## Steel Thread 2: Idea File Validation
 
-Create or reuse integration branch, worktree, and slice branch.
+Ensures all required idea files are committed before proceeding.
 
-- [x] **Task 3.1: Integration branch created if not exists, reused if exists**
-  - [x] Branch name: `idea/<idea-name>/integration`
-  - [x] Create from current HEAD if branch doesn't exist
-  - [x] Detect and reuse if branch already exists
-  - [x] Verify: first run creates branch, second run reuses it
+- [ ] **Task 2.1: Script verifies idea files exist**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (where test-idea-dir lacks required files)
+  - Observable: Exit code non-zero, stderr lists missing files (idea, spec, plan)
+  - Evidence: Create temp directory without required files, run script, verify error message mentions missing files
+  - Steps:
+    - [ ] Check for `*-idea.md`, `*-spec.md`, `*-plan.md` files in idea directory
+    - [ ] Report which files are missing
 
-- [x] **Task 3.2: Worktree created if not exists, reused if exists**
-  - [x] Worktree path: `../<repo-name>-wt-<idea-name>`
-  - [x] Create worktree from integration branch if doesn't exist
-  - [x] Detect and reuse if worktree already exists
-  - [x] Change working directory to worktree for subsequent operations
-  - [x] Verify: first run creates worktree, second run reuses it
-
-- [x] **Task 3.3: Slice branch created with correct naming pattern**
-  - [x] Branch name: `idea/<idea-name>/<nn>-<slice-name>` where nn is zero-padded slice number
-  - [x] Derive slice-name from first task in plan (sanitized for branch name)
-  - [x] Create from integration branch if doesn't exist
-  - [x] Checkout slice branch in worktree
-  - [x] Verify: slice branch created with correct format (e.g., `idea/my-feature/01-project-setup`)
-
-- [x] **Task 3.4: Integration test for git infrastructure setup**
-  - [x] Create local test git repository with valid idea directory
-  - [x] Run script and verify integration branch `idea/<idea-name>/integration` exists
-  - [x] Verify worktree directory created at `../<repo-name>-wt-<idea-name>`
-  - [x] Verify slice branch created with correct pattern
-  - [x] Run script again, verify branches and worktree are reused (not duplicated)
-  - [x] Verify: tests run actual script and check git state with GitPython
+- [ ] **Task 2.2: Script verifies idea files are committed**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (where files exist but are uncommitted)
+  - Observable: Exit code non-zero, stderr indicates files must be committed before proceeding
+  - Evidence: Create temp git repo with uncommitted idea files, run script, verify error about uncommitted files
+  - Steps:
+    - [ ] Use `git status --porcelain` to check if idea files have uncommitted changes
+    - [ ] Error with clear message if uncommitted changes exist
 
 ---
 
-## Steel Thread 4: GitHub Draft PR Management
+## Steel Thread 3: Integration Branch Management
 
-Create or reuse GitHub Draft PR for the slice branch.
+Creates or reuses the integration branch.
 
-- [x] **Task 4.1: Draft PR created if not exists, reused if exists**
-  - [x] Use `gh pr list` to check for existing PR for slice branch
-  - [x] Use `gh pr create --draft` to create new Draft PR if none exists
-  - [x] PR title derived from slice name
-  - [x] PR body references idea directory and current slice
-  - [x] Store PR number in state or detect from `gh pr list`
-  - [x] Verify: first run creates Draft PR, second run reuses it
+- [ ] **Task 3.1: Script creates integration branch when not exists**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (in repo without integration branch)
+  - Observable: Integration branch `idea/<idea-name>/integration` exists, based on current HEAD
+  - Evidence: Set up test repo, run script, verify `git branch --list "idea/*/integration"` shows the branch
+  - Steps:
+    - [ ] Extract idea name from directory path
+    - [ ] Create branch using `git branch idea/<idea-name>/integration`
 
-- [x] **Task 4.2: Detect PR Draft state before push operations**
-  - [x] Use `gh pr view` to check if PR is still in Draft state
-  - [x] Return boolean indicating Draft status
-  - [x] Verify: function correctly identifies Draft vs Ready PRs
-
-- [x] **Task 4.3: Integration test for GitHub PR management**
-  - [x] Create test GitHub repository (use pytest fixture with cleanup)
-  - [x] Run script with valid idea directory, verify Draft PR created on GitHub
-  - [x] Verify PR title and body contain expected content
-  - [x] Run script again, verify existing PR is reused (PR count unchanged)
-  - [x] Verify: tests use real GitHub API via `gh` CLI
+- [ ] **Task 3.2: Script reuses existing integration branch**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (in repo where integration branch exists)
+  - Observable: No new branch created, script proceeds using existing branch, no error
+  - Evidence: Create integration branch first, run script twice, verify only one branch exists (idempotent)
+  - Steps:
+    - [ ] Check if integration branch exists before creating
+    - [ ] Log message indicating reuse of existing branch
 
 ---
 
-## Steel Thread 5: Task Parsing and Execution Core
+## Steel Thread 4: Worktree Management
 
-Parse tasks from plan file and execute with Claude Code.
+Creates or reuses the worktree directory.
 
-- [x] **Task 5.1: Parse uncompleted tasks from plan file**
-  - [x] Read plan file from idea directory
-  - [x] Extract tasks matching pattern `- [ ]` (unchecked checkboxes)
-  - [x] Return list of task descriptions in order
-  - [x] Skip already-completed tasks (matching `- [x]`)
-  - [x] Verify: correctly parses mix of completed and uncompleted tasks
+- [ ] **Task 4.1: Script creates worktree when not exists**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (where worktree doesn't exist)
+  - Observable: Worktree directory exists at `../<repo-name>-wt-<idea-name>`, linked to integration branch
+  - Evidence: Run script, verify worktree directory exists and `git worktree list` shows it
+  - Steps:
+    - [ ] Determine worktree path using repo name and idea name
+    - [ ] Create worktree with `git worktree add <path> <integration-branch>`
 
-- [x] **Task 5.2: Invoke Claude Code interactively for task**
-  - [x] Build Claude command with `implement-plan.md` template
-  - [x] Pass current task context to Claude
-  - [x] Run Claude interactively (not capturing output, user sees everything)
-  - [x] Capture exit code
-  - [x] Verify: Claude invocation command is correctly formed
-
-- [x] **Task 5.3: Verify task success via exit code and HEAD advancement**
-  - [x] Record HEAD before Claude invocation
-  - [x] After Claude exits, compare HEAD to recorded value
-  - [x] Success requires: exit code 0 AND HEAD advanced
-  - [x] Display clear error message on failure
-  - [x] Exit script if verification fails
-  - [x] Verify: detects both exit code failures and no-commit failures
-
-- [x] **Task 5.4: Push commit to slice branch after successful task**
-  - [x] Verify PR still in Draft state before pushing
-  - [x] Push current HEAD to slice branch
-  - [x] Handle push failures gracefully
-  - [x] Verify: commit pushed to remote slice branch
-
-- [x] **Task 5.5: Integration test for task execution (with mocked Claude)**
-  - [x] Create test repository with idea directory containing plan with uncompleted tasks
-  - [x] Mock Claude invocation to simulate success (exit 0) and create a commit
-  - [x] Run script and verify task is detected from plan
-  - [x] Verify commit is pushed to slice branch on GitHub
-  - [x] Verify: tests use real git/GitHub but mock Claude subprocess
+- [ ] **Task 4.2: Script reuses existing worktree**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (where worktree exists)
+  - Observable: No new worktree created, script proceeds using existing worktree, no error
+  - Evidence: Create worktree first, run script twice, verify `git worktree list` shows exactly one worktree for idea
+  - Steps:
+    - [ ] Check if worktree already exists via `git worktree list`
+    - [ ] Log message indicating reuse of existing worktree
 
 ---
 
-## Steel Thread 6: Feedback Handling
+## Steel Thread 5: Slice Branch and Draft PR Management
 
-Detect and handle PR feedback (reviews, comments, status checks).
+Creates slice branch and Draft PR for the work.
 
-- [x] **Task 6.1: Create wt-handle-feedback.md prompt template**
-  - [x] Create `prompt-templates/wt-handle-feedback.md`
-  - [x] Template receives: PR URL, feedback content, feedback type
-  - [x] Instructions for Claude to address feedback and commit fix
-  - [x] Verify: template file exists with required placeholders
+- [ ] **Task 5.1: Script creates slice branch with correct naming**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>`
+  - Observable: Slice branch `idea/<idea-name>/01-<slice-name>` exists in worktree
+  - Evidence: Run script, verify branch exists with pattern `idea/*/01-*`
+  - Steps:
+    - [ ] Parse plan file to extract steel thread heading for slice name
+    - [ ] Create branch `idea/<idea-name>/<nn>-<slice-name>` in worktree
+    - [ ] Initialize or load state file with slice_number
 
-- [x] **Task 6.2: Detect new review comments and reviews**
-  - [x] Use `gh api` to fetch PR comments and reviews
-  - [x] Compare IDs against `processed_comment_ids` and `processed_review_ids` in state
-  - [x] Return list of new (unprocessed) feedback items
-  - [x] Verify: correctly identifies new vs already-processed feedback
+- [ ] **Task 5.2: Script creates Draft PR for slice branch**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>`
+  - Observable: Draft PR exists on GitHub for the slice branch, PR is in draft state
+  - Evidence: Run script, verify `gh pr list --json number,isDraft,headRefName` shows draft PR for slice branch
+  - Steps:
+    - [ ] Push slice branch to remote
+    - [ ] Create Draft PR using `gh pr create --draft`
+    - [ ] Store PR number in state if needed
 
-- [x] **Task 6.3: Detect failed status checks**
-  - [x] Use `gh pr checks` to get status check results
-  - [x] Identify failed checks
-  - [x] Treat failures as feedback requiring handling
-  - [x] Verify: correctly detects failed status checks
-
-- [x] **Task 6.4: Handle feedback with Claude using feedback template**
-  - [x] Invoke Claude with `wt-handle-feedback.md` template
-  - [x] Pass feedback content and context
-  - [x] Verify success (exit code + HEAD advanced)
-  - [x] Push fix commit
-  - [x] Update state with processed feedback IDs
-  - [x] Verify: feedback triggers Claude invocation and state update
-
-- [x] **Task 6.5: Integration test for feedback handling**
-  - [x] Create test GitHub repository with PR that has review comments
-  - [x] Run script with mocked Claude that creates fix commit
-  - [x] Verify script detects new comments and invokes Claude with feedback template
-  - [x] Verify processed comment IDs are saved to state file
-  - [x] Run script again, verify same comments are not reprocessed
-  - [x] Verify: tests use real GitHub PR with comments, mock Claude
+- [ ] **Task 5.3: Script reuses existing Draft PR**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (where Draft PR exists)
+  - Observable: No new PR created, script proceeds using existing PR
+  - Evidence: Create PR first, run script twice, verify only one PR exists for the branch
+  - Steps:
+    - [ ] Query existing PRs for the slice branch before creating
+    - [ ] Log message indicating reuse of existing PR
 
 ---
 
-## Steel Thread 7: Main Branch Advancement
+## Steel Thread 6: State File Management
 
-Detect and handle when main branch advances during execution.
+Manages the persistent state file for tracking progress.
 
-- [x] **Task 7.1: Detect when main branch has advanced**
-  - [x] Track main branch HEAD at start of execution
-  - [x] After each task, fetch and compare current main HEAD
-  - [x] Return boolean indicating whether main has new commits
-  - [x] Verify: correctly detects main advancement
+- [ ] **Task 6.1: Script initializes state file when not exists**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (without existing state file)
+  - Observable: State file `<idea-dir>/<idea-name>-wt-state.json` created with initial structure
+  - Evidence: Run script, verify state file exists with `slice_number`, `processed_comment_ids`, `processed_review_ids` fields
+  - Steps:
+    - [ ] Define state file schema as Python dataclass or TypedDict
+    - [ ] Create state file with initial values on first run
 
-- [x] **Task 7.2: Auto-rebase integration branch when rebase is clean**
-  - [x] Attempt `git rebase main` on integration branch
-  - [x] If successful, update slice branch to track rebased integration
-  - [x] Force-push slice branch after rebase
-  - [x] Verify: clean rebase completes without user intervention
-
-- [x] **Task 7.3: Pause and notify user when rebase has conflicts**
-  - [x] Detect rebase conflict (non-zero exit from rebase)
-  - [x] Abort the rebase attempt
-  - [x] Display clear message explaining the conflict
-  - [x] Pause execution (wait for user input or exit)
-  - [x] Verify: conflict triggers pause with clear message
-
-- [x] **Task 7.4: Integration test for main branch advancement**
-  - [x] Create test repository, run script to create integration branch
-  - [x] Add commits to main branch (simulate main advancing)
-  - [x] Run script again, verify it detects main advanced
-  - [x] Test clean rebase scenario: verify integration branch rebased automatically
-  - [x] Test conflict scenario: create conflicting changes, verify script pauses with message
-  - [x] Verify: tests use real git operations for rebase scenarios
+- [ ] **Task 6.2: Script loads and preserves existing state**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with existing state file containing processed IDs)
+  - Observable: Existing processed IDs preserved after script run, not reset to empty
+  - Evidence: Create state file with test IDs, run script, verify IDs still present
+  - Steps:
+    - [ ] Load existing state file at startup
+    - [ ] Merge/preserve existing data when updating state
 
 ---
 
-## Steel Thread 8: Completion and Polling
+## Steel Thread 7: Task Parsing and Identification
 
-Handle completion of all tasks and poll for feedback until PR is merged/closed.
+Parses the plan file to identify uncompleted tasks.
 
-- [x] **Task 8.1: Mark PR ready for review when all tasks complete**
-  - [x] Detect when no uncompleted tasks remain in plan
-  - [x] Run `gh pr ready` to convert Draft to Ready
-  - [x] Display message indicating PR is ready for review
-  - [x] Verify: PR transitions from Draft to Ready
+- [ ] **Task 7.1: Script identifies uncompleted tasks from plan file**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with plan containing mix of completed/uncompleted tasks)
+  - Observable: Script outputs/logs which task it will work on next (first uncompleted `- [ ]` task)
+  - Evidence: Create plan with some checked tasks, verify script identifies correct next task
+  - Steps:
+    - [ ] Parse plan file for `- [ ]` markers (uncompleted) vs `- [x]` (completed)
+    - [ ] Extract task descriptions and ordering
+    - [ ] Identify first uncompleted task
 
-- [x] **Task 8.2: Poll for feedback every 60 seconds after marking ready**
-  - [x] Enter polling loop after marking PR ready
-  - [x] Check for new feedback (reviews, comments, checks) each iteration
-  - [x] Handle new feedback with Claude (same as during task execution)
-  - [x] Display countdown/status during wait
-  - [x] Verify: polling loop runs at correct interval
-
-- [x] **Task 8.3: Exit when PR is merged or closed**
-  - [x] Check PR state via `gh pr view` during each poll
-  - [x] Exit with success message when PR is merged
-  - [x] Exit with message when PR is closed (not merged)
-  - [x] Verify: script exits cleanly on PR merge
-
-- [x] **Task 8.4: Integration test for completion and polling**
-  - [x] Create test repository with plan where all tasks are completed
-  - [x] Run script, verify PR is marked ready for review (`gh pr ready` called)
-  - [x] Test merge scenario: merge PR via `gh pr merge`, verify script exits with success
-  - [x] Test close scenario: close PR via `gh pr close`, verify script exits with message
-  - [x] Verify: tests use real GitHub PR state transitions
+- [ ] **Task 7.2: Script detects when all tasks are complete**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with all tasks marked complete)
+  - Observable: Script transitions to "mark PR ready" phase instead of task execution
+  - Evidence: Create plan with all tasks checked, verify script outputs message about completing PR
+  - Steps:
+    - [ ] Check if any uncompleted tasks remain
+    - [ ] Transition to completion phase when none remain
 
 ---
 
-## Steel Thread 9: Cleanup
+## Steel Thread 8: Claude Code Invocation for Tasks
 
-Optional cleanup of worktree and local branches.
+Invokes Claude Code interactively to implement tasks.
 
-- [x] **Task 9.1: Remove worktree when --cleanup flag provided and PR complete**
-  - [x] Only perform cleanup if `--cleanup` flag was provided
-  - [x] Only cleanup after PR is merged or closed
-  - [x] Run `git worktree remove <worktree-path>`
-  - [x] Verify: worktree directory removed
+- [ ] **Task 8.1: Script invokes Claude Code with implement-plan template**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with uncompleted task)
+  - Observable: Claude Code is invoked interactively with correct template and task context
+  - Evidence: Mock/capture Claude invocation, verify command includes template path and task information
+  - Steps:
+    - [ ] Build Claude Code command with `--prompt` using implement-plan.md template
+    - [ ] Include current task context in prompt
+    - [ ] Execute interactively (preserving stdin/stdout)
 
-- [x] **Task 9.2: Delete local branches when --cleanup flag provided**
-  - [x] Delete local integration branch
-  - [x] Delete local slice branch(es)
-  - [x] Do not delete remote branches (GitHub handles via PR)
-  - [x] Verify: local branches deleted, remote branches remain
+- [ ] **Task 8.2: Script verifies Claude exit code**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (simulating Claude failure)
+  - Observable: Script exits with error when Claude returns non-zero exit code
+  - Evidence: Mock Claude to return exit code 1, verify script exits with error message
+  - Steps:
+    - [ ] Capture Claude exit code
+    - [ ] Exit with clear error message if non-zero
 
-- [x] **Task 9.3: Integration test for cleanup**
-  - [x] Create test repository, run script to create worktree and branches
-  - [x] Merge PR to complete workflow
-  - [x] Run script with `--cleanup` flag, verify worktree directory removed
-  - [x] Verify local branches deleted but remote branches remain
-  - [x] Verify: tests check filesystem and git state after cleanup
-
----
-
-## Steel Thread 10: Slice Rollover on Unexpected PR State Change
-
-Handle edge case where PR exits Draft state unexpectedly.
-
-- [x] **Task 10.1: Detect PR exited Draft state before push**
-  - [x] Before each push, check PR is still Draft
-  - [x] If not Draft and there are unpushed commits, trigger rollover
-  - [x] Verify: correctly detects unexpected Ready state with local commits
-
-- [x] **Task 10.2: Preserve unpushed commits and create new slice**
-  - [x] Record unpushed commits in integration branch
-  - [x] Reset old slice branch to match remote (discard local-only changes on that branch)
-  - [x] Increment slice number in state
-  - [x] Create new slice branch from integration (includes preserved commits)
-  - [x] Create new Draft PR for new slice
-  - [x] Push commits to new slice
-  - [x] Verify: no commits lost, work continues on new slice
-
-- [x] **Task 10.3: Integration test for slice rollover**
-  - [x] Create test repository with PR in Draft state
-  - [x] Create local commits on slice branch (not pushed)
-  - [x] Mark PR as ready via `gh pr ready` (simulate unexpected state change)
-  - [x] Run script, verify it detects PR is no longer Draft
-  - [x] Verify new slice branch created with incremented number
-  - [x] Verify unpushed commits preserved on new slice
-  - [x] Verify new Draft PR created for new slice
-  - [x] Verify: tests check commit preservation and new PR creation
+- [ ] **Task 8.3: Script verifies HEAD advanced after Claude**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (simulating Claude success without commit)
+  - Observable: Script exits with error when HEAD unchanged after Claude invocation
+  - Evidence: Mock Claude to exit 0 but create no commit, verify script detects and errors
+  - Steps:
+    - [ ] Record HEAD before Claude invocation
+    - [ ] Compare HEAD after invocation
+    - [ ] Error if unchanged
 
 ---
 
-## Steel Thread 11: Interrupt Handling and Resumability
+## Steel Thread 9: Push and Continue Loop
 
-Ensure clean interrupt handling and seamless resume after restart.
+Pushes commits and continues to next task.
 
-- [x] **Task 11.1: Handle Ctrl+C gracefully**
-  - [x] Register signal handler for SIGINT
-  - [x] On interrupt, save current state and exit cleanly
-  - [x] Do not leave Git in inconsistent state (abort any in-progress operations)
-  - [x] Verify: Ctrl+C exits cleanly without corrupting state
+- [ ] **Task 9.1: Script pushes commit after successful task**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (after successful Claude task)
+  - Observable: New commit pushed to remote slice branch
+  - Evidence: After script run, verify `git log origin/<slice-branch>` contains the new commit
+  - Steps:
+    - [ ] Execute `git push` to slice branch
+    - [ ] Handle push failures appropriately
 
-- [x] **Task 11.2: Resume from correct position after restart**
-  - [x] On startup, load state file
-  - [x] Detect existing worktree, branches, PR and reuse
-  - [x] Start from first uncompleted task in plan
-  - [x] Do not reprocess already-handled feedback
-  - [x] Verify: restart after interrupt continues from correct point
-
-- [x] **Task 11.3: Integration test for interrupt handling and resumability**
-  - [x] Create test repository, run script partially (complete some tasks)
-  - [x] Simulate interrupt (kill process or send SIGINT)
-  - [x] Verify state file is saved and git is in consistent state
-  - [x] Run script again, verify it resumes from correct task (not from beginning)
-  - [x] Verify already-processed feedback is not reprocessed
-  - [x] Verify: tests check state persistence and correct resume behavior
+- [ ] **Task 9.2: Script continues to next task after push**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with multiple uncompleted tasks)
+  - Observable: Script processes multiple tasks in sequence, not just the first one
+  - Evidence: Set up plan with 2 tasks, mock Claude to create commits, verify both tasks attempted
+  - Steps:
+    - [ ] Implement task loop that continues until all tasks complete or error
+    - [ ] Re-parse plan file after each task to find next uncompleted
 
 ---
 
-## Steel Thread 12: End-to-End Test Script
+## Steel Thread 10: PR Draft State Verification
 
-Create a standalone test script for manual/CI testing of the complete workflow.
+Verifies PR remains in draft state before pushing.
 
-- [ ] **Task 12.1: Create test-implement-with-worktree.sh script**
-  - [ ] Create `workflow-scripts/test-implement-with-worktree.sh`
-  - [ ] Script creates a temporary directory for the test
-  - [ ] Script initializes git repo in temp directory
-  - [ ] Script copies `config-files/CLAUDE.md` to repo root as `CLAUDE.md`
-  - [ ] Script copies `config-files/settings.local.json` to `.claude/settings.local.json`
-  - [ ] Script edits `settings.local.json` to add "git commit" to allowed permissions
-  - [ ] Script copies `tests/kafka-security-poc` as the test idea directory
-  - [ ] Script commits all files
-  - [ ] Script creates GitHub repository using `gh repo create <name> --private --source .`
-  - [ ] Script runs `implement-with-worktree.sh` with the test idea
-  - [ ] Script runs real Claude Code to execute tasks
-  - [ ] Script verifies tasks are executed successfully
+- [ ] **Task 10.1: Script verifies PR is still draft before push**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with PR still in draft)
+  - Observable: Push proceeds normally when PR is draft
+  - Evidence: Create draft PR, run script, verify push succeeds
+  - Steps:
+    - [ ] Query PR state via `gh pr view --json isDraft`
+    - [ ] Proceed with push if draft
+
+- [ ] **Task 10.2: Script handles PR exiting draft unexpectedly**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (where PR was marked ready externally)
+  - Observable: Script creates new slice branch and draft PR, preserving unpushed commits
+  - Evidence: Create draft PR, mark it ready externally, run script with local commits, verify new slice created
+  - Steps:
+    - [ ] Detect when PR is no longer draft
+    - [ ] Preserve commits in integration branch
+    - [ ] Reset old slice to match remote
+    - [ ] Increment slice number and create new branch/PR
 
 ---
 
-## Change History
+## Steel Thread 11: Feedback Detection
 
-### 2026-01-30: Added Steel Thread 12 for end-to-end test script
+Detects new PR feedback (reviews, comments, failed checks).
 
-Added Task 12.1 to create `test-implement-with-worktree.sh` - a standalone test script that creates a temporary GitHub repository, uses `tests/kafka-security-poc` as the test idea, and runs the full workflow with mock Claude for manual or CI testing.
+- [ ] **Task 11.1: Script detects new review comments**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with new comments on PR)
+  - Observable: Script identifies unprocessed comment IDs not in state file
+  - Evidence: Add comment to PR, verify script detects it as new feedback
+  - Steps:
+    - [ ] Query PR comments via `gh api` or `gh pr view --json`
+    - [ ] Compare comment IDs against state file
+    - [ ] Identify new/unprocessed comments
 
-### 2026-01-30: Added integration test tasks to each steel thread
+- [ ] **Task 11.2: Script detects failed status checks**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with failed CI check)
+  - Observable: Script identifies failed status checks as feedback requiring action
+  - Evidence: Set up failing check on PR, verify script detects and reports it
+  - Steps:
+    - [ ] Query status checks via `gh pr checks` or API
+    - [ ] Identify failed checks
 
-Added explicit integration test tasks to each steel thread to ensure the script is wired together and behaves correctly end-to-end:
-- Task 1.3: Integration test for CLI skeleton
-- Task 2.5: Integration test for idea validation
-- Task 3.4: Integration test for git infrastructure setup
-- Task 4.3: Integration test for GitHub PR management
-- Task 5.5: Integration test for task execution (with mocked Claude)
-- Task 6.5: Integration test for feedback handling
-- Task 7.4: Integration test for main branch advancement
-- Task 8.4: Integration test for completion and polling
-- Task 9.3: Integration test for cleanup
-- Task 10.3: Integration test for slice rollover
-- Task 11.3: Integration test for interrupt handling and resumability
+---
 
-These tasks run the actual `implement-with-worktree.sh` script against real test repositories and verify observable behavior, addressing the gap where unit-tested functions weren't wired into main().
+## Steel Thread 12: Feedback Handling with Claude
 
-### 2026-01-30: Added Testing Strategy section
+Invokes Claude to address PR feedback.
 
-Added comprehensive testing strategy based on discussion:
-- Unit tests with pytest for pure Python functions
-- Integration tests using real git repositories
-- GitHub integration tests using real GitHub repo (created per session, deleted at end)
-- Shell scripts tested indirectly through Python tests
-- Claude invocations mocked (verify command, simulate outcomes)
-- Tests located in `tests/workflow-scripts/`
-- Pytest markers (`unit`, `integration`) for selective test execution
-- `tests/kafka-security-poc` as test idea directory
-- Test repo initialization: copy `config-files/CLAUDE.md` and `config-files/settings.local.json`, add "git commit" permission
+- [ ] **Task 12.1: Create wt-handle-feedback.md prompt template**
+  - TaskType: INFRA
+  - Entrypoint: `cat prompt-templates/wt-handle-feedback.md`
+  - Observable: Template file exists with appropriate structure for feedback handling context
+  - Evidence: Verify file exists and contains placeholders for feedback content
+  - Steps:
+    - [ ] Create template with sections for feedback context, PR state, and instructions
+    - [ ] Include placeholders for specific feedback content
+
+- [ ] **Task 12.2: Script invokes Claude with feedback template**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with unprocessed feedback)
+  - Observable: Claude invoked with wt-handle-feedback.md template including feedback content
+  - Evidence: Mock Claude invocation, verify template and feedback content passed correctly
+  - Steps:
+    - [ ] Build prompt with feedback template and actual feedback content
+    - [ ] Invoke Claude interactively
+    - [ ] Update state file with processed feedback IDs after handling
+
+---
+
+## Steel Thread 13: Main Branch Advancement Handling
+
+Detects and handles main branch advancing.
+
+- [ ] **Task 13.1: Script detects main branch advancement**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (where main advanced)
+  - Observable: Script detects that main has new commits since integration branch was created
+  - Evidence: Advance main after creating integration branch, verify script detects the change
+  - Steps:
+    - [ ] Compare main HEAD with integration branch base
+    - [ ] Identify when main has advanced
+
+- [ ] **Task 13.2: Script auto-rebases on clean main advancement**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with non-conflicting main changes)
+  - Observable: Integration branch rebased onto new main, slice branch updated
+  - Evidence: Advance main with non-conflicting changes, verify rebase succeeds and branches updated
+  - Steps:
+    - [ ] Attempt `git rebase main` on integration branch
+    - [ ] Update slice branch after successful rebase
+    - [ ] Push updated branches
+
+- [ ] **Task 13.3: Script pauses on rebase conflicts**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with conflicting main changes)
+  - Observable: Script pauses, displays conflict message, waits for user resolution
+  - Evidence: Create conflicting changes on main, verify script pauses with clear message
+  - Steps:
+    - [ ] Detect rebase conflict
+    - [ ] Display clear message about conflicts
+    - [ ] Pause execution (or exit with instructions to resume)
+
+---
+
+## Steel Thread 14: Completion and PR Ready
+
+Marks PR ready and enters polling loop when all tasks complete.
+
+- [ ] **Task 14.1: Script marks PR ready when all tasks complete**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (with all tasks complete)
+  - Observable: PR transitioned from draft to ready for review via `gh pr ready`
+  - Evidence: Complete all tasks, verify PR is no longer draft
+  - Steps:
+    - [ ] Execute `gh pr ready` when no uncompleted tasks remain
+    - [ ] Log transition message
+
+- [ ] **Task 14.2: Script polls for feedback after marking ready**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (in polling phase)
+  - Observable: Script checks for feedback every 60 seconds, displays polling status
+  - Evidence: Enter polling phase, verify script outputs polling messages with timing
+  - Steps:
+    - [ ] Implement 60-second polling loop
+    - [ ] Check for new feedback on each iteration
+    - [ ] Display countdown/status between polls
+
+- [ ] **Task 14.3: Script handles feedback during polling**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (polling, with new feedback)
+  - Observable: New feedback during polling triggers Claude invocation same as during task execution
+  - Evidence: Add feedback during polling phase, verify Claude invoked to handle it
+  - Steps:
+    - [ ] Reuse feedback detection and handling from task execution phase
+    - [ ] Continue polling after handling feedback
+
+---
+
+## Steel Thread 15: PR Merge/Close Detection and Exit
+
+Detects PR merge or close and exits appropriately.
+
+- [ ] **Task 15.1: Script detects PR merged and exits**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (polling, PR gets merged)
+  - Observable: Script exits with success when PR is merged
+  - Evidence: Merge PR during polling, verify script exits cleanly with success message
+  - Steps:
+    - [ ] Check PR state on each poll iteration
+    - [ ] Exit with success when PR is merged
+
+- [ ] **Task 15.2: Script detects PR closed and exits**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (polling, PR gets closed)
+  - Observable: Script exits when PR is closed (without merge)
+  - Evidence: Close PR during polling, verify script exits with appropriate message
+  - Steps:
+    - [ ] Detect closed (not merged) state
+    - [ ] Exit with informational message
+
+---
+
+## Steel Thread 16: Cleanup on Exit
+
+Performs optional cleanup when --cleanup flag provided.
+
+- [ ] **Task 16.1: Script skips cleanup by default**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (PR merged, no --cleanup)
+  - Observable: Worktree and local branches remain after script exit
+  - Evidence: Run without --cleanup flag, verify worktree and branches still exist
+  - Steps:
+    - [ ] Default cleanup behavior is no-op
+
+- [ ] **Task 16.2: Script removes worktree with --cleanup flag**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir> --cleanup` (PR merged)
+  - Observable: Worktree directory removed after PR merged
+  - Evidence: Run with --cleanup, verify worktree directory no longer exists
+  - Steps:
+    - [ ] Execute `git worktree remove` when cleanup requested
+    - [ ] Handle case where worktree has uncommitted changes
+
+- [ ] **Task 16.3: Script deletes local branches with --cleanup flag**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir> --cleanup` (PR merged)
+  - Observable: Local integration and slice branches deleted after cleanup
+  - Evidence: Run with --cleanup, verify branches no longer in `git branch --list`
+  - Steps:
+    - [ ] Delete integration branch
+    - [ ] Delete all slice branches for this idea
+    - [ ] Do not delete remote branches (GitHub handles via PR)
+
+---
+
+## Steel Thread 17: Interrupt Handling
+
+Handles Ctrl+C gracefully.
+
+- [ ] **Task 17.1: Script handles Ctrl+C cleanly**
+  - TaskType: OUTCOME
+  - Entrypoint: `workflow-scripts/implement-with-worktree.sh <test-idea-dir>` (interrupted with Ctrl+C)
+  - Observable: Script exits cleanly without corrupting state file or leaving partial git operations
+  - Evidence: Send SIGINT during execution, verify state file valid and git state consistent
+  - Steps:
+    - [ ] Install signal handler for SIGINT
+    - [ ] Ensure state file is written atomically (write to temp, rename)
+    - [ ] Exit with appropriate message
+
+---
+
+## Summary
+
+This plan covers 17 steel threads with 34 tasks implementing the complete `implement-with-worktree.sh` workflow:
+
+1. **Project Setup**: Python venv infrastructure and CLI entry point
+2. **Idea Validation**: File existence and commit status checks
+3. **Integration Branch**: Create/reuse integration branch
+4. **Worktree**: Create/reuse worktree directory
+5. **Slice and PR**: Create slice branch and Draft PR
+6. **State File**: Initialize and manage persistent state
+7. **Task Parsing**: Identify uncompleted tasks from plan
+8. **Claude Invocation**: Run Claude for task implementation
+9. **Push Loop**: Push commits and continue to next task
+10. **Draft Verification**: Verify PR draft state before push
+11. **Feedback Detection**: Detect reviews, comments, failed checks
+12. **Feedback Handling**: Invoke Claude for feedback
+13. **Main Advancement**: Detect and handle main branch changes
+14. **Completion**: Mark PR ready and poll for feedback
+15. **Merge Detection**: Detect PR merge/close and exit
+16. **Cleanup**: Optional cleanup of worktree and branches
+17. **Interrupt Handling**: Clean Ctrl+C handling

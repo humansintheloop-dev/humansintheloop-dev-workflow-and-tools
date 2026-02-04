@@ -34,7 +34,11 @@
       "Bash(chmod:*)",
       "Bash(git ls-tree:*)",
       "Bash(gh run:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(mkdir -p:*)",
+      "Bash(./test-scripts/test-*.sh)",
+      "Bash(docker compose config:*)"
     ],
     "deny": [
       "Bash(docker compose down:*)",

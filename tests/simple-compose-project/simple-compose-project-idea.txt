@@ -1,0 +1,43 @@
+Customer Service - Educational Example Repository
+
+A comprehensive reference implementation demonstrating Spring Boot + Docker Compose patterns.
+
+## Tech Stack
+- Java 23
+- Spring Boot 3.4.7
+- Gradle
+- JPA/Hibernate
+- Postgres database
+- Docker Compose (full containerized setup)
+- Testcontainers for integration testing
+
+## Customer Entity
+- id (primary key)
+- name
+- email
+- phone
+- createdAt, updatedAt (audit fields)
+- Embedded Address (street, city, state, zipCode, country)
+
+## REST API (Basic CRUD)
+- GET /customers - List all customers
+- GET /customers/{id} - Get customer by ID
+- POST /customers - Create new customer
+- PUT /customers/{id} - Update existing customer
+- DELETE /customers/{id} - Delete customer
+
+## Features Demonstrated
+- Basic CRUD operations with Spring Boot REST API
+- Docker Compose multi-service setup (Spring Boot + Postgres)
+- JPA/Hibernate fundamentals (entity mapping, @Embedded, repositories)
+- Bean Validation (@NotNull, @Email, @Size, etc.)
+- Testing patterns:
+  - Unit tests with Mockito
+  - Controller slice tests with @WebMvcTest
+  - Integration tests with @SpringBootTest and Testcontainers
+
+## Project Configuration
+- Group: com.example
+- Artifact: customer-service
+- Base package: com.example.customerservice
+- Schema: Hibernate ddl-auto (no migrations, no sample data)

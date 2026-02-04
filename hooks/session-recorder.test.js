@@ -212,24 +212,28 @@ test('resetSession clears the current session', async () => {
 test('formatUserPrompt formats single line prompt correctly', () => {
   const prompt = 'Help me add a new feature';
   const result = sessionRecorder.formatUserPrompt(prompt);
-  assert.strictEqual(result, '**User:**\n> Help me add a new feature\n\n');
+  const pattern = /^\*\*User:\*\* \[\d{2}:\d{2}:\d{2}\]\n> Help me add a new feature\n\n$/;
+  assert.match(result, pattern, `Result "${result}" should match pattern with timestamp`);
 });
 
 test('formatUserPrompt formats multi-line prompt correctly', () => {
   const prompt = 'First line\nSecond line\nThird line';
   const result = sessionRecorder.formatUserPrompt(prompt);
-  assert.strictEqual(result, '**User:**\n> First line\n> Second line\n> Third line\n\n');
+  const pattern = /^\*\*User:\*\* \[\d{2}:\d{2}:\d{2}\]\n> First line\n> Second line\n> Third line\n\n$/;
+  assert.match(result, pattern, `Result "${result}" should match pattern with timestamp`);
 });
 
 test('formatUserPrompt handles empty prompt', () => {
   const result = sessionRecorder.formatUserPrompt('');
-  assert.strictEqual(result, '**User:**\n> \n\n');
+  const pattern = /^\*\*User:\*\* \[\d{2}:\d{2}:\d{2}\]\n> \n\n$/;
+  assert.match(result, pattern, `Result "${result}" should match pattern with timestamp`);
 });
 
 test('formatUserPrompt handles prompt with special markdown characters', () => {
   const prompt = 'Use `code` and **bold** text';
   const result = sessionRecorder.formatUserPrompt(prompt);
-  assert.strictEqual(result, '**User:**\n> Use `code` and **bold** text\n\n');
+  assert.ok(result.includes('> Use `code` and **bold** text'), 'Should contain prompt text');
+  assert.ok(result.includes('**User:**'), 'Should contain User label');
 });
 
 // --- Tests for appendToSession ---
@@ -337,18 +341,21 @@ test('handleUserPromptSubmit handles missing cwd gracefully', () => {
 test('formatClaudeResponse formats single line response correctly', () => {
   const response = "I'd be happy to help!";
   const result = sessionRecorder.formatClaudeResponse(response);
-  assert.strictEqual(result, "**Claude:**\n> I'd be happy to help!\n\n");
+  const pattern = /^\*\*Claude:\*\* \[\d{2}:\d{2}:\d{2}\]\n> I'd be happy to help!\n\n$/;
+  assert.match(result, pattern, `Result "${result}" should match pattern with timestamp`);
 });
 
 test('formatClaudeResponse formats multi-line response correctly', () => {
   const response = 'First line\nSecond line\nThird line';
   const result = sessionRecorder.formatClaudeResponse(response);
-  assert.strictEqual(result, '**Claude:**\n> First line\n> Second line\n> Third line\n\n');
+  const pattern = /^\*\*Claude:\*\* \[\d{2}:\d{2}:\d{2}\]\n> First line\n> Second line\n> Third line\n\n$/;
+  assert.match(result, pattern, `Result "${result}" should match pattern with timestamp`);
 });
 
 test('formatClaudeResponse handles empty response', () => {
   const result = sessionRecorder.formatClaudeResponse('');
-  assert.strictEqual(result, '**Claude:**\n> \n\n');
+  const pattern = /^\*\*Claude:\*\* \[\d{2}:\d{2}:\d{2}\]\n> \n\n$/;
+  assert.match(result, pattern, `Result "${result}" should match pattern with timestamp`);
 });
 
 // --- Tests for transcript parsing ---
@@ -703,7 +710,7 @@ test('handlePostToolUse records git commit SHA on successful commit', () => {
   const sessionPath = sessionRecorder.getCurrentSessionPath();
   const content = fs.readFileSync(sessionPath, 'utf8');
 
-  assert.ok(content.includes('**Git Commit:**'), 'Should contain Git Commit label');
+  assert.ok(content.match(/\*\*Git Commit:\*\* \[\d{2}:\d{2}:\d{2}\]/), 'Should contain Git Commit label with timestamp');
   assert.ok(content.includes('- SHA:'), 'Should contain SHA');
   assert.ok(content.match(/[a-f0-9]{40}/), 'Should contain a valid SHA');
 });
@@ -732,7 +739,7 @@ test('handlePostToolUse records git commit failure', () => {
   const sessionPath = sessionRecorder.getCurrentSessionPath();
   const content = fs.readFileSync(sessionPath, 'utf8');
 
-  assert.ok(content.includes('**Git Commit Failed**'), 'Should contain Git Commit Failed label');
+  assert.ok(content.match(/\*\*Git Commit Failed:\*\* \[\d{2}:\d{2}:\d{2}\]/), 'Should contain Git Commit Failed label with timestamp');
 });
 
 test('handlePostToolUse does not record git info for non-commit commands', () => {
@@ -760,7 +767,7 @@ test('handlePostToolUse does not record git info for non-commit commands', () =>
   const content = fs.readFileSync(sessionPath, 'utf8');
 
   assert.ok(!content.includes('**Git Commit:**'), 'Should not contain Git Commit label');
-  assert.ok(!content.includes('**Git Commit Failed**'), 'Should not contain Git Commit Failed');
+  assert.ok(!content.includes('**Git Commit Failed:**'), 'Should not contain Git Commit Failed');
 });
 
 // Run all tests

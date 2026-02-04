@@ -13,13 +13,15 @@
     "./commands/claude-issue-report.md",
     "./commands/commit-changes.md",
     "./commands/commit-staged-changes.md",
-    "./commands/precommit-check.md"
+    "./commands/precommit-check.md",
+    "./commands/review-design-doc.md"
   ],
   "skills": [
     "./skills/commit-guidelines",
     "./skills/debugging-ci-failures",
     "./skills/dockerfile-guidelines",
     "./skills/file-organization",
+    "./skills/github-workflow-gradle-template",
     "./skills/incremental-development",
     "./skills/plan-tracking",
     "./skills/tdd",

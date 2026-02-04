@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# HELP_START
 # End-to-end test script for implement-with-worktree.sh
 #
 # This script:
@@ -17,7 +18,13 @@
 #   --dry-run         Show what would be done without executing
 #   --keep-repo       Don't delete the GitHub repo on exit (for debugging)
 #   --setup-only      Only create repo and push, don't run implement-with-worktree
+#   --worktree DIR    Resume execution in a previously created worktree directory
+#   --non-interactive Run Claude in non-interactive mode (uses -p flag)
+#   --plan-file FILE  Alternative plan file to use (renamed to -plan.md in repo)
+#   --extra-prompt TEXT  Extra text to append to Claude's prompt
+#   --idea DIR        Alternative idea directory to use (default: tests/kafka-security-poc)
 #   -h, --help        Show this help message
+# HELP_END
 
 set -e
 
@@ -27,13 +34,18 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Configuration paths
 CONFIG_FILES_DIR="$PROJECT_ROOT/config-files"
 TEST_IDEA_SOURCE="$PROJECT_ROOT/tests/kafka-security-poc"
-WORKTREE_SCRIPT="$SCRIPT_DIR/implement-with-worktree.sh"
+WORKTREE_SCRIPT="$PROJECT_ROOT/workflow-scripts/implement-with-worktree.sh"
 
 # Test configuration
 TEST_REPO_PREFIX="test-wt-e2e"
 CLEANUP_ON_EXIT=true
 DRY_RUN=false
 SETUP_ONLY=false
+WORKTREE_DIR=""
+NON_INTERACTIVE=false
+PLAN_FILE=""
+EXTRA_PROMPT=""
+IDEA_DIR=""
 
 # ANSI colors
 RED='\033[0;31m'
@@ -63,8 +75,8 @@ log_error() {
 }
 
 show_help() {
-    # Extract help text from script header (lines 2-20)
-    sed -n '2,20p' "$0" | sed 's/^# //' | sed 's/^#//'
+    # Extract help text between HELP_START and HELP_END markers
+    sed -n '/^# HELP_START$/,/^# HELP_END$/p' "$0" | sed '1d;$d' | sed 's/^# //' | sed 's/^#//'
     exit 0
 }
 
@@ -121,6 +133,32 @@ parse_args() {
                 SETUP_ONLY=true
                 shift
                 ;;
+            --worktree)
+                WORKTREE_DIR="$2"
+                CLEANUP_ON_EXIT=false
+                shift 2
+                ;;
+            --non-interactive)
+                NON_INTERACTIVE=true
+                shift
+                ;;
+            --plan-file)
+                PLAN_FILE="$2"
+                shift 2
+                ;;
+            --extra-prompt)
+                EXTRA_PROMPT="$2"
+                shift 2
+                ;;
+            --idea)
+                if [ ! -d "$2" ]; then
+                    log_error "Idea directory not found: $2"
+                    exit 1
+                fi
+                # Convert to absolute path so it works after cd
+                IDEA_DIR="$(cd "$2" && pwd)"
+                shift 2
+                ;;
             -h|--help)
                 show_help
                 ;;
@@ -157,8 +195,10 @@ check_prerequisites() {
         exit 1
     fi
 
-    if [ ! -d "$TEST_IDEA_SOURCE" ]; then
-        log_error "Test idea directory not found at $TEST_IDEA_SOURCE"
+    local idea_source
+    idea_source="$(get_idea_source)"
+    if [ ! -d "$idea_source" ]; then
+        log_error "Test idea directory not found at $idea_source"
         exit 1
     fi
 
@@ -222,7 +262,13 @@ allow_list = config.get('permissions', {}).get('allow', [])
 
 # Permissions needed for the test
 needed_permissions = [
-    'Bash(git commit:*)'
+    'Bash(git commit:*)',
+    'Bash(git check-ignore:*)',
+    'Bash(mkdir -p:*)',
+    'Bash(./test-scripts/test-*.sh)',
+    'Bash(docker compose config:*)',
+    'Write',
+    'Edit'
 ]
 
 for perm in needed_permissions:
@@ -241,13 +287,73 @@ with open('$settings_file', 'w') as f:
     log_success "Config files copied"
 }
 
+get_idea_source() {
+    if [ -n "$IDEA_DIR" ]; then
+        echo "$IDEA_DIR"
+    else
+        echo "$TEST_IDEA_SOURCE"
+    fi
+}
+
+get_idea_name() {
+    basename "$(get_idea_source)"
+}
+
 copy_test_idea() {
     log_info "Copying test idea directory..."
 
-    mkdir -p "$TEMP_DIR/docs/features"
-    cp -r "$TEST_IDEA_SOURCE" "$TEMP_DIR/docs/features/kafka-security-poc"
+    local idea_source
+    local idea_name
+    idea_source="$(get_idea_source)"
+    idea_name="$(get_idea_name)"
 
-    log_success "Test idea directory copied: docs/features/kafka-security-poc"
+    mkdir -p "$TEMP_DIR/docs/features/$idea_name"
+
+    # If alternative plan file is specified, exclude both the original and alternative plan files
+    # (the alternative will be copied separately with the correct name)
+    if [ -n "$PLAN_FILE" ]; then
+        local original_plan="${idea_name}-plan.md"
+        for file in "$idea_source"/*; do
+            local filename
+            filename=$(basename "$file")
+            if [ "$filename" = "$original_plan" ]; then
+                log_info "  Skipping original plan file: $original_plan"
+            elif [ "$filename" = "$PLAN_FILE" ]; then
+                log_info "  Skipping alternative plan file: $PLAN_FILE (will be renamed)"
+            else
+                cp -r "$file" "$TEMP_DIR/docs/features/$idea_name/"
+            fi
+        done
+    else
+        cp -r "$idea_source"/* "$TEMP_DIR/docs/features/$idea_name/"
+    fi
+
+    log_success "Test idea directory copied: docs/features/$idea_name"
+}
+
+copy_plan_file() {
+    if [ -z "$PLAN_FILE" ]; then
+        return
+    fi
+
+    log_info "Copying alternative plan file..."
+
+    local idea_source
+    local idea_name
+    idea_source="$(get_idea_source)"
+    idea_name="$(get_idea_name)"
+
+    local source_plan="$idea_source/$PLAN_FILE"
+    local dest_dir="$TEMP_DIR/docs/features/$idea_name"
+    local dest_plan="$dest_dir/${idea_name}-plan.md"
+
+    if [ ! -f "$source_plan" ]; then
+        log_error "Plan file not found: $source_plan"
+        exit 1
+    fi
+
+    cp "$source_plan" "$dest_plan"
+    log_success "Plan file copied: $PLAN_FILE -> ${idea_name}-plan.md"
 }
 
 commit_all_files() {
@@ -289,9 +395,20 @@ run_implement_with_worktree() {
 
     cd "$TEMP_DIR"
 
-    # Run the script with the test idea directory
-    # Use --non-interactive so Claude runs with -p flag (no user interaction)
-    "$WORKTREE_SCRIPT" --non-interactive "$TEMP_DIR/docs/features/kafka-security-poc"
+    local idea_name
+    idea_name="$(get_idea_name)"
+
+    # Build command with optional flags
+    local cmd=("$WORKTREE_SCRIPT")
+    if [ "$NON_INTERACTIVE" = true ]; then
+        cmd+=("--non-interactive")
+    fi
+    if [ -n "$EXTRA_PROMPT" ]; then
+        cmd+=("--extra-prompt" "$EXTRA_PROMPT")
+    fi
+    cmd+=("$TEMP_DIR/docs/features/$idea_name")
+
+    "${cmd[@]}"
 
     local exit_code=$?
 
@@ -303,10 +420,49 @@ run_implement_with_worktree() {
     fi
 }
 
+resume_from_worktree() {
+    log_info "Resuming from worktree: $WORKTREE_DIR"
+
+    if [ ! -d "$WORKTREE_DIR" ]; then
+        log_error "Worktree directory not found: $WORKTREE_DIR"
+        exit 1
+    fi
+
+    # Derive the main repo directory from the worktree path
+    # Worktree format: <repo-dir>-wt-<idea-name>
+    # We need to find the main repo by removing the -wt-* suffix
+    local worktree_basename
+    worktree_basename=$(basename "$WORKTREE_DIR")
+
+    # Extract the base repo name (everything before the last -wt-)
+    local repo_basename
+    repo_basename="${worktree_basename%-wt-*}"
+
+    TEMP_DIR="$(dirname "$WORKTREE_DIR")/$repo_basename"
+
+    if [ ! -d "$TEMP_DIR" ]; then
+        log_error "Main repo directory not found: $TEMP_DIR"
+        exit 1
+    fi
+
+    log_info "Main repo directory: $TEMP_DIR"
+
+    # Get GitHub repo name from git remote
+    cd "$TEMP_DIR"
+    local remote_url
+    remote_url=$(git remote get-url origin 2>/dev/null || true)
+    if [ -n "$remote_url" ]; then
+        # Extract owner/repo from URL
+        GITHUB_REPO_FULL_NAME=$(echo "$remote_url" | sed -E 's|.*github.com[:/]([^/]+/[^/.]+).*|\1|')
+        log_info "GitHub repository: $GITHUB_REPO_FULL_NAME"
+    fi
+
+    log_success "Resume context loaded"
+}
+
 verify_results() {
     log_info "Verifying results..."
 
-    # Check that commits were made
     cd "$TEMP_DIR"
 
     local commit_count
@@ -345,17 +501,37 @@ main() {
     if [ "$DRY_RUN" = true ]; then
         log_warning "DRY RUN MODE - Commands will not be executed"
         echo ""
+        local idea_source idea_name
+        idea_source="$(get_idea_source)"
+        idea_name="$(get_idea_name)"
         echo "Would execute:"
         echo "  1. Create temporary directory"
         echo "  2. Initialize git repository"
         echo "  3. Copy CLAUDE.md to repo root"
         echo "  4. Copy settings.local.json to .claude/"
         echo "  5. Add 'git commit' permission to settings"
-        echo "  6. Copy tests/kafka-security-poc to docs/features/"
+        echo "  6. Copy $idea_source to docs/features/$idea_name"
+        if [ -n "$PLAN_FILE" ]; then
+        echo "  6b. Copy $PLAN_FILE as ${idea_name}-plan.md"
+        fi
         echo "  7. Commit all files"
         echo "  8. Create GitHub repository"
         echo "  9. Run implement-with-worktree.sh"
+        if [ -n "$EXTRA_PROMPT" ]; then
+        echo "      with extra prompt: $EXTRA_PROMPT"
+        fi
         echo "  10. Verify results"
+        echo ""
+        exit 0
+    fi
+
+    # Resume from existing worktree if specified
+    if [ -n "$WORKTREE_DIR" ]; then
+        resume_from_worktree
+        run_implement_with_worktree
+        verify_results
+        echo ""
+        log_success "E2E test completed successfully!"
         echo ""
         exit 0
     fi
@@ -365,6 +541,7 @@ main() {
     initialize_git_repo
     copy_config_files
     copy_test_idea
+    copy_plan_file
     commit_all_files
     create_github_repo
 

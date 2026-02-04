@@ -5,31 +5,58 @@ description: a definition of tests and testing in a Java project using Gradle an
 
 # Skill: Project Test Runner (Java + Gradle, macOS, JUnit 5 Only)
 
-This skill defines what a “test” is and how tests are executed for this Java project.
+This skill defines what a "test" is and how tests are executed for this Java project.
 It is designed to be used together with a TDD skill that determines *when* tests must run.
 
-Language: Java  
-Test framework: JUnit 5 (Jupiter)  
-Test runner: always `./gradlew test` (macOS only)  
-Detailed test output: XML files under `build/test-results/test/TEST-*.xml`
+Language: Java
+Test framework: JUnit 5 (Jupiter)
+Detailed test output: XML files under `build/test-results/<testType>/TEST-*.xml`
+
+IMPORTANT: NEVER write test scripts that use `gradlew bootRun`. Direct testing of Java applications done using `./gradlew test/check` only.
 
 ---
 
-## 1. Definition of a Test
+## 1. Test Types and Source Sets
+
+This project uses multiple test types with separate source sets, executed in order:
+
+| Test Type | Task | Source Directory | Purpose |
+|-----------|------|------------------|---------|
+| Unit | `./gradlew test` | `src/test/java` | Fast, isolated tests with mocked dependencies |
+| Integration | `./gradlew integrationTest` | `src/integrationTest/java` | Tests with real external systems (databases, message brokers) via testcontainers |
+| Component | `./gradlew componentTest` | `src/componentTest/java` | Single service tested as a Docker container |
+| End-to-End | `./gradlew endToEndTest` | `src/endToEndTest/java` | Full application with multiple services |
+
+### Execution Order
+
+```
+test → integrationTest → componentTest → endToEndTest
+```
+
+All test types are wired to the `check` task. Running `./gradlew check` executes all test types in order.
+
+### When to Use Each Test Type
+
+- **Unit tests**: Business logic, domain objects, service methods with mocked dependencies
+- **Integration tests**: Repository tests with real database, Kafka producer/consumer with real broker
+- **Component tests**: HTTP API tests against a containerized service, service behavior verification
+- **End-to-end tests**: Cross-service workflows, user journey tests
+
+---
+
+## 2. Definition of a Test
 
 A test in this project is:
 
 - A Java method annotated with `@org.junit.jupiter.api.Test`
-- Located in a test class under the directory `src/test/java`
+- Located in the appropriate source directory for its test type
 - Part of a test class following normal JUnit 5 structure
 
-Examples of valid test locations (inline only):
-- `src/test/java/com/example/MyServiceTest.java`
-- `src/test/java/com/example/domain/OrderProcessorTest.java`
-
-A new behavior is defined by:
-- Adding a new `@Test` method to an existing JUnit 5 test class, or
-- Creating a new test class under `src/test/java` that contains one or more `@Test` methods
+Examples of valid test locations:
+- `src/test/java/com/example/MyServiceTest.java` (unit test)
+- `src/integrationTest/java/com/example/MyRepositoryIntegrationTest.java` (integration test)
+- `src/componentTest/java/com/example/MyServiceComponentTest.java` (component test)
+- `src/endToEndTest/java/com/example/OrderWorkflowE2ETest.java` (end-to-end test)
 
 JUnit 5 assertions (e.g., `Assertions.assertEquals`, `assertThrows`) should be used.
 
@@ -37,13 +64,45 @@ No Kotlin and no JUnit 4 are present in this project.
 
 ---
 
-## 2. Running Tests (macOS only)
+## 3. Running Tests
 
-When the TDD skill instructs the agent to "run the tests", the agent must execute:
+### Incremental Testing Workflow
 
-`./gradlew test`
+Tests are run incrementally, progressing from fast/isolated to slow/integrated:
 
-This command must be run from the project root (the directory containing `gradlew`).
+1. **TDD Loop**: Run unit tests frequently during development
+   ```
+   ./gradlew test
+   ```
+
+2. **After unit tests pass**: Run integration tests
+   ```
+   ./gradlew integrationTest
+   ```
+
+3. **After integration tests pass**: Run component tests
+   ```
+   ./gradlew componentTest
+   ```
+
+4. **Before commit/PR**: Run all tests
+   ```
+   ./gradlew check
+   ```
+
+This progression provides fast feedback during development while ensuring full coverage before committing.
+
+### Specific Test Types
+
+```
+./gradlew test              # Unit tests only
+./gradlew integrationTest   # Integration tests only
+./gradlew componentTest     # Component tests only
+./gradlew endToEndTest      # End-to-end tests only
+./gradlew check             # All test types in order
+```
+
+All commands must be run from the project root (the directory containing `gradlew`).
 
 ### Gradle Daemon
 
@@ -110,11 +169,16 @@ TEST*.xml and HTML reports are for human debugging, not for Claude verification.
 
 ---
 
-## 3. Detailed Test Results (XML)
+## 4. Detailed Test Results (XML)
 
-Detailed per-test results are always located in:
+Detailed per-test results are located in test-type-specific directories:
 
-`build/test-results/test/TEST-*.xml`
+```
+build/test-results/test/TEST-*.xml              # Unit tests
+build/test-results/integrationTest/TEST-*.xml   # Integration tests
+build/test-results/componentTest/TEST-*.xml     # Component tests
+build/test-results/endToEndTest/TEST-*.xml      # End-to-end tests
+```
 
 Each XML file corresponds to a test class and contains:
 - `<testsuite>` metadata such as total tests and failures
@@ -131,7 +195,7 @@ This information must be used to explain why tests failed and guide the next RED
 
 ---
 
-## 4. Evidence Integration (for the TDD skill)
+## 5. Evidence Integration (for the TDD skill)
 
 The TDD skill uses an Evidence block with fields:
 - `tests: pass | fail | not-run`
@@ -155,16 +219,17 @@ When tests cannot run (environment error):
 
 ---
 
-## 5. Rules for the Coding Agent
+## 6. Rules for the Coding Agent
 
-1. The agent must always run tests using exactly: `./gradlew test`
-2. The agent must not guess test results from reading code
-3. The agent must never claim tests passed without real `./gradlew test` output
-4. The agent must parse XML under `build/test-results/test` to identify failing tests
-5. If Gradle cannot be run, the agent must enter BLOCKED and request user-provided output
-6. The agent must not move to GREEN, VERIFY, or COMPLETE without real evidence
+1. Follow the incremental testing workflow: unit → integration → component
+2. Before committing, run all tests using: `./gradlew check`
+3. The agent must not guess test results from reading code
+4. The agent must never claim tests passed without real Gradle output
+5. The agent must parse XML under `build/test-results/<testType>` to identify failing tests
+6. If Gradle cannot be run, the agent must enter BLOCKED and request user-provided output
+7. The agent must not move to GREEN, VERIFY, or COMPLETE without real evidence
 
-## 6. Tests Are Sacred
+## 7. Tests Are Sacred
 
 NEVER delete or remove tests to make a build pass. If tests fail:
 1. Investigate why they fail
@@ -173,7 +238,7 @@ NEVER delete or remove tests to make a build pass. If tests fail:
 
 Deleting tests hides broken functionality and is never an acceptable solution.
 
-## 7. Test Failure Investigation
+## 8. Test Failure Investigation
 
 NEVER ignore test failures. When tests fail:
 
@@ -195,12 +260,14 @@ Never assume a fix is correct without running the test to verify.
 
 ---
 
-## 8. Summary
+## 9. Summary
 
-- Tests are JUnit 5 `@Test` methods in Java only  
-- Tests are executed exclusively via `./gradlew test` on macOS  
-- Exit code indicates pass/fail at a high level  
-- Detailed failures live in `build/test-results/test/TEST-*.xml`  
+- Tests are JUnit 5 `@Test` methods in Java only
+- Four test types: unit, integration, component, end-to-end
+- TDD loop uses `./gradlew test` (unit tests only)
+- Full verification uses `./gradlew check` (all test types)
+- Test execution order: test → integrationTest → componentTest → endToEndTest
+- Detailed failures live in `build/test-results/<testType>/TEST-*.xml`
 - The agent must never guess test results and must always rely on real output
 
 # End of Java + Gradle Test Runner Skill

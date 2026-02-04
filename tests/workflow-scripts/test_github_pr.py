@@ -246,3 +246,441 @@ class TestDeferredPRCreation:
 
         # Verify ensure_draft_pr was NOT called
         assert not ensure_draft_pr_called, "ensure_draft_pr should not be called in --setup-only mode"
+
+
+@pytest.mark.unit
+class TestFetchPRConversationComments:
+    """Test fetching general PR conversation comments."""
+
+    def test_fetch_pr_conversation_comments_returns_comments(self, monkeypatch):
+        """Should return list of conversation comments."""
+        from implement_with_worktree import fetch_pr_conversation_comments
+
+        mock_output = json.dumps([
+            {"id": 1001, "body": "This looks great!", "user": {"login": "reviewer1"}},
+            {"id": 1002, "body": "Can you add more tests?", "user": {"login": "reviewer2"}}
+        ])
+
+        def mock_run(*args, **kwargs):
+            class MockResult:
+                stdout = mock_output
+                returncode = 0
+            return MockResult()
+
+        monkeypatch.setattr(subprocess, "run", mock_run)
+
+        comments = fetch_pr_conversation_comments(123)
+        assert len(comments) == 2
+        assert comments[0]["id"] == 1001
+        assert comments[1]["body"] == "Can you add more tests?"
+
+    def test_fetch_pr_conversation_comments_returns_empty_on_error(self, monkeypatch):
+        """Should return empty list on API error."""
+        from implement_with_worktree import fetch_pr_conversation_comments
+
+        def mock_run(*args, **kwargs):
+            class MockResult:
+                stdout = ""
+                stderr = "API error"
+                returncode = 1
+            return MockResult()
+
+        monkeypatch.setattr(subprocess, "run", mock_run)
+
+        comments = fetch_pr_conversation_comments(123)
+        assert comments == []
+
+
+@pytest.mark.unit
+class TestGetPRUrl:
+    """Test getting PR URL."""
+
+    def test_get_pr_url_returns_url(self, monkeypatch):
+        """Should return the PR URL."""
+        from implement_with_worktree import get_pr_url
+
+        def mock_run(*args, **kwargs):
+            class MockResult:
+                stdout = "https://github.com/owner/repo/pull/123\n"
+                returncode = 0
+            return MockResult()
+
+        monkeypatch.setattr(subprocess, "run", mock_run)
+
+        url = get_pr_url(123)
+        assert url == "https://github.com/owner/repo/pull/123"
+
+    def test_get_pr_url_returns_empty_on_error(self, monkeypatch):
+        """Should return empty string on error."""
+        from implement_with_worktree import get_pr_url
+
+        def mock_run(*args, **kwargs):
+            class MockResult:
+                stdout = ""
+                returncode = 1
+            return MockResult()
+
+        monkeypatch.setattr(subprocess, "run", mock_run)
+
+        url = get_pr_url(123)
+        assert url == ""
+
+
+@pytest.mark.unit
+class TestFormatAllFeedback:
+    """Test formatting all feedback types for Claude."""
+
+    def test_format_all_feedback_includes_reviews(self):
+        """Should format PR reviews with state and body."""
+        from implement_with_worktree import format_all_feedback
+
+        reviews = [
+            {"id": 1, "state": "CHANGES_REQUESTED", "body": "Please fix the tests",
+             "user": {"login": "reviewer1"}}
+        ]
+
+        result = format_all_feedback([], reviews, [])
+
+        assert "## PR Reviews" in result
+        assert "CHANGES_REQUESTED" in result
+        assert "Please fix the tests" in result
+        assert "reviewer1" in result
+
+    def test_format_all_feedback_includes_review_comments(self):
+        """Should format review comments with file path and line."""
+        from implement_with_worktree import format_all_feedback
+
+        review_comments = [
+            {"id": 2, "body": "This variable name is unclear",
+             "path": "src/main.py", "line": 42, "user": {"login": "reviewer2"}}
+        ]
+
+        result = format_all_feedback(review_comments, [], [])
+
+        assert "## Review Comments" in result
+        assert "src/main.py:42" in result
+        assert "This variable name is unclear" in result
+
+    def test_format_all_feedback_includes_conversation_comments(self):
+        """Should format general PR comments."""
+        from implement_with_worktree import format_all_feedback
+
+        conversation_comments = [
+            {"id": 3, "body": "Great work overall!", "user": {"login": "lead"}}
+        ]
+
+        result = format_all_feedback([], [], conversation_comments)
+
+        assert "## General PR Comments" in result
+        assert "Great work overall!" in result
+        assert "lead" in result
+
+    def test_format_all_feedback_combines_all_types(self):
+        """Should combine all feedback types into one formatted string."""
+        from implement_with_worktree import format_all_feedback
+
+        reviews = [{"id": 1, "state": "APPROVED", "body": "LGTM", "user": {"login": "r1"}}]
+        review_comments = [{"id": 2, "body": "Nitpick", "path": "a.py", "line": 1, "user": {"login": "r2"}}]
+        conversation_comments = [{"id": 3, "body": "Thanks", "user": {"login": "r3"}}]
+
+        result = format_all_feedback(review_comments, reviews, conversation_comments)
+
+        assert "## PR Reviews" in result
+        assert "## Review Comments" in result
+        assert "## General PR Comments" in result
+
+
+@pytest.mark.unit
+class TestBuildTriageCommand:
+    """Test building Claude command for triaging feedback."""
+
+    def test_build_triage_command_interactive(self):
+        """Should build interactive Claude command for triage."""
+        from implement_with_worktree import build_triage_command
+
+        cmd = build_triage_command(
+            feedback_content="Please add tests",
+            interactive=True
+        )
+
+        assert cmd[0] == "claude"
+        assert len(cmd) == 2  # claude + prompt
+        assert "Please add tests" in cmd[1]
+        assert "will_fix" in cmd[1]
+        assert "needs_clarification" in cmd[1]
+
+    def test_build_triage_command_non_interactive(self):
+        """Should build non-interactive Claude command with -p flag."""
+        from implement_with_worktree import build_triage_command
+
+        cmd = build_triage_command(
+            feedback_content="Fix the bug",
+            interactive=False
+        )
+
+        assert "claude" in cmd
+        assert "-p" in cmd
+        assert "--verbose" in cmd
+
+    def test_build_triage_command_requests_json_output(self):
+        """Should request JSON output format."""
+        from implement_with_worktree import build_triage_command
+
+        cmd = build_triage_command(
+            feedback_content="Some feedback",
+            interactive=True
+        )
+
+        prompt = cmd[1]
+        assert "json" in prompt.lower()
+        assert "comment_ids" in prompt
+
+
+@pytest.mark.unit
+class TestBuildFixCommand:
+    """Test building Claude command for fixing feedback."""
+
+    def test_build_fix_command_interactive(self):
+        """Should build interactive Claude command for fixing."""
+        from implement_with_worktree import build_fix_command
+
+        cmd = build_fix_command(
+            pr_url="https://github.com/owner/repo/pull/123",
+            feedback_content="Please add tests",
+            fix_description="Add unit tests",
+            interactive=True
+        )
+
+        assert cmd[0] == "claude"
+        assert len(cmd) == 2  # claude + prompt
+        assert "Please add tests" in cmd[1]
+        assert "Add unit tests" in cmd[1]
+
+    def test_build_fix_command_non_interactive(self):
+        """Should build non-interactive Claude command with -p flag."""
+        from implement_with_worktree import build_fix_command
+
+        cmd = build_fix_command(
+            pr_url="https://github.com/owner/repo/pull/123",
+            feedback_content="Fix the bug",
+            fix_description="Fix null pointer",
+            interactive=False
+        )
+
+        assert "claude" in cmd
+        assert "-p" in cmd
+        assert "--verbose" in cmd
+
+
+@pytest.mark.unit
+class TestGetNewFeedback:
+    """Test filtering feedback to unprocessed items."""
+
+    def test_get_new_feedback_filters_processed(self):
+        """Should filter out already processed feedback."""
+        from implement_with_worktree import get_new_feedback
+
+        all_feedback = [
+            {"id": 1, "body": "Old comment"},
+            {"id": 2, "body": "New comment"},
+            {"id": 3, "body": "Another new comment"}
+        ]
+        processed_ids = [1]
+
+        new_feedback = get_new_feedback(all_feedback, processed_ids)
+
+        assert len(new_feedback) == 2
+        assert all(f["id"] in [2, 3] for f in new_feedback)
+
+    def test_get_new_feedback_returns_all_when_none_processed(self):
+        """Should return all feedback when nothing processed yet."""
+        from implement_with_worktree import get_new_feedback
+
+        all_feedback = [
+            {"id": 1, "body": "Comment 1"},
+            {"id": 2, "body": "Comment 2"}
+        ]
+
+        new_feedback = get_new_feedback(all_feedback, [])
+
+        assert len(new_feedback) == 2
+
+    def test_get_new_feedback_returns_empty_when_all_processed(self):
+        """Should return empty list when all feedback processed."""
+        from implement_with_worktree import get_new_feedback
+
+        all_feedback = [{"id": 1, "body": "Comment"}]
+        processed_ids = [1]
+
+        new_feedback = get_new_feedback(all_feedback, processed_ids)
+
+        assert new_feedback == []
+
+
+@pytest.mark.unit
+class TestDefaultStateIncludesConversationIds:
+    """Test that default state includes processed_conversation_ids."""
+
+    def test_init_state_includes_processed_conversation_ids(self, tmp_path):
+        """Default state should include processed_conversation_ids."""
+        from implement_with_worktree import init_or_load_state
+
+        idea_dir = tmp_path / "test-idea"
+        idea_dir.mkdir()
+
+        state = init_or_load_state(str(idea_dir), "test-idea")
+
+        assert "processed_conversation_ids" in state
+        assert state["processed_conversation_ids"] == []
+
+
+@pytest.mark.unit
+class TestParseTriageResult:
+    """Test parsing JSON triage result from Claude."""
+
+    def test_parse_triage_result_with_json_code_block(self):
+        """Should parse JSON from markdown code block."""
+        from implement_with_worktree import parse_triage_result
+
+        output = '''Here's the triage:
+```json
+{
+  "will_fix": [{"comment_ids": [1, 2], "description": "Fix typo"}],
+  "needs_clarification": []
+}
+```
+'''
+        result = parse_triage_result(output)
+
+        assert result is not None
+        assert len(result["will_fix"]) == 1
+        assert result["will_fix"][0]["comment_ids"] == [1, 2]
+
+    def test_parse_triage_result_with_plain_json(self):
+        """Should parse plain JSON output."""
+        from implement_with_worktree import parse_triage_result
+
+        output = '{"will_fix": [], "needs_clarification": [{"comment_id": 5, "question": "What?"}]}'
+        result = parse_triage_result(output)
+
+        assert result is not None
+        assert len(result["needs_clarification"]) == 1
+        assert result["needs_clarification"][0]["comment_id"] == 5
+
+    def test_parse_triage_result_returns_none_on_invalid(self):
+        """Should return None for invalid JSON."""
+        from implement_with_worktree import parse_triage_result
+
+        result = parse_triage_result("This is not JSON at all")
+
+        assert result is None
+
+
+@pytest.mark.unit
+class TestReplyToReviewComment:
+    """Test replying to review comments."""
+
+    def test_reply_to_review_comment_success(self, monkeypatch):
+        """Should return True on successful reply."""
+        from implement_with_worktree import reply_to_review_comment
+
+        def mock_run(*args, **kwargs):
+            class MockResult:
+                returncode = 0
+            return MockResult()
+
+        monkeypatch.setattr(subprocess, "run", mock_run)
+
+        result = reply_to_review_comment(123, 456, "Fixed!")
+        assert result is True
+
+    def test_reply_to_review_comment_failure(self, monkeypatch):
+        """Should return False on API error."""
+        from implement_with_worktree import reply_to_review_comment
+
+        def mock_run(*args, **kwargs):
+            class MockResult:
+                returncode = 1
+            return MockResult()
+
+        monkeypatch.setattr(subprocess, "run", mock_run)
+
+        result = reply_to_review_comment(123, 456, "Fixed!")
+        assert result is False
+
+
+@pytest.mark.unit
+class TestReplyToPRComment:
+    """Test adding general PR comments."""
+
+    def test_reply_to_pr_comment_success(self, monkeypatch):
+        """Should return True on successful comment."""
+        from implement_with_worktree import reply_to_pr_comment
+
+        def mock_run(*args, **kwargs):
+            class MockResult:
+                returncode = 0
+            return MockResult()
+
+        monkeypatch.setattr(subprocess, "run", mock_run)
+
+        result = reply_to_pr_comment(123, "Thanks for the review!")
+        assert result is True
+
+
+@pytest.mark.unit
+class TestGetFeedbackByIds:
+    """Test filtering feedback by IDs."""
+
+    def test_get_feedback_by_ids_returns_matching(self):
+        """Should return only feedback with matching IDs."""
+        from implement_with_worktree import get_feedback_by_ids
+
+        all_feedback = [
+            {"id": 1, "body": "Comment 1"},
+            {"id": 2, "body": "Comment 2"},
+            {"id": 3, "body": "Comment 3"}
+        ]
+
+        result = get_feedback_by_ids(all_feedback, [1, 3])
+
+        assert len(result) == 2
+        assert result[0]["id"] == 1
+        assert result[1]["id"] == 3
+
+    def test_get_feedback_by_ids_returns_empty_for_no_matches(self):
+        """Should return empty list when no IDs match."""
+        from implement_with_worktree import get_feedback_by_ids
+
+        all_feedback = [{"id": 1, "body": "Comment"}]
+
+        result = get_feedback_by_ids(all_feedback, [99])
+
+        assert result == []
+
+
+@pytest.mark.unit
+class TestDetermineCommentType:
+    """Test determining comment type from ID."""
+
+    def test_determine_comment_type_review(self):
+        """Should return 'review' for review comment IDs."""
+        from implement_with_worktree import determine_comment_type
+
+        review_comments = [{"id": 100, "body": "Review comment"}]
+        conversation_comments = [{"id": 200, "body": "General comment"}]
+
+        result = determine_comment_type(100, review_comments, conversation_comments)
+
+        assert result == "review"
+
+    def test_determine_comment_type_conversation(self):
+        """Should return 'conversation' for non-review comment IDs."""
+        from implement_with_worktree import determine_comment_type
+
+        review_comments = [{"id": 100, "body": "Review comment"}]
+        conversation_comments = [{"id": 200, "body": "General comment"}]
+
+        result = determine_comment_type(200, review_comments, conversation_comments)
+
+        assert result == "conversation"

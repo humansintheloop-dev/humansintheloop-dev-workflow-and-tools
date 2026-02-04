@@ -171,7 +171,8 @@ def init_or_load_state(idea_directory: str, idea_name: str) -> Dict[str, Any]:
     default_state = {
         "slice_number": 1,
         "processed_comment_ids": [],
-        "processed_review_ids": []
+        "processed_review_ids": [],
+        "processed_conversation_ids": []
     }
 
     # Write default state to file
@@ -549,6 +550,522 @@ def get_new_feedback(
     return [f for f in all_feedback if f.get("id") not in processed_ids]
 
 
+def fetch_pr_conversation_comments(pr_number: int) -> List[Dict[str, Any]]:
+    """Fetch general conversation comments on a PR (not review comments).
+
+    These are comments on the PR itself, not attached to specific code lines.
+
+    Args:
+        pr_number: The PR number to fetch comments for
+
+    Returns:
+        List of comment dictionaries with 'id' and 'body' fields
+    """
+    result = subprocess.run(
+        ["gh", "api", f"repos/{{owner}}/{{repo}}/issues/{pr_number}/comments",
+         "--jq", "."],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        return []
+
+    return json.loads(result.stdout)
+
+
+def get_pr_url(pr_number: int) -> str:
+    """Get the HTML URL for a PR.
+
+    Args:
+        pr_number: The PR number
+
+    Returns:
+        The HTML URL for the PR, or empty string on error
+    """
+    result = subprocess.run(
+        ["gh", "pr", "view", str(pr_number), "--json", "url", "--jq", ".url"],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        return ""
+
+    return result.stdout.strip()
+
+
+def format_all_feedback(
+    review_comments: List[Dict[str, Any]],
+    reviews: List[Dict[str, Any]],
+    conversation_comments: List[Dict[str, Any]]
+) -> str:
+    """Format all feedback types into a single string for Claude.
+
+    Args:
+        review_comments: List of review comments (on specific code lines)
+        reviews: List of PR reviews
+        conversation_comments: List of general PR comments
+
+    Returns:
+        Formatted string containing all feedback
+    """
+    sections = []
+
+    if reviews:
+        sections.append("## PR Reviews\n")
+        for review in reviews:
+            state = review.get("state", "COMMENTED")
+            body = review.get("body", "").strip()
+            user = review.get("user", {}).get("login", "unknown")
+            review_id = review.get("id")
+            sections.append(f"### Review by {user} (ID: {review_id}, State: {state})")
+            if body:
+                sections.append(f"{body}\n")
+            else:
+                sections.append("(No body text)\n")
+
+    if review_comments:
+        sections.append("## Review Comments (on specific code lines)\n")
+        for comment in review_comments:
+            body = comment.get("body", "").strip()
+            user = comment.get("user", {}).get("login", "unknown")
+            path = comment.get("path", "unknown file")
+            line = comment.get("line") or comment.get("original_line", "?")
+            comment_id = comment.get("id")
+            sections.append(f"### Comment by {user} on {path}:{line} (ID: {comment_id})")
+            sections.append(f"{body}\n")
+
+    if conversation_comments:
+        sections.append("## General PR Comments\n")
+        for comment in conversation_comments:
+            body = comment.get("body", "").strip()
+            user = comment.get("user", {}).get("login", "unknown")
+            comment_id = comment.get("id")
+            sections.append(f"### Comment by {user} (ID: {comment_id})")
+            sections.append(f"{body}\n")
+
+    return "\n".join(sections)
+
+
+def build_triage_command(
+    feedback_content: str,
+    interactive: bool = True
+) -> List[str]:
+    """Build command to invoke Claude for triaging PR feedback.
+
+    Claude categorizes feedback into:
+    - will_fix: Groups of comments that can be addressed together
+    - needs_clarification: Comments requiring clarification with specific questions
+
+    Args:
+        feedback_content: Formatted feedback content
+        interactive: If True, run Claude interactively
+
+    Returns:
+        Command as a list suitable for subprocess
+    """
+    prompt = f"""You are triaging feedback on a pull request. Analyze each piece of feedback and categorize it.
+
+The following feedback needs to be triaged:
+
+{feedback_content}
+
+Your task:
+
+1. Review each piece of feedback carefully
+2. Categorize each comment as either:
+   - "will_fix": You understand what's being asked and can fix it
+   - "needs_clarification": The feedback is unclear and you need to ask a question
+
+3. Group related "will_fix" comments that should be addressed together in one commit
+
+4. For "needs_clarification" comments, write a specific, clear question to ask the reviewer
+
+Output your triage as JSON in exactly this format:
+```json
+{{
+  "will_fix": [
+    {{"comment_ids": [123, 456], "description": "Brief description of what to fix"}},
+    {{"comment_ids": [789], "description": "Another fix"}}
+  ],
+  "needs_clarification": [
+    {{"comment_id": 101, "question": "Your specific question here"}},
+    {{"comment_id": 102, "question": "Another question"}}
+  ]
+}}
+```
+
+IMPORTANT:
+- Use the exact comment IDs from the feedback above
+- Group related fixes together
+- Be specific in clarification questions
+- Output ONLY the JSON, no other text
+"""
+
+    if interactive:
+        return ["claude", prompt]
+    else:
+        return ["claude", "--verbose", "--output-format=stream-json", "-p", prompt]
+
+
+def build_fix_command(
+    pr_url: str,
+    feedback_content: str,
+    fix_description: str,
+    interactive: bool = True
+) -> List[str]:
+    """Build command to invoke Claude for fixing a group of comments.
+
+    Args:
+        pr_url: The PR URL
+        feedback_content: The specific feedback to address
+        fix_description: Description of what to fix
+        interactive: If True, run Claude interactively
+
+    Returns:
+        Command as a list suitable for subprocess
+    """
+    prompt = f"""You are fixing feedback on a pull request.
+
+PR URL: {pr_url}
+
+The following feedback needs to be addressed:
+
+{feedback_content}
+
+Fix description: {fix_description}
+
+Your task:
+
+1. Make the necessary code changes to address all the feedback
+2. Commit your changes with a clear message explaining how you addressed the feedback
+
+IMPORTANT:
+- Make all changes in a single commit
+- The commit message should clearly describe what was fixed
+- If you don't have permission to perform an action, print an informative error message and exit
+"""
+
+    if interactive:
+        return ["claude", prompt]
+    else:
+        return ["claude", "--verbose", "--output-format=stream-json", "-p", prompt]
+
+
+def reply_to_review_comment(pr_number: int, comment_id: int, body: str) -> bool:
+    """Reply to a specific review comment.
+
+    Args:
+        pr_number: The PR number
+        comment_id: The review comment ID to reply to
+        body: The reply text
+
+    Returns:
+        True if successful, False otherwise
+    """
+    result = subprocess.run(
+        ["gh", "api", f"repos/{{owner}}/{{repo}}/pulls/{pr_number}/comments/{comment_id}/replies",
+         "-f", f"body={body}"],
+        capture_output=True,
+        text=True
+    )
+    return result.returncode == 0
+
+
+def reply_to_pr_comment(pr_number: int, body: str) -> bool:
+    """Add a general comment to a PR.
+
+    Args:
+        pr_number: The PR number
+        body: The comment text
+
+    Returns:
+        True if successful, False otherwise
+    """
+    result = subprocess.run(
+        ["gh", "pr", "comment", str(pr_number), "--body", body],
+        capture_output=True,
+        text=True
+    )
+    return result.returncode == 0
+
+
+def parse_triage_result(claude_output: str) -> Optional[Dict[str, Any]]:
+    """Parse the JSON triage result from Claude's output.
+
+    Args:
+        claude_output: The raw output from Claude
+
+    Returns:
+        Parsed triage dict or None if parsing fails
+    """
+    # Try to find JSON in the output
+    import re
+    json_match = re.search(r'```json\s*(.*?)\s*```', claude_output, re.DOTALL)
+    if json_match:
+        try:
+            return json.loads(json_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # Try parsing the whole output as JSON
+    try:
+        return json.loads(claude_output.strip())
+    except json.JSONDecodeError:
+        pass
+
+    return None
+
+
+def get_feedback_by_ids(
+    all_feedback: List[Dict[str, Any]],
+    comment_ids: List[int]
+) -> List[Dict[str, Any]]:
+    """Get feedback items matching the given IDs.
+
+    Args:
+        all_feedback: All feedback items
+        comment_ids: IDs to filter by
+
+    Returns:
+        Matching feedback items
+    """
+    return [f for f in all_feedback if f.get("id") in comment_ids]
+
+
+def determine_comment_type(comment_id: int, review_comments: List[Dict], conversation_comments: List[Dict]) -> str:
+    """Determine whether a comment ID is a review comment or conversation comment.
+
+    Args:
+        comment_id: The comment ID to check
+        review_comments: List of review comments
+        conversation_comments: List of conversation comments
+
+    Returns:
+        'review' if it's a review comment, 'conversation' if general comment
+    """
+    for c in review_comments:
+        if c.get("id") == comment_id:
+            return "review"
+    return "conversation"
+
+
+def process_pr_feedback(
+    pr_number: int,
+    pr_url: str,
+    state: Dict[str, Any],
+    worktree_path: str,
+    slice_branch: str,
+    interactive: bool = True,
+    mock_claude: Optional[str] = None,
+    skip_ci_wait: bool = False,
+    ci_timeout: int = 600
+) -> tuple:
+    """Process new PR feedback using triage-based approach.
+
+    Flow:
+    1. Fetch and filter new feedback
+    2. Invoke Claude to triage (categorize as will_fix or needs_clarification)
+    3. Reply to comments needing clarification
+    4. For each fix group: invoke Claude, push, reply with SHA, verify CI
+
+    Args:
+        pr_number: The PR number
+        pr_url: The PR URL
+        state: Current state dictionary (will be modified with processed IDs)
+        worktree_path: Path to the worktree
+        slice_branch: Branch name for pushing
+        interactive: If True, run Claude interactively
+        mock_claude: Optional path to mock script for testing
+        skip_ci_wait: If True, skip waiting for CI
+        ci_timeout: Timeout for CI in seconds
+
+    Returns:
+        Tuple of (had_feedback, made_changes):
+        - had_feedback: True if there was new feedback to process
+        - made_changes: True if Claude made code changes (commits)
+    """
+    from git import Repo as GitRepo
+
+    # Fetch all feedback types
+    review_comments = fetch_pr_comments(pr_number)
+    reviews = fetch_pr_reviews(pr_number)
+    conversation_comments = fetch_pr_conversation_comments(pr_number)
+
+    # Filter to new/unprocessed
+    new_review_comments = get_new_feedback(
+        review_comments, state.get("processed_comment_ids", [])
+    )
+    new_reviews = get_new_feedback(
+        reviews, state.get("processed_review_ids", [])
+    )
+    new_conversation = get_new_feedback(
+        conversation_comments, state.get("processed_conversation_ids", [])
+    )
+
+    # Check if there's any new feedback
+    if not new_review_comments and not new_reviews and not new_conversation:
+        return (False, False)
+
+    print(f"Found new feedback: {len(new_reviews)} review(s), "
+          f"{len(new_review_comments)} review comment(s), "
+          f"{len(new_conversation)} general comment(s)")
+
+    # Combine all feedback for triage
+    all_new_feedback = new_review_comments + new_reviews + new_conversation
+    feedback_content = format_all_feedback(
+        new_review_comments, new_reviews, new_conversation
+    )
+
+    # Step 1: Triage - ask Claude to categorize feedback
+    print("Triaging feedback...")
+    if mock_claude:
+        triage_cmd = [mock_claude, f"triage-{pr_number}"]
+    else:
+        triage_cmd = build_triage_command(feedback_content, interactive=False)
+
+    triage_result = run_claude_with_output_capture(triage_cmd, cwd=worktree_path)
+
+    triage = parse_triage_result(triage_result.stdout)
+    if not triage:
+        print("Warning: Could not parse triage result, marking all as processed")
+        # Mark all as processed to avoid infinite loop
+        state.setdefault("processed_comment_ids", []).extend(
+            [c["id"] for c in new_review_comments]
+        )
+        state.setdefault("processed_review_ids", []).extend(
+            [r["id"] for r in new_reviews]
+        )
+        state.setdefault("processed_conversation_ids", []).extend(
+            [c["id"] for c in new_conversation]
+        )
+        return (True, False)
+
+    will_fix = triage.get("will_fix", [])
+    needs_clarification = triage.get("needs_clarification", [])
+
+    print(f"Triage result: {len(will_fix)} fix group(s), "
+          f"{len(needs_clarification)} needing clarification")
+
+    # Step 2: Reply to comments needing clarification
+    for item in needs_clarification:
+        comment_id = item.get("comment_id")
+        question = item.get("question", "Could you please clarify?")
+
+        comment_type = determine_comment_type(
+            comment_id, new_review_comments, new_conversation
+        )
+
+        print(f"Asking for clarification on comment {comment_id}...")
+        if comment_type == "review":
+            success = reply_to_review_comment(pr_number, comment_id, question)
+        else:
+            # For conversation comments, just add a general reply
+            success = reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{question}")
+
+        if success:
+            print(f"  Replied to comment {comment_id}")
+        else:
+            print(f"  Warning: Failed to reply to comment {comment_id}")
+
+    # Step 3: Process each fix group
+    worktree_repo = GitRepo(worktree_path)
+    made_any_changes = False
+
+    for fix_group in will_fix:
+        comment_ids = fix_group.get("comment_ids", [])
+        description = fix_group.get("description", "Address feedback")
+
+        if not comment_ids:
+            continue
+
+        print(f"\nFixing: {description}")
+        print(f"  Comments: {comment_ids}")
+
+        # Get the specific feedback for this group
+        group_feedback = get_feedback_by_ids(all_new_feedback, comment_ids)
+        group_content = format_all_feedback(
+            [f for f in group_feedback if f in new_review_comments],
+            [f for f in group_feedback if f in new_reviews],
+            [f for f in group_feedback if f in new_conversation]
+        )
+
+        # Invoke Claude to fix
+        head_before = worktree_repo.head.commit.hexsha
+
+        if mock_claude:
+            fix_cmd = [mock_claude, f"fix-{pr_number}-{comment_ids[0]}"]
+        else:
+            fix_cmd = build_fix_command(pr_url, group_content, description, interactive=interactive)
+
+        print("  Invoking Claude to fix...")
+        if interactive:
+            fix_result = run_claude_interactive(fix_cmd, cwd=worktree_path)
+        else:
+            fix_result = run_claude_with_output_capture(fix_cmd, cwd=worktree_path)
+
+        head_after = worktree_repo.head.commit.hexsha
+
+        if head_before == head_after:
+            print("  Warning: Claude did not make any commits for this fix")
+            continue
+
+        made_any_changes = True
+        commit_sha = head_after[:8]
+        print(f"  Committed: {commit_sha}")
+
+        # Push the commit
+        print("  Pushing...")
+        if not push_branch_to_remote(slice_branch):
+            print("  Error: Could not push fix", file=sys.stderr)
+            return (True, True)  # Return early, let caller handle
+
+        # Reply to each comment with the commit SHA
+        for comment_id in comment_ids:
+            comment_type = determine_comment_type(
+                comment_id, new_review_comments, new_conversation
+            )
+
+            reply_body = f"Fixed in {commit_sha}"
+            if comment_type == "review":
+                success = reply_to_review_comment(pr_number, comment_id, reply_body)
+            else:
+                success = reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{reply_body}")
+
+            if success:
+                print(f"  Replied to comment {comment_id}: {reply_body}")
+            else:
+                print(f"  Warning: Failed to reply to comment {comment_id}")
+
+        # Wait for CI
+        if not skip_ci_wait:
+            print("  Waiting for CI...")
+            ci_success, failing_run = wait_for_workflow_completion(
+                slice_branch, head_after, timeout_seconds=ci_timeout
+            )
+
+            if not ci_success and failing_run:
+                workflow_name = failing_run.get("name", "unknown")
+                print(f"  CI failed: {workflow_name}")
+                # Don't return here - let the main loop handle CI fix
+            elif ci_success:
+                print("  CI passed!")
+
+    # Mark all feedback as processed
+    state.setdefault("processed_comment_ids", []).extend(
+        [c["id"] for c in new_review_comments]
+    )
+    state.setdefault("processed_review_ids", []).extend(
+        [r["id"] for r in new_reviews]
+    )
+    state.setdefault("processed_conversation_ids", []).extend(
+        [c["id"] for c in new_conversation]
+    )
+
+    return (True, made_any_changes)
+
+
 def fetch_failed_checks(pr_number: int) -> List[Dict[str, Any]]:
     """Fetch failed status checks for a PR.
 
@@ -579,6 +1096,271 @@ def fetch_failed_checks(pr_number: int) -> List[Dict[str, Any]]:
                 failed.append({"name": name, "state": state})
 
     return failed
+
+
+# Workflow Run Functions
+
+def get_workflow_runs_for_commit(branch: str, sha: str) -> List[Dict[str, Any]]:
+    """Get workflow runs for a specific branch and commit SHA.
+
+    Args:
+        branch: The branch name
+        sha: The commit SHA
+
+    Returns:
+        List of workflow run dictionaries with databaseId, status, conclusion, name, headSha
+    """
+    result = subprocess.run(
+        ["gh", "run", "list", "--branch", branch, "-c", sha,
+         "--json", "databaseId,status,conclusion,name,headSha"],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0 or not result.stdout.strip():
+        return []
+
+    return json.loads(result.stdout)
+
+
+def has_ci_workflow_files(repo_path: str) -> bool:
+    """Check if GitHub Actions workflow files exist in the repository.
+
+    Args:
+        repo_path: Path to the repository
+
+    Returns:
+        True if at least one workflow file exists, False otherwise
+    """
+    workflows_dir = os.path.join(repo_path, ".github", "workflows")
+    if not os.path.isdir(workflows_dir):
+        return False
+
+    for filename in os.listdir(workflows_dir):
+        if filename.endswith(('.yml', '.yaml')):
+            return True
+
+    return False
+
+
+def get_failing_workflow_run(branch: str, sha: str) -> Optional[Dict[str, Any]]:
+    """Get failing workflow run for the branch/SHA, if any.
+
+    Args:
+        branch: The branch name
+        sha: The commit SHA
+
+    Returns:
+        The first failing workflow run dict, or None if no failures
+    """
+    runs = get_workflow_runs_for_commit(branch, sha)
+
+    for run in runs:
+        if run.get("conclusion") == "failure":
+            return run
+
+    return None
+
+
+def get_workflow_failure_logs(run_id: int) -> str:
+    """Get failure logs from a workflow run.
+
+    Args:
+        run_id: The workflow run database ID
+
+    Returns:
+        The failed log output as a string
+    """
+    result = subprocess.run(
+        ["gh", "run", "view", str(run_id), "--log-failed"],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        return f"Error fetching logs: {result.stderr}"
+
+    return result.stdout
+
+
+def wait_for_workflow_completion(
+    branch: str,
+    sha: str,
+    timeout_seconds: int = 600
+) -> tuple:
+    """Wait for workflow runs for the branch/SHA to complete using gh run watch.
+
+    Args:
+        branch: The branch name
+        sha: The commit SHA
+        timeout_seconds: Maximum time to wait (default 600s = 10 minutes)
+
+    Returns:
+        Tuple of (success, failing_run):
+        - success=True if all runs passed, False if any failed or timeout
+        - failing_run: The first failing run dict if any, None otherwise
+    """
+    import time
+    start_time = time.time()
+    poll_interval = 10  # Initial poll to find runs
+
+    # Wait for runs to appear
+    runs = []
+    while not runs:
+        elapsed = time.time() - start_time
+        if elapsed >= timeout_seconds:
+            print(f"Timeout waiting for CI runs to appear after {timeout_seconds}s")
+            return (False, None)
+
+        runs = get_workflow_runs_for_commit(branch, sha)
+        if not runs:
+            print(f"  No workflow runs found yet, waiting...")
+            time.sleep(poll_interval)
+
+    # Watch each pending run using gh run watch
+    for run in runs:
+        if run.get("status") != "completed":
+            run_id = run.get("databaseId")
+            run_name = run.get("name", "unknown")
+            print(f"  Watching workflow '{run_name}' (run {run_id})...")
+
+            # gh run watch blocks until the run completes
+            result = subprocess.run(
+                ["gh", "run", "watch", str(run_id)],
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds
+            )
+
+            if result.returncode != 0:
+                print(f"  Warning: gh run watch returned {result.returncode}")
+
+    # After all runs complete, check for failures
+    runs = get_workflow_runs_for_commit(branch, sha)
+    for run in runs:
+        if run.get("conclusion") == "failure":
+            return (False, run)
+
+    return (True, None)
+
+
+def branch_has_been_pushed(branch: str) -> bool:
+    """Check if the branch exists on the remote.
+
+    Args:
+        branch: The branch name to check
+
+    Returns:
+        True if the branch exists on origin, False otherwise
+    """
+    result = subprocess.run(
+        ["git", "ls-remote", "--heads", "origin", branch],
+        capture_output=True,
+        text=True
+    )
+
+    return result.returncode == 0 and branch in result.stdout
+
+
+def fix_ci_failure(
+    slice_branch: str,
+    head_sha: str,
+    worktree_path: str,
+    max_retries: int = 3,
+    interactive: bool = True,
+    mock_claude: Optional[str] = None
+) -> bool:
+    """Attempt to fix CI failure for a branch.
+
+    Loop:
+    1. Get failing workflow run for branch/SHA
+    2. Get failure logs
+    3. Invoke Claude to fix
+    4. Push fix
+    5. Wait for CI completion
+    6. If still failing, retry (up to max_retries)
+
+    Args:
+        slice_branch: The branch name
+        head_sha: The current HEAD SHA
+        worktree_path: Path to the worktree
+        max_retries: Maximum retry attempts (default 3)
+        interactive: If True, run Claude interactively
+        mock_claude: Optional path to mock script for testing
+
+    Returns:
+        True if CI passes, False if max retries exceeded
+    """
+    from git import Repo as GitRepo
+
+    worktree_repo = GitRepo(worktree_path)
+    current_sha = head_sha
+
+    for attempt in range(1, max_retries + 1):
+        print(f"\nCI fix attempt {attempt}/{max_retries}")
+
+        # Get the failing workflow run
+        failing_run = get_failing_workflow_run(slice_branch, current_sha)
+        if not failing_run:
+            print("No failing workflow found - CI may have passed")
+            return True
+
+        run_id = failing_run.get("databaseId")
+        workflow_name = failing_run.get("name", "unknown")
+        print(f"  Workflow '{workflow_name}' failed (run {run_id})")
+
+        # Get failure logs
+        print("  Fetching failure logs...")
+        failure_logs = get_workflow_failure_logs(run_id)
+
+        # Build and run Claude command to fix
+        if mock_claude:
+            claude_cmd = [mock_claude, f"fix-ci-{run_id}"]
+        else:
+            claude_cmd = build_ci_fix_command(
+                run_id, workflow_name, failure_logs, interactive=interactive
+            )
+
+        print(f"  Invoking Claude to fix CI failure...")
+        head_before = worktree_repo.head.commit.hexsha
+
+        if interactive:
+            claude_result = run_claude_interactive(claude_cmd, cwd=worktree_path)
+        else:
+            claude_result = run_claude_with_output_capture(claude_cmd, cwd=worktree_path)
+
+        head_after = worktree_repo.head.commit.hexsha
+
+        # Check if Claude made a fix
+        if head_before == head_after:
+            print("  Claude did not make any commits")
+            if attempt == max_retries:
+                return False
+            continue
+
+        # Push the fix
+        print("  Pushing fix...")
+        if not push_branch_to_remote(slice_branch):
+            print("  Error: Could not push fix", file=sys.stderr)
+            return False
+
+        current_sha = head_after
+
+        # Wait for CI to complete
+        print("  Waiting for CI to complete...")
+        ci_success, new_failing_run = wait_for_workflow_completion(
+            slice_branch, current_sha
+        )
+
+        if ci_success:
+            print("  CI passed!")
+            return True
+
+        if new_failing_run:
+            print(f"  CI still failing: {new_failing_run.get('name', 'unknown')}")
+
+    print(f"Max retries ({max_retries}) exceeded")
+    return False
 
 
 # Main Branch Advancement Functions
@@ -969,7 +1751,8 @@ def get_worktree_idea_directory(
 def build_claude_command(
     idea_directory: str,
     task_description: str,
-    interactive: bool = True
+    interactive: bool = True,
+    extra_prompt: Optional[str] = None
 ) -> List[str]:
     """Build the command to invoke Claude Code for a task.
 
@@ -977,6 +1760,7 @@ def build_claude_command(
         idea_directory: Path to the idea directory
         task_description: The task to implement
         interactive: If True, run Claude interactively; if False, use -p flag
+        extra_prompt: Optional extra text to append to the prompt
 
     Returns:
         Command as a list suitable for subprocess
@@ -998,35 +1782,47 @@ Do not work on future tasks until the current one is complete.
 If all tasks are complete, stop and report success.
 """
 
+    # Append extra prompt if provided
+    if extra_prompt:
+        prompt += f"\n{extra_prompt}\n"
+
     if interactive:
         # Invoke Claude interactively with prompt as positional argument
         return ["claude", prompt]
     else:
         # Invoke Claude non-interactively with -p flag
-        return ["claude", "-p", prompt]
+        # --verbose and --output-format=stream-json are needed to see output
+        non_interactive_prompt = prompt + "\n\nIMPORTANT: if you don't have permission to perform an action, print an informative error message and exit"
+        return ["claude", "--verbose", "--output-format=stream-json", "-p", non_interactive_prompt]
 
 
 class ClaudeResult:
     """Result of running Claude with output capture."""
 
-    def __init__(self, returncode: int, stdout: str, stderr: str):
+    def __init__(self, returncode: int, stdout: str, stderr: str,
+                 permission_denials: Optional[List[Dict[str, Any]]] = None,
+                 error_message: Optional[str] = None,
+                 last_messages: Optional[List[Dict[str, Any]]] = None):
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
+        self.permission_denials = permission_denials or []
+        self.error_message = error_message
+        self.last_messages = last_messages or []
 
 
 def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
-    """Run Claude command, capturing output while displaying it in real-time.
+    """Run Claude command, capturing output while displaying progress.
 
-    Uses threads to read stdout/stderr concurrently, which is more reliable
-    than select() on macOS with subprocess pipes.
+    For stream-json output, prints a dot for each JSON message received.
+    At the end, parses the result to check for errors and permission denials.
 
     Args:
         cmd: Command to run as list
         cwd: Working directory
 
     Returns:
-        ClaudeResult with returncode, stdout, and stderr
+        ClaudeResult with returncode, stdout, stderr, and parsed error info
     """
     process = subprocess.Popen(
         cmd,
@@ -1038,26 +1834,43 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
     stdout_chunks: List[str] = []
     stderr_chunks: List[str] = []
 
-    def read_pipe(pipe, chunks: List[str], output_stream):
-        """Read from pipe and write to output stream in real-time."""
+    def read_stdout_stream_json(pipe, chunks: List[str]):
+        """Read stream-json output, printing a dot for each JSON blob."""
+        buffer = ""
         while True:
-            # read1() reads available data without blocking for a full buffer
             chunk = pipe.read1(4096) if hasattr(pipe, 'read1') else pipe.read(4096)
             if not chunk:
                 break
             text = chunk.decode('utf-8', errors='replace')
             chunks.append(text)
-            output_stream.write(text)
-            output_stream.flush()
+            buffer += text
+
+            # Count complete JSON objects (each ends with newline in stream-json)
+            while '\n' in buffer:
+                line, buffer = buffer.split('\n', 1)
+                if line.strip():
+                    sys.stdout.write('.')
+                    sys.stdout.flush()
+
+    def read_stderr(pipe, chunks: List[str]):
+        """Read stderr output."""
+        while True:
+            chunk = pipe.read1(4096) if hasattr(pipe, 'read1') else pipe.read(4096)
+            if not chunk:
+                break
+            text = chunk.decode('utf-8', errors='replace')
+            chunks.append(text)
+            sys.stderr.write(text)
+            sys.stderr.flush()
 
     # Start threads to read stdout and stderr concurrently
     stdout_thread = threading.Thread(
-        target=read_pipe,
-        args=(process.stdout, stdout_chunks, sys.stdout)
+        target=read_stdout_stream_json,
+        args=(process.stdout, stdout_chunks)
     )
     stderr_thread = threading.Thread(
-        target=read_pipe,
-        args=(process.stderr, stderr_chunks, sys.stderr)
+        target=read_stderr,
+        args=(process.stderr, stderr_chunks)
     )
 
     stdout_thread.start()
@@ -1070,10 +1883,68 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
     stdout_thread.join()
     stderr_thread.join()
 
+    # Print newline after dots
+    sys.stdout.write('\n')
+    sys.stdout.flush()
+
+    # Parse the output to extract error information
+    full_stdout = ''.join(stdout_chunks)
+    permission_denials = []
+    error_message = None
+    all_messages: List[Dict[str, Any]] = []
+
+    # Parse all JSON messages
+    for line in full_stdout.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            msg = json.loads(line)
+            all_messages.append(msg)
+            if msg.get('type') == 'result':
+                permission_denials = msg.get('permission_denials', [])
+                if msg.get('is_error'):
+                    error_message = msg.get('result', 'Unknown error')
+                elif permission_denials:
+                    error_message = f"Permission denied for {len(permission_denials)} action(s)"
+        except json.JSONDecodeError:
+            continue
+
+    # Keep last 5 messages for debugging
+    last_messages = all_messages[-5:] if all_messages else []
+
     return ClaudeResult(
         returncode=process.returncode,
-        stdout=''.join(stdout_chunks),
-        stderr=''.join(stderr_chunks)
+        stdout=full_stdout,
+        stderr=''.join(stderr_chunks),
+        permission_denials=permission_denials,
+        error_message=error_message,
+        last_messages=last_messages
+    )
+
+
+def run_claude_interactive(cmd: List[str], cwd: str) -> ClaudeResult:
+    """Run Claude command interactively, inheriting terminal.
+
+    In interactive mode, Claude needs direct access to the terminal
+    for its TUI, so we don't capture stdout/stderr.
+
+    Args:
+        cmd: Command to run as list
+        cwd: Working directory
+
+    Returns:
+        ClaudeResult with just the returncode (no captured output)
+    """
+    result = subprocess.run(cmd, cwd=cwd)
+
+    return ClaudeResult(
+        returncode=result.returncode,
+        stdout="",
+        stderr="",
+        permission_denials=[],
+        error_message=None,
+        last_messages=[]
     )
 
 
@@ -1113,6 +1984,53 @@ Your task:
         "--print", "wt-handle-feedback.md",
         "-p", prompt
     ]
+
+
+def build_ci_fix_command(
+    run_id: int,
+    workflow_name: str,
+    failure_logs: str,
+    interactive: bool = True
+) -> List[str]:
+    """Build command to invoke Claude for fixing CI failures.
+
+    Args:
+        run_id: The workflow run database ID
+        workflow_name: Name of the failing workflow
+        failure_logs: The failure logs from the workflow
+        interactive: If True, run Claude interactively; if False, use -p flag
+
+    Returns:
+        Command as a list suitable for subprocess
+    """
+    # Truncate logs if too long (keep last 5000 chars)
+    max_log_length = 5000
+    if len(failure_logs) > max_log_length:
+        failure_logs = f"... (truncated)\n{failure_logs[-max_log_length:]}"
+
+    prompt = f"""CI build failure detected. Use the debugging-ci-failures skill.
+
+Workflow: {workflow_name}
+Run ID: {run_id}
+
+Failure logs:
+```
+{failure_logs}
+```
+
+Your task:
+1. Analyze the failure logs to understand what went wrong
+2. Identify the root cause of the failure
+3. Make the necessary code changes to fix the issue
+4. Commit your changes with a clear message explaining the fix
+
+IMPORTANT: if you don't have permission to perform an action, print an informative error message and exit.
+"""
+
+    if interactive:
+        return ["claude", prompt]
+    else:
+        return ["claude", "--verbose", "--output-format=stream-json", "-p", prompt]
 
 
 def build_push_command(branch_name: str, force: bool = False) -> List[str]:
@@ -1205,6 +2123,28 @@ def main():
         action="store_true",
         help="Run Claude in non-interactive mode (uses -p flag)"
     )
+    parser.add_argument(
+        "--extra-prompt",
+        metavar="TEXT",
+        help="Extra text to append to Claude's prompt (after a blank line)"
+    )
+    parser.add_argument(
+        "--skip-ci-wait",
+        action="store_true",
+        help="Skip waiting for CI after push (for testing)"
+    )
+    parser.add_argument(
+        "--ci-fix-retries",
+        type=int,
+        default=3,
+        help="Maximum retries for fixing CI failures (default: 3)"
+    )
+    parser.add_argument(
+        "--ci-timeout",
+        type=int,
+        default=600,
+        help="Timeout in seconds for CI completion (default: 600)"
+    )
 
     args = parser.parse_args()
 
@@ -1270,6 +2210,50 @@ def main():
 
     # Execute tasks one by one until all are complete
     while True:
+        # Check for failing CI build on current HEAD (only if branch has been pushed)
+        head_sha = worktree_repo.head.commit.hexsha
+        if branch_has_been_pushed(slice_branch):
+            failing_run = get_failing_workflow_run(slice_branch, head_sha)
+
+            if failing_run:
+                workflow_name = failing_run.get("name", "unknown")
+                print(f"CI build failing for HEAD ({head_sha[:8]}): {workflow_name}")
+                print("Attempting to fix CI failure...")
+                if not fix_ci_failure(
+                    slice_branch,
+                    head_sha,
+                    worktree_path,
+                    max_retries=args.ci_fix_retries,
+                    interactive=not args.non_interactive,
+                    mock_claude=args.mock_claude
+                ):
+                    print("Error: Could not fix CI failure after max retries", file=sys.stderr)
+                    sys.exit(1)
+                # After fixing CI, loop back to check for more failures
+                continue
+
+        # Check for PR feedback (only after CI passes and PR exists)
+        if pr_number and branch_has_been_pushed(slice_branch):
+            pr_url = get_pr_url(pr_number)
+            had_feedback, made_changes = process_pr_feedback(
+                pr_number=pr_number,
+                pr_url=pr_url,
+                state=state,
+                worktree_path=worktree_path,
+                slice_branch=slice_branch,
+                interactive=not args.non_interactive,
+                mock_claude=args.mock_claude,
+                skip_ci_wait=args.skip_ci_wait,
+                ci_timeout=args.ci_timeout
+            )
+
+            if had_feedback:
+                # Save state after processing feedback
+                save_state(args.idea_directory, idea_name, state)
+
+                # Loop back to check for more feedback or CI failures
+                continue
+
         # Re-read plan file from the worktree to get current uncompleted tasks
         with open(worktree_plan_file, "r") as f:
             plan_content = f.read()
@@ -1297,12 +2281,17 @@ def main():
             claude_cmd = build_claude_command(
                 worktree_idea_dir,
                 current_task,
-                interactive=not args.non_interactive
+                interactive=not args.non_interactive,
+                extra_prompt=args.extra_prompt
             )
             print(f"Invoking Claude: {' '.join(claude_cmd)}")
 
-        # Run Claude (or mock), capturing output while displaying in real-time
-        claude_result = run_claude_with_output_capture(claude_cmd, cwd=worktree_path)
+        # Run Claude (or mock)
+        # In non-interactive mode, capture output; in interactive mode, use terminal directly
+        if args.non_interactive:
+            claude_result = run_claude_with_output_capture(claude_cmd, cwd=worktree_path)
+        else:
+            claude_result = run_claude_interactive(claude_cmd, cwd=worktree_path)
 
         # Get HEAD after Claude invocation
         head_after = worktree_repo.head.commit.hexsha
@@ -1314,16 +2303,53 @@ def main():
 
         # Verify success: exit code 0, HEAD advanced, AND task count decreased
         if not check_claude_success(claude_result.returncode, head_before, head_after):
-            print(f"Error: Task execution failed.", file=sys.stderr)
+            print(f"\nError: Task execution failed.", file=sys.stderr)
             print(f"  Exit code: {claude_result.returncode}", file=sys.stderr)
             print(f"  HEAD before: {head_before}", file=sys.stderr)
             print(f"  HEAD after: {head_after}", file=sys.stderr)
+
+            # Display permission denials if any
+            if claude_result.permission_denials:
+                print(f"\nPermission denied for {len(claude_result.permission_denials)} action(s):", file=sys.stderr)
+                for denial in claude_result.permission_denials:
+                    tool_name = denial.get('tool_name', 'Unknown')
+                    tool_input = denial.get('tool_input', {})
+                    cmd = tool_input.get('command', tool_input.get('description', 'N/A'))
+                    print(f"  - {tool_name}: {cmd}", file=sys.stderr)
+                print(f"\nAdd missing permissions to .claude/settings.local.json", file=sys.stderr)
+
+            if claude_result.error_message:
+                print(f"\nClaude error: {claude_result.error_message}", file=sys.stderr)
+
+            # Display last 5 messages for debugging
+            if claude_result.last_messages:
+                print(f"\nLast {len(claude_result.last_messages)} messages from Claude:", file=sys.stderr)
+                for msg in claude_result.last_messages:
+                    msg_type = msg.get('type', 'unknown')
+                    if msg_type == 'assistant':
+                        content = msg.get('message', {}).get('content', [])
+                        for item in content:
+                            if item.get('type') == 'text':
+                                text = item.get('text', '')[:200]
+                                print(f"  [{msg_type}] {text}...", file=sys.stderr)
+                    elif msg_type == 'result':
+                        result = msg.get('result', '')[:200]
+                        print(f"  [{msg_type}] {result}...", file=sys.stderr)
+                    else:
+                        print(f"  [{msg_type}]", file=sys.stderr)
+
             sys.exit(1)
 
         if tasks_after >= tasks_before:
             print(f"Error: Task was not marked complete in plan file.", file=sys.stderr)
             print(f"  Tasks before: {tasks_before}", file=sys.stderr)
             print(f"  Tasks after: {tasks_after}", file=sys.stderr)
+            sys.exit(1)
+
+        # Verify CI workflow exists before pushing (required for CI checks)
+        if not has_ci_workflow_files(worktree_path):
+            print("Error: No GitHub Actions workflow file found in .github/workflows/", file=sys.stderr)
+            print("Tasks must create a CI workflow (e.g., .github/workflows/ci.yml) before pushing.", file=sys.stderr)
             sys.exit(1)
 
         print(f"Task completed successfully. Pushing changes...")
@@ -1339,6 +2365,19 @@ def main():
                 slice_branch, args.idea_directory, idea_name, state["slice_number"]
             )
             print(f"Created Draft PR #{pr_number}")
+
+        # Wait for CI to complete (unless --skip-ci-wait)
+        if not args.skip_ci_wait:
+            print("Waiting for CI to complete...")
+            ci_success, failing_run = wait_for_workflow_completion(
+                slice_branch, head_after, timeout_seconds=args.ci_timeout
+            )
+
+            if not ci_success and failing_run:
+                workflow_name = failing_run.get("name", "unknown")
+                print(f"CI failed: {workflow_name}. Will fix on next iteration.")
+            elif ci_success:
+                print("CI passed!")
 
 
 if __name__ == "__main__":

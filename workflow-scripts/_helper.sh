@@ -24,6 +24,8 @@ SESSION_ID_FILE="$IDEA_DIR/${IDEA_NAME}-sessionID.txt"
 
 SPEC_FILE="$IDEA_DIR/${IDEA_NAME}-spec.md"
 
+DESIGN_FILE="$IDEA_DIR/${IDEA_NAME}-design.md"
+
 STORY_FILE="$IDEA_DIR/${IDEA_NAME}-stories.md"
 
 PLAN_WITHOUT_STORIES_FILE="$IDEA_DIR/${IDEA_NAME}-plan.md"
@@ -42,6 +44,13 @@ _validate_idea() {
 _validate_spec() {
     if [ ! -f "$SPEC_FILE" ]; then
         echo "Error: Spec file not found: $SPEC_FILE" >&2
+        exit 1
+    fi
+}
+
+_validate_design() {
+    if [ ! -f "$DESIGN_FILE" ]; then
+        echo "Error: Design file not found: $DESIGN_FILE" >&2
         exit 1
     fi
 }

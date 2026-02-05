@@ -289,7 +289,12 @@ main() {
                     3)
                         echo ""
                         # Use sk (skim) to select from steel thread or task headings in the plan
-                        specific_task=$(grep -E '^## Steel Thread [0-9]+:|^### Task [0-9]+\.[0-9]+:' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null | sk --prompt="Select task to implement: " --height=40%)
+                        # Supports multiple formats:
+                        # - ## Steel Thread N: title
+                        # - ### Task N.M: title
+                        # - - [ ] **Task N.M: title**
+                        # Strip leading markers to normalize to "Task N.M: title" format
+                        specific_task=$(grep -E '^## Steel Thread [0-9]+:|^### Task [0-9]+\.[0-9]+:|^- \[ \] \*\*Task [0-9]+\.[0-9]+:' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null | sed 's/^.*\(Task [0-9]\)/\1/' | sk --prompt="Select task to implement: " --height=40%)
                         if [ -n "$specific_task" ]; then
                             if "$SCRIPT_DIR/implement-plan.sh" "$dir" "$specific_task"; then
                                 echo "Task implementation completed successfully!"

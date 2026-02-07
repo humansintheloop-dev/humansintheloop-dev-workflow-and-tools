@@ -588,6 +588,23 @@ def insert_thread_after(plan: str, after_thread: int, title: str,
     return append_change_history(result, "insert-thread-after", rationale)
 
 
+def delete_thread(plan: str, thread_number: int, rationale: str) -> str:
+    """Remove a thread entirely and renumber remaining threads.
+
+    Raises ValueError if thread_number does not exist.
+    """
+    preamble, threads, postamble = _extract_thread_sections(plan)
+    existing_numbers = {num for num, _ in threads}
+
+    if thread_number not in existing_numbers:
+        raise ValueError(f"delete-thread: thread {thread_number} does not exist")
+
+    remaining = [(num, text) for num, text in threads if num != thread_number]
+    assembled = preamble + '\n'.join(text for _, text in remaining) + postamble
+    result = fix_numbering(assembled)
+    return append_change_history(result, "delete-thread", rationale)
+
+
 def reorder_threads(plan: str, thread_order: list[int], rationale: str) -> str:
     """Reorder threads according to the specified ordering and renumber.
 
@@ -641,6 +658,21 @@ def cmd_get_next_task(args):
         for i, step in enumerate(task['steps'], 1):
             status = 'x' if step['completed'] else ' '
             print(f"    {i}. [{status}] {step['description']}")
+
+
+def cmd_delete_thread(args):
+    """Handle the delete-thread subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        result = delete_thread(plan, args.thread, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Deleted thread {args.thread}")
 
 
 def cmd_mark_step_complete(args):
@@ -875,6 +907,14 @@ def build_parser():
     mark_step.add_argument('--step', type=int, required=True, help='Step number')
     mark_step.add_argument('--rationale', required=True, help='Reason for the change')
     mark_step.set_defaults(func=cmd_mark_step_complete)
+
+    # delete-thread
+    del_thread = subparsers.add_parser('delete-thread',
+                                        help='Remove a thread entirely')
+    del_thread.add_argument('plan_file', help='Path to the plan file')
+    del_thread.add_argument('--thread', type=int, required=True, help='Thread number to delete')
+    del_thread.add_argument('--rationale', required=True, help='Reason for the change')
+    del_thread.set_defaults(func=cmd_delete_thread)
 
     return parser
 

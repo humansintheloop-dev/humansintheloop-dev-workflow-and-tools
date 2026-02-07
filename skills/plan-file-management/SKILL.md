@@ -87,3 +87,11 @@ Mark a single step as complete. Appends to change history.
     uv run skills/plan-file-management/scripts/plan-manager.py mark-step-complete <plan_file> --thread <N> --task <M> --step <S> --rationale <text>
 
 Errors if the step does not exist or is already complete.
+
+## delete-thread
+
+Remove a thread entirely, then auto-renumber remaining threads and tasks.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py delete-thread <plan_file> --thread <N> --rationale <text>
+
+Errors if the thread does not exist.

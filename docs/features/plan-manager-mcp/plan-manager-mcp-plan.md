@@ -242,19 +242,19 @@ Implements step-level completion, proving atomic writes and change history work.
 
 Implements thread deletion with auto-renumbering.
 
-- [ ] **Task 10.1: delete-thread removes a thread and renumbers remaining threads**
+- [x] **Task 10.1: delete-thread removes a thread and renumbers remaining threads**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py delete-thread <plan_file> --thread 1 --rationale <text>`
   - Observable: After running `delete-thread` with `--thread 1`, thread 1 and all its tasks are removed, remaining threads are renumbered starting from 1, and change history is appended
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement `delete_thread(plan: str, thread_number: int, rationale: str) -> str` as a pure function: remove all content from thread heading to the next thread heading (or Summary section)
-    - [ ] Auto-renumber remaining threads and tasks
-    - [ ] Return error if `thread_number` does not exist
-    - [ ] Append to change history with rationale
-    - [ ] Register `delete-thread` subcommand with argparse
-    - [ ] Write pytest tests covering: thread removed, remaining threads renumbered, change history appended, error on nonexistent thread
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `delete-thread` subcommand
+    - [x] Implement `delete_thread(plan: str, thread_number: int, rationale: str) -> str` as a pure function: remove all content from thread heading to the next thread heading (or Summary section)
+    - [x] Auto-renumber remaining threads and tasks
+    - [x] Return error if `thread_number` does not exist
+    - [x] Append to change history with rationale
+    - [x] Register `delete-thread` subcommand with argparse
+    - [x] Write pytest tests covering: thread removed, remaining threads renumbered, change history appended, error on nonexistent thread
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `delete-thread` subcommand
 
 ---
 
@@ -408,3 +408,6 @@ Implemented list_threads pure function, CLI subcommand, tests, and SKILL.md docs
 
 ### 2026-02-07 11:28 - mark-task-complete
 Implemented mark_step_complete pure function, CLI subcommand, tests, and SKILL.md docs
+
+### 2026-02-07 11:29 - mark-task-complete
+Implemented delete_thread pure function, CLI subcommand, tests, and SKILL.md docs

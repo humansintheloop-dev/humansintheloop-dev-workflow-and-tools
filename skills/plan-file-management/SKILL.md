@@ -60,6 +60,12 @@ Return the first uncompleted task across the plan, with full metadata and steps.
 
     uv run skills/plan-file-management/scripts/plan-manager.py get-next-task <plan_file>
 
+## list-threads
+
+Return all threads with their numbers, titles, and task completion counts.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py list-threads <plan_file>
+
 ## get-summary
 
 Return the plan's name, idea type, overview, and progress (thread count, task count, completed task count).

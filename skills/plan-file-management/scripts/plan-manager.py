@@ -339,6 +339,39 @@ def get_thread(plan: str, thread_number: int) -> dict:
     }
 
 
+def list_threads(plan: str) -> list[dict]:
+    """Return all threads with their numbers, titles, and completion status."""
+    _, threads, _ = _extract_thread_sections(plan)
+    task_re = re.compile(r'^- \[([ x])\] \*\*Task \d+\.\d+:')
+    heading_re = re.compile(r'^## Steel Thread (\d+): (.+)$')
+
+    result = []
+    for num, text in threads:
+        lines = text.split('\n')
+        title = ''
+        m = heading_re.match(lines[0])
+        if m:
+            title = m.group(2)
+
+        total_tasks = 0
+        completed_tasks = 0
+        for line in lines:
+            tm = task_re.match(line)
+            if tm:
+                total_tasks += 1
+                if tm.group(1) == 'x':
+                    completed_tasks += 1
+
+        result.append({
+            'number': num,
+            'title': title,
+            'total_tasks': total_tasks,
+            'completed_tasks': completed_tasks,
+        })
+
+    return result
+
+
 def get_summary(plan: str) -> dict:
     """Return plan metadata and progress summary."""
     lines = plan.split('\n')
@@ -530,6 +563,16 @@ def cmd_get_next_task(args):
             print(f"    {i}. [{status}] {step['description']}")
 
 
+def cmd_list_threads(args):
+    """Handle the list-threads subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    threads = list_threads(plan)
+    for t in threads:
+        print(f"Thread {t['number']}: {t['title']} ({t['completed_tasks']}/{t['total_tasks']} tasks completed)")
+
+
 def cmd_get_summary(args):
     """Handle the get-summary subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -668,6 +711,12 @@ def build_parser():
                                       help='Get the first uncompleted task')
     get_next.add_argument('plan_file', help='Path to the plan file')
     get_next.set_defaults(func=cmd_get_next_task)
+
+    # list-threads
+    list_thr = subparsers.add_parser('list-threads',
+                                      help='List all threads with completion status')
+    list_thr.add_argument('plan_file', help='Path to the plan file')
+    list_thr.set_defaults(func=cmd_list_threads)
 
     # get-summary
     get_sum = subparsers.add_parser('get-summary',

@@ -53,3 +53,9 @@ The `--tasks` argument is a JSON array of task objects (see spec for schema).
 Insert a fully structured thread after a specified thread, then auto-renumber.
 
     uv run skills/plan-file-management/scripts/plan-manager.py insert-thread-after <plan_file> --after <N> --title <title> --introduction <text> --tasks <json> --rationale <text>
+
+## get-next-task
+
+Return the first uncompleted task across the plan, with full metadata and steps. Prints a message if all tasks are complete.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py get-next-task <plan_file>

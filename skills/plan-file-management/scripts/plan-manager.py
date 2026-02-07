@@ -189,6 +189,101 @@ def _extract_thread_sections(plan: str) -> tuple[str, list[tuple[int, str]], str
     return preamble, threads, postamble
 
 
+def _parse_task_block(lines: list[str], start: int, end: int, thread_num: int) -> dict:
+    """Parse a task block from lines[start:end] into a dict with full metadata."""
+    task_line = lines[start]
+    task_re = re.compile(r'^- \[([ x])\] \*\*Task (\d+)\.(\d+): (.+)\*\*$')
+    m = task_re.match(task_line)
+    if not m:
+        return None
+
+    completed = m.group(1) == 'x'
+    task_number = int(m.group(3))
+    title = m.group(4)
+
+    task_type = entrypoint = observable = evidence = ''
+    steps = []
+    in_steps = False
+
+    for i in range(start + 1, end):
+        line = lines[i]
+        stripped = line.strip()
+
+        if stripped.startswith('- TaskType:'):
+            task_type = stripped[len('- TaskType:'):].strip()
+        elif stripped.startswith('- Entrypoint:'):
+            val = stripped[len('- Entrypoint:'):].strip()
+            # Strip backticks
+            if val.startswith('`') and val.endswith('`'):
+                val = val[1:-1]
+            entrypoint = val
+        elif stripped.startswith('- Observable:'):
+            observable = stripped[len('- Observable:'):].strip()
+        elif stripped.startswith('- Evidence:'):
+            val = stripped[len('- Evidence:'):].strip()
+            if val.startswith('`') and val.endswith('`'):
+                val = val[1:-1]
+            evidence = val
+        elif stripped.startswith('- Steps:'):
+            in_steps = True
+        elif in_steps and re.match(r'^\s+- \[[ x]\] ', line):
+            step_match = re.match(r'^\s+- \[([ x])\] (.+)$', line)
+            if step_match:
+                steps.append({
+                    'description': step_match.group(2),
+                    'completed': step_match.group(1) == 'x'
+                })
+
+    return {
+        'thread_number': thread_num,
+        'task_number': task_number,
+        'title': title,
+        'completed': completed,
+        'task_type': task_type,
+        'entrypoint': entrypoint,
+        'observable': observable,
+        'evidence': evidence,
+        'steps': steps,
+    }
+
+
+def get_next_task(plan: str) -> dict | None:
+    """Return the first uncompleted task across the plan, or None if all complete."""
+    lines = plan.split('\n')
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+    task_line_re = re.compile(r'^- \[[ x]\] \*\*Task \d+\.\d+:')
+
+    current_thread = 0
+    task_starts = []
+
+    for i, line in enumerate(lines):
+        m = thread_heading_re.match(line)
+        if m:
+            current_thread = int(m.group(1))
+            continue
+
+        if task_line_re.match(line):
+            task_starts.append((i, current_thread))
+
+    # Determine task boundaries
+    for idx, (start, thread_num) in enumerate(task_starts):
+        if idx + 1 < len(task_starts):
+            end = task_starts[idx + 1][0]
+        else:
+            # Find end: next --- or thread heading or end of file
+            end = len(lines)
+            for j in range(start + 1, len(lines)):
+                if thread_heading_re.match(lines[j]) or lines[j].strip() == '---':
+                    end = j
+                    break
+
+        task = _parse_task_block(lines, start, end, thread_num)
+        if task and not task['completed']:
+            return task
+
+    return None
+
+
 def _serialize_thread(title: str, introduction: str, tasks: list[dict]) -> str:
     """Convert structured thread data to markdown text.
 
@@ -298,6 +393,26 @@ def reorder_threads(plan: str, thread_order: list[int], rationale: str) -> str:
     return append_change_history(result, "reorder-threads", rationale)
 
 
+def cmd_get_next_task(args):
+    """Handle the get-next-task subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    task = get_next_task(plan)
+    if task is None:
+        print("All tasks are complete.")
+    else:
+        print(f"Thread {task['thread_number']}, Task {task['thread_number']}.{task['task_number']}: {task['title']}")
+        print(f"  TaskType: {task['task_type']}")
+        print(f"  Entrypoint: {task['entrypoint']}")
+        print(f"  Observable: {task['observable']}")
+        print(f"  Evidence: {task['evidence']}")
+        print(f"  Steps:")
+        for i, step in enumerate(task['steps'], 1):
+            status = 'x' if step['completed'] else ' '
+            print(f"    {i}. [{status}] {step['description']}")
+
+
 def cmd_fix_numbering(args):
     """Handle the fix-numbering subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -388,6 +503,12 @@ def build_parser():
                                      help='Renumber all threads and tasks sequentially')
     fix_num.add_argument('plan_file', help='Path to the plan file')
     fix_num.set_defaults(func=cmd_fix_numbering)
+
+    # get-next-task
+    get_next = subparsers.add_parser('get-next-task',
+                                      help='Get the first uncompleted task')
+    get_next.add_argument('plan_file', help='Path to the plan file')
+    get_next.set_defaults(func=cmd_get_next_task)
 
     # reorder-threads
     reorder = subparsers.add_parser('reorder-threads',

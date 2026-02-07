@@ -150,17 +150,17 @@ Implements thread insertion (before and after), with auto-renumbering.
 
 Implements the `get-next-task` read operation.
 
-- [ ] **Task 5.1: get-next-task returns the first uncompleted task across the plan**
+- [x] **Task 5.1: get-next-task returns the first uncompleted task across the plan**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py get-next-task <plan_file>`
   - Observable: `get-next-task` prints the first task where `completed` is false, including thread_number, task_number, full metadata, and steps. Prints a message when all tasks are complete.
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement `get_next_task(plan: str) -> dict` as a pure function: iterate through threads and tasks, returning first uncompleted task
-    - [ ] Return descriptive message when no uncompleted tasks remain
-    - [ ] Register `get-next-task` subcommand with argparse
-    - [ ] Write pytest tests covering: returns correct next uncompleted task (skips completed ones), returns all-complete message when no tasks remain
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `get-next-task` subcommand
+    - [x] Implement `get_next_task(plan: str) -> dict` as a pure function: iterate through threads and tasks, returning first uncompleted task
+    - [x] Return descriptive message when no uncompleted tasks remain
+    - [x] Register `get-next-task` subcommand with argparse
+    - [x] Write pytest tests covering: returns correct next uncompleted task (skips completed ones), returns all-complete message when no tasks remain
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `get-next-task` subcommand
 
 ---
 

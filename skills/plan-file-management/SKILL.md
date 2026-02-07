@@ -59,3 +59,11 @@ Insert a fully structured thread after a specified thread, then auto-renumber.
 Return the first uncompleted task across the plan, with full metadata and steps. Prints a message if all tasks are complete.
 
     uv run skills/plan-file-management/scripts/plan-manager.py get-next-task <plan_file>
+
+## get-thread
+
+Return a specific thread's full content including number, title, introduction, and all tasks with their metadata and steps.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py get-thread <plan_file> --thread <N>
+
+Errors if the thread does not exist.

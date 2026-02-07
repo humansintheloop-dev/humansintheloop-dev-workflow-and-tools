@@ -284,6 +284,61 @@ def get_next_task(plan: str) -> dict | None:
     return None
 
 
+def get_thread(plan: str, thread_number: int) -> dict:
+    """Return full thread content including introduction, tasks, and steps.
+
+    Raises ValueError if thread_number does not exist.
+    """
+    _, threads, _ = _extract_thread_sections(plan)
+
+    thread_text = None
+    for num, text in threads:
+        if num == thread_number:
+            thread_text = text
+            break
+
+    if thread_text is None:
+        raise ValueError(f"get-thread: thread {thread_number} does not exist")
+
+    lines = thread_text.split('\n')
+
+    # Extract title from heading
+    heading_re = re.compile(r'^## Steel Thread \d+: (.+)$')
+    title = heading_re.match(lines[0]).group(1)
+
+    # Find task line indices
+    task_line_re = re.compile(r'^- \[[ x]\] \*\*Task \d+\.\d+:')
+    task_starts = []
+    for i, line in enumerate(lines):
+        if task_line_re.match(line):
+            task_starts.append(i)
+
+    # Extract introduction (between heading and first task)
+    if task_starts:
+        intro_lines = lines[1:task_starts[0]]
+    else:
+        intro_lines = lines[1:]
+    introduction = '\n'.join(intro_lines).strip()
+
+    # Parse each task
+    tasks = []
+    for idx, start in enumerate(task_starts):
+        if idx + 1 < len(task_starts):
+            end = task_starts[idx + 1]
+        else:
+            end = len(lines)
+        task = _parse_task_block(lines, start, end, thread_number)
+        if task:
+            tasks.append(task)
+
+    return {
+        'number': thread_number,
+        'title': title,
+        'introduction': introduction,
+        'tasks': tasks,
+    }
+
+
 def _serialize_thread(title: str, introduction: str, tasks: list[dict]) -> str:
     """Convert structured thread data to markdown text.
 
@@ -413,6 +468,35 @@ def cmd_get_next_task(args):
             print(f"    {i}. [{status}] {step['description']}")
 
 
+def cmd_get_thread(args):
+    """Handle the get-thread subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        thread = get_thread(plan, args.thread)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Thread {thread['number']}: {thread['title']}")
+    print()
+    print(thread['introduction'])
+    print()
+    for task in thread['tasks']:
+        status = 'x' if task['completed'] else ' '
+        print(f"- [{status}] Task {task['thread_number']}.{task['task_number']}: {task['title']}")
+        print(f"  TaskType: {task['task_type']}")
+        print(f"  Entrypoint: {task['entrypoint']}")
+        print(f"  Observable: {task['observable']}")
+        print(f"  Evidence: {task['evidence']}")
+        print(f"  Steps:")
+        for i, step in enumerate(task['steps'], 1):
+            step_status = 'x' if step['completed'] else ' '
+            print(f"    {i}. [{step_status}] {step['description']}")
+        print()
+
+
 def cmd_fix_numbering(args):
     """Handle the fix-numbering subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -509,6 +593,13 @@ def build_parser():
                                       help='Get the first uncompleted task')
     get_next.add_argument('plan_file', help='Path to the plan file')
     get_next.set_defaults(func=cmd_get_next_task)
+
+    # get-thread
+    get_thr = subparsers.add_parser('get-thread',
+                                     help='Get full thread content with tasks and steps')
+    get_thr.add_argument('plan_file', help='Path to the plan file')
+    get_thr.add_argument('--thread', type=int, required=True, help='Thread number')
+    get_thr.set_defaults(func=cmd_get_thread)
 
     # reorder-threads
     reorder = subparsers.add_parser('reorder-threads',

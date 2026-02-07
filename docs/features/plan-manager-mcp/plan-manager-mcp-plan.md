@@ -168,19 +168,19 @@ Implements the `get-next-task` read operation.
 
 Implements the `get-thread` read operation, returning a thread's full content including tasks and steps.
 
-- [ ] **Task 6.1: get-thread returns full thread content with tasks and steps**
+- [x] **Task 6.1: get-thread returns full thread content with tasks and steps**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py get-thread <plan_file> --thread 1`
   - Observable: `get-thread` prints the specified thread's number, title, introduction, and all tasks with their metadata (title, completed, task_type, entrypoint, observable, evidence, steps with completion status)
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement full task metadata parsing: title, completed flag, task_type, entrypoint, observable, evidence
-    - [ ] Implement step parsing: description and completed flag from `- [ ]`/`- [x]` lines under `Steps:`
-    - [ ] Implement introduction extraction (text between thread heading and first task)
-    - [ ] Implement `get_thread(plan: str, thread_number: int) -> dict` as a pure function
-    - [ ] Register `get-thread` subcommand with argparse
-    - [ ] Write pytest tests covering: correct introduction, task metadata, step parsing, error on nonexistent thread_number
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `get-thread` subcommand
+    - [x] Implement full task metadata parsing: title, completed flag, task_type, entrypoint, observable, evidence
+    - [x] Implement step parsing: description and completed flag from `- [ ]`/`- [x]` lines under `Steps:`
+    - [x] Implement introduction extraction (text between thread heading and first task)
+    - [x] Implement `get_thread(plan: str, thread_number: int) -> dict` as a pure function
+    - [x] Register `get-thread` subcommand with argparse
+    - [x] Write pytest tests covering: correct introduction, task metadata, step parsing, error on nonexistent thread_number
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `get-thread` subcommand
 
 ---
 
@@ -396,3 +396,6 @@ Rewrote plan to reflect pivot from MCP server (`mcp-servers/plan-manager/server.
 
 ### 2026-02-07 - Add SKILL.md update steps
 Added a step to each subcommand task (threads 2-13) to update `skills/plan-file-management/SKILL.md` with documentation for the new subcommand when implemented.
+
+### 2026-02-07 11:24 - mark-task-complete
+Implemented get_thread pure function, CLI subcommand, tests, and SKILL.md docs

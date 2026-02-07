@@ -10,3 +10,5 @@ tests/kafka-security-poc/kafka-security-poc-sessionID.txt
 tests/kafka-security-poc/kafka-security-poc-spec.md
 repomix-output.xml
 *-sessionID.txt
+__pycache__
+debug.log

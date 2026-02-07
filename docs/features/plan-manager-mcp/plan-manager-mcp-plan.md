@@ -377,20 +377,20 @@ Implements task reordering within a thread, allowing tasks to be rearranged acco
 ## Steel Thread 16: Move Task
 Implements moving an existing task to a new position within the same thread. Unlike reorder-tasks which requires specifying the full ordering, move-task-before and move-task-after relocate a single task relative to another task. For example, `move-task-before --thread 1 --task 6 --before 3` moves task 1.6 to just before task 1.3, then renumbers all tasks in the thread.
 
-- [ ] **Task 16.1: move-task-before moves a task to before another task within the same thread**
+- [x] **Task 16.1: move-task-before moves a task to before another task within the same thread**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py move-task-before <plan_file> --thread 1 --task 6 --before 3 --rationale <text>`
   - Observable: After running move-task-before with --thread 1 --task 6 --before 3, task 1.6 appears before old task 1.3, all tasks are renumbered sequentially, and change history is appended
   - Evidence: `pytest tests/plan-manager/ passes`
   - Steps:
-    - [ ] Implement move_task_before(plan: str, thread_number: int, task_number: int, before_task: int, rationale: str) -> str as a pure function
-    - [ ] Auto-renumber all tasks within the thread after moving
-    - [ ] Append to change history with rationale
-    - [ ] Return error if thread_number, task_number, or before_task does not exist
-    - [ ] Return error if task_number equals before_task
-    - [ ] Register move-task-before subcommand with argparse
-    - [ ] Write pytest tests covering: correct move position, renumbering, change history, error on nonexistent thread/task, error on same task
-    - [ ] Update skills/plan-file-management/SKILL.md to document the move-task-before subcommand
+    - [x] Implement move_task_before(plan: str, thread_number: int, task_number: int, before_task: int, rationale: str) -> str as a pure function
+    - [x] Auto-renumber all tasks within the thread after moving
+    - [x] Append to change history with rationale
+    - [x] Return error if thread_number, task_number, or before_task does not exist
+    - [x] Return error if task_number equals before_task
+    - [x] Register move-task-before subcommand with argparse
+    - [x] Write pytest tests covering: correct move position, renumbering, change history, error on nonexistent thread/task, error on same task
+    - [x] Update skills/plan-file-management/SKILL.md to document the move-task-before subcommand
 
 - [ ] **Task 16.2: move-task-after moves a task to after another task within the same thread**
   - TaskType: OUTCOME
@@ -493,3 +493,6 @@ Added move-task-before and move-task-after for simple single-task relocation wit
 
 ### 2026-02-07 12:03 - mark-task-complete
 Implemented reorder_tasks pure function, CLI subcommand, 11 tests, SKILL.md docs
+
+### 2026-02-07 12:05 - mark-task-complete
+Implemented move_task_before pure function, CLI subcommand, 10 tests, SKILL.md docs

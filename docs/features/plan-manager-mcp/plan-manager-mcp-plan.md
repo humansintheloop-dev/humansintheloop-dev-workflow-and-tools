@@ -51,7 +51,6 @@ The script exposes 15 subcommands: 4 read operations (list-threads, get-thread, 
 The implementation uses TDD throughout. Each task includes writing failing tests first, then implementing code to make them pass.
 
 ---
-
 ## Steel Thread 1: Script with Fix Numbering
 
 Migrates the existing `fix-plan-numbering.py` into `plan-manager.py` as the `fix-numbering` subcommand. Establishes the script infrastructure with `argparse` subcommands. The existing `fix_numbering` pure function and its tests are preserved; only the import path and CLI entry point change.
@@ -407,9 +406,28 @@ Implements moving an existing task to a new position within the same thread. Unl
 
 ---
 
+## Steel Thread 17: Replace Task
+Replace a task's content in place within a thread, equivalent to delete-task followed by insert-task but atomic.
+
+- [ ] **Task 17.1: replace-task replaces a task in place within a thread**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py replace-task <plan_file> --thread 1 --task 2 --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>`
+  - Observable: After running replace-task, the specified task is replaced with new content, tasks are renumbered, and change history is appended
+  - Evidence: `pytest tests/plan-manager/ passes`
+  - Steps:
+    - [ ] Implement replace_task(plan, thread_number, task_number, title, task_type, entrypoint, observable, evidence, steps, rationale) as a pure function
+    - [ ] Auto-renumber tasks within the thread after replacement
+    - [ ] Append to change history with rationale
+    - [ ] Return error if thread_number or task_number does not exist
+    - [ ] Register replace-task subcommand with argparse
+    - [ ] Write pytest tests covering: correct replacement, renumbering, change history, preserves other tasks, error on nonexistent thread/task
+    - [ ] Update skills/plan-file-management/SKILL.md to document the replace-task subcommand
+
+---
+
 ## Summary
 
-This plan covers 16 steel threads with 21 tasks implementing the complete Plan File Management Scripts:
+This plan covers 17 steel threads with 22 tasks implementing the complete Plan File Management Scripts:
 
 1. **Script with Fix Numbering**: Migrates existing fix-numbering into plan-manager.py, establishes script infrastructure with argparse subcommands
 2. **Mark Task Complete**: Task-level completion with cascading step completion
@@ -427,6 +445,7 @@ This plan covers 16 steel threads with 21 tasks implementing the complete Plan F
 14. **Round-Trip Fidelity and Error Handling**: Verifies no formatting drift and validates all error cases
 15. **Reorder Tasks**: Rearrange tasks within a thread with auto-renumbering
 16. **Move Task**: Move a single task before/after another task within the same thread
+17. **Replace Task**: Replace a task's content in place within a thread
 
 ---
 
@@ -499,3 +518,6 @@ Implemented move_task_before pure function, CLI subcommand, 10 tests, SKILL.md d
 
 ### 2026-02-07 12:07 - mark-task-complete
 Implemented move_task_after pure function, CLI subcommand, 9 tests, SKILL.md docs
+
+### 2026-02-07 12:07 - insert-thread-after
+Add replace-task subcommand equivalent to delete-task + insert-task

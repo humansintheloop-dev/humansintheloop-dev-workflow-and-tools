@@ -339,6 +339,68 @@ def get_thread(plan: str, thread_number: int) -> dict:
     }
 
 
+def get_summary(plan: str) -> dict:
+    """Return plan metadata and progress summary."""
+    lines = plan.split('\n')
+
+    # Extract plan name from heading
+    plan_name = ''
+    for line in lines:
+        m = re.match(r'^# Implementation Plan: (.+)$', line)
+        if m:
+            plan_name = m.group(1)
+            break
+
+    # Extract idea type section
+    idea_type = ''
+    in_idea_type = False
+    for line in lines:
+        if line.startswith('## Idea Type'):
+            in_idea_type = True
+            continue
+        if in_idea_type:
+            if line.startswith('##') or line.strip() == '---':
+                break
+            if line.strip():
+                idea_type = line.strip()
+
+    # Extract overview section
+    overview_lines = []
+    in_overview = False
+    for line in lines:
+        if line.startswith('## Overview'):
+            in_overview = True
+            continue
+        if in_overview:
+            if line.startswith('##') or line.strip() == '---':
+                break
+            overview_lines.append(line)
+    overview = '\n'.join(overview_lines).strip()
+
+    # Count threads and tasks
+    _, threads, _ = _extract_thread_sections(plan)
+    total_threads = len(threads)
+
+    task_re = re.compile(r'^- \[([ x])\] \*\*Task \d+\.\d+:')
+    total_tasks = 0
+    completed_tasks = 0
+    for line in lines:
+        m = task_re.match(line)
+        if m:
+            total_tasks += 1
+            if m.group(1) == 'x':
+                completed_tasks += 1
+
+    return {
+        'plan_name': plan_name,
+        'idea_type': idea_type,
+        'overview': overview,
+        'total_threads': total_threads,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+    }
+
+
 def _serialize_thread(title: str, introduction: str, tasks: list[dict]) -> str:
     """Convert structured thread data to markdown text.
 
@@ -468,6 +530,19 @@ def cmd_get_next_task(args):
             print(f"    {i}. [{status}] {step['description']}")
 
 
+def cmd_get_summary(args):
+    """Handle the get-summary subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    summary = get_summary(plan)
+    print(f"Plan: {summary['plan_name']}")
+    print(f"Idea Type: {summary['idea_type']}")
+    print(f"Overview: {summary['overview']}")
+    print(f"Threads: {summary['total_threads']}")
+    print(f"Tasks: {summary['completed_tasks']}/{summary['total_tasks']} completed")
+
+
 def cmd_get_thread(args):
     """Handle the get-thread subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -593,6 +668,12 @@ def build_parser():
                                       help='Get the first uncompleted task')
     get_next.add_argument('plan_file', help='Path to the plan file')
     get_next.set_defaults(func=cmd_get_next_task)
+
+    # get-summary
+    get_sum = subparsers.add_parser('get-summary',
+                                     help='Get plan metadata and progress summary')
+    get_sum.add_argument('plan_file', help='Path to the plan file')
+    get_sum.set_defaults(func=cmd_get_summary)
 
     # get-thread
     get_thr = subparsers.add_parser('get-thread',

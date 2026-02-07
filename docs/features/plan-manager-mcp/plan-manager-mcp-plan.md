@@ -188,16 +188,16 @@ Implements the `get-thread` read operation, returning a thread's full content in
 
 Adds the `get-summary` read operation, returning plan metadata and progress.
 
-- [ ] **Task 7.1: get-summary returns plan metadata**
+- [x] **Task 7.1: get-summary returns plan metadata**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py get-summary <plan_file>`
   - Observable: `get-summary` prints plan name, idea type, overview, thread count, task count, and completed task count
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement `get_summary(plan: str) -> dict` as a pure function: extract `# Implementation Plan:` heading, `## Idea Type` section, `## Overview` section, count threads and tasks
-    - [ ] Register `get-summary` subcommand with argparse
-    - [ ] Write pytest tests covering: correct plan name, idea type, overview, thread/task counts including completed count
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `get-summary` subcommand
+    - [x] Implement `get_summary(plan: str) -> dict` as a pure function: extract `# Implementation Plan:` heading, `## Idea Type` section, `## Overview` section, count threads and tasks
+    - [x] Register `get-summary` subcommand with argparse
+    - [x] Write pytest tests covering: correct plan name, idea type, overview, thread/task counts including completed count
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `get-summary` subcommand
 
 ---
 
@@ -399,3 +399,6 @@ Added a step to each subcommand task (threads 2-13) to update `skills/plan-file-
 
 ### 2026-02-07 11:24 - mark-task-complete
 Implemented get_thread pure function, CLI subcommand, tests, and SKILL.md docs
+
+### 2026-02-07 11:25 - mark-task-complete
+Implemented get_summary pure function, CLI subcommand, tests, and SKILL.md docs

@@ -152,6 +152,11 @@ class TestMarkTaskComplete:
         assert "- [ ] **Task 1.1: First task**" in result
         assert "- [ ] **Task 1.2: Second task**" in result
 
+    def test_no_change_history_without_rationale(self):
+        result = mark_task_complete(PLAN_WITH_INCOMPLETE_TASK, 1, 1)
+        assert "- [x] **Task 1.1: First task**" in result
+        assert "## Change History" not in result
+
 
 class TestMarkTaskCompleteErrors:
     """mark_task_complete returns errors for invalid inputs."""

@@ -70,7 +70,7 @@ def append_change_history(plan: str, operation: str, rationale: str) -> str:
         return plan.rstrip('\n') + '\n\n---\n\n## Change History\n' + entry
 
 
-def mark_task_complete(plan: str, thread_number: int, task_number: int, rationale: str) -> str:
+def mark_task_complete(plan: str, thread_number: int, task_number: int, rationale: str | None = None) -> str:
     """Mark a task and all its steps as complete.
 
     Raises ValueError if the task does not exist or is already complete.
@@ -135,7 +135,93 @@ def mark_task_complete(plan: str, thread_number: int, task_number: int, rational
                 lines[i] = f"{step_match.group(1)}[x]{step_match.group(2)}"
 
     result = '\n'.join(lines)
-    return append_change_history(result, "mark-task-complete", rationale)
+    if rationale is not None:
+        result = append_change_history(result, "mark-task-complete", rationale)
+    return result
+
+
+def _extract_thread_sections(plan: str) -> tuple[str, list[tuple[int, str]], str]:
+    """Split a plan into preamble, thread sections, and postamble.
+
+    Returns (preamble, [(thread_number, thread_text), ...], postamble).
+    The preamble is everything before the first Steel Thread heading.
+    Each thread_text includes the heading through to (but not including) the next
+    thread heading or the Summary/Change History section.
+    The postamble is the Summary section and everything after.
+    """
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+    lines = plan.split('\n')
+
+    # Find thread heading line indices
+    thread_starts = []
+    for i, line in enumerate(lines):
+        m = thread_heading_re.match(line)
+        if m:
+            thread_starts.append((i, int(m.group(1))))
+
+    if not thread_starts:
+        return plan, [], ""
+
+    preamble = '\n'.join(lines[:thread_starts[0][0]])
+
+    # Find where postamble starts (Summary section or Change History if no Summary)
+    postamble_start = len(lines)
+    for i in range(thread_starts[-1][0] + 1, len(lines)):
+        if lines[i].startswith('## Summary') or lines[i].startswith('## Change History'):
+            # Include the --- separator before the section if present
+            if i > 0 and lines[i - 1].strip() == '---':
+                postamble_start = i - 1
+            else:
+                postamble_start = i
+            break
+
+    threads = []
+    for idx, (start, num) in enumerate(thread_starts):
+        if idx + 1 < len(thread_starts):
+            end = thread_starts[idx + 1][0]
+        else:
+            end = postamble_start
+        thread_text = '\n'.join(lines[start:end])
+        threads.append((num, thread_text))
+
+    postamble = '\n'.join(lines[postamble_start:])
+
+    return preamble, threads, postamble
+
+
+def reorder_threads(plan: str, thread_order: list[int], rationale: str) -> str:
+    """Reorder threads according to the specified ordering and renumber.
+
+    Raises ValueError if thread_order doesn't contain exactly the set of
+    existing thread numbers.
+    """
+    preamble, threads, postamble = _extract_thread_sections(plan)
+
+    existing_numbers = {num for num, _ in threads}
+    order_set = set(thread_order)
+
+    if len(thread_order) != len(set(thread_order)):
+        raise ValueError("reorder-threads: --order contains duplicate thread numbers")
+
+    if order_set != existing_numbers:
+        missing = existing_numbers - order_set
+        extra = order_set - existing_numbers
+        parts = []
+        if missing:
+            parts.append(f"missing threads: {sorted(missing)}")
+        if extra:
+            parts.append(f"nonexistent threads: {sorted(extra)}")
+        raise ValueError(f"reorder-threads: --order does not match existing threads ({', '.join(parts)})")
+
+    # Build lookup by thread number
+    thread_by_num = {num: text for num, text in threads}
+
+    # Reassemble in new order
+    reordered = [thread_by_num[n] for n in thread_order]
+    assembled = preamble + '\n'.join(reordered) + postamble
+
+    result = fix_numbering(assembled)
+    return append_change_history(result, "reorder-threads", rationale)
 
 
 def cmd_fix_numbering(args):
@@ -146,6 +232,27 @@ def cmd_fix_numbering(args):
     result = fix_numbering(plan)
     atomic_write(args.plan_file, result)
     print(f"Fixed numbering in {args.plan_file}")
+
+
+def cmd_reorder_threads(args):
+    """Handle the reorder-threads subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        order = [int(n.strip()) for n in args.order.split(',')]
+    except ValueError:
+        print("reorder-threads: --order must be comma-separated integers", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        result = reorder_threads(plan, order, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Reordered threads to [{args.order}]")
 
 
 def cmd_mark_task_complete(args):
@@ -176,13 +283,22 @@ def build_parser():
     fix_num.add_argument('plan_file', help='Path to the plan file')
     fix_num.set_defaults(func=cmd_fix_numbering)
 
+    # reorder-threads
+    reorder = subparsers.add_parser('reorder-threads',
+                                     help='Reorder threads according to a specified ordering')
+    reorder.add_argument('plan_file', help='Path to the plan file')
+    reorder.add_argument('--order', required=True,
+                         help='Comma-separated thread numbers in desired order (e.g., 3,1,2)')
+    reorder.add_argument('--rationale', required=True, help='Reason for the change')
+    reorder.set_defaults(func=cmd_reorder_threads)
+
     # mark-task-complete
     mark_task = subparsers.add_parser('mark-task-complete',
                                        help='Mark a task and all its steps as complete')
     mark_task.add_argument('plan_file', help='Path to the plan file')
     mark_task.add_argument('--thread', type=int, required=True, help='Thread number')
     mark_task.add_argument('--task', type=int, required=True, help='Task number')
-    mark_task.add_argument('--rationale', required=True, help='Reason for the change')
+    mark_task.add_argument('--rationale', default=None, help='Reason for the change (optional)')
     mark_task.set_defaults(func=cmd_mark_task_complete)
 
     return parser

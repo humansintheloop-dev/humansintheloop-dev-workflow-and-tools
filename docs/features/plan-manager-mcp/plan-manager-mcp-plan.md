@@ -97,19 +97,19 @@ Implements task-level completion, marking the task and all its steps complete.
 
 Implements thread reordering, allowing threads to be rearranged according to a specified ordering with auto-renumbering.
 
-- [ ] **Task 3.1: reorder-threads rearranges threads and renumbers**
+- [x] **Task 3.1: reorder-threads rearranges threads and renumbers**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py reorder-threads <plan_file> --order 2,1 --rationale <text>`
   - Observable: After running `reorder-threads` with `--order 2,1` on a 2-thread plan, the threads are swapped in position, all threads and tasks are renumbered sequentially, and change history is appended
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement `reorder_threads(plan: str, thread_order: list[int], rationale: str) -> str` as a pure function
-    - [ ] Auto-renumber all threads and tasks after reordering
-    - [ ] Append to change history with rationale
-    - [ ] Return error if `thread_order` does not contain exactly the set of existing thread numbers
-    - [ ] Register `reorder-threads` subcommand with argparse
-    - [ ] Write pytest tests covering: correct reordering and renumbering, change history appended, error on invalid thread_order (missing threads, duplicates, nonexistent numbers)
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `reorder-threads` subcommand
+    - [x] Implement `reorder_threads(plan: str, thread_order: list[int], rationale: str) -> str` as a pure function
+    - [x] Auto-renumber all threads and tasks after reordering
+    - [x] Append to change history with rationale
+    - [x] Return error if `thread_order` does not contain exactly the set of existing thread numbers
+    - [x] Register `reorder-threads` subcommand with argparse
+    - [x] Write pytest tests covering: correct reordering and renumbering, change history appended, error on invalid thread_order (missing threads, duplicates, nonexistent numbers)
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `reorder-threads` subcommand
 
 ---
 

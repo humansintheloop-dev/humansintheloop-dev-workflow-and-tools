@@ -222,19 +222,19 @@ Implements the `list-threads` read operation, returning all threads with complet
 
 Implements step-level completion, proving atomic writes and change history work.
 
-- [ ] **Task 9.1: mark-step-complete changes a step from unchecked to checked and appends change history**
+- [x] **Task 9.1: mark-step-complete changes a step from unchecked to checked and appends change history**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py mark-step-complete <plan_file> --thread <N> --task <M> --step <S> --rationale <text>`
   - Observable: After running `mark-step-complete`, the plan has `- [x]` on the specified step line and a new entry in the `## Change History` section with timestamp, operation name, and rationale.
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement atomic file write (write to temp file in same directory, then `os.rename`)
-    - [ ] Implement change history appending: find or create `## Change History` section, append `### <timestamp> - <operation>` with rationale
-    - [ ] Implement `mark_step_complete(plan: str, thread_number: int, task_number: int, step_number: int, rationale: str) -> str` as a pure function
-    - [ ] Return error if step does not exist or is already complete
-    - [ ] Register `mark-step-complete` subcommand with argparse
-    - [ ] Write pytest tests covering: step checkbox changed to `[x]`, change history appended with rationale, error on already-complete step, error on nonexistent step
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `mark-step-complete` subcommand
+    - [x] Implement atomic file write (write to temp file in same directory, then `os.rename`)
+    - [x] Implement change history appending: find or create `## Change History` section, append `### <timestamp> - <operation>` with rationale
+    - [x] Implement `mark_step_complete(plan: str, thread_number: int, task_number: int, step_number: int, rationale: str) -> str` as a pure function
+    - [x] Return error if step does not exist or is already complete
+    - [x] Register `mark-step-complete` subcommand with argparse
+    - [x] Write pytest tests covering: step checkbox changed to `[x]`, change history appended with rationale, error on already-complete step, error on nonexistent step
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `mark-step-complete` subcommand
 
 ---
 
@@ -405,3 +405,6 @@ Implemented get_summary pure function, CLI subcommand, tests, and SKILL.md docs
 
 ### 2026-02-07 11:26 - mark-task-complete
 Implemented list_threads pure function, CLI subcommand, tests, and SKILL.md docs
+
+### 2026-02-07 11:28 - mark-task-complete
+Implemented mark_step_complete pure function, CLI subcommand, tests, and SKILL.md docs

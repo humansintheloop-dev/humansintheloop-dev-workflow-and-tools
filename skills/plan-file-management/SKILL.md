@@ -79,3 +79,11 @@ Return a specific thread's full content including number, title, introduction, a
     uv run skills/plan-file-management/scripts/plan-manager.py get-thread <plan_file> --thread <N>
 
 Errors if the thread does not exist.
+
+## mark-step-complete
+
+Mark a single step as complete. Appends to change history.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py mark-step-complete <plan_file> --thread <N> --task <M> --step <S> --rationale <text>
+
+Errors if the step does not exist or is already complete.

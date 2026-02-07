@@ -354,9 +354,62 @@ Validates that reading a plan and writing it back produces identical output, and
 
 ---
 
+## Steel Thread 15: Reorder Tasks
+Implements task reordering within a thread, allowing tasks to be rearranged according to a specified ordering with auto-renumbering. Analogous to reorder-threads but operates on tasks within a single thread. For example, `--order 3,1,2` on thread 1 moves task 1.3 to position 1, task 1.1 to position 2, and task 1.2 to position 3.
+
+- [ ] **Task 15.1: reorder-tasks rearranges tasks within a thread and renumbers**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py reorder-tasks <plan_file> --thread 1 --order 3,1,2 --rationale <text>`
+  - Observable: After running reorder-tasks with --thread 1 --order 3,1,2 on a thread with 3 tasks, the tasks are rearranged to the new order, all tasks are renumbered sequentially, and change history is appended
+  - Evidence: `pytest tests/plan-manager/ passes`
+  - Steps:
+    - [ ] Implement reorder_tasks(plan: str, thread_number: int, task_order: list[int], rationale: str) -> str as a pure function
+    - [ ] Auto-renumber all tasks within the thread after reordering
+    - [ ] Append to change history with rationale
+    - [ ] Return error if thread_number does not exist
+    - [ ] Return error if task_order does not contain exactly the set of existing task numbers in the thread
+    - [ ] Register reorder-tasks subcommand with argparse
+    - [ ] Write pytest tests covering: correct reordering and renumbering, change history appended, error on invalid task_order (missing tasks, duplicates, nonexistent numbers), error on nonexistent thread
+    - [ ] Update skills/plan-file-management/SKILL.md to document the reorder-tasks subcommand
+
+---
+
+## Steel Thread 16: Move Task
+Implements moving an existing task to a new position within the same thread. Unlike reorder-tasks which requires specifying the full ordering, move-task-before and move-task-after relocate a single task relative to another task. For example, `move-task-before --thread 1 --task 6 --before 3` moves task 1.6 to just before task 1.3, then renumbers all tasks in the thread.
+
+- [ ] **Task 16.1: move-task-before moves a task to before another task within the same thread**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py move-task-before <plan_file> --thread 1 --task 6 --before 3 --rationale <text>`
+  - Observable: After running move-task-before with --thread 1 --task 6 --before 3, task 1.6 appears before old task 1.3, all tasks are renumbered sequentially, and change history is appended
+  - Evidence: `pytest tests/plan-manager/ passes`
+  - Steps:
+    - [ ] Implement move_task_before(plan: str, thread_number: int, task_number: int, before_task: int, rationale: str) -> str as a pure function
+    - [ ] Auto-renumber all tasks within the thread after moving
+    - [ ] Append to change history with rationale
+    - [ ] Return error if thread_number, task_number, or before_task does not exist
+    - [ ] Return error if task_number equals before_task
+    - [ ] Register move-task-before subcommand with argparse
+    - [ ] Write pytest tests covering: correct move position, renumbering, change history, error on nonexistent thread/task, error on same task
+    - [ ] Update skills/plan-file-management/SKILL.md to document the move-task-before subcommand
+
+- [ ] **Task 16.2: move-task-after moves a task to after another task within the same thread**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py move-task-after <plan_file> --thread 1 --task 1 --after 3 --rationale <text>`
+  - Observable: After running move-task-after with --thread 1 --task 1 --after 3, task 1.1 appears after old task 1.3, all tasks are renumbered sequentially, and change history is appended
+  - Evidence: `pytest tests/plan-manager/ passes`
+  - Steps:
+    - [ ] Implement move_task_after(plan: str, thread_number: int, task_number: int, after_task: int, rationale: str) -> str as a pure function
+    - [ ] Auto-renumber all tasks within the thread after moving
+    - [ ] Return error if thread_number, task_number, or after_task does not exist
+    - [ ] Register move-task-after subcommand with argparse
+    - [ ] Write pytest tests covering: correct move position, renumbering, error on nonexistent thread/task
+    - [ ] Update skills/plan-file-management/SKILL.md to document the move-task-after subcommand
+
+---
+
 ## Summary
 
-This plan covers 14 steel threads with 17 tasks implementing the complete Plan File Management Scripts:
+This plan covers 16 steel threads with 21 tasks implementing the complete Plan File Management Scripts:
 
 1. **Script with Fix Numbering**: Migrates existing fix-numbering into plan-manager.py, establishes script infrastructure with argparse subcommands
 2. **Mark Task Complete**: Task-level completion with cascading step completion
@@ -372,6 +425,8 @@ This plan covers 14 steel threads with 17 tasks implementing the complete Plan F
 12. **Insert Task**: Insert before/after within a thread
 13. **Delete Task**: Remove task with auto-renumbering
 14. **Round-Trip Fidelity and Error Handling**: Verifies no formatting drift and validates all error cases
+15. **Reorder Tasks**: Rearrange tasks within a thread with auto-renumbering
+16. **Move Task**: Move a single task before/after another task within the same thread
 
 ---
 
@@ -429,3 +484,9 @@ Added comprehensive round-trip fidelity tests with full plan fixture
 
 ### 2026-02-07 11:35 - mark-task-complete
 Added error message format validation tests covering all subcommands
+
+### 2026-02-07 11:57 - insert-thread-after
+Added reorder-tasks feature to support rearranging tasks within a thread
+
+### 2026-02-07 11:59 - insert-thread-after
+Added move-task-before and move-task-after for simple single-task relocation within a thread

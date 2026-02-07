@@ -1,0 +1,203 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+
+"""Plan file management CLI with subcommands for reading and writing plan files."""
+
+import argparse
+import os
+import re
+import sys
+import tempfile
+from datetime import datetime
+
+
+def fix_numbering(plan: str) -> str:
+    """Renumber all threads and tasks sequentially.
+
+    Threads are numbered starting from 1, and tasks are numbered
+    as N.M where N is the thread number and M is the task position.
+    """
+    lines = plan.split('\n')
+    result = []
+    thread_counter = 0
+    task_counter = 0
+
+    thread_heading_re = re.compile(r'^(## Steel Thread )\d+(:.*)')
+    task_line_re = re.compile(r'^(- \[[ x]\] \*\*Task )\d+\.\d+(:.*)$')
+
+    for line in lines:
+        thread_match = thread_heading_re.match(line)
+        if thread_match:
+            thread_counter += 1
+            task_counter = 0
+            line = f"{thread_match.group(1)}{thread_counter}{thread_match.group(2)}"
+        else:
+            task_match = task_line_re.match(line)
+            if task_match:
+                task_counter += 1
+                line = f"{task_match.group(1)}{thread_counter}.{task_counter}{task_match.group(2)}"
+
+        result.append(line)
+
+    return '\n'.join(result)
+
+
+def atomic_write(file_path: str, content: str) -> None:
+    """Write content to file atomically using temp file + rename."""
+    dir_name = os.path.dirname(os.path.abspath(file_path))
+    fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            f.write(content)
+        os.rename(tmp_path, file_path)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
+
+
+def append_change_history(plan: str, operation: str, rationale: str) -> str:
+    """Append a change history entry to the plan."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    entry = f"### {timestamp} - {operation}\n{rationale}\n"
+
+    if "## Change History" in plan:
+        # Append to existing change history section
+        return plan.rstrip('\n') + '\n\n' + entry
+    else:
+        # Create the change history section
+        return plan.rstrip('\n') + '\n\n---\n\n## Change History\n' + entry
+
+
+def mark_task_complete(plan: str, thread_number: int, task_number: int, rationale: str) -> str:
+    """Mark a task and all its steps as complete.
+
+    Raises ValueError if the task does not exist or is already complete.
+    """
+    lines = plan.split('\n')
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+    task_line_re = re.compile(r'^- \[[ x]\] \*\*Task (\d+)\.(\d+):')
+
+    current_thread = 0
+    task_line_idx = None
+    task_end_idx = None
+
+    # Find the target task line
+    for i, line in enumerate(lines):
+        thread_match = thread_heading_re.match(line)
+        if thread_match:
+            current_thread = int(thread_match.group(1))
+            continue
+
+        task_match = task_line_re.match(line)
+        if task_match:
+            t_num = int(task_match.group(1))
+            tk_num = int(task_match.group(2))
+            if task_line_idx is not None and task_end_idx is None:
+                # Found the next task - mark end of previous task
+                task_end_idx = i
+            if t_num == thread_number and tk_num == task_number:
+                task_line_idx = i
+
+        # A thread heading or horizontal rule after our task marks the end
+        if task_line_idx is not None and task_end_idx is None and i > task_line_idx:
+            if thread_heading_re.match(line) or (line.strip() == '---' and i > task_line_idx + 1):
+                task_end_idx = i
+
+    if task_line_idx is None:
+        # Check if thread exists
+        thread_exists = any(
+            thread_heading_re.match(l) and int(thread_heading_re.match(l).group(1)) == thread_number
+            for l in lines
+        )
+        if not thread_exists:
+            raise ValueError(f"mark-task-complete: thread {thread_number} does not exist")
+        raise ValueError(f"mark-task-complete: task {thread_number}.{task_number} does not exist")
+
+    # Check if already complete
+    if "- [x]" in lines[task_line_idx]:
+        raise ValueError(
+            f"mark-task-complete: task {thread_number}.{task_number} is already complete"
+        )
+
+    if task_end_idx is None:
+        task_end_idx = len(lines)
+
+    # Mark the task line and all step lines as complete
+    step_re = re.compile(r'^(\s+- )\[ \]( .*)$')
+    for i in range(task_line_idx, task_end_idx):
+        if i == task_line_idx:
+            lines[i] = lines[i].replace('- [ ]', '- [x]', 1)
+        else:
+            step_match = step_re.match(lines[i])
+            if step_match:
+                lines[i] = f"{step_match.group(1)}[x]{step_match.group(2)}"
+
+    result = '\n'.join(lines)
+    return append_change_history(result, "mark-task-complete", rationale)
+
+
+def cmd_fix_numbering(args):
+    """Handle the fix-numbering subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    result = fix_numbering(plan)
+    atomic_write(args.plan_file, result)
+    print(f"Fixed numbering in {args.plan_file}")
+
+
+def cmd_mark_task_complete(args):
+    """Handle the mark-task-complete subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        result = mark_task_complete(plan, args.thread, args.task, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Marked task {args.thread}.{args.task} as complete")
+
+
+def build_parser():
+    """Build the argparse parser with all subcommands."""
+    parser = argparse.ArgumentParser(
+        description='Plan file management CLI'
+    )
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+
+    # fix-numbering
+    fix_num = subparsers.add_parser('fix-numbering',
+                                     help='Renumber all threads and tasks sequentially')
+    fix_num.add_argument('plan_file', help='Path to the plan file')
+    fix_num.set_defaults(func=cmd_fix_numbering)
+
+    # mark-task-complete
+    mark_task = subparsers.add_parser('mark-task-complete',
+                                       help='Mark a task and all its steps as complete')
+    mark_task.add_argument('plan_file', help='Path to the plan file')
+    mark_task.add_argument('--thread', type=int, required=True, help='Thread number')
+    mark_task.add_argument('--task', type=int, required=True, help='Task number')
+    mark_task.add_argument('--rationale', required=True, help='Reason for the change')
+    mark_task.set_defaults(func=cmd_mark_task_complete)
+
+    return parser
+
+
+def main():
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if not args.command:
+        parser.print_help()
+        sys.exit(1)
+
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

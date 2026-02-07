@@ -7,14 +7,25 @@ description: Guidelines for structural operations on plan files (renumbering). C
 
 Structural operations on plan files such as renumbering threads and tasks.
 
-## Renumbering Plan Files
+All operations are subcommands of `plan-manager.py`, invoked as:
 
-When threads or tasks are added, removed, or reordered, fix numbering by running
-the `fix-plan-numbering.py` script in this skill's `scripts/` directory:
+    uv run skills/plan-file-management/scripts/plan-manager.py <subcommand> <plan_file> [options]
 
-    uv run skills/plan-file-management/scripts/fix-plan-numbering.py <path-to-plan-file>
+## fix-numbering
+
+Renumber all threads and tasks sequentially. Run this after arbitrary edits made outside the script.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py fix-numbering <path-to-plan-file>
 
 Run this after:
 - Inserting or deleting threads or tasks
 - Rearranging plan sections
 - When the user asks to renumber or fix numbering
+
+## mark-task-complete
+
+Mark a task and all its steps as complete. Appends to change history.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py mark-task-complete <plan_file> --thread <N> --task <M> --rationale <text>
+
+Errors if the task does not exist or is already complete.

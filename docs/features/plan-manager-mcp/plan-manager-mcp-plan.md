@@ -77,19 +77,19 @@ Migrates the existing `fix-plan-numbering.py` into `plan-manager.py` as the `fix
 
 Implements task-level completion, marking the task and all its steps complete.
 
-- [ ] **Task 2.1: mark-task-complete marks a task and all its steps as complete**
+- [x] **Task 2.1: mark-task-complete marks a task and all its steps as complete**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py mark-task-complete <plan_file> --thread <N> --task <M> --rationale <text>`
   - Observable: After running `mark-task-complete`, the task line and all its step lines have `- [x]`, and change history is appended
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement `mark_task_complete(plan: str, thread_number: int, task_number: int, rationale: str) -> str` as a pure function
-    - [ ] Change task line `- [ ]` to `- [x]` and all steps within the task from `- [ ]` to `- [x]`
-    - [ ] Append to change history
-    - [ ] Return error if task does not exist or is already complete
-    - [ ] Register `mark-task-complete` subcommand with argparse
-    - [ ] Write pytest tests covering: task and steps marked complete, change history appended, error on already-complete task, error on nonexistent task
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `mark-task-complete` subcommand
+    - [x] Implement `mark_task_complete(plan: str, thread_number: int, task_number: int, rationale: str) -> str` as a pure function
+    - [x] Change task line `- [ ]` to `- [x]` and all steps within the task from `- [ ]` to `- [x]`
+    - [x] Append to change history
+    - [x] Return error if task does not exist or is already complete
+    - [x] Register `mark-task-complete` subcommand with argparse
+    - [x] Write pytest tests covering: task and steps marked complete, change history appended, error on already-complete task, error on nonexistent task
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `mark-task-complete` subcommand
 
 ---
 

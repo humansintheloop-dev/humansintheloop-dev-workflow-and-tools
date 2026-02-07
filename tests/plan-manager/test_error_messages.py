@@ -19,6 +19,7 @@ reorder_threads = _mod.reorder_threads
 reorder_tasks = _mod.reorder_tasks
 move_task_before = _mod.move_task_before
 move_task_after = _mod.move_task_after
+replace_task = _mod.replace_task
 
 
 SIMPLE_PLAN = """\
@@ -118,3 +119,11 @@ class TestErrorMessageFormat:
     def test_move_task_after_same_task(self):
         with pytest.raises(ValueError, match="move-task-after:.*same task"):
             move_task_after(SIMPLE_PLAN, 1, 1, 1, "r")
+
+    def test_replace_task_nonexistent_thread(self):
+        with pytest.raises(ValueError, match="replace-task:.*does not exist"):
+            replace_task(SIMPLE_PLAN, 99, 1, "t", "INFRA", "e", "o", "v", ["s"], "r")
+
+    def test_replace_task_nonexistent_task(self):
+        with pytest.raises(ValueError, match="replace-task:.*does not exist"):
+            replace_task(SIMPLE_PLAN, 1, 99, "t", "INFRA", "e", "o", "v", ["s"], "r")

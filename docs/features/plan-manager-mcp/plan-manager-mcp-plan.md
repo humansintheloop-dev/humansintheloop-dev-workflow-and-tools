@@ -409,19 +409,19 @@ Implements moving an existing task to a new position within the same thread. Unl
 ## Steel Thread 17: Replace Task
 Replace a task's content in place within a thread, equivalent to delete-task followed by insert-task but atomic.
 
-- [ ] **Task 17.1: replace-task replaces a task in place within a thread**
+- [x] **Task 17.1: replace-task replaces a task in place within a thread**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py replace-task <plan_file> --thread 1 --task 2 --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>`
   - Observable: After running replace-task, the specified task is replaced with new content, tasks are renumbered, and change history is appended
   - Evidence: `pytest tests/plan-manager/ passes`
   - Steps:
-    - [ ] Implement replace_task(plan, thread_number, task_number, title, task_type, entrypoint, observable, evidence, steps, rationale) as a pure function
-    - [ ] Auto-renumber tasks within the thread after replacement
-    - [ ] Append to change history with rationale
-    - [ ] Return error if thread_number or task_number does not exist
-    - [ ] Register replace-task subcommand with argparse
-    - [ ] Write pytest tests covering: correct replacement, renumbering, change history, preserves other tasks, error on nonexistent thread/task
-    - [ ] Update skills/plan-file-management/SKILL.md to document the replace-task subcommand
+    - [x] Implement replace_task(plan, thread_number, task_number, title, task_type, entrypoint, observable, evidence, steps, rationale) as a pure function
+    - [x] Auto-renumber tasks within the thread after replacement
+    - [x] Append to change history with rationale
+    - [x] Return error if thread_number or task_number does not exist
+    - [x] Register replace-task subcommand with argparse
+    - [x] Write pytest tests covering: correct replacement, renumbering, change history, preserves other tasks, error on nonexistent thread/task
+    - [x] Update skills/plan-file-management/SKILL.md to document the replace-task subcommand
 
 ---
 
@@ -521,3 +521,6 @@ Implemented move_task_after pure function, CLI subcommand, 9 tests, SKILL.md doc
 
 ### 2026-02-07 12:07 - insert-thread-after
 Add replace-task subcommand equivalent to delete-task + insert-task
+
+### 2026-02-07 12:09 - mark-task-complete
+Implemented replace_task pure function, CLI subcommand, 8 tests, SKILL.md docs

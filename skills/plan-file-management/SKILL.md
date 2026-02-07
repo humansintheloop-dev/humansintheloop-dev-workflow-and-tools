@@ -140,6 +140,16 @@ Example: `--thread 1 --task 1 --after 3` moves task 1.1 to the position after ta
 
 Errors if the thread or either task does not exist, or if task and after are the same.
 
+## replace-task
+
+Replace a task's content in place within a thread, then auto-renumber tasks. Equivalent to delete-task followed by insert-task but atomic.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py replace-task <plan_file> --thread <N> --task <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
+
+The `--steps` argument is a JSON array of step description strings.
+
+Errors if the thread or task does not exist.
+
 ## delete-task
 
 Remove a task from a thread, then auto-renumber remaining tasks.

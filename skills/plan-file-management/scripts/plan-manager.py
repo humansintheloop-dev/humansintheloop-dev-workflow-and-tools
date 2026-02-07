@@ -988,6 +988,42 @@ def move_task_after(plan: str, thread_number: int, task_number: int,
     return append_change_history(result, "move-task-after", rationale)
 
 
+def replace_task(plan: str, thread_number: int, task_number: int,
+                  title: str, task_type: str, entrypoint: str,
+                  observable: str, evidence: str, steps: list[str],
+                  rationale: str) -> str:
+    """Replace a task's content in place within a thread and renumber.
+
+    Raises ValueError if thread_number or task_number does not exist.
+    """
+    lines = plan.split('\n')
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+
+    # Validate thread exists
+    thread_exists = any(
+        thread_heading_re.match(l) and int(thread_heading_re.match(l).group(1)) == thread_number
+        for l in lines
+    )
+    if not thread_exists:
+        raise ValueError(f"replace-task: thread {thread_number} does not exist")
+
+    task_bounds = _find_task_boundaries(lines, thread_number)
+    existing_numbers = {tk_num for _, _, tk_num in task_bounds}
+
+    if task_number not in existing_numbers:
+        raise ValueError(f"replace-task: task {task_number} in thread {thread_number} does not exist")
+
+    new_task_text = _serialize_task(title, task_type, entrypoint, observable, evidence, steps)
+
+    for start, end, tk_num in task_bounds:
+        if tk_num == task_number:
+            new_lines = lines[:start] + new_task_text.split('\n') + lines[end:]
+            result = fix_numbering('\n'.join(new_lines))
+            return append_change_history(result, "replace-task", rationale)
+
+    raise ValueError(f"replace-task: task {task_number} in thread {thread_number} does not exist")
+
+
 def cmd_get_next_task(args):
     """Handle the get-next-task subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -1275,6 +1311,30 @@ def cmd_move_task_after(args):
     print(f"Moved task {args.thread}.{args.task} after task {args.thread}.{args.after}")
 
 
+def cmd_replace_task(args):
+    """Handle the replace-task subcommand."""
+    import json
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        steps = json.loads(args.steps)
+    except json.JSONDecodeError as e:
+        print(f"replace-task: --steps is not valid JSON: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        result = replace_task(plan, args.thread, args.task, args.title,
+                              args.task_type, args.entrypoint, args.observable,
+                              args.evidence, steps, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Replaced task {args.thread}.{args.task}")
+
+
 def cmd_mark_task_complete(args):
     """Handle the mark-task-complete subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -1456,6 +1516,21 @@ def build_parser():
     move_after.add_argument('--after', type=int, required=True, help='Task number to move after')
     move_after.add_argument('--rationale', required=True, help='Reason for the change')
     move_after.set_defaults(func=cmd_move_task_after)
+
+    # replace-task
+    rep_task = subparsers.add_parser('replace-task',
+                                      help='Replace a task with new content')
+    rep_task.add_argument('plan_file', help='Path to the plan file')
+    rep_task.add_argument('--thread', type=int, required=True, help='Thread number')
+    rep_task.add_argument('--task', type=int, required=True, help='Task number to replace')
+    rep_task.add_argument('--title', required=True, help='New task title')
+    rep_task.add_argument('--task-type', required=True, help='INFRA or OUTCOME')
+    rep_task.add_argument('--entrypoint', required=True, help='Entrypoint command')
+    rep_task.add_argument('--observable', required=True, help='Observable outcome')
+    rep_task.add_argument('--evidence', required=True, help='Evidence command')
+    rep_task.add_argument('--steps', required=True, help='Steps as JSON array of strings')
+    rep_task.add_argument('--rationale', required=True, help='Reason for the change')
+    rep_task.set_defaults(func=cmd_replace_task)
 
     # delete-task
     del_task = subparsers.add_parser('delete-task',

@@ -262,19 +262,19 @@ Implements thread deletion with auto-renumbering.
 
 Implements thread replacement, keeping position but replacing content entirely.
 
-- [ ] **Task 11.1: replace-thread replaces a thread's content in place**
+- [x] **Task 11.1: replace-thread replaces a thread's content in place**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py replace-thread <plan_file> --thread 1 --title <title> --introduction <text> --tasks <json> --rationale <text>`
   - Observable: After running `replace-thread` with `--thread 1` and new content, thread 1 has the new title, introduction, and tasks, other threads are unchanged, tasks are correctly numbered, and change history is appended
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement `replace_thread(plan: str, thread_number: int, title: str, introduction: str, tasks: list, rationale: str) -> str` as a pure function
-    - [ ] Auto-renumber tasks within the replaced thread
-    - [ ] Return error if `thread_number` does not exist
-    - [ ] Append to change history with rationale
-    - [ ] Register `replace-thread` subcommand with argparse
-    - [ ] Write pytest tests covering: new content at correct position, other threads unchanged, renumbering, change history, error on nonexistent thread
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `replace-thread` subcommand
+    - [x] Implement `replace_thread(plan: str, thread_number: int, title: str, introduction: str, tasks: list, rationale: str) -> str` as a pure function
+    - [x] Auto-renumber tasks within the replaced thread
+    - [x] Return error if `thread_number` does not exist
+    - [x] Append to change history with rationale
+    - [x] Register `replace-thread` subcommand with argparse
+    - [x] Write pytest tests covering: new content at correct position, other threads unchanged, renumbering, change history, error on nonexistent thread
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `replace-thread` subcommand
 
 ---
 
@@ -411,3 +411,6 @@ Implemented mark_step_complete pure function, CLI subcommand, tests, and SKILL.m
 
 ### 2026-02-07 11:29 - mark-task-complete
 Implemented delete_thread pure function, CLI subcommand, tests, and SKILL.md docs
+
+### 2026-02-07 11:30 - mark-task-complete
+Implemented replace_thread pure function, CLI subcommand, tests, and SKILL.md docs

@@ -605,6 +605,32 @@ def delete_thread(plan: str, thread_number: int, rationale: str) -> str:
     return append_change_history(result, "delete-thread", rationale)
 
 
+def replace_thread(plan: str, thread_number: int, title: str,
+                    introduction: str, tasks: list[dict], rationale: str) -> str:
+    """Replace a thread's content in place and renumber.
+
+    Raises ValueError if thread_number does not exist.
+    """
+    preamble, threads, postamble = _extract_thread_sections(plan)
+    existing_numbers = {num for num, _ in threads}
+
+    if thread_number not in existing_numbers:
+        raise ValueError(f"replace-thread: thread {thread_number} does not exist")
+
+    new_thread_text = _serialize_thread(title, introduction, tasks)
+
+    replaced = []
+    for num, text in threads:
+        if num == thread_number:
+            replaced.append((num, new_thread_text))
+        else:
+            replaced.append((num, text))
+
+    assembled = preamble + '\n'.join(text for _, text in replaced) + postamble
+    result = fix_numbering(assembled)
+    return append_change_history(result, "replace-thread", rationale)
+
+
 def reorder_threads(plan: str, thread_order: list[int], rationale: str) -> str:
     """Reorder threads according to the specified ordering and renumber.
 
@@ -658,6 +684,28 @@ def cmd_get_next_task(args):
         for i, step in enumerate(task['steps'], 1):
             status = 'x' if step['completed'] else ' '
             print(f"    {i}. [{status}] {step['description']}")
+
+
+def cmd_replace_thread(args):
+    """Handle the replace-thread subcommand."""
+    import json
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        tasks = json.loads(args.tasks)
+    except json.JSONDecodeError as e:
+        print(f"replace-thread: --tasks is not valid JSON: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        result = replace_thread(plan, args.thread, args.title, args.introduction, tasks, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Replaced thread {args.thread}")
 
 
 def cmd_delete_thread(args):
@@ -907,6 +955,17 @@ def build_parser():
     mark_step.add_argument('--step', type=int, required=True, help='Step number')
     mark_step.add_argument('--rationale', required=True, help='Reason for the change')
     mark_step.set_defaults(func=cmd_mark_step_complete)
+
+    # replace-thread
+    rep_thread = subparsers.add_parser('replace-thread',
+                                        help='Replace a thread with new content')
+    rep_thread.add_argument('plan_file', help='Path to the plan file')
+    rep_thread.add_argument('--thread', type=int, required=True, help='Thread number to replace')
+    rep_thread.add_argument('--title', required=True, help='New thread title')
+    rep_thread.add_argument('--introduction', required=True, help='New thread introduction')
+    rep_thread.add_argument('--tasks', required=True, help='New tasks as JSON array')
+    rep_thread.add_argument('--rationale', required=True, help='Reason for the change')
+    rep_thread.set_defaults(func=cmd_replace_thread)
 
     # delete-thread
     del_thread = subparsers.add_parser('delete-thread',

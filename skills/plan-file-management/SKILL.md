@@ -110,6 +110,16 @@ Insert a task after a specified task within a thread, then auto-renumber tasks.
 
     uv run skills/plan-file-management/scripts/plan-manager.py insert-task-after <plan_file> --thread <N> --after <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
 
+## reorder-tasks
+
+Reorder tasks within a thread according to a specified ordering, then auto-renumber tasks.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py reorder-tasks <plan_file> --thread <N> --order <comma-separated-task-numbers> --rationale <text>
+
+Example: `--thread 1 --order 3,1,2` moves task 1.3 to position 1.1, task 1.1 to position 1.2, task 1.2 to position 1.3.
+
+Errors if `--order` does not contain exactly the set of existing task numbers in the thread, or if the thread does not exist.
+
 ## delete-task
 
 Remove a task from a thread, then auto-renumber remaining tasks.

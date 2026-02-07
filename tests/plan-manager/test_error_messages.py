@@ -16,6 +16,7 @@ delete_task = _mod.delete_task
 insert_task_before = _mod.insert_task_before
 replace_thread = _mod.replace_thread
 reorder_threads = _mod.reorder_threads
+reorder_tasks = _mod.reorder_tasks
 
 
 SIMPLE_PLAN = """\
@@ -91,3 +92,11 @@ class TestErrorMessageFormat:
     def test_reorder_threads_invalid(self):
         with pytest.raises(ValueError, match="reorder-threads:"):
             reorder_threads(SIMPLE_PLAN, [1, 2], "r")
+
+    def test_reorder_tasks_nonexistent_thread(self):
+        with pytest.raises(ValueError, match="reorder-tasks:.*does not exist"):
+            reorder_tasks(SIMPLE_PLAN, 99, [1], "r")
+
+    def test_reorder_tasks_invalid_order(self):
+        with pytest.raises(ValueError, match="reorder-tasks:"):
+            reorder_tasks(SIMPLE_PLAN, 1, [1, 2], "r")

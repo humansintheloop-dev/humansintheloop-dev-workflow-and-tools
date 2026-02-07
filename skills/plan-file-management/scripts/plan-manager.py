@@ -830,6 +830,62 @@ def reorder_threads(plan: str, thread_order: list[int], rationale: str) -> str:
     return append_change_history(result, "reorder-threads", rationale)
 
 
+def reorder_tasks(plan: str, thread_number: int, task_order: list[int],
+                   rationale: str) -> str:
+    """Reorder tasks within a thread according to the specified ordering and renumber.
+
+    Raises ValueError if thread_number doesn't exist or task_order doesn't contain
+    exactly the set of existing task numbers in the thread.
+    """
+    lines = plan.split('\n')
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+
+    # Validate thread exists
+    thread_exists = any(
+        thread_heading_re.match(l) and int(thread_heading_re.match(l).group(1)) == thread_number
+        for l in lines
+    )
+    if not thread_exists:
+        raise ValueError(f"reorder-tasks: thread {thread_number} does not exist")
+
+    task_bounds = _find_task_boundaries(lines, thread_number)
+    existing_numbers = [tk_num for _, _, tk_num in task_bounds]
+    existing_set = set(existing_numbers)
+
+    # Validate task_order
+    if len(task_order) != len(set(task_order)):
+        raise ValueError("reorder-tasks: --order contains duplicate task numbers")
+
+    order_set = set(task_order)
+    if order_set != existing_set:
+        missing = existing_set - order_set
+        extra = order_set - existing_set
+        parts = []
+        if missing:
+            parts.append(f"missing tasks: {sorted(missing)}")
+        if extra:
+            parts.append(f"nonexistent tasks: {sorted(extra)}")
+        raise ValueError(f"reorder-tasks: --order does not match existing tasks ({', '.join(parts)})")
+
+    # Build a map from task number to its lines
+    task_lines_by_num = {}
+    for start, end, tk_num in task_bounds:
+        task_lines_by_num[tk_num] = lines[start:end]
+
+    # Determine the region to replace (from first task start to last task end)
+    first_start = task_bounds[0][0]
+    last_end = task_bounds[-1][1]
+
+    # Build reordered task lines
+    reordered_task_lines = []
+    for tk_num in task_order:
+        reordered_task_lines.extend(task_lines_by_num[tk_num])
+
+    new_lines = lines[:first_start] + reordered_task_lines + lines[last_end:]
+    result = fix_numbering('\n'.join(new_lines))
+    return append_change_history(result, "reorder-tasks", rationale)
+
+
 def cmd_get_next_task(args):
     """Handle the get-next-task subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -1066,6 +1122,27 @@ def cmd_insert_thread_after(args):
     _cmd_insert_thread(args, insert_thread_after, args.after)
 
 
+def cmd_reorder_tasks(args):
+    """Handle the reorder-tasks subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        order = [int(n.strip()) for n in args.order.split(',')]
+    except ValueError:
+        print("reorder-tasks: --order must be comma-separated integers", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        result = reorder_tasks(plan, args.thread, order, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Reordered tasks in thread {args.thread} to [{args.order}]")
+
+
 def cmd_mark_task_complete(args):
     """Handle the mark-task-complete subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -1217,6 +1294,16 @@ def build_parser():
     ins_task_after.add_argument('--steps', required=True, help='Steps as JSON array of strings')
     ins_task_after.add_argument('--rationale', required=True, help='Reason for the change')
     ins_task_after.set_defaults(func=cmd_insert_task_after)
+
+    # reorder-tasks
+    reorder_tasks_p = subparsers.add_parser('reorder-tasks',
+                                             help='Reorder tasks within a thread')
+    reorder_tasks_p.add_argument('plan_file', help='Path to the plan file')
+    reorder_tasks_p.add_argument('--thread', type=int, required=True, help='Thread number')
+    reorder_tasks_p.add_argument('--order', required=True,
+                                 help='Comma-separated task numbers in desired order (e.g., 3,1,2)')
+    reorder_tasks_p.add_argument('--rationale', required=True, help='Reason for the change')
+    reorder_tasks_p.set_defaults(func=cmd_reorder_tasks)
 
     # delete-task
     del_task = subparsers.add_parser('delete-task',

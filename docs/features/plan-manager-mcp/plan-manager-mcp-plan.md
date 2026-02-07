@@ -357,20 +357,20 @@ Validates that reading a plan and writing it back produces identical output, and
 ## Steel Thread 15: Reorder Tasks
 Implements task reordering within a thread, allowing tasks to be rearranged according to a specified ordering with auto-renumbering. Analogous to reorder-threads but operates on tasks within a single thread. For example, `--order 3,1,2` on thread 1 moves task 1.3 to position 1, task 1.1 to position 2, and task 1.2 to position 3.
 
-- [ ] **Task 15.1: reorder-tasks rearranges tasks within a thread and renumbers**
+- [x] **Task 15.1: reorder-tasks rearranges tasks within a thread and renumbers**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py reorder-tasks <plan_file> --thread 1 --order 3,1,2 --rationale <text>`
   - Observable: After running reorder-tasks with --thread 1 --order 3,1,2 on a thread with 3 tasks, the tasks are rearranged to the new order, all tasks are renumbered sequentially, and change history is appended
   - Evidence: `pytest tests/plan-manager/ passes`
   - Steps:
-    - [ ] Implement reorder_tasks(plan: str, thread_number: int, task_order: list[int], rationale: str) -> str as a pure function
-    - [ ] Auto-renumber all tasks within the thread after reordering
-    - [ ] Append to change history with rationale
-    - [ ] Return error if thread_number does not exist
-    - [ ] Return error if task_order does not contain exactly the set of existing task numbers in the thread
-    - [ ] Register reorder-tasks subcommand with argparse
-    - [ ] Write pytest tests covering: correct reordering and renumbering, change history appended, error on invalid task_order (missing tasks, duplicates, nonexistent numbers), error on nonexistent thread
-    - [ ] Update skills/plan-file-management/SKILL.md to document the reorder-tasks subcommand
+    - [x] Implement reorder_tasks(plan: str, thread_number: int, task_order: list[int], rationale: str) -> str as a pure function
+    - [x] Auto-renumber all tasks within the thread after reordering
+    - [x] Append to change history with rationale
+    - [x] Return error if thread_number does not exist
+    - [x] Return error if task_order does not contain exactly the set of existing task numbers in the thread
+    - [x] Register reorder-tasks subcommand with argparse
+    - [x] Write pytest tests covering: correct reordering and renumbering, change history appended, error on invalid task_order (missing tasks, duplicates, nonexistent numbers), error on nonexistent thread
+    - [x] Update skills/plan-file-management/SKILL.md to document the reorder-tasks subcommand
 
 ---
 
@@ -490,3 +490,6 @@ Added reorder-tasks feature to support rearranging tasks within a thread
 
 ### 2026-02-07 11:59 - insert-thread-after
 Added move-task-before and move-task-after for simple single-task relocation within a thread
+
+### 2026-02-07 12:03 - mark-task-complete
+Implemented reorder_tasks pure function, CLI subcommand, 11 tests, SKILL.md docs

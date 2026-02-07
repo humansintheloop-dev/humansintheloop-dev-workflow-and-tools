@@ -189,6 +189,80 @@ def _extract_thread_sections(plan: str) -> tuple[str, list[tuple[int, str]], str
     return preamble, threads, postamble
 
 
+def _serialize_thread(title: str, introduction: str, tasks: list[dict]) -> str:
+    """Convert structured thread data to markdown text.
+
+    The thread number and task numbers use placeholder 0 since
+    fix_numbering will assign correct numbers.
+    """
+    lines = [f"## Steel Thread 0: {title}"]
+    lines.append(introduction)
+    lines.append("")
+
+    for task in tasks:
+        lines.append(f"- [ ] **Task 0.0: {task['title']}**")
+        lines.append(f"  - TaskType: {task['task_type']}")
+        lines.append(f"  - Entrypoint: `{task['entrypoint']}`")
+        lines.append(f"  - Observable: {task['observable']}")
+        lines.append(f"  - Evidence: `{task['evidence']}`")
+        lines.append("  - Steps:")
+        for step in task['steps']:
+            lines.append(f"    - [ ] {step}")
+        lines.append("")
+
+    return '\n'.join(lines)
+
+
+def insert_thread_before(plan: str, before_thread: int, title: str,
+                          introduction: str, tasks: list[dict], rationale: str) -> str:
+    """Insert a new thread before the specified thread and renumber.
+
+    Raises ValueError if before_thread does not exist.
+    """
+    preamble, threads, postamble = _extract_thread_sections(plan)
+    existing_numbers = {num for num, _ in threads}
+
+    if before_thread not in existing_numbers:
+        raise ValueError(f"insert-thread-before: thread {before_thread} does not exist")
+
+    new_thread_text = _serialize_thread(title, introduction, tasks)
+
+    reordered = []
+    for num, text in threads:
+        if num == before_thread:
+            reordered.append((0, new_thread_text))
+        reordered.append((num, text))
+
+    assembled = preamble + '\n'.join(text for _, text in reordered) + postamble
+    result = fix_numbering(assembled)
+    return append_change_history(result, "insert-thread-before", rationale)
+
+
+def insert_thread_after(plan: str, after_thread: int, title: str,
+                         introduction: str, tasks: list[dict], rationale: str) -> str:
+    """Insert a new thread after the specified thread and renumber.
+
+    Raises ValueError if after_thread does not exist.
+    """
+    preamble, threads, postamble = _extract_thread_sections(plan)
+    existing_numbers = {num for num, _ in threads}
+
+    if after_thread not in existing_numbers:
+        raise ValueError(f"insert-thread-after: thread {after_thread} does not exist")
+
+    new_thread_text = _serialize_thread(title, introduction, tasks)
+
+    reordered = []
+    for num, text in threads:
+        reordered.append((num, text))
+        if num == after_thread:
+            reordered.append((0, new_thread_text))
+
+    assembled = preamble + '\n'.join(text for _, text in reordered) + postamble
+    result = fix_numbering(assembled)
+    return append_change_history(result, "insert-thread-after", rationale)
+
+
 def reorder_threads(plan: str, thread_order: list[int], rationale: str) -> str:
     """Reorder threads according to the specified ordering and renumber.
 
@@ -255,6 +329,38 @@ def cmd_reorder_threads(args):
     print(f"Reordered threads to [{args.order}]")
 
 
+def _cmd_insert_thread(args, insert_fn, position_arg):
+    """Shared handler for insert-thread-before and insert-thread-after."""
+    import json
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        tasks = json.loads(args.tasks)
+    except json.JSONDecodeError as e:
+        print(f"insert-thread: --tasks is not valid JSON: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        result = insert_fn(plan, position_arg, args.title, args.introduction, tasks, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Inserted thread '{args.title}'")
+
+
+def cmd_insert_thread_before(args):
+    """Handle the insert-thread-before subcommand."""
+    _cmd_insert_thread(args, insert_thread_before, args.before)
+
+
+def cmd_insert_thread_after(args):
+    """Handle the insert-thread-after subcommand."""
+    _cmd_insert_thread(args, insert_thread_after, args.after)
+
+
 def cmd_mark_task_complete(args):
     """Handle the mark-task-complete subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -291,6 +397,28 @@ def build_parser():
                          help='Comma-separated thread numbers in desired order (e.g., 3,1,2)')
     reorder.add_argument('--rationale', required=True, help='Reason for the change')
     reorder.set_defaults(func=cmd_reorder_threads)
+
+    # insert-thread-before
+    insert_before = subparsers.add_parser('insert-thread-before',
+                                           help='Insert a thread before a specified thread')
+    insert_before.add_argument('plan_file', help='Path to the plan file')
+    insert_before.add_argument('--before', type=int, required=True, help='Thread number to insert before')
+    insert_before.add_argument('--title', required=True, help='Thread title')
+    insert_before.add_argument('--introduction', required=True, help='Thread introduction text')
+    insert_before.add_argument('--tasks', required=True, help='Tasks as JSON array')
+    insert_before.add_argument('--rationale', required=True, help='Reason for the change')
+    insert_before.set_defaults(func=cmd_insert_thread_before)
+
+    # insert-thread-after
+    insert_after = subparsers.add_parser('insert-thread-after',
+                                          help='Insert a thread after a specified thread')
+    insert_after.add_argument('plan_file', help='Path to the plan file')
+    insert_after.add_argument('--after', type=int, required=True, help='Thread number to insert after')
+    insert_after.add_argument('--title', required=True, help='Thread title')
+    insert_after.add_argument('--introduction', required=True, help='Thread introduction text')
+    insert_after.add_argument('--tasks', required=True, help='Tasks as JSON array')
+    insert_after.add_argument('--rationale', required=True, help='Reason for the change')
+    insert_after.set_defaults(func=cmd_insert_thread_after)
 
     # mark-task-complete
     mark_task = subparsers.add_parser('mark-task-complete',

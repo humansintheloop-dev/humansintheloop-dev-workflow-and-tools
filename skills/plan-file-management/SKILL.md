@@ -39,3 +39,17 @@ Reorder threads according to a specified ordering, then auto-renumber all thread
 Example: `--order 3,1,2` moves thread 3 to position 1, thread 1 to position 2, thread 2 to position 3.
 
 Errors if `--order` does not contain exactly the set of existing thread numbers.
+
+## insert-thread-before
+
+Insert a fully structured thread before a specified thread, then auto-renumber.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py insert-thread-before <plan_file> --before <N> --title <title> --introduction <text> --tasks <json> --rationale <text>
+
+The `--tasks` argument is a JSON array of task objects (see spec for schema).
+
+## insert-thread-after
+
+Insert a fully structured thread after a specified thread, then auto-renumber.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py insert-thread-after <plan_file> --after <N> --title <title> --introduction <text> --tasks <json> --rationale <text>

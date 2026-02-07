@@ -117,32 +117,32 @@ Implements thread reordering, allowing threads to be rearranged according to a s
 
 Implements thread insertion (before and after), with auto-renumbering.
 
-- [ ] **Task 4.1: insert-thread-before inserts a thread and renumbers**
+- [x] **Task 4.1: insert-thread-before inserts a thread and renumbers**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py insert-thread-before <plan_file> --before 2 --title <title> --introduction <text> --tasks <json> --rationale <text>`
   - Observable: After running `insert-thread-before` with `--before 2`, the new thread appears before the old thread 2, all threads are renumbered sequentially, all task numbers reflect new thread numbers, and change history is appended
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement thread serialization: convert structured thread data (title, introduction, tasks with all fields) to markdown
-    - [ ] Implement `insert_thread_before(plan: str, before_thread: int, title: str, introduction: str, tasks: list, rationale: str) -> str` as a pure function
-    - [ ] Auto-renumber all threads and tasks after insertion
-    - [ ] Return error if `before_thread` does not exist
-    - [ ] Register `insert-thread-before` subcommand with argparse
-    - [ ] Write pytest tests covering: correct insertion position, renumbering, change history, error on nonexistent thread
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `insert-thread-before` subcommand
+    - [x] Implement thread serialization: convert structured thread data (title, introduction, tasks with all fields) to markdown
+    - [x] Implement `insert_thread_before(plan: str, before_thread: int, title: str, introduction: str, tasks: list, rationale: str) -> str` as a pure function
+    - [x] Auto-renumber all threads and tasks after insertion
+    - [x] Return error if `before_thread` does not exist
+    - [x] Register `insert-thread-before` subcommand with argparse
+    - [x] Write pytest tests covering: correct insertion position, renumbering, change history, error on nonexistent thread
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `insert-thread-before` subcommand
 
-- [ ] **Task 4.2: insert-thread-after inserts a thread after the specified thread**
+- [x] **Task 4.2: insert-thread-after inserts a thread after the specified thread**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py insert-thread-after <plan_file> --after 1 --title <title> --introduction <text> --tasks <json> --rationale <text>`
   - Observable: After running `insert-thread-after` with `--after 1`, the new thread appears after thread 1, all threads are renumbered, and change history is appended
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement `insert_thread_after(plan: str, after_thread: int, title: str, introduction: str, tasks: list, rationale: str) -> str` as a pure function
-    - [ ] Auto-renumber all threads and tasks
-    - [ ] Return error if `after_thread` does not exist
-    - [ ] Register `insert-thread-after` subcommand with argparse
-    - [ ] Write pytest tests covering: correct insertion position, renumbering, error on nonexistent thread
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `insert-thread-after` subcommand
+    - [x] Implement `insert_thread_after(plan: str, after_thread: int, title: str, introduction: str, tasks: list, rationale: str) -> str` as a pure function
+    - [x] Auto-renumber all threads and tasks
+    - [x] Return error if `after_thread` does not exist
+    - [x] Register `insert-thread-after` subcommand with argparse
+    - [x] Write pytest tests covering: correct insertion position, renumbering, error on nonexistent thread
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `insert-thread-after` subcommand
 
 ---
 

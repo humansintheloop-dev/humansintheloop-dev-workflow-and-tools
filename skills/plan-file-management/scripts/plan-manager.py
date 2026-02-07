@@ -937,6 +937,57 @@ def move_task_before(plan: str, thread_number: int, task_number: int,
     return append_change_history(result, "move-task-before", rationale)
 
 
+def move_task_after(plan: str, thread_number: int, task_number: int,
+                    after_task: int, rationale: str) -> str:
+    """Move a task to after another task within the same thread and renumber.
+
+    Raises ValueError if thread_number, task_number, or after_task does not exist,
+    or if task_number equals after_task.
+    """
+    if task_number == after_task:
+        raise ValueError(f"move-task-after: cannot move task to after the same task")
+
+    lines = plan.split('\n')
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+
+    # Validate thread exists
+    thread_exists = any(
+        thread_heading_re.match(l) and int(thread_heading_re.match(l).group(1)) == thread_number
+        for l in lines
+    )
+    if not thread_exists:
+        raise ValueError(f"move-task-after: thread {thread_number} does not exist")
+
+    task_bounds = _find_task_boundaries(lines, thread_number)
+    existing_numbers = {tk_num for _, _, tk_num in task_bounds}
+
+    if task_number not in existing_numbers:
+        raise ValueError(f"move-task-after: task {task_number} in thread {thread_number} does not exist")
+    if after_task not in existing_numbers:
+        raise ValueError(f"move-task-after: task {after_task} in thread {thread_number} does not exist")
+
+    # Build new order: remove task_number, insert it after after_task
+    order = [tk_num for _, _, tk_num in task_bounds if tk_num != task_number]
+    insert_idx = next(i for i, n in enumerate(order) if n == after_task) + 1
+    order.insert(insert_idx, task_number)
+
+    # Build reordered task lines
+    task_lines_by_num = {}
+    for start, end, tk_num in task_bounds:
+        task_lines_by_num[tk_num] = lines[start:end]
+
+    first_start = task_bounds[0][0]
+    last_end = task_bounds[-1][1]
+
+    reordered_task_lines = []
+    for tk_num in order:
+        reordered_task_lines.extend(task_lines_by_num[tk_num])
+
+    new_lines = lines[:first_start] + reordered_task_lines + lines[last_end:]
+    result = fix_numbering('\n'.join(new_lines))
+    return append_change_history(result, "move-task-after", rationale)
+
+
 def cmd_get_next_task(args):
     """Handle the get-next-task subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -1209,6 +1260,21 @@ def cmd_move_task_before(args):
     print(f"Moved task {args.thread}.{args.task} before task {args.thread}.{args.before}")
 
 
+def cmd_move_task_after(args):
+    """Handle the move-task-after subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        result = move_task_after(plan, args.thread, args.task, args.after, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Moved task {args.thread}.{args.task} after task {args.thread}.{args.after}")
+
+
 def cmd_mark_task_complete(args):
     """Handle the mark-task-complete subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -1380,6 +1446,16 @@ def build_parser():
     move_before.add_argument('--before', type=int, required=True, help='Task number to move before')
     move_before.add_argument('--rationale', required=True, help='Reason for the change')
     move_before.set_defaults(func=cmd_move_task_before)
+
+    # move-task-after
+    move_after = subparsers.add_parser('move-task-after',
+                                        help='Move a task to after another task within a thread')
+    move_after.add_argument('plan_file', help='Path to the plan file')
+    move_after.add_argument('--thread', type=int, required=True, help='Thread number')
+    move_after.add_argument('--task', type=int, required=True, help='Task number to move')
+    move_after.add_argument('--after', type=int, required=True, help='Task number to move after')
+    move_after.add_argument('--rationale', required=True, help='Reason for the change')
+    move_after.set_defaults(func=cmd_move_task_after)
 
     # delete-task
     del_task = subparsers.add_parser('delete-task',

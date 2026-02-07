@@ -392,18 +392,18 @@ Implements moving an existing task to a new position within the same thread. Unl
     - [x] Write pytest tests covering: correct move position, renumbering, change history, error on nonexistent thread/task, error on same task
     - [x] Update skills/plan-file-management/SKILL.md to document the move-task-before subcommand
 
-- [ ] **Task 16.2: move-task-after moves a task to after another task within the same thread**
+- [x] **Task 16.2: move-task-after moves a task to after another task within the same thread**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py move-task-after <plan_file> --thread 1 --task 1 --after 3 --rationale <text>`
   - Observable: After running move-task-after with --thread 1 --task 1 --after 3, task 1.1 appears after old task 1.3, all tasks are renumbered sequentially, and change history is appended
   - Evidence: `pytest tests/plan-manager/ passes`
   - Steps:
-    - [ ] Implement move_task_after(plan: str, thread_number: int, task_number: int, after_task: int, rationale: str) -> str as a pure function
-    - [ ] Auto-renumber all tasks within the thread after moving
-    - [ ] Return error if thread_number, task_number, or after_task does not exist
-    - [ ] Register move-task-after subcommand with argparse
-    - [ ] Write pytest tests covering: correct move position, renumbering, error on nonexistent thread/task
-    - [ ] Update skills/plan-file-management/SKILL.md to document the move-task-after subcommand
+    - [x] Implement move_task_after(plan: str, thread_number: int, task_number: int, after_task: int, rationale: str) -> str as a pure function
+    - [x] Auto-renumber all tasks within the thread after moving
+    - [x] Return error if thread_number, task_number, or after_task does not exist
+    - [x] Register move-task-after subcommand with argparse
+    - [x] Write pytest tests covering: correct move position, renumbering, error on nonexistent thread/task
+    - [x] Update skills/plan-file-management/SKILL.md to document the move-task-after subcommand
 
 ---
 
@@ -496,3 +496,6 @@ Implemented reorder_tasks pure function, CLI subcommand, 11 tests, SKILL.md docs
 
 ### 2026-02-07 12:05 - mark-task-complete
 Implemented move_task_before pure function, CLI subcommand, 10 tests, SKILL.md docs
+
+### 2026-02-07 12:07 - mark-task-complete
+Implemented move_task_after pure function, CLI subcommand, 9 tests, SKILL.md docs

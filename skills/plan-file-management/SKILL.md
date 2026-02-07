@@ -130,6 +130,16 @@ Example: `--thread 1 --task 6 --before 3` moves task 1.6 to the position before 
 
 Errors if the thread or either task does not exist, or if task and before are the same.
 
+## move-task-after
+
+Move a task to after another task within the same thread, then auto-renumber tasks.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py move-task-after <plan_file> --thread <N> --task <M> --after <P> --rationale <text>
+
+Example: `--thread 1 --task 1 --after 3` moves task 1.1 to the position after task 1.3.
+
+Errors if the thread or either task does not exist, or if task and after are the same.
+
 ## delete-task
 
 Remove a task from a thread, then auto-renumber remaining tasks.

@@ -335,22 +335,22 @@ Implements task deletion within a thread with auto-renumbering.
 
 Validates that reading a plan and writing it back produces identical output, and that all error cases return clear messages.
 
-- [ ] **Task 14.1: Round-trip read/write produces identical plan file content**
+- [x] **Task 14.1: Round-trip read/write produces identical plan file content**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py fix-numbering <plan_file>`
   - Observable: Running `fix-numbering` on an already correctly-numbered plan produces byte-identical output
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Write pytest tests that call `fix_numbering` on a correctly-numbered plan and assert the output equals the input
-    - [ ] Ensure parser preserves all whitespace, blank lines, horizontal rules, and section ordering
+    - [x] Write pytest tests that call `fix_numbering` on a correctly-numbered plan and assert the output equals the input
+    - [x] Ensure parser preserves all whitespace, blank lines, horizontal rules, and section ordering
 
-- [ ] **Task 14.2: Error cases return clear, actionable messages**
+- [x] **Task 14.2: Error cases return clear, actionable messages**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py`
   - Observable: Calling functions with invalid parameters (nonexistent thread, nonexistent task, already-complete task) returns errors with subcommand name, failing parameter, and human-readable message
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Write pytest tests covering error cases: nonexistent `thread_number` on `get_thread`, `mark_task_complete` on already-complete task, `mark_step_complete` on already-complete step, `delete_thread` on nonexistent thread, `insert_task_before` on nonexistent task
+    - [x] Write pytest tests covering error cases: nonexistent `thread_number` on `get_thread`, `mark_task_complete` on already-complete task, `mark_step_complete` on already-complete step, `delete_thread` on nonexistent thread, `insert_task_before` on nonexistent task
 
 ---
 
@@ -423,3 +423,9 @@ Implemented insert_task_after pure function, CLI subcommand, tests, and SKILL.md
 
 ### 2026-02-07 11:34 - mark-task-complete
 Implemented delete_task pure function, CLI subcommand, tests, and SKILL.md docs
+
+### 2026-02-07 11:35 - mark-task-complete
+Added comprehensive round-trip fidelity tests with full plan fixture
+
+### 2026-02-07 11:35 - mark-task-complete
+Added error message format validation tests covering all subcommands

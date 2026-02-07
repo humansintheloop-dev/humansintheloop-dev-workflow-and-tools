@@ -89,6 +89,7 @@ Implements task-level completion, marking the task and all its steps complete.
     - [ ] Return error if task does not exist or is already complete
     - [ ] Register `mark-task-complete` subcommand with argparse
     - [ ] Write pytest tests covering: task and steps marked complete, change history appended, error on already-complete task, error on nonexistent task
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `mark-task-complete` subcommand
 
 ---
 
@@ -108,6 +109,7 @@ Implements thread reordering, allowing threads to be rearranged according to a s
     - [ ] Return error if `thread_order` does not contain exactly the set of existing thread numbers
     - [ ] Register `reorder-threads` subcommand with argparse
     - [ ] Write pytest tests covering: correct reordering and renumbering, change history appended, error on invalid thread_order (missing threads, duplicates, nonexistent numbers)
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `reorder-threads` subcommand
 
 ---
 
@@ -127,6 +129,7 @@ Implements thread insertion (before and after), with auto-renumbering.
     - [ ] Return error if `before_thread` does not exist
     - [ ] Register `insert-thread-before` subcommand with argparse
     - [ ] Write pytest tests covering: correct insertion position, renumbering, change history, error on nonexistent thread
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `insert-thread-before` subcommand
 
 - [ ] **Task 4.2: insert-thread-after inserts a thread after the specified thread**
   - TaskType: OUTCOME
@@ -139,6 +142,7 @@ Implements thread insertion (before and after), with auto-renumbering.
     - [ ] Return error if `after_thread` does not exist
     - [ ] Register `insert-thread-after` subcommand with argparse
     - [ ] Write pytest tests covering: correct insertion position, renumbering, error on nonexistent thread
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `insert-thread-after` subcommand
 
 ---
 
@@ -156,6 +160,7 @@ Implements the `get-next-task` read operation.
     - [ ] Return descriptive message when no uncompleted tasks remain
     - [ ] Register `get-next-task` subcommand with argparse
     - [ ] Write pytest tests covering: returns correct next uncompleted task (skips completed ones), returns all-complete message when no tasks remain
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `get-next-task` subcommand
 
 ---
 
@@ -175,6 +180,7 @@ Implements the `get-thread` read operation, returning a thread's full content in
     - [ ] Implement `get_thread(plan: str, thread_number: int) -> dict` as a pure function
     - [ ] Register `get-thread` subcommand with argparse
     - [ ] Write pytest tests covering: correct introduction, task metadata, step parsing, error on nonexistent thread_number
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `get-thread` subcommand
 
 ---
 
@@ -191,6 +197,7 @@ Adds the `get-summary` read operation, returning plan metadata and progress.
     - [ ] Implement `get_summary(plan: str) -> dict` as a pure function: extract `# Implementation Plan:` heading, `## Idea Type` section, `## Overview` section, count threads and tasks
     - [ ] Register `get-summary` subcommand with argparse
     - [ ] Write pytest tests covering: correct plan name, idea type, overview, thread/task counts including completed count
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `get-summary` subcommand
 
 ---
 
@@ -207,6 +214,7 @@ Implements the `list-threads` read operation, returning all threads with complet
     - [ ] Implement `list_threads(plan: str) -> list[dict]` as a pure function: extract thread numbers, titles, count total and completed tasks per thread
     - [ ] Register `list-threads` subcommand with argparse
     - [ ] Write pytest tests covering: correct thread numbers, titles, task counts with mix of completed and uncompleted tasks
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `list-threads` subcommand
 
 ---
 
@@ -226,6 +234,7 @@ Implements step-level completion, proving atomic writes and change history work.
     - [ ] Return error if step does not exist or is already complete
     - [ ] Register `mark-step-complete` subcommand with argparse
     - [ ] Write pytest tests covering: step checkbox changed to `[x]`, change history appended with rationale, error on already-complete step, error on nonexistent step
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `mark-step-complete` subcommand
 
 ---
 
@@ -245,6 +254,7 @@ Implements thread deletion with auto-renumbering.
     - [ ] Append to change history with rationale
     - [ ] Register `delete-thread` subcommand with argparse
     - [ ] Write pytest tests covering: thread removed, remaining threads renumbered, change history appended, error on nonexistent thread
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `delete-thread` subcommand
 
 ---
 
@@ -264,6 +274,7 @@ Implements thread replacement, keeping position but replacing content entirely.
     - [ ] Append to change history with rationale
     - [ ] Register `replace-thread` subcommand with argparse
     - [ ] Write pytest tests covering: new content at correct position, other threads unchanged, renumbering, change history, error on nonexistent thread
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `replace-thread` subcommand
 
 ---
 
@@ -283,6 +294,7 @@ Implements task insertion within a thread (before and after), with auto-renumber
     - [ ] Return error if `thread_number` or `before_task` does not exist
     - [ ] Register `insert-task-before` subcommand with argparse
     - [ ] Write pytest tests covering: correct insertion position, renumbering, change history, error on nonexistent thread/task
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `insert-task-before` subcommand
 
 - [ ] **Task 12.2: insert-task-after inserts a task after the specified task**
   - TaskType: OUTCOME
@@ -295,6 +307,7 @@ Implements task insertion within a thread (before and after), with auto-renumber
     - [ ] Return error if `thread_number` or `after_task` does not exist
     - [ ] Register `insert-task-after` subcommand with argparse
     - [ ] Write pytest tests covering: correct insertion position, renumbering, error on nonexistent thread/task
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `insert-task-after` subcommand
 
 ---
 
@@ -314,6 +327,7 @@ Implements task deletion within a thread with auto-renumbering.
     - [ ] Append to change history
     - [ ] Register `delete-task` subcommand with argparse
     - [ ] Write pytest tests covering: task removed, remaining tasks renumbered, change history appended, error on nonexistent thread/task
+    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `delete-task` subcommand
 
 ---
 
@@ -379,3 +393,6 @@ Replaced all per-test shell scripts with pytest. Each task now has a "Write pyte
 
 ### 2026-02-07 - Pivot from MCP server to skill script
 Rewrote plan to reflect pivot from MCP server (`mcp-servers/plan-manager/server.py`) to CLI script with subcommands (`skills/plan-file-management/scripts/plan-manager.py`). Removed MCP-specific infrastructure (mcp SDK, stdio transport, MCP smoke test, plugin mcpServers registration, CI workflow for MCP). Steel Thread 1 now describes migrating existing `fix-plan-numbering.py` into `plan-manager.py` as the `fix-numbering` subcommand. All tool registrations changed to argparse subcommand registrations. Testing strategy simplified to pytest only.
+
+### 2026-02-07 - Add SKILL.md update steps
+Added a step to each subcommand task (threads 2-13) to update `skills/plan-file-management/SKILL.md` with documentation for the new subcommand when implemented.

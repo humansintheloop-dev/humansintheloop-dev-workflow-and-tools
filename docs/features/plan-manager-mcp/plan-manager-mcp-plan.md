@@ -315,19 +315,19 @@ Implements task insertion within a thread (before and after), with auto-renumber
 
 Implements task deletion within a thread with auto-renumbering.
 
-- [ ] **Task 13.1: delete-task removes a task and renumbers remaining tasks in the thread**
+- [x] **Task 13.1: delete-task removes a task and renumbers remaining tasks in the thread**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py delete-task <plan_file> --thread 1 --task 1 --rationale <text>`
   - Observable: After running `delete-task` with `--thread 1 --task 1`, the task is removed, remaining tasks in thread 1 are renumbered, and change history is appended
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement `delete_task(plan: str, thread_number: int, task_number: int, rationale: str) -> str` as a pure function
-    - [ ] Auto-renumber remaining tasks in the thread
-    - [ ] Return error if `thread_number` or `task_number` does not exist
-    - [ ] Append to change history
-    - [ ] Register `delete-task` subcommand with argparse
-    - [ ] Write pytest tests covering: task removed, remaining tasks renumbered, change history appended, error on nonexistent thread/task
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `delete-task` subcommand
+    - [x] Implement `delete_task(plan: str, thread_number: int, task_number: int, rationale: str) -> str` as a pure function
+    - [x] Auto-renumber remaining tasks in the thread
+    - [x] Return error if `thread_number` or `task_number` does not exist
+    - [x] Append to change history
+    - [x] Register `delete-task` subcommand with argparse
+    - [x] Write pytest tests covering: task removed, remaining tasks renumbered, change history appended, error on nonexistent thread/task
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `delete-task` subcommand
 
 ---
 
@@ -420,3 +420,6 @@ Implemented insert_task_before pure function, CLI subcommand, tests, and SKILL.m
 
 ### 2026-02-07 11:32 - mark-task-complete
 Implemented insert_task_after pure function, CLI subcommand, tests, and SKILL.md docs
+
+### 2026-02-07 11:34 - mark-task-complete
+Implemented delete_task pure function, CLI subcommand, tests, and SKILL.md docs

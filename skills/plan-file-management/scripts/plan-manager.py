@@ -738,6 +738,37 @@ def insert_task_after(plan: str, thread_number: int, after_task: int,
     raise ValueError(f"insert-task-after: task {after_task} in thread {thread_number} does not exist")
 
 
+def delete_task(plan: str, thread_number: int, task_number: int, rationale: str) -> str:
+    """Remove a task from a thread and renumber remaining tasks.
+
+    Raises ValueError if thread_number or task_number does not exist.
+    """
+    lines = plan.split('\n')
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+
+    # Validate thread exists
+    thread_exists = any(
+        thread_heading_re.match(l) and int(thread_heading_re.match(l).group(1)) == thread_number
+        for l in lines
+    )
+    if not thread_exists:
+        raise ValueError(f"delete-task: thread {thread_number} does not exist")
+
+    task_bounds = _find_task_boundaries(lines, thread_number)
+    task_numbers = {tk_num for _, _, tk_num in task_bounds}
+
+    if task_number not in task_numbers:
+        raise ValueError(f"delete-task: task {task_number} in thread {thread_number} does not exist")
+
+    for start, end, tk_num in task_bounds:
+        if tk_num == task_number:
+            new_lines = lines[:start] + lines[end:]
+            result = fix_numbering('\n'.join(new_lines))
+            return append_change_history(result, "delete-task", rationale)
+
+    raise ValueError(f"delete-task: task {task_number} in thread {thread_number} does not exist")
+
+
 def replace_thread(plan: str, thread_number: int, title: str,
                     introduction: str, tasks: list[dict], rationale: str) -> str:
     """Replace a thread's content in place and renumber.
@@ -851,6 +882,21 @@ def cmd_insert_task_before(args):
 def cmd_insert_task_after(args):
     """Handle the insert-task-after subcommand."""
     _cmd_insert_task(args, insert_task_after, args.after, "insert-task-after")
+
+
+def cmd_delete_task(args):
+    """Handle the delete-task subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        result = delete_task(plan, args.thread, args.task, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Deleted task {args.thread}.{args.task}")
 
 
 def cmd_replace_thread(args):
@@ -1171,6 +1217,15 @@ def build_parser():
     ins_task_after.add_argument('--steps', required=True, help='Steps as JSON array of strings')
     ins_task_after.add_argument('--rationale', required=True, help='Reason for the change')
     ins_task_after.set_defaults(func=cmd_insert_task_after)
+
+    # delete-task
+    del_task = subparsers.add_parser('delete-task',
+                                      help='Remove a task from a thread')
+    del_task.add_argument('plan_file', help='Path to the plan file')
+    del_task.add_argument('--thread', type=int, required=True, help='Thread number')
+    del_task.add_argument('--task', type=int, required=True, help='Task number to delete')
+    del_task.add_argument('--rationale', required=True, help='Reason for the change')
+    del_task.set_defaults(func=cmd_delete_task)
 
     return parser
 

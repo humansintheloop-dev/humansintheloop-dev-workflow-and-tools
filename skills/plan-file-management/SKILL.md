@@ -110,6 +110,14 @@ Insert a task after a specified task within a thread, then auto-renumber tasks.
 
     uv run skills/plan-file-management/scripts/plan-manager.py insert-task-after <plan_file> --thread <N> --after <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
 
+## delete-task
+
+Remove a task from a thread, then auto-renumber remaining tasks.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py delete-task <plan_file> --thread <N> --task <M> --rationale <text>
+
+Errors if the thread or task does not exist.
+
 ## delete-thread
 
 Remove a thread entirely, then auto-renumber remaining threads and tasks.

@@ -282,32 +282,32 @@ Implements thread replacement, keeping position but replacing content entirely.
 
 Implements task insertion within a thread (before and after), with auto-renumbering of tasks.
 
-- [ ] **Task 12.1: insert-task-before inserts a task and renumbers within the thread**
+- [x] **Task 12.1: insert-task-before inserts a task and renumbers within the thread**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py insert-task-before <plan_file> --thread 1 --before 1 --title <title> --task-type INFRA --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>`
   - Observable: After running `insert-task-before` with `--thread 1 --before 1`, the new task appears before the old task 1.1, all tasks within thread 1 are renumbered, and change history is appended
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement task serialization: convert structured task data to markdown (checkbox line, metadata, steps)
-    - [ ] Implement `insert_task_before(plan: str, thread_number: int, before_task: int, title: str, task_type: str, entrypoint: str, observable: str, evidence: str, steps: list[str], rationale: str) -> str` as a pure function
-    - [ ] Auto-renumber tasks within the thread after insertion
-    - [ ] Return error if `thread_number` or `before_task` does not exist
-    - [ ] Register `insert-task-before` subcommand with argparse
-    - [ ] Write pytest tests covering: correct insertion position, renumbering, change history, error on nonexistent thread/task
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `insert-task-before` subcommand
+    - [x] Implement task serialization: convert structured task data to markdown (checkbox line, metadata, steps)
+    - [x] Implement `insert_task_before(plan: str, thread_number: int, before_task: int, title: str, task_type: str, entrypoint: str, observable: str, evidence: str, steps: list[str], rationale: str) -> str` as a pure function
+    - [x] Auto-renumber tasks within the thread after insertion
+    - [x] Return error if `thread_number` or `before_task` does not exist
+    - [x] Register `insert-task-before` subcommand with argparse
+    - [x] Write pytest tests covering: correct insertion position, renumbering, change history, error on nonexistent thread/task
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `insert-task-before` subcommand
 
-- [ ] **Task 12.2: insert-task-after inserts a task after the specified task**
+- [x] **Task 12.2: insert-task-after inserts a task after the specified task**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py insert-task-after <plan_file> --thread 1 --after 1 --title <title> --task-type INFRA --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>`
   - Observable: After running `insert-task-after` with `--thread 1 --after 1`, the new task appears after task 1.1, tasks are renumbered, and change history is appended
   - Evidence: `pytest tests/plan-manager/` passes
   - Steps:
-    - [ ] Implement `insert_task_after(plan: str, thread_number: int, after_task: int, title: str, task_type: str, entrypoint: str, observable: str, evidence: str, steps: list[str], rationale: str) -> str` as a pure function
-    - [ ] Auto-renumber tasks within the thread
-    - [ ] Return error if `thread_number` or `after_task` does not exist
-    - [ ] Register `insert-task-after` subcommand with argparse
-    - [ ] Write pytest tests covering: correct insertion position, renumbering, error on nonexistent thread/task
-    - [ ] Update `skills/plan-file-management/SKILL.md` to document the `insert-task-after` subcommand
+    - [x] Implement `insert_task_after(plan: str, thread_number: int, after_task: int, title: str, task_type: str, entrypoint: str, observable: str, evidence: str, steps: list[str], rationale: str) -> str` as a pure function
+    - [x] Auto-renumber tasks within the thread
+    - [x] Return error if `thread_number` or `after_task` does not exist
+    - [x] Register `insert-task-after` subcommand with argparse
+    - [x] Write pytest tests covering: correct insertion position, renumbering, error on nonexistent thread/task
+    - [x] Update `skills/plan-file-management/SKILL.md` to document the `insert-task-after` subcommand
 
 ---
 
@@ -414,3 +414,9 @@ Implemented delete_thread pure function, CLI subcommand, tests, and SKILL.md doc
 
 ### 2026-02-07 11:30 - mark-task-complete
 Implemented replace_thread pure function, CLI subcommand, tests, and SKILL.md docs
+
+### 2026-02-07 11:32 - mark-task-complete
+Implemented insert_task_before pure function, CLI subcommand, tests, and SKILL.md docs
+
+### 2026-02-07 11:32 - mark-task-complete
+Implemented insert_task_after pure function, CLI subcommand, tests, and SKILL.md docs

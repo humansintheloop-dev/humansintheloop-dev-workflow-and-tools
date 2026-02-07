@@ -605,6 +605,139 @@ def delete_thread(plan: str, thread_number: int, rationale: str) -> str:
     return append_change_history(result, "delete-thread", rationale)
 
 
+def _serialize_task(title: str, task_type: str, entrypoint: str,
+                    observable: str, evidence: str, steps: list[str]) -> str:
+    """Convert structured task data to markdown lines."""
+    lines = [f"- [ ] **Task 0.0: {title}**"]
+    lines.append(f"  - TaskType: {task_type}")
+    lines.append(f"  - Entrypoint: `{entrypoint}`")
+    lines.append(f"  - Observable: {observable}")
+    lines.append(f"  - Evidence: `{evidence}`")
+    lines.append("  - Steps:")
+    for step in steps:
+        lines.append(f"    - [ ] {step}")
+    return '\n'.join(lines)
+
+
+def _find_task_boundaries(lines: list[str], thread_number: int) -> list[tuple[int, int, int]]:
+    """Find task boundaries within a specific thread.
+
+    Returns list of (start_line, end_line, task_number) for each task in the thread.
+    """
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+    task_line_re = re.compile(r'^- \[[ x]\] \*\*Task (\d+)\.(\d+):')
+
+    current_thread = 0
+    tasks = []
+
+    for i, line in enumerate(lines):
+        m = thread_heading_re.match(line)
+        if m:
+            current_thread = int(m.group(1))
+            continue
+
+        tm = task_line_re.match(line)
+        if tm:
+            t_num = int(tm.group(1))
+            tk_num = int(tm.group(2))
+            if t_num == thread_number:
+                tasks.append((i, tk_num))
+            elif current_thread > thread_number:
+                break
+
+    # Determine end boundaries
+    result = []
+    for idx, (start, tk_num) in enumerate(tasks):
+        if idx + 1 < len(tasks):
+            end = tasks[idx + 1][0]
+        else:
+            # Find end: next task, thread heading, ---, or end of file
+            end = len(lines)
+            for j in range(start + 1, len(lines)):
+                if thread_heading_re.match(lines[j]) or lines[j].strip() == '---':
+                    end = j
+                    break
+                if task_line_re.match(lines[j]):
+                    end = j
+                    break
+        result.append((start, end, tk_num))
+
+    return result
+
+
+def insert_task_before(plan: str, thread_number: int, before_task: int,
+                       title: str, task_type: str, entrypoint: str,
+                       observable: str, evidence: str, steps: list[str],
+                       rationale: str) -> str:
+    """Insert a task before the specified task within a thread.
+
+    Raises ValueError if thread_number or before_task does not exist.
+    """
+    lines = plan.split('\n')
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+
+    # Validate thread exists
+    thread_exists = any(
+        thread_heading_re.match(l) and int(thread_heading_re.match(l).group(1)) == thread_number
+        for l in lines
+    )
+    if not thread_exists:
+        raise ValueError(f"insert-task-before: thread {thread_number} does not exist")
+
+    task_bounds = _find_task_boundaries(lines, thread_number)
+    task_numbers = {tk_num for _, _, tk_num in task_bounds}
+
+    if before_task not in task_numbers:
+        raise ValueError(f"insert-task-before: task {before_task} in thread {thread_number} does not exist")
+
+    new_task_text = _serialize_task(title, task_type, entrypoint, observable, evidence, steps)
+
+    # Find insertion point
+    for start, end, tk_num in task_bounds:
+        if tk_num == before_task:
+            new_lines = lines[:start] + [new_task_text, ''] + lines[start:]
+            result = fix_numbering('\n'.join(new_lines))
+            return append_change_history(result, "insert-task-before", rationale)
+
+    raise ValueError(f"insert-task-before: task {before_task} in thread {thread_number} does not exist")
+
+
+def insert_task_after(plan: str, thread_number: int, after_task: int,
+                      title: str, task_type: str, entrypoint: str,
+                      observable: str, evidence: str, steps: list[str],
+                      rationale: str) -> str:
+    """Insert a task after the specified task within a thread.
+
+    Raises ValueError if thread_number or after_task does not exist.
+    """
+    lines = plan.split('\n')
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+
+    # Validate thread exists
+    thread_exists = any(
+        thread_heading_re.match(l) and int(thread_heading_re.match(l).group(1)) == thread_number
+        for l in lines
+    )
+    if not thread_exists:
+        raise ValueError(f"insert-task-after: thread {thread_number} does not exist")
+
+    task_bounds = _find_task_boundaries(lines, thread_number)
+    task_numbers = {tk_num for _, _, tk_num in task_bounds}
+
+    if after_task not in task_numbers:
+        raise ValueError(f"insert-task-after: task {after_task} in thread {thread_number} does not exist")
+
+    new_task_text = _serialize_task(title, task_type, entrypoint, observable, evidence, steps)
+
+    for start, end, tk_num in task_bounds:
+        if tk_num == after_task:
+            new_lines = lines[:end] + ['', new_task_text] + lines[end:]
+            result = fix_numbering('\n'.join(new_lines))
+            return append_change_history(result, "insert-task-after", rationale)
+
+    raise ValueError(f"insert-task-after: task {after_task} in thread {thread_number} does not exist")
+
+
 def replace_thread(plan: str, thread_number: int, title: str,
                     introduction: str, tasks: list[dict], rationale: str) -> str:
     """Replace a thread's content in place and renumber.
@@ -684,6 +817,40 @@ def cmd_get_next_task(args):
         for i, step in enumerate(task['steps'], 1):
             status = 'x' if step['completed'] else ' '
             print(f"    {i}. [{status}] {step['description']}")
+
+
+def _cmd_insert_task(args, insert_fn, position_arg, operation_name):
+    """Shared handler for insert-task-before and insert-task-after."""
+    import json
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        steps = json.loads(args.steps)
+    except json.JSONDecodeError as e:
+        print(f"{operation_name}: --steps is not valid JSON: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        result = insert_fn(plan, args.thread, position_arg, args.title,
+                           args.task_type, args.entrypoint, args.observable,
+                           args.evidence, steps, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Inserted task '{args.title}' in thread {args.thread}")
+
+
+def cmd_insert_task_before(args):
+    """Handle the insert-task-before subcommand."""
+    _cmd_insert_task(args, insert_task_before, args.before, "insert-task-before")
+
+
+def cmd_insert_task_after(args):
+    """Handle the insert-task-after subcommand."""
+    _cmd_insert_task(args, insert_task_after, args.after, "insert-task-after")
 
 
 def cmd_replace_thread(args):
@@ -974,6 +1141,36 @@ def build_parser():
     del_thread.add_argument('--thread', type=int, required=True, help='Thread number to delete')
     del_thread.add_argument('--rationale', required=True, help='Reason for the change')
     del_thread.set_defaults(func=cmd_delete_thread)
+
+    # insert-task-before
+    ins_task_before = subparsers.add_parser('insert-task-before',
+                                             help='Insert a task before a specified task')
+    ins_task_before.add_argument('plan_file', help='Path to the plan file')
+    ins_task_before.add_argument('--thread', type=int, required=True, help='Thread number')
+    ins_task_before.add_argument('--before', type=int, required=True, help='Task number to insert before')
+    ins_task_before.add_argument('--title', required=True, help='Task title')
+    ins_task_before.add_argument('--task-type', required=True, help='INFRA or OUTCOME')
+    ins_task_before.add_argument('--entrypoint', required=True, help='Entrypoint command')
+    ins_task_before.add_argument('--observable', required=True, help='Observable outcome')
+    ins_task_before.add_argument('--evidence', required=True, help='Evidence command')
+    ins_task_before.add_argument('--steps', required=True, help='Steps as JSON array of strings')
+    ins_task_before.add_argument('--rationale', required=True, help='Reason for the change')
+    ins_task_before.set_defaults(func=cmd_insert_task_before)
+
+    # insert-task-after
+    ins_task_after = subparsers.add_parser('insert-task-after',
+                                            help='Insert a task after a specified task')
+    ins_task_after.add_argument('plan_file', help='Path to the plan file')
+    ins_task_after.add_argument('--thread', type=int, required=True, help='Thread number')
+    ins_task_after.add_argument('--after', type=int, required=True, help='Task number to insert after')
+    ins_task_after.add_argument('--title', required=True, help='Task title')
+    ins_task_after.add_argument('--task-type', required=True, help='INFRA or OUTCOME')
+    ins_task_after.add_argument('--entrypoint', required=True, help='Entrypoint command')
+    ins_task_after.add_argument('--observable', required=True, help='Observable outcome')
+    ins_task_after.add_argument('--evidence', required=True, help='Evidence command')
+    ins_task_after.add_argument('--steps', required=True, help='Steps as JSON array of strings')
+    ins_task_after.add_argument('--rationale', required=True, help='Reason for the change')
+    ins_task_after.set_defaults(func=cmd_insert_task_after)
 
     return parser
 

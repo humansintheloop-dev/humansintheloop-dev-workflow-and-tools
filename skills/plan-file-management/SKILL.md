@@ -96,6 +96,20 @@ Replace a thread's entire content (title, introduction, tasks) in place, then au
 
 Errors if the thread does not exist.
 
+## insert-task-before
+
+Insert a task before a specified task within a thread, then auto-renumber tasks.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py insert-task-before <plan_file> --thread <N> --before <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
+
+The `--steps` argument is a JSON array of step description strings.
+
+## insert-task-after
+
+Insert a task after a specified task within a thread, then auto-renumber tasks.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py insert-task-after <plan_file> --thread <N> --after <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
+
 ## delete-thread
 
 Remove a thread entirely, then auto-renumber remaining threads and tasks.

@@ -163,6 +163,8 @@ def _extract_thread_sections(plan: str) -> tuple[str, list[tuple[int, str]], str
         return plan, [], ""
 
     preamble = '\n'.join(lines[:thread_starts[0][0]])
+    if preamble and not preamble.endswith('\n'):
+        preamble += '\n'
 
     # Find where postamble starts (Summary section or Change History if no Summary)
     postamble_start = len(lines)
@@ -185,6 +187,8 @@ def _extract_thread_sections(plan: str) -> tuple[str, list[tuple[int, str]], str
         threads.append((num, thread_text))
 
     postamble = '\n'.join(lines[postamble_start:])
+    if postamble and not postamble.startswith('\n'):
+        postamble = '\n' + postamble
 
     return preamble, threads, postamble
 

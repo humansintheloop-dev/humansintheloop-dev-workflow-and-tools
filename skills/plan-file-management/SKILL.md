@@ -15,7 +15,7 @@ All operations are subcommands of `plan-manager.py`, invoked as:
 
 Renumber all threads and tasks sequentially. Run this after arbitrary edits made outside the script.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py fix-numbering <path-to-plan-file>
+    i2c plan fix-numbering <path-to-plan-file>
 
 Run this after:
 - Inserting or deleting threads or tasks

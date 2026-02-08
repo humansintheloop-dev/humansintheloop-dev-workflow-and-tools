@@ -12,4 +12,8 @@ echo "--- pytest unit tests ---"
 uv run --python 3.12 --with pytest python3 -m pytest "$PROJECT_ROOT/tests/plan-manager/" -v
 
 echo ""
+echo "--- CLI smoke tests ---"
+"$SCRIPT_DIR/test-cli-smoke.sh"
+
+echo ""
 echo "=== All Plan Manager Tests Passed ==="

@@ -81,20 +81,20 @@ This thread proves the package structure, Click CLI, test imports, and CI all wo
     - [x] Rewrite `tests/plan-manager/test_fix_numbering.py` imports: replace `sys.path.insert` / `importlib.import_module` workaround with `from i2c.plan.plans import fix_numbering`
     - [x] Verify test passes: `uv run --with pytest pytest tests/plan-manager/test_fix_numbering.py -v`
 
-- [ ] **Task 1.2: `i2c plan fix-numbering` CLI command works end-to-end**
+- [x] **Task 1.2: `i2c plan fix-numbering` CLI command works end-to-end**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `i2c plan fix-numbering` subcommand exists and `test-scripts/test-end-to-end.sh` passes (covering the migrated test)
   - Evidence: `./test-scripts/test-end-to-end.sh` exits 0
   - Steps:
-    - [ ] Create `src/i2c/plan/_helpers.py` — add `atomic_write` function (needed by CLI handlers for file writes)
-    - [ ] Create `src/i2c/cli.py` with top-level Click group `main` that registers the `plan` subgroup
-    - [ ] Create `src/i2c/plan/cli.py` with `plan` Click group that registers commands from handler modules
-    - [ ] Create `src/i2c/plan/plan_cli.py` with Click `fix-numbering` command handler and `register(group)` function
-    - [ ] Create `test-scripts/test-cli-smoke.sh` that runs `uv run i2c plan fix-numbering` on a test plan file and verifies exit code 0 and confirmation output
-    - [ ] Add `test-cli-smoke.sh` to `test-scripts/test-end-to-end.sh`
-    - [ ] Update `skills/plan-file-management/SKILL.md`: change `fix-numbering` invocation from `uv run skills/.../plan-manager.py fix-numbering` to `i2c plan fix-numbering`; keep all other commands using old invocation
-    - [ ] Verify: `./test-scripts/test-end-to-end.sh` exits 0
+    - [x] Create `src/i2c/plan/_helpers.py` — add `atomic_write` function (needed by CLI handlers for file writes)
+    - [x] Create `src/i2c/cli.py` with top-level Click group `main` that registers the `plan` subgroup
+    - [x] Create `src/i2c/plan/cli.py` with `plan` Click group that registers commands from handler modules
+    - [x] Create `src/i2c/plan/plan_cli.py` with Click `fix-numbering` command handler and `register(group)` function
+    - [x] Create `test-scripts/test-cli-smoke.sh` that runs `uv run i2c plan fix-numbering` on a test plan file and verifies exit code 0 and confirmation output
+    - [x] Add `test-cli-smoke.sh` to `test-scripts/test-end-to-end.sh`
+    - [x] Update `skills/plan-file-management/SKILL.md`: change `fix-numbering` invocation from `uv run skills/.../plan-manager.py fix-numbering` to `i2c plan fix-numbering`; keep all other commands using old invocation
+    - [x] Verify: `./test-scripts/test-end-to-end.sh` exits 0
 
 - [ ] **Task 1.3: CI validates the new package structure**
   - TaskType: INFRA
@@ -265,3 +265,6 @@ Moved SKILL.md updates from a single big-bang operation in Thread 5 to increment
 
 ### 2026-02-09 08:30 - mark-task-complete
 Created pyproject.toml, src/i2c/__init__.py, src/i2c/plan/__init__.py, src/i2c/plan/_helpers.py (append_change_history, _extract_thread_sections), src/i2c/plan/plans.py (fix_numbering), and rewrote test imports. All 193 tests pass.
+
+### 2026-02-09 08:32 - mark-task-complete
+Created i2c/cli.py, i2c/plan/cli.py, i2c/plan/plan_cli.py with fix-numbering Click handler. Added atomic_write to _helpers.py. Created test-cli-smoke.sh, added to test-end-to-end.sh. Updated SKILL.md fix-numbering invocation. All 193 unit tests + CLI smoke test pass.

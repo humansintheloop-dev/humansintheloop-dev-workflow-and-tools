@@ -222,16 +222,16 @@ Migrate the 5 thread-level pure functions and their CLI handlers.
 
 Migrate the remaining cross-cutting test files, delete old files, and update all documentation references.
 
-- [ ] **Task 5.1: Cross-cutting test files pass with new imports**
+- [x] **Task 5.1: Cross-cutting test files pass with new imports**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/plan-manager/ -v`
   - Observable: All 22 test files pass with `from i2c.plan.<module>` imports; no `sys.path` or `importlib` workarounds remain
   - Evidence: `uv run --with pytest pytest tests/plan-manager/ -v` exits 0
   - Steps:
-    - [ ] Rewrite imports in `test_round_trip.py` to use `from i2c.plan.<module>` imports
-    - [ ] Rewrite imports in `test_error_messages.py` to use `from i2c.plan.<module>` imports
-    - [ ] Rewrite imports in `test_debug_renumber.py` to use `from i2c.plan.<module>` imports
-    - [ ] Verify all 22 test files pass: `uv run --with pytest pytest tests/plan-manager/ -v`
+    - [x] Rewrite imports in `test_round_trip.py` to use `from i2c.plan.<module>` imports
+    - [x] Rewrite imports in `test_error_messages.py` to use `from i2c.plan.<module>` imports
+    - [x] Rewrite imports in `test_debug_renumber.py` to use `from i2c.plan.<module>` imports
+    - [x] Verify all 22 test files pass: `uv run --with pytest pytest tests/plan-manager/ -v`
 
 - [ ] **Task 5.2: Delete old files and update documentation**
   - TaskType: INFRA
@@ -295,3 +295,6 @@ Created threads.py with all 5 thread functions. Added _serialize_thread to _help
 
 ### 2026-02-09 08:48 - mark-task-complete
 Thread CLI handlers registered, smoke tests added, SKILL.md updated
+
+### 2026-02-09 08:49 - mark-task-complete
+All 3 cross-cutting test files migrated, no importlib/sys.path workarounds remain

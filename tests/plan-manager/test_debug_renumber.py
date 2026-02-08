@@ -1,16 +1,8 @@
 """Regression test: thread operations must not produce Task 0.x numbering."""
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-delete_thread = _mod.delete_thread
-reorder_threads = _mod.reorder_threads
-insert_thread_before = _mod.insert_thread_before
-replace_thread = _mod.replace_thread
+from i2c.plan.threads import (
+    delete_thread, reorder_threads, insert_thread_before, replace_thread,
+)
 
 
 PLAN = """\

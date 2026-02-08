@@ -1,25 +1,14 @@
 """Tests for error message format: each error includes subcommand name and human-readable message."""
 
-import sys
-import os
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-get_thread = _mod.get_thread
-mark_task_complete = _mod.mark_task_complete
-mark_step_complete = _mod.mark_step_complete
-delete_thread = _mod.delete_thread
-delete_task = _mod.delete_task
-insert_task_before = _mod.insert_task_before
-replace_thread = _mod.replace_thread
-reorder_threads = _mod.reorder_threads
-reorder_tasks = _mod.reorder_tasks
-move_task_before = _mod.move_task_before
-move_task_after = _mod.move_task_after
-replace_task = _mod.replace_task
+from i2c.plan.plans import get_thread
+from i2c.plan.tasks import (
+    mark_task_complete, mark_step_complete,
+    delete_task, insert_task_before,
+    reorder_tasks, move_task_before, move_task_after, replace_task,
+)
+from i2c.plan.threads import delete_thread, replace_thread, reorder_threads
 
 
 SIMPLE_PLAN = """\

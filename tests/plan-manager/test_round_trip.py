@@ -1,13 +1,6 @@
 """Tests for round-trip fidelity: read + write produces identical output."""
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-fix_numbering = _mod.fix_numbering
+from i2c.plan.plans import fix_numbering
 
 
 FULL_PLAN = """\

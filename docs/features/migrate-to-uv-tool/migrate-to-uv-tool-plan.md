@@ -233,18 +233,18 @@ Migrate the remaining cross-cutting test files, delete old files, and update all
     - [x] Rewrite imports in `test_debug_renumber.py` to use `from i2c.plan.<module>` imports
     - [x] Verify all 22 test files pass: `uv run --with pytest pytest tests/plan-manager/ -v`
 
-- [ ] **Task 5.2: Delete old files and update documentation**
+- [x] **Task 5.2: Delete old files and update documentation**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: Old script files are deleted; `SKILL.md` references `i2c plan ...` invocations; `AGENTS.md` references new package structure; all tests and CLI smoke tests still pass
   - Evidence: `./test-scripts/test-end-to-end.sh` exits 0
   - Steps:
-    - [ ] Delete `skills/plan-file-management/scripts/plan-manager.py`
-    - [ ] Delete `skills/plan-file-management/scripts/fix-plan-numbering.py`
-    - [ ] Verify `skills/plan-file-management/SKILL.md` has no remaining `uv run skills/.../plan-manager.py` references (should already be fully migrated by threads 1–4)
-    - [ ] Update `AGENTS.md`: replace script path references and test runner command
-    - [ ] Update `test-scripts/test-end-to-end.sh` if it references old paths
-    - [ ] Verify: `./test-scripts/test-end-to-end.sh` exits 0
+    - [x] Delete `skills/plan-file-management/scripts/plan-manager.py`
+    - [x] Delete `skills/plan-file-management/scripts/fix-plan-numbering.py`
+    - [x] Verify `skills/plan-file-management/SKILL.md` has no remaining `uv run skills/.../plan-manager.py` references (should already be fully migrated by threads 1–4)
+    - [x] Update `AGENTS.md`: replace script path references and test runner command
+    - [x] Update `test-scripts/test-end-to-end.sh` if it references old paths
+    - [x] Verify: `./test-scripts/test-end-to-end.sh` exits 0
 
 - [ ] **Task 5.3: Full CLI smoke test covers all 23 subcommands**
   - TaskType: INFRA
@@ -298,3 +298,6 @@ Thread CLI handlers registered, smoke tests added, SKILL.md updated
 
 ### 2026-02-09 08:49 - mark-task-complete
 All 3 cross-cutting test files migrated, no importlib/sys.path workarounds remain
+
+### 2026-02-09 08:49 - mark-task-complete
+Old scripts deleted, AGENTS.md updated, SKILL.md clean, all tests pass

@@ -10,8 +10,8 @@ Never use bare `pytest` or `python -m pytest`.
 
 ## Project Structure
 
-- Plan manager script: `skills/plan-file-management/scripts/plan-manager.py`
+- Plan manager package: `src/i2c/plan/` (installed as `i2c` CLI tool via `pyproject.toml`)
 - Tests: `tests/plan-manager/`
 - Plan file: `docs/features/plan-manager-mcp/plan-manager-mcp-plan.md`
-- The script uses PEP 723 inline metadata with no dependencies beyond stdlib
-- Test imports use `importlib.import_module('plan-manager')` due to hyphen in filename
+- CLI invocation: `i2c plan <subcommand> <plan_file> [options]`
+- Test imports use `from i2c.plan.<module> import <function>`

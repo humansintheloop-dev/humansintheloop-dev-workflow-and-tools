@@ -72,5 +72,69 @@ if ! grep -q "Steel Thread 1:" "$PLAN_FILE"; then
 fi
 echo "PASS: fix-numbering"
 
+# --- get-next-task ---
+echo ""
+echo "--- get-next-task ---"
+OUTPUT=$(uv run i2c plan get-next-task "$PLAN_FILE" 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"Thread 1, Task 1.1:"* ]]; then
+    echo "FAIL: get-next-task did not return expected task"
+    exit 1
+fi
+if [[ "$OUTPUT" != *"TaskType:"* ]]; then
+    echo "FAIL: get-next-task missing TaskType"
+    exit 1
+fi
+echo "PASS: get-next-task"
+
+# --- list-threads ---
+echo ""
+echo "--- list-threads ---"
+OUTPUT=$(uv run i2c plan list-threads "$PLAN_FILE" 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"Thread 1:"* ]]; then
+    echo "FAIL: list-threads did not return threads"
+    exit 1
+fi
+if [[ "$OUTPUT" != *"tasks completed"* ]]; then
+    echo "FAIL: list-threads missing completion count"
+    exit 1
+fi
+echo "PASS: list-threads"
+
+# --- get-summary ---
+echo ""
+echo "--- get-summary ---"
+OUTPUT=$(uv run i2c plan get-summary "$PLAN_FILE" 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"Plan:"* ]]; then
+    echo "FAIL: get-summary missing Plan:"
+    exit 1
+fi
+if [[ "$OUTPUT" != *"Idea Type:"* ]]; then
+    echo "FAIL: get-summary missing Idea Type:"
+    exit 1
+fi
+if [[ "$OUTPUT" != *"Tasks:"* ]]; then
+    echo "FAIL: get-summary missing Tasks:"
+    exit 1
+fi
+echo "PASS: get-summary"
+
+# --- get-thread ---
+echo ""
+echo "--- get-thread ---"
+OUTPUT=$(uv run i2c plan get-thread "$PLAN_FILE" --thread 1 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"Thread 1:"* ]]; then
+    echo "FAIL: get-thread did not return thread"
+    exit 1
+fi
+if [[ "$OUTPUT" != *"Introduction to first thread"* ]]; then
+    echo "FAIL: get-thread missing introduction"
+    exit 1
+fi
+echo "PASS: get-thread"
+
 echo ""
 echo "=== All CLI Smoke Tests Passed ==="

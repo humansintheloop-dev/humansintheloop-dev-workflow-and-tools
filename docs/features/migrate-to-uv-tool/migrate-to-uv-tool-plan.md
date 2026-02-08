@@ -125,16 +125,16 @@ Migrate the 4 read-only pure functions and their CLI handlers. These are the sim
     - [x] Rewrite imports in `test_get_thread.py`: `from i2c.plan.plans import get_thread`
     - [x] Verify all 4 test files pass incrementally (one at a time, then together)
 
-- [ ] **Task 2.2: CLI handlers for `get-next-task`, `list-threads`, `get-summary`, `get-thread` produce correct output**
+- [x] **Task 2.2: CLI handlers for `get-next-task`, `list-threads`, `get-summary`, `get-thread` produce correct output**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: CLI smoke test verifies all 4 read commands produce expected output format
   - Evidence: `./test-scripts/test-end-to-end.sh` exits 0
   - Steps:
-    - [ ] Add `get-next-task`, `list-threads`, `get-summary`, `get-thread` Click commands to `src/i2c/plan/plan_cli.py`
-    - [ ] Update `test-scripts/test-cli-smoke.sh` to test each read command against a sample plan file and verify output format matches spec (e.g., `get-summary` output contains `Plan:`, `Idea Type:`, etc.)
-    - [ ] Update `skills/plan-file-management/SKILL.md`: change `get-next-task`, `list-threads`, `get-summary`, `get-thread` invocations to `i2c plan ...`; keep remaining commands using old invocation
-    - [ ] Verify: `./test-scripts/test-end-to-end.sh` exits 0
+    - [x] Add `get-next-task`, `list-threads`, `get-summary`, `get-thread` Click commands to `src/i2c/plan/plan_cli.py`
+    - [x] Update `test-scripts/test-cli-smoke.sh` to test each read command against a sample plan file and verify output format matches spec (e.g., `get-summary` output contains `Plan:`, `Idea Type:`, etc.)
+    - [x] Update `skills/plan-file-management/SKILL.md`: change `get-next-task`, `list-threads`, `get-summary`, `get-thread` invocations to `i2c plan ...`; keep remaining commands using old invocation
+    - [x] Verify: `./test-scripts/test-end-to-end.sh` exits 0
 
 ---
 
@@ -274,3 +274,6 @@ Verified .github/workflows/ci.yml already runs ./test-scripts/test-end-to-end.sh
 
 ### 2026-02-09 08:34 - mark-task-complete
 Added _parse_task_block to _helpers.py. Added get_next_task, list_threads, get_summary, get_thread to plans.py. Rewrote imports in all 4 test files. All 193 tests pass.
+
+### 2026-02-09 08:36 - mark-task-complete
+Added get-next-task, list-threads, get-summary, get-thread Click commands to plan_cli.py. Updated smoke test and SKILL.md. All tests pass.

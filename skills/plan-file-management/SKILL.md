@@ -66,25 +66,25 @@ Insert a fully structured thread after a specified thread, then auto-renumber.
 
 Return the first uncompleted task across the plan, with full metadata and steps. Prints a message if all tasks are complete.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py get-next-task <plan_file>
+    i2c plan get-next-task <plan_file>
 
 ## list-threads
 
 Return all threads with their numbers, titles, and task completion counts.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py list-threads <plan_file>
+    i2c plan list-threads <plan_file>
 
 ## get-summary
 
 Return the plan's name, idea type, overview, and progress (thread count, task count, completed task count).
 
-    uv run skills/plan-file-management/scripts/plan-manager.py get-summary <plan_file>
+    i2c plan get-summary <plan_file>
 
 ## get-thread
 
 Return a specific thread's full content including number, title, introduction, and all tasks with their metadata and steps.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py get-thread <plan_file> --thread <N>
+    i2c plan get-thread <plan_file> --thread <N>
 
 Errors if the thread does not exist.
 

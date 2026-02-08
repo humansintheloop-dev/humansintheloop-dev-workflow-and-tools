@@ -193,28 +193,28 @@ Migrate the 9 task-level pure functions (mark-task-complete/incomplete, insert/d
 
 Migrate the 5 thread-level pure functions and their CLI handlers.
 
-- [ ] **Task 4.1: Thread insert, delete, replace, reorder pure functions pass all tests**
+- [x] **Task 4.1: Thread insert, delete, replace, reorder pure functions pass all tests**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/plan-manager/test_insert_thread.py tests/plan-manager/test_delete_thread.py tests/plan-manager/test_replace_thread.py tests/plan-manager/test_reorder_threads.py -v`
   - Observable: All 4 test files pass with `from i2c.plan.threads import <fn>` imports
   - Evidence: `uv run --with pytest pytest tests/plan-manager/test_insert_thread.py tests/plan-manager/test_delete_thread.py tests/plan-manager/test_replace_thread.py tests/plan-manager/test_reorder_threads.py -v` exits 0
   - Steps:
-    - [ ] Create `src/i2c/plan/threads.py` with `insert_thread_before`, `insert_thread_after`, `delete_thread`, `replace_thread`, `reorder_threads` copied from `plan-manager.py`, importing `_extract_thread_sections`, `_serialize_thread`, `append_change_history` from `_helpers` and `fix_numbering` from `plans`
-    - [ ] Add `_serialize_thread` to `src/i2c/plan/_helpers.py` if not already present
-    - [ ] Rewrite imports in all 4 test files to use `from i2c.plan.threads import <fn>`
-    - [ ] Verify all 4 test files pass incrementally
+    - [x] Create `src/i2c/plan/threads.py` with `insert_thread_before`, `insert_thread_after`, `delete_thread`, `replace_thread`, `reorder_threads` copied from `plan-manager.py`, importing `_extract_thread_sections`, `_serialize_thread`, `append_change_history` from `_helpers` and `fix_numbering` from `plans`
+    - [x] Add `_serialize_thread` to `src/i2c/plan/_helpers.py` if not already present
+    - [x] Rewrite imports in all 4 test files to use `from i2c.plan.threads import <fn>`
+    - [x] Verify all 4 test files pass incrementally
 
-- [ ] **Task 4.2: Thread CLI handlers work end-to-end**
+- [x] **Task 4.2: Thread CLI handlers work end-to-end**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: CLI smoke test verifies thread mutation commands produce correct output
   - Evidence: `./test-scripts/test-end-to-end.sh` exits 0
   - Steps:
-    - [ ] Create `src/i2c/plan/thread_cli.py` with Click commands for all 5 thread operations and `register(group)` function
-    - [ ] Register thread commands in `src/i2c/plan/cli.py`
-    - [ ] Update `test-scripts/test-cli-smoke.sh` to test representative thread mutation commands (insert-thread-after, delete-thread)
-    - [ ] Update `skills/plan-file-management/SKILL.md`: change all thread command invocations (`insert-thread-before`, `insert-thread-after`, `delete-thread`, `replace-thread`, `reorder-threads`) to `i2c plan ...` — SKILL.md now fully migrated
-    - [ ] Verify: `./test-scripts/test-end-to-end.sh` exits 0
+    - [x] Create `src/i2c/plan/thread_cli.py` with Click commands for all 5 thread operations and `register(group)` function
+    - [x] Register thread commands in `src/i2c/plan/cli.py`
+    - [x] Update `test-scripts/test-cli-smoke.sh` to test representative thread mutation commands (insert-thread-after, delete-thread)
+    - [x] Update `skills/plan-file-management/SKILL.md`: change all thread command invocations (`insert-thread-before`, `insert-thread-after`, `delete-thread`, `replace-thread`, `reorder-threads`) to `i2c plan ...` — SKILL.md now fully migrated
+    - [x] Verify: `./test-scripts/test-end-to-end.sh` exits 0
 
 ---
 
@@ -289,3 +289,9 @@ Added _serialize_task, _find_task_boundaries to _helpers.py. Added insert/delete
 
 ### 2026-02-09 08:44 - mark-task-complete
 Created task_cli.py with all 11 Click commands. Registered in plan/cli.py. Updated smoke test and SKILL.md. All tests pass.
+
+### 2026-02-09 08:45 - mark-task-complete
+Created threads.py with all 5 thread functions. Added _serialize_thread to _helpers.py. Migrated 4 test files. 38 tests pass.
+
+### 2026-02-09 08:48 - mark-task-complete
+Thread CLI handlers registered, smoke tests added, SKILL.md updated

@@ -180,5 +180,32 @@ if [[ "$OUTPUT" != *"Deleted task 1.3"* ]]; then
 fi
 echo "PASS: delete-task"
 
+# --- insert-thread-after ---
+echo ""
+echo "--- insert-thread-after ---"
+TASKS_JSON='[{"title":"New task","task_type":"INFRA","entrypoint":"echo new","observable":"New thing","evidence":"echo ok","steps":["Step X"]}]'
+OUTPUT=$(uv run i2c plan insert-thread-after "$PLAN_FILE" --after 1 --title "New Thread" --introduction "New thread intro." --tasks "$TASKS_JSON" --rationale "smoke test" 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"Inserted thread"* ]]; then
+    echo "FAIL: insert-thread-after unexpected output"
+    exit 1
+fi
+if ! grep -q "Steel Thread 2: New Thread" "$PLAN_FILE"; then
+    echo "FAIL: insert-thread-after did not insert thread"
+    exit 1
+fi
+echo "PASS: insert-thread-after"
+
+# --- delete-thread ---
+echo ""
+echo "--- delete-thread ---"
+OUTPUT=$(uv run i2c plan delete-thread "$PLAN_FILE" --thread 2 --rationale "smoke test" 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"Deleted thread 2"* ]]; then
+    echo "FAIL: delete-thread unexpected output"
+    exit 1
+fi
+echo "PASS: delete-thread"
+
 echo ""
 echo "=== All CLI Smoke Tests Passed ==="

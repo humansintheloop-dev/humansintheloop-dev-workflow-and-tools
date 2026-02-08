@@ -7,9 +7,9 @@ description: Guidelines for structural operations on plan files (renumbering). C
 
 Structural operations on plan files such as renumbering threads and tasks.
 
-All operations are subcommands of `plan-manager.py`, invoked as:
+All operations are subcommands of the `i2c` CLI tool, invoked as:
 
-    uv run skills/plan-file-management/scripts/plan-manager.py <subcommand> <plan_file> [options]
+    i2c plan <subcommand> <plan_file> [options]
 
 ## fix-numbering
 
@@ -42,7 +42,7 @@ Errors if the task does not exist or is already incomplete.
 
 Reorder threads according to a specified ordering, then auto-renumber all threads and tasks.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py reorder-threads <plan_file> --order <comma-separated-thread-numbers> --rationale <text>
+    i2c plan reorder-threads <plan_file> --order <comma-separated-thread-numbers> --rationale <text>
 
 Example: `--order 3,1,2` moves thread 3 to position 1, thread 1 to position 2, thread 2 to position 3.
 
@@ -52,7 +52,7 @@ Errors if `--order` does not contain exactly the set of existing thread numbers.
 
 Insert a fully structured thread before a specified thread, then auto-renumber.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py insert-thread-before <plan_file> --before <N> --title <title> --introduction <text> --tasks <json> --rationale <text>
+    i2c plan insert-thread-before <plan_file> --before <N> --title <title> --introduction <text> --tasks <json> --rationale <text>
 
 The `--tasks` argument is a JSON array of task objects (see spec for schema).
 
@@ -60,7 +60,7 @@ The `--tasks` argument is a JSON array of task objects (see spec for schema).
 
 Insert a fully structured thread after a specified thread, then auto-renumber.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py insert-thread-after <plan_file> --after <N> --title <title> --introduction <text> --tasks <json> --rationale <text>
+    i2c plan insert-thread-after <plan_file> --after <N> --title <title> --introduction <text> --tasks <json> --rationale <text>
 
 ## get-next-task
 
@@ -108,7 +108,7 @@ Errors if the step does not exist or is already incomplete.
 
 Replace a thread's entire content (title, introduction, tasks) in place, then auto-renumber.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py replace-thread <plan_file> --thread <N> --title <title> --introduction <text> --tasks <json> --rationale <text>
+    i2c plan replace-thread <plan_file> --thread <N> --title <title> --introduction <text> --tasks <json> --rationale <text>
 
 Errors if the thread does not exist.
 
@@ -178,6 +178,6 @@ Errors if the thread or task does not exist.
 
 Remove a thread entirely, then auto-renumber remaining threads and tasks.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py delete-thread <plan_file> --thread <N> --rationale <text>
+    i2c plan delete-thread <plan_file> --thread <N> --rationale <text>
 
 Errors if the thread does not exist.

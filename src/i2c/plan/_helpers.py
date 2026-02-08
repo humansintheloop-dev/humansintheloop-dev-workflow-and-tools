@@ -201,3 +201,27 @@ def _find_task_boundaries(lines: list[str], thread_number: int) -> list[tuple[in
         result.append((start, end, tk_num))
 
     return result
+
+
+def _serialize_thread(title: str, introduction: str, tasks: list[dict]) -> str:
+    """Convert structured thread data to markdown text.
+
+    The thread number and task numbers use placeholder 0 since
+    fix_numbering will assign correct numbers.
+    """
+    lines = [f"## Steel Thread 0: {title}"]
+    lines.append(introduction)
+    lines.append("")
+
+    for task in tasks:
+        lines.append(f"- [ ] **Task 0.0: {task['title']}**")
+        lines.append(f"  - TaskType: {task['task_type']}")
+        lines.append(f"  - Entrypoint: `{task['entrypoint']}`")
+        lines.append(f"  - Observable: {task['observable']}")
+        lines.append(f"  - Evidence: `{task['evidence']}`")
+        lines.append("  - Steps:")
+        for step in task['steps']:
+            lines.append(f"    - [ ] {step}")
+        lines.append("")
+
+    return '\n'.join(lines)

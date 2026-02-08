@@ -1,14 +1,6 @@
 """Tests for insert_thread_before and insert_thread_after pure functions."""
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-insert_thread_before = _mod.insert_thread_before
-insert_thread_after = _mod.insert_thread_after
+from i2c.plan.threads import insert_thread_before, insert_thread_after
 
 
 TWO_THREAD_PLAN = """\

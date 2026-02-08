@@ -1,13 +1,6 @@
 """Tests for replace_thread pure function."""
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-replace_thread = _mod.replace_thread
+from i2c.plan.threads import replace_thread
 
 
 PLAN_WITH_TWO_THREADS = """\

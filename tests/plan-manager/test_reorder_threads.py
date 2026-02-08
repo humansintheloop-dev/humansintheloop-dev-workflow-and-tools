@@ -1,13 +1,6 @@
 """Tests for reorder_threads pure function."""
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-reorder_threads = _mod.reorder_threads
+from i2c.plan.threads import reorder_threads
 
 
 TWO_THREAD_PLAN = """\

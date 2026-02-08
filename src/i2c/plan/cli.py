@@ -4,6 +4,7 @@ import click
 
 from i2c.plan.plan_cli import register as register_plan_commands
 from i2c.plan.task_cli import register as register_task_commands
+from i2c.plan.thread_cli import register as register_thread_commands
 
 
 @click.group()
@@ -14,3 +15,4 @@ def plan():
 
 register_plan_commands(plan)
 register_task_commands(plan)
+register_thread_commands(plan)

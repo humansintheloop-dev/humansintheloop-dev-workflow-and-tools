@@ -67,19 +67,19 @@ Migrate the plan-file-management scripts from a monolithic 1,761-line single-fil
 
 This thread proves the package structure, Click CLI, test imports, and CI all work together with a single subcommand before migrating the remaining 22.
 
-- [ ] **Task 1.1: `fix_numbering` pure function is importable from `i2c.plan.plans`**
+- [x] **Task 1.1: `fix_numbering` pure function is importable from `i2c.plan.plans`**
   - TaskType: INFRA
   - Entrypoint: `uv run --with pytest pytest tests/plan-manager/test_fix_numbering.py -v`
   - Observable: `test_fix_numbering.py` passes using `from i2c.plan.plans import fix_numbering` import
   - Evidence: `uv run --with pytest pytest tests/plan-manager/test_fix_numbering.py -v` exits 0
   - Steps:
-    - [ ] Create `pyproject.toml` at repo root with `name = "i2c"`, `requires-python = ">=3.12"`, `dependencies = ["click"]`, `[project.scripts] i2c = "i2c.cli:main"`, hatchling build backend, and `[tool.hatch.build.targets.wheel] packages = ["src/i2c"]`
-    - [ ] Create `src/i2c/__init__.py` (empty package marker)
-    - [ ] Create `src/i2c/plan/__init__.py` (empty package marker)
-    - [ ] Create `src/i2c/plan/_helpers.py` with `append_change_history` and `_extract_thread_sections` extracted from `plan-manager.py` (these are dependencies of later functions; for now only `_extract_thread_sections` is needed transitively but include both)
-    - [ ] Create `src/i2c/plan/plans.py` with `fix_numbering` function copied from `plan-manager.py`
-    - [ ] Rewrite `tests/plan-manager/test_fix_numbering.py` imports: replace `sys.path.insert` / `importlib.import_module` workaround with `from i2c.plan.plans import fix_numbering`
-    - [ ] Verify test passes: `uv run --with pytest pytest tests/plan-manager/test_fix_numbering.py -v`
+    - [x] Create `pyproject.toml` at repo root with `name = "i2c"`, `requires-python = ">=3.12"`, `dependencies = ["click"]`, `[project.scripts] i2c = "i2c.cli:main"`, hatchling build backend, and `[tool.hatch.build.targets.wheel] packages = ["src/i2c"]`
+    - [x] Create `src/i2c/__init__.py` (empty package marker)
+    - [x] Create `src/i2c/plan/__init__.py` (empty package marker)
+    - [x] Create `src/i2c/plan/_helpers.py` with `append_change_history` and `_extract_thread_sections` extracted from `plan-manager.py` (these are dependencies of later functions; for now only `_extract_thread_sections` is needed transitively but include both)
+    - [x] Create `src/i2c/plan/plans.py` with `fix_numbering` function copied from `plan-manager.py`
+    - [x] Rewrite `tests/plan-manager/test_fix_numbering.py` imports: replace `sys.path.insert` / `importlib.import_module` workaround with `from i2c.plan.plans import fix_numbering`
+    - [x] Verify test passes: `uv run --with pytest pytest tests/plan-manager/test_fix_numbering.py -v`
 
 - [ ] **Task 1.2: `i2c plan fix-numbering` CLI command works end-to-end**
   - TaskType: INFRA
@@ -262,3 +262,6 @@ Migrate the remaining cross-cutting test files, delete old files, and update all
 ### 2026-02-09: Incremental SKILL.md updates after each thread
 
 Moved SKILL.md updates from a single big-bang operation in Thread 5 to incremental updates at the end of each thread (1–4). After each thread completes, only the newly migrated commands are updated in SKILL.md, so the skill works with a mix of old (`uv run .../plan-manager.py`) and new (`i2c plan`) invocations throughout the migration. Thread 5's SKILL.md step changed from "update all" to "verify no old references remain."
+
+### 2026-02-09 08:30 - mark-task-complete
+Created pyproject.toml, src/i2c/__init__.py, src/i2c/plan/__init__.py, src/i2c/plan/_helpers.py (append_change_history, _extract_thread_sections), src/i2c/plan/plans.py (fix_numbering), and rewrote test imports. All 193 tests pass.

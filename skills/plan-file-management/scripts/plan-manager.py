@@ -140,6 +140,76 @@ def mark_task_complete(plan: str, thread_number: int, task_number: int, rational
     return result
 
 
+def mark_task_incomplete(plan: str, thread_number: int, task_number: int, rationale: str | None = None) -> str:
+    """Mark a completed task and all its steps as incomplete.
+
+    Raises ValueError if the task does not exist or is already incomplete.
+    """
+    lines = plan.split('\n')
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+    task_line_re = re.compile(r'^- \[[ x]\] \*\*Task (\d+)\.(\d+):')
+
+    current_thread = 0
+    task_line_idx = None
+    task_end_idx = None
+
+    # Find the target task line
+    for i, line in enumerate(lines):
+        thread_match = thread_heading_re.match(line)
+        if thread_match:
+            current_thread = int(thread_match.group(1))
+            continue
+
+        task_match = task_line_re.match(line)
+        if task_match:
+            t_num = int(task_match.group(1))
+            tk_num = int(task_match.group(2))
+            if task_line_idx is not None and task_end_idx is None:
+                # Found the next task - mark end of previous task
+                task_end_idx = i
+            if t_num == thread_number and tk_num == task_number:
+                task_line_idx = i
+
+        # A thread heading or horizontal rule after our task marks the end
+        if task_line_idx is not None and task_end_idx is None and i > task_line_idx:
+            if thread_heading_re.match(line) or (line.strip() == '---' and i > task_line_idx + 1):
+                task_end_idx = i
+
+    if task_line_idx is None:
+        # Check if thread exists
+        thread_exists = any(
+            thread_heading_re.match(l) and int(thread_heading_re.match(l).group(1)) == thread_number
+            for l in lines
+        )
+        if not thread_exists:
+            raise ValueError(f"mark-task-incomplete: thread {thread_number} does not exist")
+        raise ValueError(f"mark-task-incomplete: task {thread_number}.{task_number} does not exist")
+
+    # Check if already incomplete
+    if "- [ ]" in lines[task_line_idx]:
+        raise ValueError(
+            f"mark-task-incomplete: task {thread_number}.{task_number} is already incomplete"
+        )
+
+    if task_end_idx is None:
+        task_end_idx = len(lines)
+
+    # Mark the task line and all step lines as incomplete
+    step_re = re.compile(r'^(\s+- )\[x\]( .*)$')
+    for i in range(task_line_idx, task_end_idx):
+        if i == task_line_idx:
+            lines[i] = lines[i].replace('- [x]', '- [ ]', 1)
+        else:
+            step_match = step_re.match(lines[i])
+            if step_match:
+                lines[i] = f"{step_match.group(1)}[ ]{step_match.group(2)}"
+
+    result = '\n'.join(lines)
+    if rationale is not None:
+        result = append_change_history(result, "mark-task-incomplete", rationale)
+    return result
+
+
 def _extract_thread_sections(plan: str) -> tuple[str, list[tuple[int, str]], str]:
     """Split a plan into preamble, thread sections, and postamble.
 
@@ -1354,6 +1424,21 @@ def cmd_mark_task_complete(args):
     print(f"Marked task {args.thread}.{args.task} as complete")
 
 
+def cmd_mark_task_incomplete(args):
+    """Handle the mark-task-incomplete subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        result = mark_task_incomplete(plan, args.thread, args.task, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Marked task {args.thread}.{args.task} as incomplete")
+
+
 def build_parser():
     """Build the argparse parser with all subcommands."""
     parser = argparse.ArgumentParser(
@@ -1544,6 +1629,15 @@ def build_parser():
     del_task.add_argument('--task', type=int, required=True, help='Task number to delete')
     del_task.add_argument('--rationale', required=True, help='Reason for the change')
     del_task.set_defaults(func=cmd_delete_task)
+
+    # mark-task-incomplete
+    mark_task_inc = subparsers.add_parser('mark-task-incomplete',
+                                           help='Mark a completed task and all its steps as incomplete')
+    mark_task_inc.add_argument('plan_file', help='Path to the plan file')
+    mark_task_inc.add_argument('--thread', type=int, required=True, help='Thread number')
+    mark_task_inc.add_argument('--task', type=int, required=True, help='Task number')
+    mark_task_inc.add_argument('--rationale', default=None, help='Reason for the change (optional)')
+    mark_task_inc.set_defaults(func=cmd_mark_task_incomplete)
 
     return parser
 

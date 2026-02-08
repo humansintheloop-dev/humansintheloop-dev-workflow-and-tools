@@ -30,6 +30,14 @@ Mark a task and all its steps as complete. Optionally appends to change history 
 
 Errors if the task does not exist or is already complete.
 
+## mark-task-incomplete
+
+Mark a completed task and all its steps as incomplete. The reverse of mark-task-complete. Optionally appends to change history if rationale is provided.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py mark-task-incomplete <plan_file> --thread <N> --task <M> [--rationale <text>]
+
+Errors if the task does not exist or is already incomplete.
+
 ## reorder-threads
 
 Reorder threads according to a specified ordering, then auto-renumber all threads and tasks.

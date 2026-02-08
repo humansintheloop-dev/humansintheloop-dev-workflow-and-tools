@@ -425,9 +425,43 @@ Replace a task's content in place within a thread, equivalent to delete-task fol
 
 ---
 
+## Steel Thread 18: Mark Task Incomplete
+Implements marking a completed task as incomplete, changing `[x]` to `[ ]` on the task line and all its step lines. The reverse of mark-task-complete.
+
+- [x] **Task 18.1: mark-task-incomplete marks a completed task and all its steps as incomplete**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py mark-task-incomplete <plan_file> --thread <N> --task <M> --rationale <text>`
+  - Observable: After running mark-task-incomplete, the task line and all its step lines have - [ ], and change history is appended
+  - Evidence: `pytest tests/plan-manager/ passes`
+  - Steps:
+    - [x] Implement mark_task_incomplete(plan: str, thread_number: int, task_number: int, rationale: str) -> str as a pure function
+    - [x] Change task line - [x] to - [ ] and all steps within the task from - [x] to - [ ]
+    - [x] Append to change history
+    - [x] Return error if task does not exist or is already incomplete
+    - [x] Register mark-task-incomplete subcommand with argparse
+    - [x] Write pytest tests covering: task and steps marked incomplete, change history appended, error on already-incomplete task, error on nonexistent task
+    - [x] Update skills/plan-file-management/SKILL.md to document the mark-task-incomplete subcommand
+
+## Steel Thread 19: Mark Step Incomplete
+Implements marking a completed step as incomplete, changing `[x]` to `[ ]` on a specific step line. The reverse of mark-step-complete.
+
+- [ ] **Task 19.1: mark-step-incomplete marks a completed step as incomplete**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py mark-step-incomplete <plan_file> --thread <N> --task <M> --step <S> --rationale <text>`
+  - Observable: After running mark-step-incomplete, the step line has - [ ], and change history is appended
+  - Evidence: `pytest tests/plan-manager/ passes`
+  - Steps:
+    - [ ] Implement mark_step_incomplete(plan: str, thread_number: int, task_number: int, step_number: int, rationale: str) -> str as a pure function
+    - [ ] Change the specific step line from - [x] to - [ ]
+    - [ ] Append to change history
+    - [ ] Return error if step does not exist or is already incomplete
+    - [ ] Register mark-step-incomplete subcommand with argparse
+    - [ ] Write pytest tests covering: step marked incomplete, change history appended, error on already-incomplete step, error on nonexistent step
+    - [ ] Update skills/plan-file-management/SKILL.md to document the mark-step-incomplete subcommand
+
 ## Summary
 
-This plan covers 17 steel threads with 22 tasks implementing the complete Plan File Management Scripts:
+This plan covers 19 steel threads with 24 tasks implementing the complete Plan File Management Scripts:
 
 1. **Script with Fix Numbering**: Migrates existing fix-numbering into plan-manager.py, establishes script infrastructure with argparse subcommands
 2. **Mark Task Complete**: Task-level completion with cascading step completion
@@ -446,6 +480,8 @@ This plan covers 17 steel threads with 22 tasks implementing the complete Plan F
 15. **Reorder Tasks**: Rearrange tasks within a thread with auto-renumbering
 16. **Move Task**: Move a single task before/after another task within the same thread
 17. **Replace Task**: Replace a task's content in place within a thread
+18. **Mark Task Incomplete**: Reverse task completion, marking task and all steps as incomplete
+19. **Mark Step Incomplete**: Reverse step completion, marking a single step as incomplete
 
 ---
 
@@ -524,3 +560,12 @@ Add replace-task subcommand equivalent to delete-task + insert-task
 
 ### 2026-02-07 12:09 - mark-task-complete
 Implemented replace_task pure function, CLI subcommand, 8 tests, SKILL.md docs
+
+### 2026-02-08 14:57 - insert-thread-after
+Added mark-task-incomplete to support reversing task completion
+
+### 2026-02-08 14:57 - insert-thread-after
+Added mark-step-incomplete to support reversing step completion
+
+### 2026-02-08 15:37 - mark-task-complete
+Implemented mark_task_incomplete pure function, CLI subcommand, 10 tests, SKILL.md docs

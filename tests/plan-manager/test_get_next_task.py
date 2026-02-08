@@ -1,13 +1,6 @@
 """Tests for get_next_task pure function."""
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-get_next_task = _mod.get_next_task
+from i2c.plan.plans import get_next_task
 
 
 PLAN_WITH_FIRST_INCOMPLETE = """\

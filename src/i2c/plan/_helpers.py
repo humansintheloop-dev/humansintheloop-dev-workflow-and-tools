@@ -83,3 +83,61 @@ def _extract_thread_sections(plan: str) -> tuple[str, list[tuple[int, str]], str
         postamble = '\n' + postamble
 
     return preamble, threads, postamble
+
+
+def _parse_task_block(lines: list[str], start: int, end: int, thread_num: int) -> dict:
+    """Parse a task block from lines[start:end] into a dict with full metadata."""
+    task_line = lines[start]
+    task_re = re.compile(r'^- \[([ x])\] \*\*Task (\d+)\.(\d+): (.+)\*\*$')
+    m = task_re.match(task_line)
+    if not m:
+        return None
+
+    completed = m.group(1) == 'x'
+    task_number = int(m.group(3))
+    title = m.group(4)
+
+    task_type = entrypoint = observable = evidence = ''
+    steps = []
+    in_steps = False
+
+    for i in range(start + 1, end):
+        line = lines[i]
+        stripped = line.strip()
+
+        if stripped.startswith('- TaskType:'):
+            task_type = stripped[len('- TaskType:'):].strip()
+        elif stripped.startswith('- Entrypoint:'):
+            val = stripped[len('- Entrypoint:'):].strip()
+            # Strip backticks
+            if val.startswith('`') and val.endswith('`'):
+                val = val[1:-1]
+            entrypoint = val
+        elif stripped.startswith('- Observable:'):
+            observable = stripped[len('- Observable:'):].strip()
+        elif stripped.startswith('- Evidence:'):
+            val = stripped[len('- Evidence:'):].strip()
+            if val.startswith('`') and val.endswith('`'):
+                val = val[1:-1]
+            evidence = val
+        elif stripped.startswith('- Steps:'):
+            in_steps = True
+        elif in_steps and re.match(r'^\s+- \[[ x]\] ', line):
+            step_match = re.match(r'^\s+- \[([ x])\] (.+)$', line)
+            if step_match:
+                steps.append({
+                    'description': step_match.group(2),
+                    'completed': step_match.group(1) == 'x'
+                })
+
+    return {
+        'thread_number': thread_num,
+        'task_number': task_number,
+        'title': title,
+        'completed': completed,
+        'task_type': task_type,
+        'entrypoint': entrypoint,
+        'observable': observable,
+        'evidence': evidence,
+        'steps': steps,
+    }

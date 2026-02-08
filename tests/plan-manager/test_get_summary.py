@@ -1,13 +1,6 @@
 """Tests for get_summary pure function."""
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-get_summary = _mod.get_summary
+from i2c.plan.plans import get_summary
 
 
 PLAN_WITH_MIXED_TASKS = """\

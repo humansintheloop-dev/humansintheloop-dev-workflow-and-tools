@@ -96,6 +96,14 @@ Mark a single step as complete. Appends to change history.
 
 Errors if the step does not exist or is already complete.
 
+## mark-step-incomplete
+
+Mark a single completed step as incomplete. The reverse of mark-step-complete. Appends to change history.
+
+    uv run skills/plan-file-management/scripts/plan-manager.py mark-step-incomplete <plan_file> --thread <N> --task <M> --step <S> --rationale <text>
+
+Errors if the step does not exist or is already incomplete.
+
 ## replace-thread
 
 Replace a thread's entire content (title, introduction, tasks) in place, then auto-renumber.

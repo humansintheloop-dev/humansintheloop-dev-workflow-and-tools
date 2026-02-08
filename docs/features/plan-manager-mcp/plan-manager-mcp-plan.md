@@ -445,19 +445,19 @@ Implements marking a completed task as incomplete, changing `[x]` to `[ ]` on th
 ## Steel Thread 19: Mark Step Incomplete
 Implements marking a completed step as incomplete, changing `[x]` to `[ ]` on a specific step line. The reverse of mark-step-complete.
 
-- [ ] **Task 19.1: mark-step-incomplete marks a completed step as incomplete**
+- [x] **Task 19.1: mark-step-incomplete marks a completed step as incomplete**
   - TaskType: OUTCOME
   - Entrypoint: `uv run skills/plan-file-management/scripts/plan-manager.py mark-step-incomplete <plan_file> --thread <N> --task <M> --step <S> --rationale <text>`
   - Observable: After running mark-step-incomplete, the step line has - [ ], and change history is appended
   - Evidence: `pytest tests/plan-manager/ passes`
   - Steps:
-    - [ ] Implement mark_step_incomplete(plan: str, thread_number: int, task_number: int, step_number: int, rationale: str) -> str as a pure function
-    - [ ] Change the specific step line from - [x] to - [ ]
-    - [ ] Append to change history
-    - [ ] Return error if step does not exist or is already incomplete
-    - [ ] Register mark-step-incomplete subcommand with argparse
-    - [ ] Write pytest tests covering: step marked incomplete, change history appended, error on already-incomplete step, error on nonexistent step
-    - [ ] Update skills/plan-file-management/SKILL.md to document the mark-step-incomplete subcommand
+    - [x] Implement mark_step_incomplete(plan: str, thread_number: int, task_number: int, step_number: int, rationale: str) -> str as a pure function
+    - [x] Change the specific step line from - [x] to - [ ]
+    - [x] Append to change history
+    - [x] Return error if step does not exist or is already incomplete
+    - [x] Register mark-step-incomplete subcommand with argparse
+    - [x] Write pytest tests covering: step marked incomplete, change history appended, error on already-incomplete step, error on nonexistent step
+    - [x] Update skills/plan-file-management/SKILL.md to document the mark-step-incomplete subcommand
 
 ## Summary
 
@@ -569,3 +569,6 @@ Added mark-step-incomplete to support reversing step completion
 
 ### 2026-02-08 15:37 - mark-task-complete
 Implemented mark_task_incomplete pure function, CLI subcommand, 10 tests, SKILL.md docs
+
+### 2026-02-08 15:39 - mark-task-complete
+Implemented mark_step_incomplete pure function, CLI subcommand, 9 tests, SKILL.md docs

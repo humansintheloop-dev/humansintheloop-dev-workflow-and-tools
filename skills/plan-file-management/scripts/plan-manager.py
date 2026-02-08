@@ -493,6 +493,85 @@ def mark_step_complete(plan: str, thread_number: int, task_number: int,
     return append_change_history(result, "mark-step-complete", rationale)
 
 
+def mark_step_incomplete(plan: str, thread_number: int, task_number: int,
+                         step_number: int, rationale: str) -> str:
+    """Mark a single completed step as incomplete.
+
+    Raises ValueError if the step does not exist or is already incomplete.
+    """
+    lines = plan.split('\n')
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+    task_line_re = re.compile(r'^- \[[ x]\] \*\*Task (\d+)\.(\d+):')
+    step_re = re.compile(r'^(\s+- )\[([ x])\]( .+)$')
+
+    current_thread = 0
+    in_target_task = False
+    step_counter = 0
+    target_step_idx = None
+
+    for i, line in enumerate(lines):
+        thread_match = thread_heading_re.match(line)
+        if thread_match:
+            current_thread = int(thread_match.group(1))
+            in_target_task = False
+            continue
+
+        task_match = task_line_re.match(line)
+        if task_match:
+            t_num = int(task_match.group(1))
+            tk_num = int(task_match.group(2))
+            in_target_task = (t_num == thread_number and tk_num == task_number)
+            step_counter = 0
+            continue
+
+        if in_target_task:
+            step_match = step_re.match(line)
+            if step_match:
+                step_counter += 1
+                if step_counter == step_number:
+                    target_step_idx = i
+                    step_incomplete = step_match.group(2) == ' '
+                    break
+            elif line.strip().startswith('- ') and not line.strip().startswith('- Steps:'):
+                if not line.strip().startswith('- TaskType:') and \
+                   not line.strip().startswith('- Entrypoint:') and \
+                   not line.strip().startswith('- Observable:') and \
+                   not line.strip().startswith('- Evidence:') and \
+                   not line.strip().startswith('- Steps:'):
+                    in_target_task = False
+
+    # Validate thread exists
+    thread_exists = any(
+        thread_heading_re.match(l) and int(thread_heading_re.match(l).group(1)) == thread_number
+        for l in lines
+    )
+    if not thread_exists:
+        raise ValueError(f"mark-step-incomplete: thread {thread_number} does not exist")
+
+    # Validate task exists
+    task_exists = any(
+        task_line_re.match(l) and
+        int(task_line_re.match(l).group(1)) == thread_number and
+        int(task_line_re.match(l).group(2)) == task_number
+        for l in lines
+    )
+    if not task_exists:
+        raise ValueError(f"mark-step-incomplete: task {thread_number}.{task_number} does not exist")
+
+    if target_step_idx is None:
+        raise ValueError(f"mark-step-incomplete: step {step_number} of task {thread_number}.{task_number} does not exist")
+
+    if step_incomplete:
+        raise ValueError(f"mark-step-incomplete: step {step_number} of task {thread_number}.{task_number} is already incomplete")
+
+    # Mark the step incomplete
+    m = step_re.match(lines[target_step_idx])
+    lines[target_step_idx] = f"{m.group(1)}[ ]{m.group(3)}"
+
+    result = '\n'.join(lines)
+    return append_change_history(result, "mark-step-incomplete", rationale)
+
+
 def list_threads(plan: str) -> list[dict]:
     """Return all threads with their numbers, titles, and completion status."""
     _, threads, _ = _extract_thread_sections(plan)
@@ -1219,6 +1298,21 @@ def cmd_mark_step_complete(args):
     print(f"Marked step {args.step} of task {args.thread}.{args.task} as complete")
 
 
+def cmd_mark_step_incomplete(args):
+    """Handle the mark-step-incomplete subcommand."""
+    with open(args.plan_file, 'r', encoding='utf-8') as f:
+        plan = f.read()
+
+    try:
+        result = mark_step_incomplete(plan, args.thread, args.task, args.step, args.rationale)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+    atomic_write(args.plan_file, result)
+    print(f"Marked step {args.step} of task {args.thread}.{args.task} as incomplete")
+
+
 def cmd_list_threads(args):
     """Handle the list-threads subcommand."""
     with open(args.plan_file, 'r', encoding='utf-8') as f:
@@ -1638,6 +1732,16 @@ def build_parser():
     mark_task_inc.add_argument('--task', type=int, required=True, help='Task number')
     mark_task_inc.add_argument('--rationale', default=None, help='Reason for the change (optional)')
     mark_task_inc.set_defaults(func=cmd_mark_task_incomplete)
+
+    # mark-step-incomplete
+    mark_step_inc = subparsers.add_parser('mark-step-incomplete',
+                                           help='Mark a completed step as incomplete')
+    mark_step_inc.add_argument('plan_file', help='Path to the plan file')
+    mark_step_inc.add_argument('--thread', type=int, required=True, help='Thread number')
+    mark_step_inc.add_argument('--task', type=int, required=True, help='Task number')
+    mark_step_inc.add_argument('--step', type=int, required=True, help='Step number')
+    mark_step_inc.add_argument('--rationale', required=True, help='Reason for the change')
+    mark_step_inc.set_defaults(func=cmd_mark_step_incomplete)
 
     return parser
 

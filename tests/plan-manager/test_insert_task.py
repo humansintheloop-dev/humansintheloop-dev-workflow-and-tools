@@ -1,14 +1,6 @@
 """Tests for insert_task_before and insert_task_after pure functions."""
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-insert_task_before = _mod.insert_task_before
-insert_task_after = _mod.insert_task_after
+from i2c.plan.tasks import insert_task_before, insert_task_after
 
 
 PLAN_WITH_TWO_TASKS = """\

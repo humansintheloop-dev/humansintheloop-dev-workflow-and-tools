@@ -142,38 +142,38 @@ Migrate the 4 read-only pure functions and their CLI handlers. These are the sim
 
 Migrate the 9 task-level pure functions (mark-task-complete/incomplete, insert/delete/replace/reorder/move tasks) and the 2 step-level functions.
 
-- [ ] **Task 3.1: `mark_task_complete` and `mark_task_incomplete` pure functions pass all tests**
+- [x] **Task 3.1: `mark_task_complete` and `mark_task_incomplete` pure functions pass all tests**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/plan-manager/test_mark_task_complete.py tests/plan-manager/test_mark_task_incomplete.py -v`
   - Observable: Both test files pass with `from i2c.plan.tasks import mark_task_complete, mark_task_incomplete`
   - Evidence: `uv run --with pytest pytest tests/plan-manager/test_mark_task_complete.py tests/plan-manager/test_mark_task_incomplete.py -v` exits 0
   - Steps:
-    - [ ] Create `src/i2c/plan/tasks.py` with `mark_task_complete` and `mark_task_incomplete` copied from `plan-manager.py`, importing `append_change_history` from `_helpers`
-    - [ ] Rewrite imports in `test_mark_task_complete.py`: `from i2c.plan.tasks import mark_task_complete`
-    - [ ] Rewrite imports in `test_mark_task_incomplete.py`: `from i2c.plan.tasks import mark_task_incomplete`
-    - [ ] Verify both test files pass
+    - [x] Create `src/i2c/plan/tasks.py` with `mark_task_complete` and `mark_task_incomplete` copied from `plan-manager.py`, importing `append_change_history` from `_helpers`
+    - [x] Rewrite imports in `test_mark_task_complete.py`: `from i2c.plan.tasks import mark_task_complete`
+    - [x] Rewrite imports in `test_mark_task_incomplete.py`: `from i2c.plan.tasks import mark_task_incomplete`
+    - [x] Verify both test files pass
 
-- [ ] **Task 3.2: `mark_step_complete` and `mark_step_incomplete` pure functions pass all tests**
+- [x] **Task 3.2: `mark_step_complete` and `mark_step_incomplete` pure functions pass all tests**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/plan-manager/test_mark_step_complete.py tests/plan-manager/test_mark_step_incomplete.py -v`
   - Observable: Both test files pass with `from i2c.plan.tasks import mark_step_complete, mark_step_incomplete`
   - Evidence: `uv run --with pytest pytest tests/plan-manager/test_mark_step_complete.py tests/plan-manager/test_mark_step_incomplete.py -v` exits 0
   - Steps:
-    - [ ] Add `mark_step_complete` and `mark_step_incomplete` to `src/i2c/plan/tasks.py`
-    - [ ] Rewrite imports in `test_mark_step_complete.py`: `from i2c.plan.tasks import mark_step_complete`
-    - [ ] Rewrite imports in `test_mark_step_incomplete.py`: `from i2c.plan.tasks import mark_step_incomplete`
-    - [ ] Verify both test files pass
+    - [x] Add `mark_step_complete` and `mark_step_incomplete` to `src/i2c/plan/tasks.py`
+    - [x] Rewrite imports in `test_mark_step_complete.py`: `from i2c.plan.tasks import mark_step_complete`
+    - [x] Rewrite imports in `test_mark_step_incomplete.py`: `from i2c.plan.tasks import mark_step_incomplete`
+    - [x] Verify both test files pass
 
-- [ ] **Task 3.3: Task insert, delete, replace, reorder, and move pure functions pass all tests**
+- [x] **Task 3.3: Task insert, delete, replace, reorder, and move pure functions pass all tests**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/plan-manager/test_insert_task.py tests/plan-manager/test_delete_task.py tests/plan-manager/test_replace_task.py tests/plan-manager/test_reorder_tasks.py tests/plan-manager/test_move_task_before.py tests/plan-manager/test_move_task_after.py -v`
   - Observable: All 6 test files pass with `from i2c.plan.tasks import <fn>` imports
   - Evidence: `uv run --with pytest pytest tests/plan-manager/test_insert_task.py tests/plan-manager/test_delete_task.py tests/plan-manager/test_replace_task.py tests/plan-manager/test_reorder_tasks.py tests/plan-manager/test_move_task_before.py tests/plan-manager/test_move_task_after.py -v` exits 0
   - Steps:
-    - [ ] Add `_serialize_task` and `_find_task_boundaries` to `src/i2c/plan/_helpers.py`
-    - [ ] Add `insert_task_before`, `insert_task_after`, `delete_task`, `replace_task`, `reorder_tasks`, `move_task_before`, `move_task_after` to `src/i2c/plan/tasks.py`, importing helpers from `_helpers` and `fix_numbering` from `plans`
-    - [ ] Rewrite imports in all 6 test files to use `from i2c.plan.tasks import <fn>`
-    - [ ] Verify all 6 test files pass incrementally
+    - [x] Add `_serialize_task` and `_find_task_boundaries` to `src/i2c/plan/_helpers.py`
+    - [x] Add `insert_task_before`, `insert_task_after`, `delete_task`, `replace_task`, `reorder_tasks`, `move_task_before`, `move_task_after` to `src/i2c/plan/tasks.py`, importing helpers from `_helpers` and `fix_numbering` from `plans`
+    - [x] Rewrite imports in all 6 test files to use `from i2c.plan.tasks import <fn>`
+    - [x] Verify all 6 test files pass incrementally
 
 - [ ] **Task 3.4: Task and step CLI handlers work end-to-end**
   - TaskType: OUTCOME
@@ -277,3 +277,12 @@ Added _parse_task_block to _helpers.py. Added get_next_task, list_threads, get_s
 
 ### 2026-02-09 08:36 - mark-task-complete
 Added get-next-task, list-threads, get-summary, get-thread Click commands to plan_cli.py. Updated smoke test and SKILL.md. All tests pass.
+
+### 2026-02-09 08:37 - mark-task-complete
+Created tasks.py with mark_task_complete and mark_task_incomplete. Migrated test imports. 20 tests pass.
+
+### 2026-02-09 08:38 - mark-task-complete
+Added mark_step_complete and mark_step_incomplete to tasks.py. Migrated test imports. 18 tests pass.
+
+### 2026-02-09 08:42 - mark-task-complete
+Added _serialize_task, _find_task_boundaries to _helpers.py. Added insert/delete/replace/reorder/move task functions to tasks.py. Migrated 6 test files. 56 tests pass.

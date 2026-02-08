@@ -1,14 +1,8 @@
 """Tests for move-task-before: moves a task to before another task within the same thread."""
 
-import sys
-import os
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-move_task_before = _mod.move_task_before
+from i2c.plan.tasks import move_task_before
 
 
 PLAN_WITH_THREE_TASKS = """\

@@ -1,14 +1,8 @@
 """Tests for mark_task_incomplete pure function."""
 
-import sys
-import os
 import re
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-mark_task_incomplete = _mod.mark_task_incomplete
+from i2c.plan.tasks import mark_task_incomplete
 
 
 PLAN_WITH_COMPLETED_TASK = """\

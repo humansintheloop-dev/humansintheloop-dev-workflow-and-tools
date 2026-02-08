@@ -141,3 +141,63 @@ def _parse_task_block(lines: list[str], start: int, end: int, thread_num: int) -
         'evidence': evidence,
         'steps': steps,
     }
+
+
+def _serialize_task(title: str, task_type: str, entrypoint: str,
+                    observable: str, evidence: str, steps: list[str]) -> str:
+    """Convert structured task data to markdown lines."""
+    lines = [f"- [ ] **Task 0.0: {title}**"]
+    lines.append(f"  - TaskType: {task_type}")
+    lines.append(f"  - Entrypoint: `{entrypoint}`")
+    lines.append(f"  - Observable: {observable}")
+    lines.append(f"  - Evidence: `{evidence}`")
+    lines.append("  - Steps:")
+    for step in steps:
+        lines.append(f"    - [ ] {step}")
+    return '\n'.join(lines)
+
+
+def _find_task_boundaries(lines: list[str], thread_number: int) -> list[tuple[int, int, int]]:
+    """Find task boundaries within a specific thread.
+
+    Returns list of (start_line, end_line, task_number) for each task in the thread.
+    """
+    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
+    task_line_re = re.compile(r'^- \[[ x]\] \*\*Task (\d+)\.(\d+):')
+
+    current_thread = 0
+    tasks = []
+
+    for i, line in enumerate(lines):
+        m = thread_heading_re.match(line)
+        if m:
+            current_thread = int(m.group(1))
+            continue
+
+        tm = task_line_re.match(line)
+        if tm:
+            t_num = int(tm.group(1))
+            tk_num = int(tm.group(2))
+            if t_num == thread_number:
+                tasks.append((i, tk_num))
+            elif current_thread > thread_number:
+                break
+
+    # Determine end boundaries
+    result = []
+    for idx, (start, tk_num) in enumerate(tasks):
+        if idx + 1 < len(tasks):
+            end = tasks[idx + 1][0]
+        else:
+            # Find end: next task, thread heading, ---, or end of file
+            end = len(lines)
+            for j in range(start + 1, len(lines)):
+                if thread_heading_re.match(lines[j]) or lines[j].strip() == '---':
+                    end = j
+                    break
+                if task_line_re.match(lines[j]):
+                    end = j
+                    break
+        result.append((start, end, tk_num))
+
+    return result

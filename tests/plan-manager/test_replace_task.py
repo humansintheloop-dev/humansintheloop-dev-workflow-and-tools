@@ -1,14 +1,8 @@
 """Tests for replace-task: replaces a task in place within a thread."""
 
-import sys
-import os
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-replace_task = _mod.replace_task
+from i2c.plan.tasks import replace_task
 
 
 PLAN_WITH_THREE_TASKS = """\

@@ -1,13 +1,6 @@
 """Tests for reorder-tasks: rearranges tasks within a thread and renumbers."""
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'skills', 'plan-file-management', 'scripts'))
-
-from importlib import import_module
-_mod = import_module('plan-manager')
-reorder_tasks = _mod.reorder_tasks
+from i2c.plan.tasks import reorder_tasks
 
 
 PLAN_WITH_THREE_TASKS = """\

@@ -136,5 +136,49 @@ if [[ "$OUTPUT" != *"Introduction to first thread"* ]]; then
 fi
 echo "PASS: get-thread"
 
+# --- mark-step-complete ---
+echo ""
+echo "--- mark-step-complete ---"
+OUTPUT=$(uv run i2c plan mark-step-complete "$PLAN_FILE" --thread 1 --task 1 --step 1 --rationale "smoke test" 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"Marked step 1 of task 1.1 as complete"* ]]; then
+    echo "FAIL: mark-step-complete unexpected output"
+    exit 1
+fi
+echo "PASS: mark-step-complete"
+
+# --- mark-task-complete ---
+echo ""
+echo "--- mark-task-complete ---"
+OUTPUT=$(uv run i2c plan mark-task-complete "$PLAN_FILE" --thread 1 --task 1 --rationale "smoke test" 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"Marked task 1.1 as complete"* ]]; then
+    echo "FAIL: mark-task-complete unexpected output"
+    exit 1
+fi
+echo "PASS: mark-task-complete"
+
+# --- insert-task-after ---
+echo ""
+echo "--- insert-task-after ---"
+OUTPUT=$(uv run i2c plan insert-task-after "$PLAN_FILE" --thread 1 --after 2 --title "New task" --task-type INFRA --entrypoint "echo new" --observable "New thing" --evidence "echo ok" --steps '["Step A", "Step B"]' --rationale "smoke test" 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"Inserted task"* ]]; then
+    echo "FAIL: insert-task-after unexpected output"
+    exit 1
+fi
+echo "PASS: insert-task-after"
+
+# --- delete-task ---
+echo ""
+echo "--- delete-task ---"
+OUTPUT=$(uv run i2c plan delete-task "$PLAN_FILE" --thread 1 --task 3 --rationale "smoke test" 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"Deleted task 1.3"* ]]; then
+    echo "FAIL: delete-task unexpected output"
+    exit 1
+fi
+echo "PASS: delete-task"
+
 echo ""
 echo "=== All CLI Smoke Tests Passed ==="

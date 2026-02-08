@@ -26,7 +26,7 @@ Run this after:
 
 Mark a task and all its steps as complete. Optionally appends to change history if rationale is provided.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py mark-task-complete <plan_file> --thread <N> --task <M> [--rationale <text>]
+    i2c plan mark-task-complete <plan_file> --thread <N> --task <M> [--rationale <text>]
 
 Errors if the task does not exist or is already complete.
 
@@ -34,7 +34,7 @@ Errors if the task does not exist or is already complete.
 
 Mark a completed task and all its steps as incomplete. The reverse of mark-task-complete. Optionally appends to change history if rationale is provided.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py mark-task-incomplete <plan_file> --thread <N> --task <M> [--rationale <text>]
+    i2c plan mark-task-incomplete <plan_file> --thread <N> --task <M> [--rationale <text>]
 
 Errors if the task does not exist or is already incomplete.
 
@@ -92,7 +92,7 @@ Errors if the thread does not exist.
 
 Mark a single step as complete. Appends to change history.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py mark-step-complete <plan_file> --thread <N> --task <M> --step <S> --rationale <text>
+    i2c plan mark-step-complete <plan_file> --thread <N> --task <M> --step <S> --rationale <text>
 
 Errors if the step does not exist or is already complete.
 
@@ -100,7 +100,7 @@ Errors if the step does not exist or is already complete.
 
 Mark a single completed step as incomplete. The reverse of mark-step-complete. Appends to change history.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py mark-step-incomplete <plan_file> --thread <N> --task <M> --step <S> --rationale <text>
+    i2c plan mark-step-incomplete <plan_file> --thread <N> --task <M> --step <S> --rationale <text>
 
 Errors if the step does not exist or is already incomplete.
 
@@ -116,7 +116,7 @@ Errors if the thread does not exist.
 
 Insert a task before a specified task within a thread, then auto-renumber tasks.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py insert-task-before <plan_file> --thread <N> --before <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
+    i2c plan insert-task-before <plan_file> --thread <N> --before <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
 
 The `--steps` argument is a JSON array of step description strings.
 
@@ -124,13 +124,13 @@ The `--steps` argument is a JSON array of step description strings.
 
 Insert a task after a specified task within a thread, then auto-renumber tasks.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py insert-task-after <plan_file> --thread <N> --after <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
+    i2c plan insert-task-after <plan_file> --thread <N> --after <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
 
 ## reorder-tasks
 
 Reorder tasks within a thread according to a specified ordering, then auto-renumber tasks.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py reorder-tasks <plan_file> --thread <N> --order <comma-separated-task-numbers> --rationale <text>
+    i2c plan reorder-tasks <plan_file> --thread <N> --order <comma-separated-task-numbers> --rationale <text>
 
 Example: `--thread 1 --order 3,1,2` moves task 1.3 to position 1.1, task 1.1 to position 1.2, task 1.2 to position 1.3.
 
@@ -140,7 +140,7 @@ Errors if `--order` does not contain exactly the set of existing task numbers in
 
 Move a task to before another task within the same thread, then auto-renumber tasks.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py move-task-before <plan_file> --thread <N> --task <M> --before <P> --rationale <text>
+    i2c plan move-task-before <plan_file> --thread <N> --task <M> --before <P> --rationale <text>
 
 Example: `--thread 1 --task 6 --before 3` moves task 1.6 to the position before task 1.3.
 
@@ -150,7 +150,7 @@ Errors if the thread or either task does not exist, or if task and before are th
 
 Move a task to after another task within the same thread, then auto-renumber tasks.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py move-task-after <plan_file> --thread <N> --task <M> --after <P> --rationale <text>
+    i2c plan move-task-after <plan_file> --thread <N> --task <M> --after <P> --rationale <text>
 
 Example: `--thread 1 --task 1 --after 3` moves task 1.1 to the position after task 1.3.
 
@@ -160,7 +160,7 @@ Errors if the thread or either task does not exist, or if task and after are the
 
 Replace a task's content in place within a thread, then auto-renumber tasks. Equivalent to delete-task followed by insert-task but atomic.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py replace-task <plan_file> --thread <N> --task <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
+    i2c plan replace-task <plan_file> --thread <N> --task <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
 
 The `--steps` argument is a JSON array of step description strings.
 
@@ -170,7 +170,7 @@ Errors if the thread or task does not exist.
 
 Remove a task from a thread, then auto-renumber remaining tasks.
 
-    uv run skills/plan-file-management/scripts/plan-manager.py delete-task <plan_file> --thread <N> --task <M> --rationale <text>
+    i2c plan delete-task <plan_file> --thread <N> --task <M> --rationale <text>
 
 Errors if the thread or task does not exist.
 

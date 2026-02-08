@@ -175,17 +175,17 @@ Migrate the 9 task-level pure functions (mark-task-complete/incomplete, insert/d
     - [x] Rewrite imports in all 6 test files to use `from i2c.plan.tasks import <fn>`
     - [x] Verify all 6 test files pass incrementally
 
-- [ ] **Task 3.4: Task and step CLI handlers work end-to-end**
+- [x] **Task 3.4: Task and step CLI handlers work end-to-end**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: CLI smoke test verifies task mutation commands (mark-task-complete, insert-task-after, delete-task) produce correct output and modify plan files
   - Evidence: `./test-scripts/test-end-to-end.sh` exits 0
   - Steps:
-    - [ ] Create `src/i2c/plan/task_cli.py` with Click commands for all 11 task/step operations and `register(group)` function
-    - [ ] Register task commands in `src/i2c/plan/cli.py`
-    - [ ] Update `test-scripts/test-cli-smoke.sh` to test representative task mutation commands (mark-task-complete, insert-task-after, delete-task, mark-step-complete)
-    - [ ] Update `skills/plan-file-management/SKILL.md`: change all task and step command invocations (`mark-task-complete`, `mark-task-incomplete`, `mark-step-complete`, `mark-step-incomplete`, `insert-task-before`, `insert-task-after`, `delete-task`, `replace-task`, `reorder-tasks`, `move-task-before`, `move-task-after`) to `i2c plan ...`; keep thread commands using old invocation
-    - [ ] Verify: `./test-scripts/test-end-to-end.sh` exits 0
+    - [x] Create `src/i2c/plan/task_cli.py` with Click commands for all 11 task/step operations and `register(group)` function
+    - [x] Register task commands in `src/i2c/plan/cli.py`
+    - [x] Update `test-scripts/test-cli-smoke.sh` to test representative task mutation commands (mark-task-complete, insert-task-after, delete-task, mark-step-complete)
+    - [x] Update `skills/plan-file-management/SKILL.md`: change all task and step command invocations (`mark-task-complete`, `mark-task-incomplete`, `mark-step-complete`, `mark-step-incomplete`, `insert-task-before`, `insert-task-after`, `delete-task`, `replace-task`, `reorder-tasks`, `move-task-before`, `move-task-after`) to `i2c plan ...`; keep thread commands using old invocation
+    - [x] Verify: `./test-scripts/test-end-to-end.sh` exits 0
 
 ---
 
@@ -286,3 +286,6 @@ Added mark_step_complete and mark_step_incomplete to tasks.py. Migrated test imp
 
 ### 2026-02-09 08:42 - mark-task-complete
 Added _serialize_task, _find_task_boundaries to _helpers.py. Added insert/delete/replace/reorder/move task functions to tasks.py. Migrated 6 test files. 56 tests pass.
+
+### 2026-02-09 08:44 - mark-task-complete
+Created task_cli.py with all 11 Click commands. Registered in plan/cli.py. Updated smoke test and SKILL.md. All tests pass.

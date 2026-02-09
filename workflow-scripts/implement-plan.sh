@@ -11,8 +11,8 @@ _validate_plan_without_stories
 
 SPECIFIC_TASK=
 
-if [ -n "$1" ] ; then
-  SPECIFIC_TASK="Implement this task only: $1"
+if [ -n "$2" ] ; then
+  SPECIFIC_TASK="Implement this task only: $2"
 fi
 
 export IDEA_FILE SPEC_FILE PLAN_WITHOUT_STORIES_FILE SPECIFIC_TASK

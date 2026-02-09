@@ -26,6 +26,7 @@ The developer must carefully review any GenAI-generated code and provide prompt 
 Idea to Code consists of the following:
 
 * The `idea-to-code.sh` script that implements the idea to code workflow
+* The `i2code` CLI tool — a UV-installable Python CLI for plan file management (reading, updating, and structuring implementation plans)
 * A Claude Code plugin that provides skills, commands and hooks
 * Template `CLAUDE.md` and `.settings.local.json`
 * Supporting scripts
@@ -61,6 +62,20 @@ Note: the file name is prefixed with the directory name.
 
 For example, see https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree/tree/master/docs/features/loc-outliner[humansintheloop-dev-examples-loctree/docs/features/loc-outliner], which is described in more detail below.
 
+=== The `i2code` CLI tool
+
+The `i2code` CLI tool provides structured plan file management commands used by the `plan-file-management` skill to enable Claude to efficiently read and edit plan files.
+It supports marking tasks and steps complete, inserting/deleting/reordering threads and tasks, and querying plan status.
+
+Example commands:
+
+[source,bash]
+----
+i2code plan get-next-task path/to/plan.md
+i2code plan mark-task-complete path/to/plan.md --thread 1 --task 2 --rationale "All tests passing"
+i2code plan list-threads path/to/plan.md
+----
+
 === Guiding Claude code
 
 Claude code needs guidelines.
@@ -68,6 +83,7 @@ This project defines the `idea-to-code` Claude Code plugin along with template `
 The plugin defines various skills, commands and hooks.
 Key skills include:
 
+* `plan-file-management` - tells Claude when and how to use `i2code plan` commands to read and edit plan files
 * `tdd` - implements a TDD red-green-refactor workflow
 * `commit-guidelines` - structures the Git commit message
 * ...
@@ -111,83 +127,36 @@ See link:./docs/idea-to-code-workflow.adoc[idea to code workflow for Loctree]
 
 === Prerequisites
 
-Install Claude Code - see https://microservices.io/post/architecture/2025/07/09/vibe-coding-good-almost-other-part-2.html[Vibe coding: the good, the almost, and the @#$%** - Part 2] for getting started.
+* Claude Code - see https://microservices.io/post/architecture/2025/07/09/vibe-coding-good-almost-other-part-2.html[Vibe coding: the good, the almost, and the @#$%** - Part 2] for getting started.
+* https://docs.astral.sh/uv/[uv] - Python package and project manager
 
-=== Installing the Idea to Code plugin
+=== Installing
 
-You can install using either slash commands (inside a Claude Code session) or shell commands.
-
-==== Option 1: Install from GitHub (Published Plugin)
-
-**Using slash commands** (inside Claude Code session):
+Clone the repository and run the install script:
 
 [source,bash]
 ----
-/plugin marketplace add https://github.com/chrisrichardson/genai-development-workflow
-/plugin install idea-to-code
+gh repo clone humansintheloop-dev/humansintheloop-dev-workflow-and-tools
+cd humansintheloop-dev-workflow-and-tools
+./install-plugin.sh
 ----
 
-**Using shell commands** (from terminal):
+This registers the local clone as a plugin marketplace and installs the `idea-to-code` plugin.
+Restart Claude Code to load the plugin.
+
+Then install the `i2code` CLI tool:
 
 [source,bash]
 ----
-claude plugin marketplace add https://github.com/chrisrichardson/genai-development-workflow
-claude plugin install idea-to-code
+uv tool install -e .
 ----
 
-==== Option 2: Install from Local Clone (For Development)
-
-If you've cloned the repository locally:
-
-**Using slash commands** (inside Claude Code session):
+=== Uninstalling
 
 [source,bash]
 ----
-/plugin marketplace add /path/to/genai-development-workflow
-/plugin install idea-to-code
+./uninstall-plugin.sh
 ----
-
-**Using shell commands** (from terminal):
-
-[source,bash]
-----
-claude plugin marketplace add /path/to/genai-development-workflow
-claude plugin install idea-to-code
-----
-
-After installation, restart Claude Code to load the new plugins.
-
-=== Uninstalling the Plugin
-
-To uninstall the plugin and remove the marketplace:
-
-**Using slash commands** (inside Claude Code session):
-
-[source,bash]
-----
-/plugin uninstall idea-to-code
-/plugin marketplace remove idea-to-code
-----
-
-**Using shell commands** (from terminal):
-
-[source,bash]
-----
-claude plugin uninstall idea-to-code
-claude plugin marketplace remove idea-to-code
-----
-
-=== Getting the Workflow Scripts
-
-To use the workflow orchestration scripts, clone the repository:
-
-[source,bash]
-----
-git clone https://github.com/chrisrichardson/genai-development-workflow
-cd genai-development-workflow
-----
-
-NOTE: Even if you install via plugin, you still need to clone the repository to use the workflow scripts.
 
 == Acknowledgement
 

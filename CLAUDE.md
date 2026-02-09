@@ -16,6 +16,7 @@ IMPORTANT: Always invoke the relevant skill before performing these actions:
 - **Before creating git commits**: Use the `idea-to-code:commit-guidelines` skill
 - **When practicing TDD**: Use the `idea-to-code:tdd` skill
 - **When working from a plan file**: Use the `idea-to-code:plan-tracking` skill
+- **When renumbering or editing plan file structure**: Use the `idea-to-code:plan-file-management` skill
 - **When creating Dockerfiles**: Use the `idea-to-code:dockerfile-guidelines` skill
 - **When moving/renaming files**: Use the `idea-to-code:file-organization` skill
 - **When writing multiple similar files**: Use the `idea-to-code:incremental-development` skill
@@ -44,5 +45,21 @@ When fixing issues caused by naming conventions or patterns:
 1. Search the entire codebase for similar occurrences before making any changes
 2. Fix ALL instances in a single commit
 3. Never commit partial fixes for pattern-based problems
+
+## Running Plan Manager Tests
+
+pytest is NOT installed globally. Always use `uv` to run it:
+
+    uv run --with pytest pytest tests/plan-manager/
+
+Never use bare `pytest` or `python -m pytest`.
+
+## Project Structure
+
+- Plan manager package: `src/i2code/plan/` (installed as `i2code` CLI tool via `pyproject.toml`)
+- Tests: `tests/plan-manager/`
+- Plan file: `docs/features/plan-manager-mcp/plan-manager-mcp-plan.md`
+- CLI invocation: `i2code plan <subcommand> <plan_file> [options]`
+- Test imports use `from i2code.plan.<module> import <function>`
 
 <!-- claude-config-files-sha: f8e6469fd91735ffcae2dc46f979cfb0677ec5b6 -->

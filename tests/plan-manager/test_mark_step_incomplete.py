@@ -1,6 +1,6 @@
 """Tests for mark_step_incomplete pure function."""
 
-from i2c.plan.tasks import mark_step_incomplete
+from i2code.plan.tasks import mark_step_incomplete
 
 
 PLAN_WITH_COMPLETED_STEPS = """\

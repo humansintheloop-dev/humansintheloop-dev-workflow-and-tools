@@ -1,7 +1,7 @@
 """Thread-level pure functions."""
 
-from i2c.plan._helpers import _extract_thread_sections, _serialize_thread, append_change_history
-from i2c.plan.plans import fix_numbering
+from i2code.plan._helpers import _extract_thread_sections, _serialize_thread, append_change_history
+from i2code.plan.plans import fix_numbering
 
 
 def insert_thread_before(plan: str, before_thread: int, title: str,

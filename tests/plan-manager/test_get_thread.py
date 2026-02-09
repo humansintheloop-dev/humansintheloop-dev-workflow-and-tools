@@ -1,6 +1,6 @@
 """Tests for get_thread pure function."""
 
-from i2c.plan.plans import get_thread
+from i2code.plan.plans import get_thread
 
 
 PLAN_WITH_TWO_THREADS = """\

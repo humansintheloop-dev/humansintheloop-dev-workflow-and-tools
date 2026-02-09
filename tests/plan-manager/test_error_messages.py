@@ -2,13 +2,13 @@
 
 import pytest
 
-from i2c.plan.plans import get_thread
-from i2c.plan.tasks import (
+from i2code.plan.plans import get_thread
+from i2code.plan.tasks import (
     mark_task_complete, mark_step_complete,
     delete_task, insert_task_before,
     reorder_tasks, move_task_before, move_task_after, replace_task,
 )
-from i2c.plan.threads import delete_thread, replace_thread, reorder_threads
+from i2code.plan.threads import delete_thread, replace_thread, reorder_threads
 
 
 SIMPLE_PLAN = """\

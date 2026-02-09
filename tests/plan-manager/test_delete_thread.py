@@ -1,6 +1,6 @@
 """Tests for delete_thread pure function."""
 
-from i2c.plan.threads import delete_thread
+from i2code.plan.threads import delete_thread
 
 
 PLAN_WITH_THREE_THREADS = """\

@@ -1,6 +1,6 @@
 """Tests for get_next_task pure function."""
 
-from i2c.plan.plans import get_next_task
+from i2code.plan.plans import get_next_task
 
 
 PLAN_WITH_FIRST_INCOMPLETE = """\

@@ -1,6 +1,6 @@
 """Tests for replace_thread pure function."""
 
-from i2c.plan.threads import replace_thread
+from i2code.plan.threads import replace_thread
 
 
 PLAN_WITH_TWO_THREADS = """\

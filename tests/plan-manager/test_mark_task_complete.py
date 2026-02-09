@@ -2,7 +2,7 @@
 
 import re
 
-from i2c.plan.tasks import mark_task_complete
+from i2code.plan.tasks import mark_task_complete
 
 
 PLAN_WITH_INCOMPLETE_TASK = """\

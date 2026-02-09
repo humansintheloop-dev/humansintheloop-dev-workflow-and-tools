@@ -1,6 +1,6 @@
 """Tests for fix_numbering pure function."""
 
-from i2c.plan.plans import fix_numbering
+from i2code.plan.plans import fix_numbering
 
 
 CORRECTLY_NUMBERED_PLAN = """\

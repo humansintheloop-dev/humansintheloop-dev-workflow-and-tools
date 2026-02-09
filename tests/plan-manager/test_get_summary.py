@@ -1,6 +1,6 @@
 """Tests for get_summary pure function."""
 
-from i2c.plan.plans import get_summary
+from i2code.plan.plans import get_summary
 
 
 PLAN_WITH_MIXED_TASKS = """\

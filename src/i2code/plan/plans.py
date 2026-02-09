@@ -2,7 +2,7 @@
 
 import re
 
-from i2c.plan._helpers import _extract_thread_sections, _parse_task_block
+from i2code.plan._helpers import _extract_thread_sections, _parse_task_block
 
 
 def fix_numbering(plan: str) -> str:

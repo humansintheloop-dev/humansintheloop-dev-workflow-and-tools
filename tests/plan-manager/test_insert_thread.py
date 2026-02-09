@@ -1,6 +1,6 @@
 """Tests for insert_thread_before and insert_thread_after pure functions."""
 
-from i2c.plan.threads import insert_thread_before, insert_thread_after
+from i2code.plan.threads import insert_thread_before, insert_thread_after
 
 
 TWO_THREAD_PLAN = """\

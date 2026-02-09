@@ -5,8 +5,8 @@ import sys
 
 import click
 
-from i2c.plan._helpers import atomic_write
-from i2c.plan.threads import (
+from i2code.plan._helpers import atomic_write
+from i2code.plan.threads import (
     insert_thread_before, insert_thread_after,
     delete_thread, replace_thread, reorder_threads,
 )

@@ -1,6 +1,6 @@
 """Regression test: thread operations must not produce Task 0.x numbering."""
 
-from i2c.plan.threads import (
+from i2code.plan.threads import (
     delete_thread, reorder_threads, insert_thread_before, replace_thread,
 )
 

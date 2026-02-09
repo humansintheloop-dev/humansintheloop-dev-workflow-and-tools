@@ -2,7 +2,7 @@
 
 import pytest
 
-from i2c.plan.tasks import replace_task
+from i2code.plan.tasks import replace_task
 
 
 PLAN_WITH_THREE_TASKS = """\

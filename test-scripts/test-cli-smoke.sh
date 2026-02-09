@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI smoke tests for i2c plan subcommands.
+# CLI smoke tests for i2code plan subcommands.
 # Tests that each migrated subcommand runs and produces expected output.
 set -euo pipefail
 
@@ -55,7 +55,7 @@ echo "=== CLI Smoke Tests ==="
 # --- fix-numbering ---
 echo ""
 echo "--- fix-numbering ---"
-OUTPUT=$(uv run i2c plan fix-numbering "$PLAN_FILE" 2>&1)
+OUTPUT=$(uv run i2code plan fix-numbering "$PLAN_FILE" 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"Fixed numbering in"* ]]; then
     echo "FAIL: fix-numbering did not print expected confirmation"
@@ -75,7 +75,7 @@ echo "PASS: fix-numbering"
 # --- get-next-task ---
 echo ""
 echo "--- get-next-task ---"
-OUTPUT=$(uv run i2c plan get-next-task "$PLAN_FILE" 2>&1)
+OUTPUT=$(uv run i2code plan get-next-task "$PLAN_FILE" 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"Thread 1, Task 1.1:"* ]]; then
     echo "FAIL: get-next-task did not return expected task"
@@ -90,7 +90,7 @@ echo "PASS: get-next-task"
 # --- list-threads ---
 echo ""
 echo "--- list-threads ---"
-OUTPUT=$(uv run i2c plan list-threads "$PLAN_FILE" 2>&1)
+OUTPUT=$(uv run i2code plan list-threads "$PLAN_FILE" 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"Thread 1:"* ]]; then
     echo "FAIL: list-threads did not return threads"
@@ -105,7 +105,7 @@ echo "PASS: list-threads"
 # --- get-summary ---
 echo ""
 echo "--- get-summary ---"
-OUTPUT=$(uv run i2c plan get-summary "$PLAN_FILE" 2>&1)
+OUTPUT=$(uv run i2code plan get-summary "$PLAN_FILE" 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"Plan:"* ]]; then
     echo "FAIL: get-summary missing Plan:"
@@ -124,7 +124,7 @@ echo "PASS: get-summary"
 # --- get-thread ---
 echo ""
 echo "--- get-thread ---"
-OUTPUT=$(uv run i2c plan get-thread "$PLAN_FILE" --thread 1 2>&1)
+OUTPUT=$(uv run i2code plan get-thread "$PLAN_FILE" --thread 1 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"Thread 1:"* ]]; then
     echo "FAIL: get-thread did not return thread"
@@ -139,7 +139,7 @@ echo "PASS: get-thread"
 # --- mark-step-complete ---
 echo ""
 echo "--- mark-step-complete ---"
-OUTPUT=$(uv run i2c plan mark-step-complete "$PLAN_FILE" --thread 1 --task 1 --step 1 --rationale "smoke test" 2>&1)
+OUTPUT=$(uv run i2code plan mark-step-complete "$PLAN_FILE" --thread 1 --task 1 --step 1 --rationale "smoke test" 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"Marked step 1 of task 1.1 as complete"* ]]; then
     echo "FAIL: mark-step-complete unexpected output"
@@ -150,7 +150,7 @@ echo "PASS: mark-step-complete"
 # --- mark-task-complete ---
 echo ""
 echo "--- mark-task-complete ---"
-OUTPUT=$(uv run i2c plan mark-task-complete "$PLAN_FILE" --thread 1 --task 1 --rationale "smoke test" 2>&1)
+OUTPUT=$(uv run i2code plan mark-task-complete "$PLAN_FILE" --thread 1 --task 1 --rationale "smoke test" 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"Marked task 1.1 as complete"* ]]; then
     echo "FAIL: mark-task-complete unexpected output"
@@ -161,7 +161,7 @@ echo "PASS: mark-task-complete"
 # --- insert-task-after ---
 echo ""
 echo "--- insert-task-after ---"
-OUTPUT=$(uv run i2c plan insert-task-after "$PLAN_FILE" --thread 1 --after 2 --title "New task" --task-type INFRA --entrypoint "echo new" --observable "New thing" --evidence "echo ok" --steps '["Step A", "Step B"]' --rationale "smoke test" 2>&1)
+OUTPUT=$(uv run i2code plan insert-task-after "$PLAN_FILE" --thread 1 --after 2 --title "New task" --task-type INFRA --entrypoint "echo new" --observable "New thing" --evidence "echo ok" --steps '["Step A", "Step B"]' --rationale "smoke test" 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"Inserted task"* ]]; then
     echo "FAIL: insert-task-after unexpected output"
@@ -172,7 +172,7 @@ echo "PASS: insert-task-after"
 # --- delete-task ---
 echo ""
 echo "--- delete-task ---"
-OUTPUT=$(uv run i2c plan delete-task "$PLAN_FILE" --thread 1 --task 3 --rationale "smoke test" 2>&1)
+OUTPUT=$(uv run i2code plan delete-task "$PLAN_FILE" --thread 1 --task 3 --rationale "smoke test" 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"Deleted task 1.3"* ]]; then
     echo "FAIL: delete-task unexpected output"
@@ -184,7 +184,7 @@ echo "PASS: delete-task"
 echo ""
 echo "--- insert-thread-after ---"
 TASKS_JSON='[{"title":"New task","task_type":"INFRA","entrypoint":"echo new","observable":"New thing","evidence":"echo ok","steps":["Step X"]}]'
-OUTPUT=$(uv run i2c plan insert-thread-after "$PLAN_FILE" --after 1 --title "New Thread" --introduction "New thread intro." --tasks "$TASKS_JSON" --rationale "smoke test" 2>&1)
+OUTPUT=$(uv run i2code plan insert-thread-after "$PLAN_FILE" --after 1 --title "New Thread" --introduction "New thread intro." --tasks "$TASKS_JSON" --rationale "smoke test" 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"Inserted thread"* ]]; then
     echo "FAIL: insert-thread-after unexpected output"
@@ -199,7 +199,7 @@ echo "PASS: insert-thread-after"
 # --- delete-thread ---
 echo ""
 echo "--- delete-thread ---"
-OUTPUT=$(uv run i2c plan delete-thread "$PLAN_FILE" --thread 2 --rationale "smoke test" 2>&1)
+OUTPUT=$(uv run i2code plan delete-thread "$PLAN_FILE" --thread 2 --rationale "smoke test" 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"Deleted thread 2"* ]]; then
     echo "FAIL: delete-thread unexpected output"

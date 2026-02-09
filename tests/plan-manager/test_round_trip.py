@@ -1,6 +1,6 @@
 """Tests for round-trip fidelity: read + write produces identical output."""
 
-from i2c.plan.plans import fix_numbering
+from i2code.plan.plans import fix_numbering
 
 
 FULL_PLAN = """\

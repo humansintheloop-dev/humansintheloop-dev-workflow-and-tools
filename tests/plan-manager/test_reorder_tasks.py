@@ -1,6 +1,6 @@
 """Tests for reorder-tasks: rearranges tasks within a thread and renumbers."""
 
-from i2c.plan.tasks import reorder_tasks
+from i2code.plan.tasks import reorder_tasks
 
 
 PLAN_WITH_THREE_TASKS = """\

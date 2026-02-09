@@ -5,8 +5,8 @@ import sys
 
 import click
 
-from i2c.plan._helpers import atomic_write
-from i2c.plan.tasks import (
+from i2code.plan._helpers import atomic_write
+from i2code.plan.tasks import (
     mark_task_complete, mark_task_incomplete,
     mark_step_complete, mark_step_incomplete,
     insert_task_before, insert_task_after,

@@ -2,8 +2,8 @@
 
 import re
 
-from i2c.plan._helpers import append_change_history, _serialize_task, _find_task_boundaries
-from i2c.plan.plans import fix_numbering
+from i2code.plan._helpers import append_change_history, _serialize_task, _find_task_boundaries
+from i2code.plan.plans import fix_numbering
 
 
 def mark_task_complete(plan: str, thread_number: int, task_number: int, rationale: str | None = None) -> str:

@@ -1,6 +1,6 @@
 """Tests for insert_task_before and insert_task_after pure functions."""
 
-from i2c.plan.tasks import insert_task_before, insert_task_after
+from i2code.plan.tasks import insert_task_before, insert_task_after
 
 
 PLAN_WITH_TWO_TASKS = """\

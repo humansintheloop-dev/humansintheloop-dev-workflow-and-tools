@@ -24,7 +24,7 @@ wheels = [
 ]
 
 [[package]]
-name = "i2c"
+name = "i2code"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

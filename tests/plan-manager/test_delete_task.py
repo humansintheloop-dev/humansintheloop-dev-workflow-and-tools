@@ -1,6 +1,6 @@
 """Tests for delete_task pure function."""
 
-from i2c.plan.tasks import delete_task
+from i2code.plan.tasks import delete_task
 
 
 PLAN_WITH_THREE_TASKS = """\

@@ -1,6 +1,6 @@
 """Tests for reorder_threads pure function."""
 
-from i2c.plan.threads import reorder_threads
+from i2code.plan.threads import reorder_threads
 
 
 TWO_THREAD_PLAN = """\

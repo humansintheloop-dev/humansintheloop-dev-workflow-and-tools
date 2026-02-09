@@ -1,6 +1,6 @@
 """Tests for list_threads pure function."""
 
-from i2c.plan.plans import list_threads
+from i2code.plan.plans import list_threads
 
 
 PLAN_WITH_THREE_THREADS = """\

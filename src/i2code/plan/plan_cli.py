@@ -4,8 +4,8 @@ import sys
 
 import click
 
-from i2c.plan._helpers import atomic_write
-from i2c.plan.plans import fix_numbering, get_next_task, get_summary, get_thread, list_threads
+from i2code.plan._helpers import atomic_write
+from i2code.plan.plans import fix_numbering, get_next_task, get_summary, get_thread, list_threads
 
 
 @click.command("fix-numbering")

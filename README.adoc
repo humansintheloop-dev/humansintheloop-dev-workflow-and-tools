@@ -25,11 +25,12 @@ The developer must carefully review any GenAI-generated code and provide prompt 
 
 Idea to Code consists of the following:
 
-* The `idea-to-code.sh` script that implements the idea to code workflow
-* The `i2code` CLI tool — a UV-installable Python CLI for plan file management (reading, updating, and structuring implementation plans)
-* A Claude Code plugin that provides skills, commands and hooks
-* Template `CLAUDE.md` and `.settings.local.json`
-* Supporting scripts
+* The `idea-to-code.sh` script that implements the idea to code workflow.
+* A Claude Code plugin that provides skills, commands and hooks.
+* Template `CLAUDE.md` and `.settings.local.json`.
+* Supporting scripts.
+* The `i2code` CLI tool — a UV-installable Python CLI that's the future home of the other scripts. 
+Currently, it implements plan file management (reading, updating, and structuring implementation plans)
 
 Let's look at the key features starting with the idea to code workflow.
 
@@ -64,8 +65,10 @@ For example, see https://github.com/humansintheloop-dev/humansintheloop-dev-exam
 
 === The `i2code` CLI tool
 
-The `i2code` CLI tool provides structured plan file management commands used by the `plan-file-management` skill to enable Claude to efficiently read and edit plan files.
-It supports marking tasks and steps complete, inserting/deleting/reordering threads and tasks, and querying plan status.
+The `i2code` CLI tool is a UV-installable Python CLI that's the future home of the other scripts. 
+Currently, it implements plan file management (reading, updating, and structuring implementation plans)
+It provides structured plan file management commands used by the `plan-file-management` skill to enable Claude to efficiently read and edit plan files.
+For example, it supports marking tasks and steps complete, inserting/deleting/reordering threads and tasks, and querying plan status.
 
 Example commands:
 

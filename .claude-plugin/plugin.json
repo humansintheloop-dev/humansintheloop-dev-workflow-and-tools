@@ -23,6 +23,7 @@
     "./skills/file-organization",
     "./skills/github-workflow-gradle-template",
     "./skills/incremental-development",
+    "./skills/plan-file-management",
     "./skills/plan-tracking",
     "./skills/tdd",
     "./skills/test-runner-java-gradle",

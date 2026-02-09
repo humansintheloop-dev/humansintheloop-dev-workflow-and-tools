@@ -1,0 +1,32 @@
+Create plan file management scripts that enable Claude to manipulate plan files.
+Here's an example plan file: docs/features/wt-pr-based-development/wt-pr-based-development-plan.md
+
+The scripts are part of the plan-file-management skill (skills/plan-file-management/SKILL.md).
+Implementation: Python script with CLI subcommands (`skills/plan-file-management/scripts/plan-manager.py`), run via `uv run` with PEP 723 inline script metadata. No dependencies beyond stdlib. Independent parser (no shared code with implement_with_worktree.py).
+
+Each operation takes the plan file path as an argument.
+
+Write operations that modify plan structure accept a **rationale** argument, which is appended to a change history section in the plan file.
+
+Structural mutations (insert/delete/reorder thread, insert/delete task) auto-renumber threads and tasks.
+
+## Read Operations
+
+* List threads - returns all threads with numbers, titles, and completion status
+* Get thread details - returns a specific thread's full content (introduction, tasks, steps, metadata)
+* Get next uncompleted task - returns the first uncompleted task across the plan
+* Get plan summary - returns overview, idea type, and overall progress
+
+## Write Operations
+
+* Fix numbering - performed after arbitrary edits. Fixes the numbering of steel threads and their tasks
+* Insert thread before - insert a fully structured thread before the specified thread (title, introduction, tasks with full metadata)
+* Insert thread after - insert a fully structured thread after the specified thread
+* Delete thread - remove a thread entirely
+* Replace thread - replace an existing thread's content with a complete new thread definition
+* Reorder threads - rearrange threads according to a specified ordering
+* Insert task before - insert a fully structured task before a specified task within a thread
+* Insert task after - insert a fully structured task after a specified task within a thread
+* Delete task - remove a task from a thread
+* Mark task complete - marks a task and all its steps as complete
+* Mark step complete - marks an individual step as complete

@@ -11,7 +11,13 @@ When working from a plan file (markdown file with task checkboxes), follow these
 
 **The plan file is the source of truth for task completion status.**
 
-Update the plan file checkboxes (`- [ ]` to `- [x]`) immediately after completing each task. Do NOT rely on internal tracking (like TodoWrite) as a substitute for updating the actual plan file.
+Use the `plan-file-management` skill's subcommands to read and update plan files:
+- **Find next task**: `plan-file-management` → `get-next-task`
+- **Mark task complete**: `plan-file-management` → `mark-task-complete`
+
+See the `plan-file-management` skill for invocation details.
+
+Do NOT rely on internal tracking (like TodoWrite) as a substitute for updating the actual plan file.
 
 ## ⚠️ Verifying Observable and Evidence (CRITICAL - READ THIS)
 
@@ -78,11 +84,11 @@ Before implementing a task from the plan, review its implementation details for 
 
 For each task in the plan:
 
-1. Read the task from the plan file
+1. Get the next task using `plan-file-management` → `get-next-task`
 2. **Review for technical correctness** before implementing
 3. Implement the task (write test, implement code, verify)
 4. **Verify Observable and Evidence criteria** - tests must pass that verify the Evidence (see critical section above)
-5. **Immediately update the plan file** - change `- [ ]` to `- [x]`
+5. **Mark task complete* using `plan-file-management` → `mark-task-complete`
 6. Continue to the next task
 
 ## Continue Without Stopping
@@ -114,9 +120,9 @@ Update internal TodoWrite
 GOOD:
 ```
 Complete task 1.1
-Edit plan file: change "- [ ] 1.1" to "- [x] 1.1"
+Use plan-file-management → mark-task-complete for thread 1, task 1
 Complete task 1.2
-Edit plan file: change "- [ ] 1.2" to "- [x] 1.2"
+Use plan-file-management → mark-task-complete for thread 1, task 2
 ```
 
 ## When to Apply

@@ -1801,6 +1801,44 @@ def get_worktree_idea_directory(
     return os.path.join(worktree_path, idea_relpath)
 
 
+def build_scaffolding_prompt(
+    idea_directory: str,
+    interactive: bool = True,
+    mock_claude: Optional[str] = None,
+) -> List[str]:
+    """Build the Claude command for project scaffolding.
+
+    Returns command as a list suitable for subprocess.
+    """
+    prompt = f"""You are setting up project scaffolding for a new idea.
+
+Read the idea files to understand the project:
+
+* Idea: @{idea_directory}/*-idea.*
+* Specification: @{idea_directory}/*-spec.md
+
+Based on the idea files, create minimal project scaffolding that compiles/runs and passes CI:
+
+- If it's a Java project: create a Gradle skeleton (build.gradle, settings.gradle, gradlew wrapper, placeholder source and test that compile and pass)
+- If it involves infrastructure or test scripts: create test-scripts/test-end-to-end.sh (executable, exits 0 as placeholder)
+- These are not mutually exclusive — create both if the project needs both
+- Create .github/workflows/ci.yaml that builds and runs whatever scaffolding you created
+- Technology versions and choices should come from the idea/spec files, not from defaults
+
+The goal is a minimal buildable project with passing CI and placeholder code. Do not implement real functionality — just enough for the build and tests to pass.
+
+Commit all scaffolding changes when done. If scaffolding already exists and is sufficient, make no changes.
+"""
+
+    if mock_claude:
+        return [mock_claude, "setup"]
+
+    if interactive:
+        return ["claude", prompt]
+    else:
+        return ["claude", "--verbose", "--output-format=stream-json", "-p", prompt]
+
+
 def build_claude_command(
     idea_directory: str,
     task_description: str,

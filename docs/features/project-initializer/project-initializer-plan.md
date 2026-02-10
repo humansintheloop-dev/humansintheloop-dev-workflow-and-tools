@@ -87,25 +87,25 @@ This thread modifies `ensure_integration_branch()` to support remote branch trac
 
 This thread implements the `build_scaffolding_prompt()` function that constructs the Claude command for project scaffolding. It is a pure function with no side effects, making it easy to test in isolation.
 
-- [ ] **Task 2.1: `build_scaffolding_prompt()` constructs Claude command referencing idea files**
+- [x] **Task 2.1: `build_scaffolding_prompt()` constructs Claude command referencing idea files**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_project_setup.py -k "scaffolding_prompt"`
   - Observable: Returns a list suitable for `subprocess` that includes: the `claude` command, a goal-oriented prompt referencing the idea directory files (`*-idea.*`, `*-spec.md`), and appropriate flags for interactive vs non-interactive mode.
   - Evidence: Unit tests verify: (1) interactive mode returns `["claude", <prompt>]`, (2) non-interactive mode returns `["claude", "--verbose", "--output-format=stream-json", "-p", <prompt>]`, (3) prompt references the idea directory files, (4) prompt describes the desired scaffolding outcome (Gradle skeleton, test scripts, ci.yaml) without prescribing specific versions
   - Steps:
-    - [ ] Create `tests/implement/test_project_setup.py` with unit tests for `build_scaffolding_prompt()` covering interactive and non-interactive modes, and verifying prompt content references idea files and describes goal-oriented scaffolding outcomes
-    - [ ] Implement `build_scaffolding_prompt(idea_directory, interactive=True)` in `src/i2code/implement/implement.py`. The prompt should describe the desired outcome: minimal buildable project with CI, placeholder code, appropriate build system based on idea files, and `ci.yaml` that validates the scaffolding. Return command as a list suitable for subprocess.
-    - [ ] Verify all tests pass
+    - [x] Create `tests/implement/test_project_setup.py` with unit tests for `build_scaffolding_prompt()` covering interactive and non-interactive modes, and verifying prompt content references idea files and describes goal-oriented scaffolding outcomes
+    - [x] Implement `build_scaffolding_prompt(idea_directory, interactive=True)` in `src/i2code/implement/implement.py`. The prompt should describe the desired outcome: minimal buildable project with CI, placeholder code, appropriate build system based on idea files, and `ci.yaml` that validates the scaffolding. Return command as a list suitable for subprocess.
+    - [x] Verify all tests pass
 
-- [ ] **Task 2.2: `build_scaffolding_prompt()` supports `--mock-claude` substitution**
+- [x] **Task 2.2: `build_scaffolding_prompt()` supports `--mock-claude` substitution**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_project_setup.py -k "mock_claude"`
   - Observable: When `mock_claude` path is provided, returns `[mock_script, "setup"]` instead of the Claude command. When `mock_claude` is `None`, returns the normal Claude command.
   - Evidence: Unit tests verify mock substitution produces `[mock_script, "setup"]` and `None` produces normal Claude command
   - Steps:
-    - [ ] Add unit tests for mock_claude substitution in `tests/implement/test_project_setup.py`
-    - [ ] Add `mock_claude: Optional[str] = None` parameter to `build_scaffolding_prompt()`. When set, return `[mock_claude, "setup"]` instead of the Claude command.
-    - [ ] Verify all tests pass
+    - [x] Add unit tests for mock_claude substitution in `tests/implement/test_project_setup.py`
+    - [x] Add `mock_claude: Optional[str] = None` parameter to `build_scaffolding_prompt()`. When set, return `[mock_claude, "setup"]` instead of the Claude command.
+    - [x] Verify all tests pass
 
 ---
 

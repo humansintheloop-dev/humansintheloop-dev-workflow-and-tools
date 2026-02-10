@@ -169,26 +169,26 @@ This thread implements `ensure_project_setup()`, which orchestrates the full sca
 
 This thread wires `ensure_project_setup()` into the `--isolate` CLI code path so scaffolding runs on the host before delegation to isolarium.
 
-- [ ] **Task 4.1: `--isolate` code path calls `ensure_project_setup()` before delegating to isolarium**
+- [x] **Task 4.1: `--isolate` code path calls `ensure_project_setup()` before delegating to isolarium**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_project_setup.py -k "cli_isolate"`
   - Observable: When `--isolate` is set, the CLI creates the integration branch, calls `ensure_project_setup()` with the repo, idea directory, idea name, integration branch, and all relevant options (interactive, mock_claude, ci_fix_retries, ci_timeout, skip_ci_wait), and only delegates to isolarium if setup succeeds. If setup fails, exits with error code without delegating.
   - Evidence: Unit tests mock `ensure_project_setup`, `ensure_integration_branch`, and `subprocess.run` (for isolarium). Verify: (1) `ensure_integration_branch` is called before `ensure_project_setup`, (2) `ensure_project_setup` is called with correct arguments, (3) isolarium delegation only happens after successful setup, (4) CLI exits with error when setup fails.
   - Steps:
-    - [ ] Add unit tests to `tests/implement/test_project_setup.py` (or a new `tests/implement/test_cli_isolate.py` if cleaner) that mock `ensure_integration_branch`, `ensure_project_setup`, and `subprocess.run`. Test: setup success → isolarium delegated, setup failure → exit with error, all parameters forwarded correctly.
-    - [ ] Restructure the `--isolate` code path in `src/i2code/implement/cli.py` (lines 77-102): after validation, call `ensure_integration_branch(repo, idea_name)` to get/create the integration branch, then call `ensure_project_setup()` with the appropriate parameters. Only proceed to build and run the isolarium command if setup returns `True`. If setup fails, print error and `sys.exit(1)`.
-    - [ ] Add `ensure_project_setup` and `build_scaffolding_prompt` to the imports in `cli.py`
-    - [ ] Verify all tests pass
+    - [x] Add unit tests to `tests/implement/test_project_setup.py` (or a new `tests/implement/test_cli_isolate.py` if cleaner) that mock `ensure_integration_branch`, `ensure_project_setup`, and `subprocess.run`. Test: setup success → isolarium delegated, setup failure → exit with error, all parameters forwarded correctly.
+    - [x] Restructure the `--isolate` code path in `src/i2code/implement/cli.py` (lines 77-102): after validation, call `ensure_integration_branch(repo, idea_name)` to get/create the integration branch, then call `ensure_project_setup()` with the appropriate parameters. Only proceed to build and run the isolarium command if setup returns `True`. If setup fails, print error and `sys.exit(1)`.
+    - [x] Add `ensure_project_setup` and `build_scaffolding_prompt` to the imports in `cli.py`
+    - [x] Verify all tests pass
 
-- [ ] **Task 4.2: `--isolate` forwards `--non-interactive` mode correctly to `ensure_project_setup()`**
+- [x] **Task 4.2: `--isolate` forwards `--non-interactive` mode correctly to `ensure_project_setup()`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_project_setup.py -k "non_interactive_isolate"`
   - Observable: When `--isolate --non-interactive` is set, `ensure_project_setup()` is called with `interactive=False`. When `--isolate` is set without `--non-interactive`, `ensure_project_setup()` is called with `interactive=True`.
   - Evidence: Unit tests mock `ensure_project_setup` and invoke CLI with and without `--non-interactive`. Verify the `interactive` argument matches the flag.
   - Steps:
-    - [ ] Add unit tests for interactive and non-interactive modes in the `--isolate` path
-    - [ ] Ensure the CLI passes `interactive=not non_interactive` to `ensure_project_setup()`
-    - [ ] Verify all tests pass
+    - [x] Add unit tests for interactive and non-interactive modes in the `--isolate` path
+    - [x] Ensure the CLI passes `interactive=not non_interactive` to `ensure_project_setup()`
+    - [x] Verify all tests pass
 
 ---
 

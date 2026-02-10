@@ -15,6 +15,7 @@ from i2code.implement.implement import (
     init_or_load_state,
     save_state,
     ensure_integration_branch,
+    ensure_project_setup,
     ensure_claude_permissions,
     ensure_worktree,
     ensure_slice_branch,
@@ -76,6 +77,24 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
     # Delegate to isolarium VM if --isolate is set
     if isolate:
         repo = Repo(idea_directory, search_parent_directories=True)
+
+        # Run project scaffolding on host before delegating to VM
+        integration_branch = ensure_integration_branch(repo, idea_name)
+        setup_ok = ensure_project_setup(
+            repo=repo,
+            idea_directory=idea_directory,
+            idea_name=idea_name,
+            integration_branch=integration_branch,
+            interactive=not non_interactive,
+            mock_claude=mock_claude,
+            ci_fix_retries=ci_fix_retries,
+            ci_timeout=ci_timeout,
+            skip_ci_wait=skip_ci_wait,
+        )
+        if not setup_ok:
+            print("Error: Project scaffolding setup failed", file=sys.stderr)
+            sys.exit(1)
+
         rel_idea_dir = os.path.relpath(idea_directory, repo.working_tree_dir)
         isolarium_args = ["isolarium", "--name", f"i2code-{idea_name}", "run"]
         if not non_interactive:

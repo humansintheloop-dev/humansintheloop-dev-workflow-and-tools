@@ -3,9 +3,12 @@
 These tests run the actual i2code implement command and verify its behavior.
 """
 
+import os
 import subprocess
+import tempfile
 
 import pytest
+from unittest.mock import patch, MagicMock
 
 from conftest import SCRIPT_CMD
 
@@ -50,3 +53,71 @@ class TestCLIHelpFlag:
         assert "--cleanup" in result.stdout
         # Should include description
         assert "worktree" in result.stdout.lower() or "draft pr" in result.stdout.lower()
+
+
+@pytest.mark.unit
+class TestIsolatedFlagPassthrough:
+    """Test that --isolated flag is forwarded to ensure_integration_branch()."""
+
+    CLI_PATCHES = [
+        "i2code.implement.cli.ensure_integration_branch",
+        "i2code.implement.cli.ensure_slice_branch",
+        "i2code.implement.cli.validate_idea_directory",
+        "i2code.implement.cli.validate_idea_files",
+        "i2code.implement.cli.validate_idea_files_committed",
+        "i2code.implement.cli.init_or_load_state",
+        "i2code.implement.cli.get_first_task_name",
+        "i2code.implement.cli.Repo",
+    ]
+
+    @patch("i2code.implement.cli.get_first_task_name", return_value="setup")
+    @patch("i2code.implement.cli.init_or_load_state", return_value={"slice_number": 1})
+    @patch("i2code.implement.cli.ensure_slice_branch", return_value="idea/test-feature/01-setup")
+    @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
+    @patch("i2code.implement.cli.validate_idea_files")
+    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.Repo")
+    def test_isolated_flag_passes_isolated_true(
+        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
+        mock_validate_files, mock_ensure_branch, mock_ensure_slice,
+        mock_init_state, mock_first_task
+    ):
+        """When --isolated is set, ensure_integration_branch is called with isolated=True."""
+        from click.testing import CliRunner
+        from i2code.implement.cli import implement_cmd
+
+        mock_repo = MagicMock()
+        mock_repo.working_tree_dir = "/tmp/fake-repo"
+        mock_repo_cls.return_value = mock_repo
+
+        runner = CliRunner()
+        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolated", "--setup-only"])
+
+        mock_ensure_branch.assert_called_once_with(mock_repo, "test-feature", isolated=True)
+
+    @patch("i2code.implement.cli.get_first_task_name", return_value="setup")
+    @patch("i2code.implement.cli.init_or_load_state", return_value={"slice_number": 1})
+    @patch("i2code.implement.cli.ensure_slice_branch", return_value="idea/test-feature/01-setup")
+    @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
+    @patch("i2code.implement.cli.validate_idea_files")
+    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.Repo")
+    def test_non_isolated_passes_isolated_false(
+        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
+        mock_validate_files, mock_ensure_branch, mock_ensure_slice,
+        mock_init_state, mock_first_task
+    ):
+        """When --isolated is not set, ensure_integration_branch is called with default isolated=False."""
+        from click.testing import CliRunner
+        from i2code.implement.cli import implement_cmd
+
+        mock_repo = MagicMock()
+        mock_repo.working_tree_dir = "/tmp/fake-repo"
+        mock_repo_cls.return_value = mock_repo
+
+        runner = CliRunner()
+        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--setup-only"])
+
+        mock_ensure_branch.assert_called_once_with(mock_repo, "test-feature", isolated=False)

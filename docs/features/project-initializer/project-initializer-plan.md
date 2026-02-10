@@ -61,25 +61,25 @@ The plan is organized so each steel thread delivers one independently testable b
 
 This thread modifies `ensure_integration_branch()` to support remote branch tracking when running in `--isolated` mode. This is the simplest change and is needed by the VM to pick up scaffolding pushed by the host.
 
-- [ ] **Task 1.1: `ensure_integration_branch()` creates local tracking branch from remote when `isolated=True`**
+- [x] **Task 1.1: `ensure_integration_branch()` creates local tracking branch from remote when `isolated=True`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_git_infrastructure.py -k "integration_branch"`
   - Observable: When `isolated=True` and the local branch does not exist but `origin/{branch_name}` does, a local tracking branch is created from the remote ref. When neither exists, falls back to creating from HEAD. When the local branch already exists, it is reused regardless of `isolated` flag. When `isolated=False` (default), behavior is unchanged — always creates from HEAD.
   - Evidence: Unit tests verify all four scenarios: (1) isolated + remote exists → tracks remote, (2) isolated + no remote → creates from HEAD, (3) isolated + local exists → reuses local, (4) non-isolated (default) → unchanged behavior
   - Steps:
-    - [ ] Add unit tests to `tests/implement/test_git_infrastructure.py` for the four scenarios above. Use `monkeypatch` or `mocker` to simulate remote refs on the `Repo` object. Tests should fail because `ensure_integration_branch()` does not yet accept `isolated` parameter.
-    - [ ] Modify `ensure_integration_branch()` in `src/i2code/implement/implement.py` to accept `isolated: bool = False`. When `isolated=True` and local branch does not exist, check `repo.remotes.origin.refs` for `idea/{idea_name}/integration`. If found, create local branch tracking the remote ref. Otherwise, fall back to creating from HEAD.
-    - [ ] Verify all new and existing tests pass
+    - [x] Add unit tests to `tests/implement/test_git_infrastructure.py` for the four scenarios above. Use `monkeypatch` or `mocker` to simulate remote refs on the `Repo` object. Tests should fail because `ensure_integration_branch()` does not yet accept `isolated` parameter.
+    - [x] Modify `ensure_integration_branch()` in `src/i2code/implement/implement.py` to accept `isolated: bool = False`. When `isolated=True` and local branch does not exist, check `repo.remotes.origin.refs` for `idea/{idea_name}/integration`. If found, create local branch tracking the remote ref. Otherwise, fall back to creating from HEAD.
+    - [x] Verify all new and existing tests pass
 
-- [ ] **Task 1.2: `--isolated` CLI path passes `isolated=True` to `ensure_integration_branch()`**
+- [x] **Task 1.2: `--isolated` CLI path passes `isolated=True` to `ensure_integration_branch()`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_cli_integration.py -k "isolated"`
   - Observable: When `--isolated` flag is set, `ensure_integration_branch()` is called with `isolated=True`. When `--isolated` is not set, it is called with `isolated=False` (default).
   - Evidence: Unit test mocks `ensure_integration_branch` and verifies the `isolated` keyword argument matches the CLI flag
   - Steps:
-    - [ ] Add a unit test that patches `ensure_integration_branch` and invokes the CLI with `--isolated`, asserting `isolated=True` was passed. Add a corresponding test for the non-isolated path asserting default behavior.
-    - [ ] Modify `src/i2code/implement/cli.py` to pass `isolated=isolated` to the `ensure_integration_branch()` call (line 111). Import the updated function signature.
-    - [ ] Verify all tests pass
+    - [x] Add a unit test that patches `ensure_integration_branch` and invokes the CLI with `--isolated`, asserting `isolated=True` was passed. Add a corresponding test for the non-isolated path asserting default behavior.
+    - [x] Modify `src/i2code/implement/cli.py` to pass `isolated=isolated` to the `ensure_integration_branch()` call (line 111). Import the updated function signature.
+    - [x] Verify all tests pass
 
 ---
 

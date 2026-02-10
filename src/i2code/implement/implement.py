@@ -193,12 +193,13 @@ def save_state(idea_directory: str, idea_name: str, state: Dict[str, Any]) -> No
         json.dump(state, f, indent=2)
 
 
-def ensure_integration_branch(repo: Repo, idea_name: str) -> str:
+def ensure_integration_branch(repo: Repo, idea_name: str, isolated: bool = False) -> str:
     """Ensure the integration branch exists, creating it if necessary.
 
     Args:
         repo: GitPython Repo object
         idea_name: Name of the idea
+        isolated: When True (inside VM), prefer tracking remote branch over creating from HEAD
 
     Returns:
         The integration branch name
@@ -208,8 +209,17 @@ def ensure_integration_branch(repo: Repo, idea_name: str) -> str:
     # Check if branch already exists
     existing_branches = [b.name for b in repo.branches]
     if branch_name not in existing_branches:
-        # Create the branch from current HEAD
-        repo.create_head(branch_name)
+        if isolated:
+            # In isolated mode, try to create a local tracking branch from remote
+            try:
+                remote_ref = repo.remotes.origin.refs[branch_name]
+                repo.create_head(branch_name, remote_ref)
+            except (IndexError, AttributeError):
+                # Remote branch doesn't exist — fall back to HEAD
+                repo.create_head(branch_name)
+        else:
+            # Create the branch from current HEAD
+            repo.create_head(branch_name)
 
     return branch_name
 

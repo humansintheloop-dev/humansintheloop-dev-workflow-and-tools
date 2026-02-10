@@ -108,7 +108,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
     repo = Repo(idea_directory, search_parent_directories=True)
 
     # Create or reuse integration branch
-    integration_branch = ensure_integration_branch(repo, idea_name)
+    integration_branch = ensure_integration_branch(repo, idea_name, isolated=isolated)
     print(f"Integration branch: {integration_branch}")
 
     # Read plan file to get first task name for slice naming

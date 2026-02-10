@@ -196,24 +196,24 @@ This thread wires `ensure_project_setup()` into the `--isolate` CLI code path so
 
 This thread adds an integration test that exercises the full `ensure_project_setup()` flow using a mock Claude script, verifying end-to-end behavior without real Claude invocations.
 
-- [ ] **Task 5.1: Integration test verifies `ensure_project_setup()` with mock Claude script**
+- [x] **Task 5.1: Integration test verifies `ensure_project_setup()` with mock Claude script**
   - TaskType: INFRA
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_project_setup_integration.py -k "mock_claude_setup"`
   - Observable: A mock Claude script creates a placeholder file and commits it. `ensure_project_setup()` invokes the mock, detects the new commit, and the function completes. The integration branch contains the mock-created commit.
   - Evidence: Integration test creates a temporary git repo with a remote, a mock Claude script that creates a file and commits, calls `ensure_project_setup()` with `mock_claude` and `skip_ci_wait=True`, and verifies: (1) the integration branch has the mock commit, (2) the function returns `True`.
   - Steps:
-    - [ ] Create `tests/implement/test_project_setup_integration.py` with a `@pytest.mark.integration` test. The test should: create a temp git repo with an initial commit, set up a bare remote, create a mock Claude script that writes a file and commits, call `ensure_project_setup()` with `mock_claude` and `skip_ci_wait=True`, and verify the integration branch has the new commit and the function returns `True`.
-    - [ ] Create the mock Claude script as a fixture (a bash script that creates `scaffolding.txt`, `git add`, `git commit`). The script should receive `"setup"` as its argument (matching `build_scaffolding_prompt` mock convention).
-    - [ ] Verify the integration test passes
+    - [x] Create `tests/implement/test_project_setup_integration.py` with a `@pytest.mark.integration` test. The test should: create a temp git repo with an initial commit, set up a bare remote, create a mock Claude script that writes a file and commits, call `ensure_project_setup()` with `mock_claude` and `skip_ci_wait=True`, and verify the integration branch has the new commit and the function returns `True`.
+    - [x] Create the mock Claude script as a fixture (a bash script that creates `scaffolding.txt`, `git add`, `git commit`). The script should receive `"setup"` as its argument (matching `build_scaffolding_prompt` mock convention).
+    - [x] Verify the integration test passes
 
-- [ ] **Task 5.2: Integration test verifies `ensure_project_setup()` is idempotent (no-op on repeat run)**
+- [x] **Task 5.2: Integration test verifies `ensure_project_setup()` is idempotent (no-op on repeat run)**
   - TaskType: INFRA
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_project_setup_integration.py -k "idempotent"`
   - Observable: When `ensure_project_setup()` is called a second time and the mock Claude makes no new commits, the function returns `True` without pushing.
   - Evidence: Integration test runs `ensure_project_setup()` twice with a mock that only creates files if they don't exist. Second run detects no new commits and returns `True` without error.
   - Steps:
-    - [ ] Add an integration test that runs `ensure_project_setup()` twice. The mock Claude script should be idempotent (only creates files if missing, uses `git diff --cached` to avoid empty commits). Verify second run returns `True` and the branch has only the commits from the first run.
-    - [ ] Verify the integration test passes
+    - [x] Add an integration test that runs `ensure_project_setup()` twice. The mock Claude script should be idempotent (only creates files if missing, uses `git diff --cached` to avoid empty commits). Verify second run returns `True` and the branch has only the commits from the first run.
+    - [x] Verify the integration test passes
 
 ---
 

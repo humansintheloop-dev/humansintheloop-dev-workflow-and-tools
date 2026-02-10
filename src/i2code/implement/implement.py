@@ -250,6 +250,51 @@ def ensure_worktree(repo: Repo, idea_name: str, branch_name: str) -> str:
     return worktree_path
 
 
+REQUIRED_PERMISSIONS = [
+    "Bash(git commit:*)",
+    "Bash(git check-ignore:*)",
+    "Bash(mkdir -p:*)",
+    "Bash(./test-scripts/test-*.sh)",
+    "Bash(docker compose config:*)",
+    "Write",
+    "Edit",
+    "Bash(java -version)",
+    "Bash(gradle version)",
+]
+
+
+def ensure_claude_permissions(repo_root: str) -> None:
+    """Ensure .claude/settings.local.json has required permissions.
+
+    Creates the file if it doesn't exist. Adds any missing permissions
+    from REQUIRED_PERMISSIONS to the allow list.
+
+    Args:
+        repo_root: Path to the repository root
+    """
+    settings_dir = os.path.join(repo_root, ".claude")
+    settings_file = os.path.join(settings_dir, "settings.local.json")
+
+    if os.path.isfile(settings_file):
+        with open(settings_file, "r") as f:
+            config = json.load(f)
+    else:
+        os.makedirs(settings_dir, exist_ok=True)
+        config = {}
+
+    allow_list = config.get("permissions", {}).get("allow", [])
+
+    for perm in REQUIRED_PERMISSIONS:
+        if perm not in allow_list:
+            allow_list.append(perm)
+
+    config.setdefault("permissions", {})["allow"] = allow_list
+
+    with open(settings_file, "w") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+
+
 def sanitize_branch_name(name: str) -> str:
     """Sanitize a string for use in a Git branch name.
 

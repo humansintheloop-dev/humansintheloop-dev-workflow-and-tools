@@ -15,6 +15,7 @@ from i2code.implement.implement import (
     init_or_load_state,
     save_state,
     ensure_integration_branch,
+    ensure_claude_permissions,
     ensure_worktree,
     ensure_slice_branch,
     get_first_task_name,
@@ -69,8 +70,8 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
     # Validate required idea files exist
     validate_idea_files(idea_directory, idea_name)
 
-    # Validate idea files are committed to Git
-    validate_idea_files_committed(idea_directory, idea_name)
+    if not isolated:
+        validate_idea_files_committed(idea_directory, idea_name)
 
     # Delegate to isolarium VM if --isolate is set
     if isolate:
@@ -79,7 +80,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         isolarium_args = ["isolarium", "--name", f"i2code-{idea_name}", "run"]
         if not non_interactive:
             isolarium_args.append("--interactive")
-        cmd = isolarium_args + ["--", "i2code", "implement", "--isolated", rel_idea_dir]
+        cmd = isolarium_args + ["--", "i2code", "--with-sdkman", "implement", "--isolated", rel_idea_dir]
         if cleanup:
             cmd.append("--cleanup")
         if mock_claude:
@@ -125,6 +126,9 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
     if isolated:
         # Running inside isolarium VM - work directly in the repo
         work_dir = repo.working_tree_dir
+        repo.config_writer().set_value("user", "email", "test@test.com").release()
+        repo.config_writer().set_value("user", "name", "Test User").release()
+        ensure_claude_permissions(work_dir)
         work_idea_dir = idea_directory
         work_plan_file = original_plan_file
         repo.git.checkout(slice_branch)

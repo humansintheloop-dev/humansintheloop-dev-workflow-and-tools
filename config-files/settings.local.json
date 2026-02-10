@@ -38,7 +38,8 @@
       "Bash(git check-ignore:*)",
       "Bash(mkdir -p:*)",
       "Bash(./test-scripts/test-*.sh)",
-      "Bash(docker compose config:*)"
+      "Bash(docker compose config:*)",
+      "Bash(i2code:*)"
     ],
     "deny": [
       "Bash(docker compose down:*)",

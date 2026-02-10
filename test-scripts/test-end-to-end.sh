@@ -17,3 +17,13 @@ echo "--- CLI smoke tests ---"
 
 echo ""
 echo "=== All Plan Manager Tests Passed ==="
+
+echo ""
+echo "=== Running Implement Tests ==="
+
+echo ""
+echo "--- implement unit tests ---"
+uv run --python 3.12 --with pytest --with GitPython --with pytest-mock python3 -m pytest "$PROJECT_ROOT/tests/implement/" -v -m unit
+
+echo ""
+echo "=== All Implement Tests Passed ==="

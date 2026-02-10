@@ -2,6 +2,7 @@
 
 import click
 
+from i2code.implement.cli import implement_cmd
 from i2code.plan.cli import plan
 
 
@@ -12,3 +13,4 @@ def main():
 
 
 main.add_command(plan)
+main.add_command(implement_cmd)

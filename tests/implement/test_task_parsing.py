@@ -1,12 +1,8 @@
 """Tests for task parsing from plan files in implement-with-worktree."""
 
 import os
-import sys
 import tempfile
 import pytest
-
-# Add workflow-scripts to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
 
 
 @pytest.mark.unit
@@ -15,7 +11,7 @@ class TestTaskParsing:
 
     def test_parse_uncompleted_tasks(self):
         """Should extract uncompleted tasks from plan file."""
-        from implement_with_worktree import parse_tasks_from_plan
+        from i2code.implement.implement import parse_tasks_from_plan
 
         plan_content = """# Implementation Plan
 
@@ -38,7 +34,7 @@ class TestTaskParsing:
 
     def test_parse_skips_completed_tasks(self):
         """Should skip tasks marked with [x]."""
-        from implement_with_worktree import parse_tasks_from_plan
+        from i2code.implement.implement import parse_tasks_from_plan
 
         plan_content = """
 - [x] **Task 1: Done**
@@ -52,7 +48,7 @@ class TestTaskParsing:
 
     def test_parse_returns_tasks_in_order(self):
         """Tasks should be returned in document order."""
-        from implement_with_worktree import parse_tasks_from_plan
+        from i2code.implement.implement import parse_tasks_from_plan
 
         plan_content = """
 - [ ] **Task A**
@@ -68,7 +64,7 @@ class TestTaskParsing:
 
     def test_parse_empty_plan(self):
         """Should return empty list for plan with no tasks."""
-        from implement_with_worktree import parse_tasks_from_plan
+        from i2code.implement.implement import parse_tasks_from_plan
 
         plan_content = """# Empty Plan
 
@@ -80,7 +76,7 @@ Just some text, no tasks.
 
     def test_parse_all_completed(self):
         """Should return empty list when all tasks are completed."""
-        from implement_with_worktree import parse_tasks_from_plan
+        from i2code.implement.implement import parse_tasks_from_plan
 
         plan_content = """
 - [x] **Task 1**
@@ -92,7 +88,7 @@ Just some text, no tasks.
 
     def test_parse_extracts_task_title(self):
         """Should extract the task title without markdown formatting."""
-        from implement_with_worktree import parse_tasks_from_plan
+        from i2code.implement.implement import parse_tasks_from_plan
 
         plan_content = """
 - [ ] **Task 1.1: Create the config file**
@@ -110,7 +106,7 @@ class TestGetFirstTaskName:
 
     def test_get_first_task_name(self):
         """Should extract name from first uncompleted task."""
-        from implement_with_worktree import get_first_task_name
+        from i2code.implement.implement import get_first_task_name
 
         plan_content = """
 - [x] **Task 1.1: Completed**
@@ -122,7 +118,7 @@ class TestGetFirstTaskName:
 
     def test_get_first_task_name_empty_returns_default(self):
         """Should return default name if no tasks."""
-        from implement_with_worktree import get_first_task_name
+        from i2code.implement.implement import get_first_task_name
 
         plan_content = """# No tasks"""
         name = get_first_task_name(plan_content)

@@ -2,15 +2,11 @@
 
 import json
 import os
-import sys
 import subprocess
 import tempfile
 import pytest
 
 from git import Repo
-
-# Add workflow-scripts to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
 
 
 @pytest.mark.unit
@@ -19,14 +15,14 @@ class TestPRTitleGeneration:
 
     def test_generate_pr_title(self):
         """Should generate PR title from idea and slice name."""
-        from implement_with_worktree import generate_pr_title
+        from i2code.implement.implement import generate_pr_title
 
         title = generate_pr_title("my-feature", "01-project-setup")
         assert title == "[my-feature] 01-project-setup"
 
     def test_generate_pr_title_preserves_slice_name(self):
         """PR title should preserve the full slice name."""
-        from implement_with_worktree import generate_pr_title
+        from i2code.implement.implement import generate_pr_title
 
         title = generate_pr_title("wt-pr-based-development", "03-feedback-handling")
         assert title == "[wt-pr-based-development] 03-feedback-handling"
@@ -38,7 +34,7 @@ class TestPRBodyGeneration:
 
     def test_generate_pr_body(self):
         """Should generate PR body with idea directory reference."""
-        from implement_with_worktree import generate_pr_body
+        from i2code.implement.implement import generate_pr_body
 
         body = generate_pr_body(
             idea_directory="docs/features/my-feature",
@@ -57,7 +53,7 @@ class TestCheckExistingPR:
 
     def test_find_existing_pr_returns_pr_number(self, monkeypatch):
         """Should return PR number if PR exists for branch."""
-        from implement_with_worktree import find_existing_pr
+        from i2code.implement.implement import find_existing_pr
 
         # Mock gh pr list output
         mock_output = json.dumps([
@@ -78,7 +74,7 @@ class TestCheckExistingPR:
 
     def test_find_existing_pr_returns_none_when_not_found(self, monkeypatch):
         """Should return None if no PR exists for branch."""
-        from implement_with_worktree import find_existing_pr
+        from i2code.implement.implement import find_existing_pr
 
         # Mock gh pr list output with no matching PR
         mock_output = json.dumps([
@@ -103,7 +99,7 @@ class TestCheckPRDraftState:
 
     def test_is_pr_draft_returns_true_for_draft(self, monkeypatch):
         """Should return True if PR is in draft state."""
-        from implement_with_worktree import is_pr_draft
+        from i2code.implement.implement import is_pr_draft
 
         mock_output = json.dumps({"isDraft": True})
 
@@ -119,7 +115,7 @@ class TestCheckPRDraftState:
 
     def test_is_pr_draft_returns_false_for_ready(self, monkeypatch):
         """Should return False if PR is ready for review."""
-        from implement_with_worktree import is_pr_draft
+        from i2code.implement.implement import is_pr_draft
 
         mock_output = json.dumps({"isDraft": False})
 
@@ -140,7 +136,7 @@ class TestCreateDraftPRFailure:
 
     def test_create_draft_pr_raises_on_failure(self, monkeypatch):
         """Should raise RuntimeError when gh pr create fails."""
-        from implement_with_worktree import create_draft_pr
+        from i2code.implement.implement import create_draft_pr
 
         def mock_run(*args, **kwargs):
             class MockResult:
@@ -158,7 +154,7 @@ class TestCreateDraftPRFailure:
 
     def test_ensure_draft_pr_raises_on_creation_failure(self, monkeypatch):
         """ensure_draft_pr should raise when PR creation fails."""
-        from implement_with_worktree import ensure_draft_pr, find_existing_pr
+        from i2code.implement.implement import ensure_draft_pr, find_existing_pr
 
         # Mock find_existing_pr to return None (no existing PR)
         def mock_find(*args, **kwargs):
@@ -168,8 +164,8 @@ class TestCreateDraftPRFailure:
         def mock_create(*args, **kwargs):
             raise RuntimeError("PR creation failed")
 
-        monkeypatch.setattr("implement_with_worktree.find_existing_pr", mock_find)
-        monkeypatch.setattr("implement_with_worktree.create_draft_pr", mock_create)
+        monkeypatch.setattr("i2code.implement.implement.find_existing_pr", mock_find)
+        monkeypatch.setattr("i2code.implement.implement.create_draft_pr", mock_create)
 
         with pytest.raises(RuntimeError):
             ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1)
@@ -181,7 +177,8 @@ class TestDeferredPRCreation:
 
     def test_setup_only_does_not_create_pr(self, monkeypatch, tmp_path):
         """Running with --setup-only should NOT attempt to create a PR."""
-        from implement_with_worktree import main
+        from click.testing import CliRunner
+        from i2code.implement.cli import implement_cmd
         import builtins
 
         # Track if ensure_draft_pr was called
@@ -193,10 +190,10 @@ class TestDeferredPRCreation:
             return 123
 
         # Mock all the setup functions to avoid real git/github operations
-        monkeypatch.setattr("implement_with_worktree.validate_idea_directory", lambda x: "test-idea")
-        monkeypatch.setattr("implement_with_worktree.validate_idea_files", lambda x, y: None)
-        monkeypatch.setattr("implement_with_worktree.validate_idea_files_committed", lambda x, y: None)
-        monkeypatch.setattr("implement_with_worktree.init_or_load_state", lambda x, y: {"slice_number": 1, "processed_comment_ids": [], "processed_review_ids": []})
+        monkeypatch.setattr("i2code.implement.implement.validate_idea_directory", lambda x: "test-idea")
+        monkeypatch.setattr("i2code.implement.implement.validate_idea_files", lambda x, y: None)
+        monkeypatch.setattr("i2code.implement.implement.validate_idea_files_committed", lambda x, y: None)
+        monkeypatch.setattr("i2code.implement.implement.init_or_load_state", lambda x, y: {"slice_number": 1, "processed_comment_ids": [], "processed_review_ids": []})
 
         # Mock git operations
         class MockRepo:
@@ -213,10 +210,11 @@ class TestDeferredPRCreation:
                 def checkout(*args):
                     pass
 
-        monkeypatch.setattr("implement_with_worktree.Repo", lambda *args, **kwargs: MockRepo())
-        monkeypatch.setattr("implement_with_worktree.ensure_integration_branch", lambda r, n: "idea/test-idea/integration")
-        monkeypatch.setattr("implement_with_worktree.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
-        monkeypatch.setattr("implement_with_worktree.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
+        monkeypatch.setattr("i2code.implement.implement.Repo", lambda *args, **kwargs: MockRepo())
+        monkeypatch.setattr("i2code.implement.cli.Repo", lambda *args, **kwargs: MockRepo())
+        monkeypatch.setattr("i2code.implement.implement.ensure_integration_branch", lambda r, n: "idea/test-idea/integration")
+        monkeypatch.setattr("i2code.implement.implement.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
+        monkeypatch.setattr("i2code.implement.implement.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
 
         # Create a minimal plan file in the expected location
         plan_file = tmp_path / "test-idea-plan.md"
@@ -231,18 +229,26 @@ class TestDeferredPRCreation:
         monkeypatch.setattr("builtins.open", mock_open)
 
         # Mock the PR functions
-        monkeypatch.setattr("implement_with_worktree.push_branch_to_remote", lambda x: True)
-        monkeypatch.setattr("implement_with_worktree.find_existing_pr", lambda x: None)
-        monkeypatch.setattr("implement_with_worktree.ensure_draft_pr", mock_ensure_draft_pr)
+        monkeypatch.setattr("i2code.implement.implement.push_branch_to_remote", lambda x: True)
+        monkeypatch.setattr("i2code.implement.implement.find_existing_pr", lambda x: None)
+        monkeypatch.setattr("i2code.implement.implement.ensure_draft_pr", mock_ensure_draft_pr)
 
-        # Mock sys.argv for --setup-only
-        monkeypatch.setattr("sys.argv", ["implement-with-worktree.sh", str(tmp_path), "--setup-only"])
+        # Also patch the cli module's imported references
+        monkeypatch.setattr("i2code.implement.cli.validate_idea_directory", lambda x: "test-idea")
+        monkeypatch.setattr("i2code.implement.cli.validate_idea_files", lambda x, y: None)
+        monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda x, y: None)
+        monkeypatch.setattr("i2code.implement.cli.init_or_load_state", lambda x, y: {"slice_number": 1, "processed_comment_ids": [], "processed_review_ids": []})
+        monkeypatch.setattr("i2code.implement.cli.ensure_integration_branch", lambda r, n: "idea/test-idea/integration")
+        monkeypatch.setattr("i2code.implement.cli.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
+        monkeypatch.setattr("i2code.implement.cli.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
+        monkeypatch.setattr("i2code.implement.cli.get_first_task_name", lambda c: "test-task")
+        monkeypatch.setattr("i2code.implement.cli.get_worktree_idea_directory", lambda **kwargs: str(tmp_path / "worktree" / "test-idea"))
+        monkeypatch.setattr("i2code.implement.cli.find_existing_pr", lambda x: None)
+        monkeypatch.setattr("i2code.implement.cli.ensure_draft_pr", mock_ensure_draft_pr)
 
-        # Run main
-        try:
-            main()
-        except SystemExit:
-            pass
+        # Run via Click test runner
+        runner = CliRunner()
+        result = runner.invoke(implement_cmd, [str(tmp_path), "--setup-only"])
 
         # Verify ensure_draft_pr was NOT called
         assert not ensure_draft_pr_called, "ensure_draft_pr should not be called in --setup-only mode"
@@ -254,7 +260,7 @@ class TestFetchPRConversationComments:
 
     def test_fetch_pr_conversation_comments_returns_comments(self, monkeypatch):
         """Should return list of conversation comments."""
-        from implement_with_worktree import fetch_pr_conversation_comments
+        from i2code.implement.implement import fetch_pr_conversation_comments
 
         mock_output = json.dumps([
             {"id": 1001, "body": "This looks great!", "user": {"login": "reviewer1"}},
@@ -276,7 +282,7 @@ class TestFetchPRConversationComments:
 
     def test_fetch_pr_conversation_comments_returns_empty_on_error(self, monkeypatch):
         """Should return empty list on API error."""
-        from implement_with_worktree import fetch_pr_conversation_comments
+        from i2code.implement.implement import fetch_pr_conversation_comments
 
         def mock_run(*args, **kwargs):
             class MockResult:
@@ -297,7 +303,7 @@ class TestGetPRUrl:
 
     def test_get_pr_url_returns_url(self, monkeypatch):
         """Should return the PR URL."""
-        from implement_with_worktree import get_pr_url
+        from i2code.implement.implement import get_pr_url
 
         def mock_run(*args, **kwargs):
             class MockResult:
@@ -312,7 +318,7 @@ class TestGetPRUrl:
 
     def test_get_pr_url_returns_empty_on_error(self, monkeypatch):
         """Should return empty string on error."""
-        from implement_with_worktree import get_pr_url
+        from i2code.implement.implement import get_pr_url
 
         def mock_run(*args, **kwargs):
             class MockResult:
@@ -332,7 +338,7 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_includes_reviews(self):
         """Should format PR reviews with state and body."""
-        from implement_with_worktree import format_all_feedback
+        from i2code.implement.implement import format_all_feedback
 
         reviews = [
             {"id": 1, "state": "CHANGES_REQUESTED", "body": "Please fix the tests",
@@ -348,7 +354,7 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_includes_review_comments(self):
         """Should format review comments with file path and line."""
-        from implement_with_worktree import format_all_feedback
+        from i2code.implement.implement import format_all_feedback
 
         review_comments = [
             {"id": 2, "body": "This variable name is unclear",
@@ -363,7 +369,7 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_includes_conversation_comments(self):
         """Should format general PR comments."""
-        from implement_with_worktree import format_all_feedback
+        from i2code.implement.implement import format_all_feedback
 
         conversation_comments = [
             {"id": 3, "body": "Great work overall!", "user": {"login": "lead"}}
@@ -377,7 +383,7 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_combines_all_types(self):
         """Should combine all feedback types into one formatted string."""
-        from implement_with_worktree import format_all_feedback
+        from i2code.implement.implement import format_all_feedback
 
         reviews = [{"id": 1, "state": "APPROVED", "body": "LGTM", "user": {"login": "r1"}}]
         review_comments = [{"id": 2, "body": "Nitpick", "path": "a.py", "line": 1, "user": {"login": "r2"}}]
@@ -396,7 +402,7 @@ class TestBuildTriageCommand:
 
     def test_build_triage_command_interactive(self):
         """Should build interactive Claude command for triage."""
-        from implement_with_worktree import build_triage_command
+        from i2code.implement.implement import build_triage_command
 
         cmd = build_triage_command(
             feedback_content="Please add tests",
@@ -411,7 +417,7 @@ class TestBuildTriageCommand:
 
     def test_build_triage_command_non_interactive(self):
         """Should build non-interactive Claude command with -p flag."""
-        from implement_with_worktree import build_triage_command
+        from i2code.implement.implement import build_triage_command
 
         cmd = build_triage_command(
             feedback_content="Fix the bug",
@@ -424,7 +430,7 @@ class TestBuildTriageCommand:
 
     def test_build_triage_command_requests_json_output(self):
         """Should request JSON output format."""
-        from implement_with_worktree import build_triage_command
+        from i2code.implement.implement import build_triage_command
 
         cmd = build_triage_command(
             feedback_content="Some feedback",
@@ -442,7 +448,7 @@ class TestBuildFixCommand:
 
     def test_build_fix_command_interactive(self):
         """Should build interactive Claude command for fixing."""
-        from implement_with_worktree import build_fix_command
+        from i2code.implement.implement import build_fix_command
 
         cmd = build_fix_command(
             pr_url="https://github.com/owner/repo/pull/123",
@@ -458,7 +464,7 @@ class TestBuildFixCommand:
 
     def test_build_fix_command_non_interactive(self):
         """Should build non-interactive Claude command with -p flag."""
-        from implement_with_worktree import build_fix_command
+        from i2code.implement.implement import build_fix_command
 
         cmd = build_fix_command(
             pr_url="https://github.com/owner/repo/pull/123",
@@ -478,7 +484,7 @@ class TestGetNewFeedback:
 
     def test_get_new_feedback_filters_processed(self):
         """Should filter out already processed feedback."""
-        from implement_with_worktree import get_new_feedback
+        from i2code.implement.implement import get_new_feedback
 
         all_feedback = [
             {"id": 1, "body": "Old comment"},
@@ -494,7 +500,7 @@ class TestGetNewFeedback:
 
     def test_get_new_feedback_returns_all_when_none_processed(self):
         """Should return all feedback when nothing processed yet."""
-        from implement_with_worktree import get_new_feedback
+        from i2code.implement.implement import get_new_feedback
 
         all_feedback = [
             {"id": 1, "body": "Comment 1"},
@@ -507,7 +513,7 @@ class TestGetNewFeedback:
 
     def test_get_new_feedback_returns_empty_when_all_processed(self):
         """Should return empty list when all feedback processed."""
-        from implement_with_worktree import get_new_feedback
+        from i2code.implement.implement import get_new_feedback
 
         all_feedback = [{"id": 1, "body": "Comment"}]
         processed_ids = [1]
@@ -523,7 +529,7 @@ class TestDefaultStateIncludesConversationIds:
 
     def test_init_state_includes_processed_conversation_ids(self, tmp_path):
         """Default state should include processed_conversation_ids."""
-        from implement_with_worktree import init_or_load_state
+        from i2code.implement.implement import init_or_load_state
 
         idea_dir = tmp_path / "test-idea"
         idea_dir.mkdir()
@@ -540,7 +546,7 @@ class TestParseTriageResult:
 
     def test_parse_triage_result_with_json_code_block(self):
         """Should parse JSON from markdown code block."""
-        from implement_with_worktree import parse_triage_result
+        from i2code.implement.implement import parse_triage_result
 
         output = '''Here's the triage:
 ```json
@@ -558,7 +564,7 @@ class TestParseTriageResult:
 
     def test_parse_triage_result_with_plain_json(self):
         """Should parse plain JSON output."""
-        from implement_with_worktree import parse_triage_result
+        from i2code.implement.implement import parse_triage_result
 
         output = '{"will_fix": [], "needs_clarification": [{"comment_id": 5, "question": "What?"}]}'
         result = parse_triage_result(output)
@@ -569,7 +575,7 @@ class TestParseTriageResult:
 
     def test_parse_triage_result_returns_none_on_invalid(self):
         """Should return None for invalid JSON."""
-        from implement_with_worktree import parse_triage_result
+        from i2code.implement.implement import parse_triage_result
 
         result = parse_triage_result("This is not JSON at all")
 
@@ -582,7 +588,7 @@ class TestReplyToReviewComment:
 
     def test_reply_to_review_comment_success(self, monkeypatch):
         """Should return True on successful reply."""
-        from implement_with_worktree import reply_to_review_comment
+        from i2code.implement.implement import reply_to_review_comment
 
         def mock_run(*args, **kwargs):
             class MockResult:
@@ -596,7 +602,7 @@ class TestReplyToReviewComment:
 
     def test_reply_to_review_comment_failure(self, monkeypatch):
         """Should return False on API error."""
-        from implement_with_worktree import reply_to_review_comment
+        from i2code.implement.implement import reply_to_review_comment
 
         def mock_run(*args, **kwargs):
             class MockResult:
@@ -615,7 +621,7 @@ class TestReplyToPRComment:
 
     def test_reply_to_pr_comment_success(self, monkeypatch):
         """Should return True on successful comment."""
-        from implement_with_worktree import reply_to_pr_comment
+        from i2code.implement.implement import reply_to_pr_comment
 
         def mock_run(*args, **kwargs):
             class MockResult:
@@ -634,7 +640,7 @@ class TestGetFeedbackByIds:
 
     def test_get_feedback_by_ids_returns_matching(self):
         """Should return only feedback with matching IDs."""
-        from implement_with_worktree import get_feedback_by_ids
+        from i2code.implement.implement import get_feedback_by_ids
 
         all_feedback = [
             {"id": 1, "body": "Comment 1"},
@@ -650,7 +656,7 @@ class TestGetFeedbackByIds:
 
     def test_get_feedback_by_ids_returns_empty_for_no_matches(self):
         """Should return empty list when no IDs match."""
-        from implement_with_worktree import get_feedback_by_ids
+        from i2code.implement.implement import get_feedback_by_ids
 
         all_feedback = [{"id": 1, "body": "Comment"}]
 
@@ -665,7 +671,7 @@ class TestDetermineCommentType:
 
     def test_determine_comment_type_review(self):
         """Should return 'review' for review comment IDs."""
-        from implement_with_worktree import determine_comment_type
+        from i2code.implement.implement import determine_comment_type
 
         review_comments = [{"id": 100, "body": "Review comment"}]
         conversation_comments = [{"id": 200, "body": "General comment"}]
@@ -676,7 +682,7 @@ class TestDetermineCommentType:
 
     def test_determine_comment_type_conversation(self):
         """Should return 'conversation' for non-review comment IDs."""
-        from implement_with_worktree import determine_comment_type
+        from i2code.implement.implement import determine_comment_type
 
         review_comments = [{"id": 100, "body": "Review comment"}]
         conversation_comments = [{"id": 200, "body": "General comment"}]

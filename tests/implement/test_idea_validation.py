@@ -1,12 +1,8 @@
 """Tests for idea directory validation in implement-with-worktree."""
 
 import os
-import sys
 import tempfile
 import pytest
-
-# Add workflow-scripts to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
 
 
 @pytest.mark.unit
@@ -15,7 +11,7 @@ class TestIdeaDirectoryValidation:
 
     def test_validate_nonexistent_directory_raises_error(self):
         """Script should raise error for non-existent directory."""
-        from implement_with_worktree import validate_idea_directory
+        from i2code.implement.implement import validate_idea_directory
 
         with pytest.raises(SystemExit) as exc_info:
             validate_idea_directory("/nonexistent/path/to/idea")
@@ -24,7 +20,7 @@ class TestIdeaDirectoryValidation:
 
     def test_validate_existing_directory_returns_idea_name(self):
         """Script should return idea name extracted from directory path."""
-        from implement_with_worktree import validate_idea_directory
+        from i2code.implement.implement import validate_idea_directory
 
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_dir = os.path.join(tmpdir, "my-test-feature")
@@ -36,7 +32,7 @@ class TestIdeaDirectoryValidation:
 
     def test_idea_name_extracted_from_last_path_component(self):
         """Idea name should be the last component of the path."""
-        from implement_with_worktree import validate_idea_directory
+        from i2code.implement.implement import validate_idea_directory
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create nested directory structure
@@ -54,7 +50,7 @@ class TestIdeaFilesValidation:
 
     def test_validate_missing_all_files_raises_error(self):
         """Script should raise error when all required files are missing."""
-        from implement_with_worktree import validate_idea_files
+        from i2code.implement.implement import validate_idea_files
 
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_dir = os.path.join(tmpdir, "my-feature")
@@ -67,7 +63,7 @@ class TestIdeaFilesValidation:
 
     def test_validate_missing_some_files_lists_missing(self, capsys):
         """Error message should list which files are missing."""
-        from implement_with_worktree import validate_idea_files
+        from i2code.implement.implement import validate_idea_files
 
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_dir = os.path.join(tmpdir, "my-feature")
@@ -87,7 +83,7 @@ class TestIdeaFilesValidation:
 
     def test_validate_all_files_present_succeeds(self):
         """Validation should pass when all required files exist."""
-        from implement_with_worktree import validate_idea_files
+        from i2code.implement.implement import validate_idea_files
 
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_dir = os.path.join(tmpdir, "my-feature")
@@ -102,7 +98,7 @@ class TestIdeaFilesValidation:
 
     def test_validate_accepts_txt_idea_file(self):
         """Validation should accept .txt extension for idea file."""
-        from implement_with_worktree import validate_idea_files
+        from i2code.implement.implement import validate_idea_files
 
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_dir = os.path.join(tmpdir, "my-feature")
@@ -125,7 +121,7 @@ class TestIdeaFilesCommitValidation:
     def test_uncommitted_changes_raises_error(self, capsys):
         """Script should raise error when idea files have uncommitted changes."""
         from git import Repo
-        from implement_with_worktree import validate_idea_files_committed
+        from i2code.implement.implement import validate_idea_files_committed
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Initialize a git repo using GitPython
@@ -160,7 +156,7 @@ class TestIdeaFilesCommitValidation:
     def test_untracked_files_raises_error(self):
         """Script should raise error when idea files are untracked."""
         from git import Repo
-        from implement_with_worktree import validate_idea_files_committed
+        from i2code.implement.implement import validate_idea_files_committed
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Initialize a git repo using GitPython
@@ -183,7 +179,7 @@ class TestIdeaFilesCommitValidation:
     def test_committed_files_pass(self):
         """Validation should pass when all idea files are committed."""
         from git import Repo
-        from implement_with_worktree import validate_idea_files_committed
+        from i2code.implement.implement import validate_idea_files_committed
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Initialize a git repo using GitPython

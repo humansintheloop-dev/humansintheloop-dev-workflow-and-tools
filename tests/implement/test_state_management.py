@@ -2,12 +2,8 @@
 
 import json
 import os
-import sys
 import tempfile
 import pytest
-
-# Add workflow-scripts to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
 
 
 @pytest.mark.unit
@@ -16,7 +12,7 @@ class TestStateFileManagement:
 
     def test_init_state_creates_file_when_not_exists(self):
         """State file should be created if it doesn't exist."""
-        from implement_with_worktree import init_or_load_state
+        from i2code.implement.implement import init_or_load_state
 
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_dir = os.path.join(tmpdir, "my-feature")
@@ -29,7 +25,7 @@ class TestStateFileManagement:
 
     def test_init_state_returns_default_values(self):
         """New state should have default values."""
-        from implement_with_worktree import init_or_load_state
+        from i2code.implement.implement import init_or_load_state
 
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_dir = os.path.join(tmpdir, "my-feature")
@@ -43,7 +39,7 @@ class TestStateFileManagement:
 
     def test_load_state_reads_existing_file(self):
         """Should load existing state file."""
-        from implement_with_worktree import init_or_load_state
+        from i2code.implement.implement import init_or_load_state
 
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_dir = os.path.join(tmpdir, "my-feature")
@@ -67,7 +63,7 @@ class TestStateFileManagement:
 
     def test_save_state_writes_to_file(self):
         """Save state should persist to file."""
-        from implement_with_worktree import init_or_load_state, save_state
+        from i2code.implement.implement import init_or_load_state, save_state
 
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_dir = os.path.join(tmpdir, "my-feature")
@@ -89,7 +85,7 @@ class TestStateFileManagement:
 
     def test_state_file_location(self):
         """State file should be at <idea-dir>/<idea-name>-wt-state.json."""
-        from implement_with_worktree import init_or_load_state
+        from i2code.implement.implement import init_or_load_state
 
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_dir = os.path.join(tmpdir, "my-cool-feature")

@@ -1,14 +1,10 @@
 """Tests for Git infrastructure setup in implement-with-worktree."""
 
 import os
-import sys
 import tempfile
 import pytest
 
 from git import Repo
-
-# Add workflow-scripts to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
 
 
 @pytest.mark.unit
@@ -17,7 +13,7 @@ class TestIntegrationBranch:
 
     def test_create_integration_branch_when_not_exists(self):
         """Should create integration branch if it doesn't exist."""
-        from implement_with_worktree import ensure_integration_branch
+        from i2code.implement.implement import ensure_integration_branch
 
         with tempfile.TemporaryDirectory() as tmpdir:
             repo = Repo.init(tmpdir)
@@ -38,7 +34,7 @@ class TestIntegrationBranch:
 
     def test_reuse_existing_integration_branch(self):
         """Should reuse integration branch if it already exists."""
-        from implement_with_worktree import ensure_integration_branch
+        from i2code.implement.implement import ensure_integration_branch
 
         with tempfile.TemporaryDirectory() as tmpdir:
             repo = Repo.init(tmpdir)
@@ -65,7 +61,7 @@ class TestIntegrationBranch:
 
     def test_integration_branch_naming_pattern(self):
         """Integration branch should follow idea/<idea-name>/integration pattern."""
-        from implement_with_worktree import ensure_integration_branch
+        from i2code.implement.implement import ensure_integration_branch
 
         with tempfile.TemporaryDirectory() as tmpdir:
             repo = Repo.init(tmpdir)
@@ -90,7 +86,7 @@ class TestWorktree:
 
     def test_create_worktree_when_not_exists(self):
         """Should create worktree if it doesn't exist."""
-        from implement_with_worktree import ensure_worktree, ensure_integration_branch
+        from i2code.implement.implement import ensure_worktree, ensure_integration_branch
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo
@@ -119,7 +115,7 @@ class TestWorktree:
 
     def test_reuse_existing_worktree(self):
         """Should reuse worktree if it already exists."""
-        from implement_with_worktree import ensure_worktree, ensure_integration_branch
+        from i2code.implement.implement import ensure_worktree, ensure_integration_branch
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo
@@ -149,7 +145,7 @@ class TestWorktree:
 
     def test_worktree_naming_pattern(self):
         """Worktree path should follow ../<repo-name>-wt-<idea-name> pattern."""
-        from implement_with_worktree import ensure_worktree, ensure_integration_branch
+        from i2code.implement.implement import ensure_worktree, ensure_integration_branch
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo with specific name
@@ -177,7 +173,7 @@ class TestWorktree:
 
     def test_copies_settings_local_json_to_worktree(self):
         """Should copy .claude/settings.local.json to worktree if it exists."""
-        from implement_with_worktree import ensure_worktree, ensure_integration_branch
+        from i2code.implement.implement import ensure_worktree, ensure_integration_branch
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo
@@ -217,7 +213,7 @@ class TestWorktree:
 
     def test_does_not_fail_if_settings_local_json_missing(self):
         """Should not fail if .claude/settings.local.json does not exist."""
-        from implement_with_worktree import ensure_worktree, ensure_integration_branch
+        from i2code.implement.implement import ensure_worktree, ensure_integration_branch
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo WITHOUT .claude/settings.local.json
@@ -248,7 +244,7 @@ class TestSliceBranch:
 
     def test_create_slice_branch(self):
         """Should create slice branch with correct naming."""
-        from implement_with_worktree import ensure_slice_branch
+        from i2code.implement.implement import ensure_slice_branch
 
         with tempfile.TemporaryDirectory() as tmpdir:
             repo = Repo.init(tmpdir)
@@ -278,7 +274,7 @@ class TestSliceBranch:
 
     def test_slice_branch_zero_padded_number(self):
         """Slice number should be zero-padded to 2 digits."""
-        from implement_with_worktree import ensure_slice_branch
+        from i2code.implement.implement import ensure_slice_branch
 
         with tempfile.TemporaryDirectory() as tmpdir:
             repo = Repo.init(tmpdir)
@@ -306,7 +302,7 @@ class TestSliceBranch:
 
     def test_reuse_existing_slice_branch(self):
         """Should reuse slice branch if it already exists."""
-        from implement_with_worktree import ensure_slice_branch
+        from i2code.implement.implement import ensure_slice_branch
 
         with tempfile.TemporaryDirectory() as tmpdir:
             repo = Repo.init(tmpdir)
@@ -344,24 +340,24 @@ class TestSliceNameSanitization:
 
     def test_sanitize_simple_name(self):
         """Simple names should pass through with lowercase."""
-        from implement_with_worktree import sanitize_branch_name
+        from i2code.implement.implement import sanitize_branch_name
 
         assert sanitize_branch_name("Project Setup") == "project-setup"
 
     def test_sanitize_removes_special_chars(self):
         """Special characters should be removed or replaced."""
-        from implement_with_worktree import sanitize_branch_name
+        from i2code.implement.implement import sanitize_branch_name
 
         assert sanitize_branch_name("Task 1.1: Create files") == "task-1-1-create-files"
 
     def test_sanitize_collapses_multiple_dashes(self):
         """Multiple dashes should be collapsed to one."""
-        from implement_with_worktree import sanitize_branch_name
+        from i2code.implement.implement import sanitize_branch_name
 
         assert sanitize_branch_name("foo---bar") == "foo-bar"
 
     def test_sanitize_strips_leading_trailing_dashes(self):
         """Leading and trailing dashes should be stripped."""
-        from implement_with_worktree import sanitize_branch_name
+        from i2code.implement.implement import sanitize_branch_name
 
         assert sanitize_branch_name("--foo-bar--") == "foo-bar"

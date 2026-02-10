@@ -57,9 +57,13 @@ Never use bare `pytest` or `python -m pytest`.
 ## Project Structure
 
 - Plan manager package: `src/i2code/plan/` (installed as `i2code` CLI tool via `pyproject.toml`)
-- Tests: `tests/plan-manager/`
+- Implement package: `src/i2code/implement/` (subcommand `i2code implement <idea-directory>`)
+- Plan manager tests: `tests/plan-manager/`
+- Implement tests: `tests/implement/`
 - Plan file: `docs/features/plan-manager-mcp/plan-manager-mcp-plan.md`
 - CLI invocation: `i2code plan <subcommand> <plan_file> [options]`
+- CLI invocation: `i2code implement <idea-directory> [options]`
 - Test imports use `from i2code.plan.<module> import <function>`
+- Test imports use `from i2code.implement.<module> import <function>`
 
 <!-- claude-config-files-sha: f8e6469fd91735ffcae2dc46f979cfb0677ec5b6 -->

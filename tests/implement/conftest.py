@@ -1,4 +1,4 @@
-"""Shared fixtures and utilities for workflow-scripts tests."""
+"""Shared fixtures and utilities for implement tests."""
 
 import os
 import subprocess
@@ -8,15 +8,12 @@ import pytest
 from git import Repo
 
 
-# Path to the shell script
-SCRIPT_PATH = os.path.join(
-    os.path.dirname(__file__),
-    '../../workflow-scripts/implement-with-worktree.sh'
-)
+# Command to invoke the implement CLI
+SCRIPT_CMD = ["i2code", "implement"]
 
 
 def run_script(idea_dir, cwd=None, setup_only=False, mock_claude=None):
-    """Run the implement-with-worktree.sh script.
+    """Run the i2code implement command.
 
     Args:
         idea_dir: Path to the idea directory
@@ -27,7 +24,7 @@ def run_script(idea_dir, cwd=None, setup_only=False, mock_claude=None):
     Returns:
         subprocess.CompletedProcess with stdout, stderr, and returncode
     """
-    cmd = [SCRIPT_PATH, idea_dir]
+    cmd = SCRIPT_CMD + [idea_dir]
     if setup_only:
         cmd.append("--setup-only")
     if mock_claude:

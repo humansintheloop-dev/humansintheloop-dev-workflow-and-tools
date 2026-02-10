@@ -13,7 +13,7 @@ import uuid
 import pytest
 from git import Repo
 
-from conftest import SCRIPT_PATH
+from conftest import SCRIPT_CMD
 
 
 def create_mock_claude_script_that_marks_tasks_complete(tmpdir, idea_name):
@@ -132,7 +132,7 @@ class TestTaskDetectionAndExecution:
 
         # Run the script with mock Claude
         result = subprocess.run(
-            [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
+            SCRIPT_CMD + [idea_dir, "--mock-claude", mock_script],
             capture_output=True,
             text=True,
             cwd=tmpdir,
@@ -154,7 +154,7 @@ class TestTaskDetectionAndExecution:
 
         # Run the script with mock Claude
         result = subprocess.run(
-            [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
+            SCRIPT_CMD + [idea_dir, "--mock-claude", mock_script],
             capture_output=True,
             text=True,
             cwd=tmpdir,
@@ -176,7 +176,7 @@ class TestTaskDetectionAndExecution:
 
         # Run the script with mock Claude
         result = subprocess.run(
-            [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
+            SCRIPT_CMD + [idea_dir, "--mock-claude", mock_script],
             capture_output=True,
             text=True,
             cwd=tmpdir,
@@ -277,7 +277,7 @@ class TestSequentialTaskExecution:
 
         # Run the script with mock Claude
         result = subprocess.run(
-            [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
+            SCRIPT_CMD + [idea_dir, "--mock-claude", mock_script],
             capture_output=True,
             text=True,
             cwd=tmpdir,
@@ -310,7 +310,7 @@ class TestSequentialTaskExecution:
 
         # Run the script with mock Claude
         result = subprocess.run(
-            [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
+            SCRIPT_CMD + [idea_dir, "--mock-claude", mock_script],
             capture_output=True,
             text=True,
             cwd=tmpdir,
@@ -339,7 +339,7 @@ class TestSequentialTaskExecution:
 
         # Run the script with mock Claude
         subprocess.run(
-            [SCRIPT_PATH, idea_dir, "--mock-claude", mock_script],
+            SCRIPT_CMD + [idea_dir, "--mock-claude", mock_script],
             capture_output=True,
             text=True,
             cwd=tmpdir,
@@ -520,9 +520,7 @@ class TestFeedbackDetectionIntegration:
 
     def test_fetch_pr_comments_returns_comments(self, github_test_repo_with_pr_and_comments):
         """Should fetch review comments from a real PR."""
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
-        from implement_with_worktree import fetch_pr_comments
+        from i2code.implement.implement import fetch_pr_comments
 
         pr_number = github_test_repo_with_pr_and_comments["pr_number"]
         tmpdir = github_test_repo_with_pr_and_comments["tmpdir"]
@@ -541,9 +539,7 @@ class TestFeedbackDetectionIntegration:
 
     def test_get_new_feedback_filters_processed(self, github_test_repo_with_pr_and_comments):
         """Should filter out already-processed feedback."""
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
-        from implement_with_worktree import fetch_pr_comments, get_new_feedback
+        from i2code.implement.implement import fetch_pr_comments, get_new_feedback
 
         pr_number = github_test_repo_with_pr_and_comments["pr_number"]
         tmpdir = github_test_repo_with_pr_and_comments["tmpdir"]
@@ -569,9 +565,7 @@ class TestFeedbackDetectionIntegration:
 
     def test_state_file_tracks_processed_comments(self, github_test_repo_with_pr_and_comments):
         """State file should be able to track processed comment IDs."""
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
-        from implement_with_worktree import (
+        from i2code.implement.implement import (
             init_or_load_state, save_state, fetch_pr_comments, get_new_feedback
         )
 
@@ -627,9 +621,7 @@ class TestMainBranchAdvancementIntegration:
 
     def test_get_remote_main_head_returns_valid_sha(self, github_test_repo_with_simple_plan):
         """Should return a valid SHA for origin/main."""
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
-        from implement_with_worktree import get_remote_main_head
+        from i2code.implement.implement import get_remote_main_head
 
         tmpdir = github_test_repo_with_simple_plan["tmpdir"]
 
@@ -647,9 +639,7 @@ class TestMainBranchAdvancementIntegration:
 
     def test_has_main_advanced_detects_new_commits(self, github_test_repo_with_simple_plan):
         """Should detect when main has new commits after initial check."""
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
-        from implement_with_worktree import get_remote_main_head, has_main_advanced
+        from i2code.implement.implement import get_remote_main_head, has_main_advanced
 
         tmpdir = github_test_repo_with_simple_plan["tmpdir"]
         repo = github_test_repo_with_simple_plan["repo"]
@@ -684,9 +674,7 @@ class TestPRCompletionIntegration:
 
     def test_get_pr_state_returns_valid_state(self, github_test_repo_with_pr_and_comments):
         """Should return valid state for a real PR."""
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
-        from implement_with_worktree import get_pr_state
+        from i2code.implement.implement import get_pr_state
 
         pr_number = github_test_repo_with_pr_and_comments["pr_number"]
         tmpdir = github_test_repo_with_pr_and_comments["tmpdir"]
@@ -702,9 +690,7 @@ class TestPRCompletionIntegration:
 
     def test_is_pr_complete_returns_false_for_open_pr(self, github_test_repo_with_pr_and_comments):
         """Should return False for an open PR."""
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../workflow-scripts'))
-        from implement_with_worktree import get_pr_state, is_pr_complete
+        from i2code.implement.implement import get_pr_state, is_pr_complete
 
         pr_number = github_test_repo_with_pr_and_comments["pr_number"]
         tmpdir = github_test_repo_with_pr_and_comments["tmpdir"]

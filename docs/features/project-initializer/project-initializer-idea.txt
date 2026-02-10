@@ -1,0 +1,31 @@
+Motivation: The GitHub App token used inside the isolarium VM does not have permission to push workflow files. Therefore, project scaffolding (including ci.yaml) must be set up and pushed from the host before delegating to the VM.
+
+When `implement --isolate` (on the host, before delegating to isolarium):
+
+should call an ensure_project_setup().
+
+This function should:
+
+1. Switch to the integration branch - creating if necessary
+2. Invoke Claude with idea files. It should analyze the idea and ensure that the project is initialized with placeholders:
+    * If its a Java project: skeleton Gradle project
+    * If it involves infrastructure: add test-scripts/test-end-to-end.sh (called by ci.yaml)
+    * These are not mutually exclusive - a project can need both
+    * .github/workflows/ci.yaml that builds and runs the tests against the placeholder code
+    * Claude infers the project type from the idea/spec/plan files
+    * The prompt is goal-oriented (describe desired outcome), not prescriptive - versions come from the idea files
+    * Commit these changes
+3. Push the integration branch
+4. Wait for CI to pass on the scaffolding (reuse existing CI wait/fix logic)
+5. Only then delegate to isolarium
+
+Claude invocation:
+- Respects --non-interactive flag (same mode as task execution)
+- Supports --mock-claude for testing
+- Always runs (even if scaffolding exists) - Claude decides if changes are needed
+
+When `implement --isolated` (inside the VM):
+
+1. ensure_integration_branch() should check if origin has the integration branch and create a local tracking branch from it (instead of creating from HEAD). Only create from HEAD if the remote branch doesn't exist.
+   - Specific change: implement.py:211 `repo.create_head(branch_name)` must change to track remote when available.
+2. Slice branches are unaffected - they are created inside the VM from the (now local) integration branch as usual.

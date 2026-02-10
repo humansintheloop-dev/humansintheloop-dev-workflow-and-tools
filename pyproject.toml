@@ -7,6 +7,9 @@ dependencies = ["click", "GitPython"]
 [project.scripts]
 i2code = "i2code.cli:main"
 
+[dependency-groups]
+dev = ["pytest", "pytest-mock", "pytest-subtests"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

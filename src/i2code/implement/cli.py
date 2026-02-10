@@ -1,6 +1,7 @@
 """Click command for the implement workflow."""
 
 import os
+import subprocess
 import sys
 
 import click
@@ -54,9 +55,13 @@ from i2code.implement.implement import (
               help="Maximum retries for fixing CI failures (default: 3)")
 @click.option("--ci-timeout", type=int, default=600,
               help="Timeout in seconds for CI completion (default: 600)")
+@click.option("--isolate", is_flag=True,
+              help="Run inside an isolarium VM")
+@click.option("--isolated", is_flag=True, hidden=True,
+              help="Running inside isolarium VM (internal flag)")
 def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                   non_interactive, extra_prompt, skip_ci_wait,
-                  ci_fix_retries, ci_timeout):
+                  ci_fix_retries, ci_timeout, isolate, isolated):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
     # Validate idea directory exists
     idea_name = validate_idea_directory(idea_directory)
@@ -66,6 +71,34 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
 
     # Validate idea files are committed to Git
     validate_idea_files_committed(idea_directory, idea_name)
+
+    # Delegate to isolarium VM if --isolate is set
+    if isolate:
+        repo = Repo(idea_directory, search_parent_directories=True)
+        rel_idea_dir = os.path.relpath(idea_directory, repo.working_tree_dir)
+        isolarium_args = ["isolarium", "--name", f"i2code-{idea_name}", "run"]
+        if not non_interactive:
+            isolarium_args.append("--interactive")
+        cmd = isolarium_args + ["--", "i2code", "implement", "--isolated", rel_idea_dir]
+        if cleanup:
+            cmd.append("--cleanup")
+        if mock_claude:
+            cmd.extend(["--mock-claude", mock_claude])
+        if setup_only:
+            cmd.append("--setup-only")
+        if non_interactive:
+            cmd.append("--non-interactive")
+        if extra_prompt:
+            cmd.extend(["--extra-prompt", extra_prompt])
+        if skip_ci_wait:
+            cmd.append("--skip-ci-wait")
+        if ci_fix_retries != 3:
+            cmd.extend(["--ci-fix-retries", str(ci_fix_retries)])
+        if ci_timeout != 600:
+            cmd.extend(["--ci-timeout", str(ci_timeout)])
+        print(f"Running: {' '.join(cmd)}")
+        result = subprocess.run(cmd)
+        sys.exit(result.returncode)
 
     # Initialize or load state
     state = init_or_load_state(idea_directory, idea_name)
@@ -77,25 +110,11 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
     integration_branch = ensure_integration_branch(repo, idea_name)
     print(f"Integration branch: {integration_branch}")
 
-    # Create or reuse worktree
-    worktree_path = ensure_worktree(repo, idea_name, integration_branch)
-    print(f"Worktree: {worktree_path}")
-
     # Read plan file to get first task name for slice naming
-    # Use the original idea directory path for initial read
     original_plan_file = os.path.join(idea_directory, f"{idea_name}-plan.md")
     with open(original_plan_file, "r") as f:
         plan_content = f.read()
     first_task_name = get_first_task_name(plan_content)
-
-    # Calculate paths within the worktree for task execution
-    # The idea directory structure is preserved in the worktree
-    worktree_idea_dir = get_worktree_idea_directory(
-        worktree_path=worktree_path,
-        main_repo_idea_dir=idea_directory,
-        main_repo_root=repo.working_tree_dir
-    )
-    worktree_plan_file = os.path.join(worktree_idea_dir, f"{idea_name}-plan.md")
 
     # Create or reuse slice branch
     slice_branch = ensure_slice_branch(
@@ -103,9 +122,26 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
     )
     print(f"Slice branch: {slice_branch}")
 
-    # Checkout slice branch in the worktree
-    worktree_repo = Repo(worktree_path)
-    worktree_repo.git.checkout(slice_branch)
+    if isolated:
+        # Running inside isolarium VM - work directly in the repo
+        work_dir = repo.working_tree_dir
+        work_idea_dir = idea_directory
+        work_plan_file = original_plan_file
+        repo.git.checkout(slice_branch)
+        work_repo = repo
+    else:
+        # Normal mode - use a worktree
+        worktree_path = ensure_worktree(repo, idea_name, integration_branch)
+        print(f"Worktree: {worktree_path}")
+        work_dir = worktree_path
+        work_idea_dir = get_worktree_idea_directory(
+            worktree_path=worktree_path,
+            main_repo_idea_dir=idea_directory,
+            main_repo_root=repo.working_tree_dir
+        )
+        work_plan_file = os.path.join(work_idea_dir, f"{idea_name}-plan.md")
+        work_repo = Repo(worktree_path)
+        work_repo.git.checkout(slice_branch)
 
     # Skip task execution if --setup-only was provided
     # Note: PR creation is deferred until after first push (when there are commits)
@@ -121,7 +157,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
     # Execute tasks one by one until all are complete
     while True:
         # Check for failing CI build on current HEAD (only if branch has been pushed)
-        head_sha = worktree_repo.head.commit.hexsha
+        head_sha = work_repo.head.commit.hexsha
         if branch_has_been_pushed(slice_branch):
             failing_run = get_failing_workflow_run(slice_branch, head_sha)
 
@@ -132,7 +168,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                 if not fix_ci_failure(
                     slice_branch,
                     head_sha,
-                    worktree_path,
+                    work_dir,
                     max_retries=ci_fix_retries,
                     interactive=not non_interactive,
                     mock_claude=mock_claude
@@ -149,7 +185,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                 pr_number=pr_number,
                 pr_url=pr_url,
                 state=state,
-                worktree_path=worktree_path,
+                worktree_path=work_dir,
                 slice_branch=slice_branch,
                 interactive=not non_interactive,
                 mock_claude=mock_claude,
@@ -165,7 +201,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                 continue
 
         # Re-read plan file from the worktree to get current uncompleted tasks
-        with open(worktree_plan_file, "r") as f:
+        with open(work_plan_file, "r") as f:
             plan_content = f.read()
 
         tasks = parse_tasks_from_plan(plan_content)
@@ -181,7 +217,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         print(f"Executing task: {current_task}")
 
         # Get HEAD before Claude invocation
-        head_before = worktree_repo.head.commit.hexsha
+        head_before = work_repo.head.commit.hexsha
 
         # Build and run Claude command (or mock script for testing)
         if mock_claude:
@@ -189,7 +225,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
             print(f"Using mock Claude: {mock_claude}")
         else:
             claude_cmd = build_claude_command(
-                worktree_idea_dir,
+                work_idea_dir,
                 current_task,
                 interactive=not non_interactive,
                 extra_prompt=extra_prompt
@@ -199,15 +235,15 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         # Run Claude (or mock)
         # In non-interactive mode, capture output; in interactive mode, use terminal directly
         if non_interactive:
-            claude_result = run_claude_with_output_capture(claude_cmd, cwd=worktree_path)
+            claude_result = run_claude_with_output_capture(claude_cmd, cwd=work_dir)
         else:
-            claude_result = run_claude_interactive(claude_cmd, cwd=worktree_path)
+            claude_result = run_claude_interactive(claude_cmd, cwd=work_dir)
 
         # Get HEAD after Claude invocation
-        head_after = worktree_repo.head.commit.hexsha
+        head_after = work_repo.head.commit.hexsha
 
         # Re-read plan to check if task was marked complete
-        with open(worktree_plan_file, "r") as f:
+        with open(work_plan_file, "r") as f:
             updated_plan_content = f.read()
         tasks_after = len(parse_tasks_from_plan(updated_plan_content))
 
@@ -257,7 +293,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
             sys.exit(1)
 
         # Verify CI workflow exists before pushing (required for CI checks)
-        if not has_ci_workflow_files(worktree_path):
+        if not has_ci_workflow_files(work_dir):
             print("Error: No GitHub Actions workflow file found in .github/workflows/", file=sys.stderr)
             print("Tasks must create a CI workflow (e.g., .github/workflows/ci.yml) before pushing.", file=sys.stderr)
             sys.exit(1)

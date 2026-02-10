@@ -23,6 +23,7 @@
 #   --plan-file FILE  Alternative plan file to use (renamed to -plan.md in repo)
 #   --extra-prompt TEXT  Extra text to append to Claude's prompt
 #   --idea DIR        Alternative idea directory to use (default: tests/kafka-security-poc)
+#   --isolate         Run inside an isolarium VM (uses i2code implement --isolate)
 #   -h, --help        Show this help message
 # HELP_END
 
@@ -46,6 +47,7 @@ NON_INTERACTIVE=false
 PLAN_FILE=""
 EXTRA_PROMPT=""
 IDEA_DIR=""
+ISOLATE=false
 
 # ANSI colors
 RED='\033[0;31m'
@@ -159,6 +161,10 @@ parse_args() {
                 IDEA_DIR="$(cd "$2" && pwd)"
                 shift 2
                 ;;
+            --isolate)
+                ISOLATE=true
+                shift
+                ;;
             -h|--help)
                 show_help
                 ;;
@@ -202,7 +208,7 @@ check_prerequisites() {
         exit 1
     fi
 
-    if [ ! -x "$WORKTREE_SCRIPT" ]; then
+    if [ "$ISOLATE" != true ] && [ ! -x "$WORKTREE_SCRIPT" ]; then
         log_error "implement-with-worktree.sh not found or not executable at $WORKTREE_SCRIPT"
         exit 1
     fi
@@ -399,7 +405,12 @@ run_implement_with_worktree() {
     idea_name="$(get_idea_name)"
 
     # Build command with optional flags
-    local cmd=("$WORKTREE_SCRIPT")
+    local cmd
+    if [ "$ISOLATE" = true ]; then
+        cmd=("i2code" "implement" "--isolate")
+    else
+        cmd=("$WORKTREE_SCRIPT")
+    fi
     if [ "$NON_INTERACTIVE" = true ]; then
         cmd+=("--non-interactive")
     fi

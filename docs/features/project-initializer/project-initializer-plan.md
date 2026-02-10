@@ -113,55 +113,55 @@ This thread implements the `build_scaffolding_prompt()` function that constructs
 
 This thread implements `ensure_project_setup()`, which orchestrates the full scaffolding flow: checkout integration branch, invoke Claude, detect new commits, push, and wait for CI.
 
-- [ ] **Task 3.1: `ensure_project_setup()` checks out integration branch and invokes Claude for scaffolding**
+- [x] **Task 3.1: `ensure_project_setup()` checks out integration branch and invokes Claude for scaffolding**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_project_setup.py -k "ensure_project_setup"`
   - Observable: Function checks out the integration branch, invokes Claude (or mock) with the scaffolding prompt, and returns `True` when scaffolding succeeds. The working directory for Claude invocation is the repo working tree.
   - Evidence: Unit tests mock `run_claude_interactive`/`run_claude_with_output_capture`, `push_branch_to_remote`, and `wait_for_workflow_completion`. Verify: (1) integration branch is checked out before Claude invocation, (2) Claude is invoked with scaffolding prompt and correct cwd, (3) interactive mode calls `run_claude_interactive`, non-interactive calls `run_claude_with_output_capture`
   - Steps:
-    - [ ] Add unit tests for `ensure_project_setup()` in `tests/implement/test_project_setup.py` that mock git operations, Claude invocation, push, and CI wait. Test both interactive and non-interactive modes.
-    - [ ] Implement `ensure_project_setup()` in `src/i2code/implement/implement.py` with signature matching the spec. The function should: (1) checkout the integration branch, (2) record HEAD SHA before Claude, (3) invoke Claude using `build_scaffolding_prompt()` result and appropriate runner based on `interactive` flag, (4) record HEAD SHA after Claude.
-    - [ ] Verify all tests pass
+    - [x] Add unit tests for `ensure_project_setup()` in `tests/implement/test_project_setup.py` that mock git operations, Claude invocation, push, and CI wait. Test both interactive and non-interactive modes.
+    - [x] Implement `ensure_project_setup()` in `src/i2code/implement/implement.py` with signature matching the spec. The function should: (1) checkout the integration branch, (2) record HEAD SHA before Claude, (3) invoke Claude using `build_scaffolding_prompt()` result and appropriate runner based on `interactive` flag, (4) record HEAD SHA after Claude.
+    - [x] Verify all tests pass
 
-- [ ] **Task 3.2: `ensure_project_setup()` skips push and CI when no new commits are made**
+- [x] **Task 3.2: `ensure_project_setup()` skips push and CI when no new commits are made**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_project_setup.py -k "no_new_commits"`
   - Observable: When Claude makes no commits (HEAD SHA unchanged after invocation), the function skips pushing and CI wait, and returns `True`.
   - Evidence: Unit test simulates Claude making no commits (HEAD unchanged). Verifies `push_branch_to_remote` and `wait_for_workflow_completion` are NOT called, and function returns `True`.
   - Steps:
-    - [ ] Add unit test where HEAD SHA does not change after Claude invocation. Assert push and CI wait are not called, and return value is `True`.
-    - [ ] Implement the no-new-commits detection in `ensure_project_setup()`: compare HEAD before and after Claude invocation. If unchanged, skip push/CI and return `True`.
-    - [ ] Verify all tests pass
+    - [x] Add unit test where HEAD SHA does not change after Claude invocation. Assert push and CI wait are not called, and return value is `True`.
+    - [x] Implement the no-new-commits detection in `ensure_project_setup()`: compare HEAD before and after Claude invocation. If unchanged, skip push/CI and return `True`.
+    - [x] Verify all tests pass
 
-- [ ] **Task 3.3: `ensure_project_setup()` pushes and waits for CI when Claude makes commits**
+- [x] **Task 3.3: `ensure_project_setup()` pushes and waits for CI when Claude makes commits**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_project_setup.py -k "push_and_ci"`
   - Observable: When Claude makes commits (HEAD advances), the function pushes the integration branch and waits for CI. Returns `True` when CI passes.
   - Evidence: Unit test simulates HEAD advancing after Claude. Verifies `push_branch_to_remote` is called with the integration branch name, `wait_for_workflow_completion` is called with the branch and new SHA, and function returns `True` when CI succeeds.
   - Steps:
-    - [ ] Add unit test where HEAD advances after Claude invocation and CI passes. Assert push and CI wait are called with correct arguments, and return value is `True`.
-    - [ ] Implement the push-and-CI-wait path in `ensure_project_setup()`: call `push_branch_to_remote(integration_branch)`, then `wait_for_workflow_completion(integration_branch, new_sha, ci_timeout)`. Return the CI result.
-    - [ ] Verify all tests pass
+    - [x] Add unit test where HEAD advances after Claude invocation and CI passes. Assert push and CI wait are called with correct arguments, and return value is `True`.
+    - [x] Implement the push-and-CI-wait path in `ensure_project_setup()`: call `push_branch_to_remote(integration_branch)`, then `wait_for_workflow_completion(integration_branch, new_sha, ci_timeout)`. Return the CI result.
+    - [x] Verify all tests pass
 
-- [ ] **Task 3.4: `ensure_project_setup()` invokes `fix_ci_failure()` when CI fails**
+- [x] **Task 3.4: `ensure_project_setup()` invokes `fix_ci_failure()` when CI fails**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_project_setup.py -k "ci_failure_retry"`
   - Observable: When CI fails after pushing scaffolding, `fix_ci_failure()` is invoked with the integration branch, new SHA, repo working tree path, and the configured retry/interactive/mock parameters. Returns the result of `fix_ci_failure()`.
   - Evidence: Unit test simulates CI failure after push. Verifies `fix_ci_failure()` is called with correct arguments including `max_retries=ci_fix_retries`, `interactive`, and `mock_claude`. Return value matches `fix_ci_failure()` result.
   - Steps:
-    - [ ] Add unit test where CI fails after push. Mock `fix_ci_failure` and verify it is called with correct arguments. Test both success and failure return values.
-    - [ ] Implement CI failure handling: when `wait_for_workflow_completion` returns `(False, failing_run)`, call `fix_ci_failure()` with the integration branch, new SHA, repo working tree, `ci_fix_retries`, `interactive`, and `mock_claude`.
-    - [ ] Verify all tests pass
+    - [x] Add unit test where CI fails after push. Mock `fix_ci_failure` and verify it is called with correct arguments. Test both success and failure return values.
+    - [x] Implement CI failure handling: when `wait_for_workflow_completion` returns `(False, failing_run)`, call `fix_ci_failure()` with the integration branch, new SHA, repo working tree, `ci_fix_retries`, `interactive`, and `mock_claude`.
+    - [x] Verify all tests pass
 
-- [ ] **Task 3.5: `ensure_project_setup()` respects `skip_ci_wait` flag**
+- [x] **Task 3.5: `ensure_project_setup()` respects `skip_ci_wait` flag**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_project_setup.py -k "skip_ci_wait"`
   - Observable: When `skip_ci_wait=True` and Claude makes commits, the function pushes but does not wait for CI. Returns `True` immediately after push.
   - Evidence: Unit test with `skip_ci_wait=True` and HEAD advancing. Verifies push is called but `wait_for_workflow_completion` is NOT called. Return value is `True`.
   - Steps:
-    - [ ] Add unit test with `skip_ci_wait=True` where Claude makes commits. Assert push is called, CI wait is not called, and function returns `True`.
-    - [ ] Add `skip_ci_wait` handling to `ensure_project_setup()`: after push, if `skip_ci_wait` is `True`, return `True` without waiting.
-    - [ ] Verify all tests pass
+    - [x] Add unit test with `skip_ci_wait=True` where Claude makes commits. Assert push is called, CI wait is not called, and function returns `True`.
+    - [x] Add `skip_ci_wait` handling to `ensure_project_setup()`: after push, if `skip_ci_wait` is `True`, return `True` without waiting.
+    - [x] Verify all tests pass
 
 ---
 

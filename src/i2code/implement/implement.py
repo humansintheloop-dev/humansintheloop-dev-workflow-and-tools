@@ -269,7 +269,7 @@ REQUIRED_PERMISSIONS = [
     "Write",
     "Edit",
     "Bash(java -version)",
-    "Bash(gradle version)",
+    "Bash(gradle --version)",
 ]
 
 
@@ -1820,12 +1820,7 @@ def ensure_project_setup(
 
     head_before = repo.head.commit.hexsha
 
-    cmd = build_scaffolding_prompt(idea_directory, interactive=interactive, mock_claude=mock_claude)
-
-    if interactive:
-        run_claude_interactive(cmd, cwd=repo.working_tree_dir)
-    else:
-        run_claude_with_output_capture(cmd, cwd=repo.working_tree_dir)
+    run_scaffolding(idea_directory, cwd=repo.working_tree_dir, interactive=interactive, mock_claude=mock_claude)
 
     head_after = repo.head.commit.hexsha
 
@@ -1877,10 +1872,24 @@ Based on the idea files, create minimal project scaffolding that compiles/runs a
 - These are not mutually exclusive — create both if the project needs both
 - Create .github/workflows/ci.yaml that builds and runs whatever scaffolding you created
 - Technology versions and choices should come from the idea/spec files, not from defaults
+- Create or update .gitignore with entries to exclude build artifacts and other files that must not be in Git
 
 The goal is a minimal buildable project with passing CI and placeholder code. Do not implement real functionality — just enough for the build and tests to pass.
 
 Commit all scaffolding changes when done. If scaffolding already exists and is sufficient, make no changes.
+
+IMPORTANT:
+- Make all changes in a single commit
+- The commit message should clearly describe what was fixed
+- If you don't have permission to perform an action, print an informative error message and exit
+
+CRITICAL:
+
+Immediately, before exiting output one of the following messages
+- If the scaffolding already exists: <NOTHING-TO-DO>No changes needed</NOTHING-TO-DO>
+- If successful: <SUCCESS>Scaffold created: COMMIT_SHA</SUCCESS>
+- If failed: <FAILURE>Explanation of failure - if permission include those required permissions</FAILURE>
+
 """
 
     if mock_claude:
@@ -1889,7 +1898,36 @@ Commit all scaffolding changes when done. If scaffolding already exists and is s
     if interactive:
         return ["claude", prompt]
     else:
-        return ["claude", "--verbose", "--output-format=stream-json", "-p", prompt]
+        return ["claude", "--allowed-tools", "Write,Read,Edit,Bash(gradle --version),Bash(mkdir -p:*)", "--verbose", "--output-format=stream-json", "-p", prompt]
+
+
+def run_scaffolding(idea_directory: str, cwd: str, interactive: bool = True, mock_claude: Optional[str] = None):
+    """Invoke Claude to generate project scaffolding."""
+    cmd = build_scaffolding_prompt(idea_directory, interactive=interactive, mock_claude=mock_claude)
+    if interactive:
+        result = run_claude_interactive(cmd, cwd=cwd)
+    else:
+        result = run_claude_with_output_capture(cmd, cwd=cwd)
+
+    if interactive or "<SUCCESS>" in result.stdout or "<NOTHING-TO-DO>" in result.stdout:
+        return
+
+    print("Error: Scaffolding failed.", file=sys.stderr)
+    if result.error_message:
+        print(f"  {result.error_message}", file=sys.stderr)
+    if result.permission_denials:
+        print(f"  Permission denied for {len(result.permission_denials)} action(s)", file=sys.stderr)
+    for msg in result.last_messages:
+        msg_type = msg.get('type', 'unknown')
+        if msg_type == 'assistant':
+            for item in msg.get('message', {}).get('content', []):
+                if item.get('type') == 'text':
+                    print(f"  Claude: {item['text']}", file=sys.stderr)
+        elif msg_type == 'result':
+            text = msg.get('result', '')
+            if text:
+                print(f"  Result: {text}", file=sys.stderr)
+    sys.exit(1)
 
 
 def build_claude_command(

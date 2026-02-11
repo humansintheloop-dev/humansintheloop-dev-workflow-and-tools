@@ -83,11 +83,103 @@ class TestBuildScaffoldingPrompt:
 
 
 @pytest.mark.unit
+class TestRunScaffoldingFailure:
+    """Test run_scaffolding() exits on Claude failure."""
+
+    @patch("i2code.implement.implement.run_claude_with_output_capture")
+    @patch("i2code.implement.implement.build_scaffolding_prompt")
+    def test_non_zero_exit_code_exits(self, mock_build, mock_run):
+        from i2code.implement.implement import run_scaffolding
+
+        mock_build.return_value = ["claude", "-p", "prompt"]
+        mock_run.return_value = ClaudeResult(returncode=1, stdout="", stderr="", error_message="Something broke")
+
+        with pytest.raises(SystemExit) as exc_info:
+            run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+
+        assert exc_info.value.code == 1
+
+    @patch("i2code.implement.implement.run_claude_with_output_capture")
+    @patch("i2code.implement.implement.build_scaffolding_prompt")
+    def test_no_success_tag_exits(self, mock_build, mock_run):
+        from i2code.implement.implement import run_scaffolding
+
+        mock_build.return_value = ["claude", "-p", "prompt"]
+        mock_run.return_value = ClaudeResult(returncode=0, stdout="no tag here", stderr="")
+
+        with pytest.raises(SystemExit) as exc_info:
+            run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+
+        assert exc_info.value.code == 1
+
+    @patch("i2code.implement.implement.run_claude_with_output_capture")
+    @patch("i2code.implement.implement.build_scaffolding_prompt")
+    def test_failure_prints_permission_denials(self, mock_build, mock_run, capsys):
+        from i2code.implement.implement import run_scaffolding
+
+        mock_build.return_value = ["claude", "-p", "prompt"]
+        mock_run.return_value = ClaudeResult(
+            returncode=0, stdout="<FAILURE>no perms</FAILURE>", stderr="",
+            permission_denials=[{"tool_name": "Bash", "tool_input": {"command": "git commit"}}],
+        )
+
+        with pytest.raises(SystemExit):
+            run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+
+        captured = capsys.readouterr()
+        assert "Permission denied" in captured.err
+
+    @patch("i2code.implement.implement.run_claude_with_output_capture")
+    @patch("i2code.implement.implement.build_scaffolding_prompt")
+    def test_failure_prints_last_messages(self, mock_build, mock_run, capsys):
+        from i2code.implement.implement import run_scaffolding
+
+        mock_build.return_value = ["claude", "-p", "prompt"]
+        mock_run.return_value = ClaudeResult(
+            returncode=1, stdout="", stderr="",
+            last_messages=[
+                {"type": "assistant", "message": {"content": [{"type": "text", "text": "I cannot write files"}]}},
+                {"type": "result", "result": "No permissions to complete task"},
+            ],
+        )
+
+        with pytest.raises(SystemExit):
+            run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+
+        captured = capsys.readouterr()
+        assert "I cannot write files" in captured.err
+        assert "No permissions to complete task" in captured.err
+
+    @patch("i2code.implement.implement.run_claude_with_output_capture")
+    @patch("i2code.implement.implement.build_scaffolding_prompt")
+    def test_success_tag_does_not_exit(self, mock_build, mock_run):
+        from i2code.implement.implement import run_scaffolding
+
+        mock_build.return_value = ["claude", "-p", "prompt"]
+        mock_run.return_value = ClaudeResult(
+            returncode=0, stdout="...<SUCCESS>Scaffold created</SUCCESS>...", stderr=""
+        )
+
+        run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+
+    @patch("i2code.implement.implement.run_claude_interactive")
+    @patch("i2code.implement.implement.build_scaffolding_prompt")
+    def test_interactive_mode_does_not_check_stdout(self, mock_build, mock_run):
+        """Interactive mode has empty stdout — should not exit."""
+        from i2code.implement.implement import run_scaffolding
+
+        mock_build.return_value = ["claude", "prompt"]
+        mock_run.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
+
+        run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=True)
+
+
+@pytest.mark.unit
 class TestEnsureProjectSetup:
     """Test ensure_project_setup() orchestration."""
 
-    def _make_claude_result(self, returncode=0):
-        return ClaudeResult(returncode=returncode, stdout="", stderr="")
+    def _make_claude_result(self, returncode=0, stdout="<SUCCESS>Scaffold created</SUCCESS>"):
+        return ClaudeResult(returncode=returncode, stdout=stdout, stderr="")
 
     @patch("i2code.implement.implement.wait_for_workflow_completion")
     @patch("i2code.implement.implement.push_branch_to_remote")
@@ -354,6 +446,125 @@ class TestEnsureProjectSetup:
         assert result is True
         mock_push.assert_called_once_with("idea/test/integration")
         mock_wait.assert_not_called()
+
+
+@pytest.mark.unit
+class TestRunScaffolding:
+    """Test run_scaffolding() delegates to correct runner."""
+
+    @patch("i2code.implement.implement.run_claude_interactive")
+    @patch("i2code.implement.implement.build_scaffolding_prompt")
+    def test_interactive_calls_run_claude_interactive(self, mock_build, mock_run):
+        from i2code.implement.implement import run_scaffolding
+
+        mock_build.return_value = ["claude", "prompt"]
+        mock_run.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
+
+        run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=True)
+
+        mock_build.assert_called_once_with("/tmp/idea", interactive=True, mock_claude=None)
+        mock_run.assert_called_once_with(["claude", "prompt"], cwd="/tmp/repo")
+
+    @patch("i2code.implement.implement.run_claude_with_output_capture")
+    @patch("i2code.implement.implement.build_scaffolding_prompt")
+    def test_non_interactive_calls_output_capture(self, mock_build, mock_run):
+        from i2code.implement.implement import run_scaffolding
+
+        mock_build.return_value = ["claude", "-p", "prompt"]
+        mock_run.return_value = ClaudeResult(
+            returncode=0, stdout="<SUCCESS>Scaffold created</SUCCESS>", stderr=""
+        )
+
+        run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+
+        mock_build.assert_called_once_with("/tmp/idea", interactive=False, mock_claude=None)
+        mock_run.assert_called_once_with(["claude", "-p", "prompt"], cwd="/tmp/repo")
+
+    @patch("i2code.implement.implement.run_claude_interactive")
+    @patch("i2code.implement.implement.build_scaffolding_prompt")
+    def test_forwards_mock_claude(self, mock_build, mock_run):
+        from i2code.implement.implement import run_scaffolding
+
+        mock_build.return_value = ["/mock.sh", "setup"]
+        mock_run.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
+
+        run_scaffolding("/tmp/idea", cwd="/tmp/repo", mock_claude="/mock.sh")
+
+        mock_build.assert_called_once_with("/tmp/idea", interactive=True, mock_claude="/mock.sh")
+
+
+@pytest.mark.unit
+class TestScaffoldCmd:
+    """Test scaffold CLI command."""
+
+    @patch("i2code.implement.cli.run_scaffolding")
+    @patch("i2code.implement.cli.validate_idea_files")
+    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.Repo")
+    def test_scaffold_validates_and_invokes_run_scaffolding(
+        self, mock_repo_cls, mock_validate_dir, mock_validate_files, mock_run_scaffolding
+    ):
+        from click.testing import CliRunner
+        from i2code.implement.cli import scaffold_cmd
+
+        mock_repo = MagicMock()
+        mock_repo.working_tree_dir = "/tmp/fake-repo"
+        mock_repo_cls.return_value = mock_repo
+
+        runner = CliRunner()
+        result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea"])
+
+        assert result.exit_code == 0
+        mock_validate_dir.assert_called_once_with("/tmp/fake-idea")
+        mock_validate_files.assert_called_once_with("/tmp/fake-idea", "test-feature")
+        mock_run_scaffolding.assert_called_once_with(
+            "/tmp/fake-idea",
+            cwd="/tmp/fake-repo",
+            interactive=True,
+            mock_claude=None,
+        )
+
+    @patch("i2code.implement.cli.run_scaffolding")
+    @patch("i2code.implement.cli.validate_idea_files")
+    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.Repo")
+    def test_scaffold_non_interactive_forwards_flag(
+        self, mock_repo_cls, mock_validate_dir, mock_validate_files, mock_run_scaffolding
+    ):
+        from click.testing import CliRunner
+        from i2code.implement.cli import scaffold_cmd
+
+        mock_repo = MagicMock()
+        mock_repo.working_tree_dir = "/tmp/fake-repo"
+        mock_repo_cls.return_value = mock_repo
+
+        runner = CliRunner()
+        result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea", "--non-interactive"])
+
+        assert result.exit_code == 0
+        call_kwargs = mock_run_scaffolding.call_args[1]
+        assert call_kwargs["interactive"] is False
+
+    @patch("i2code.implement.cli.run_scaffolding")
+    @patch("i2code.implement.cli.validate_idea_files")
+    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.Repo")
+    def test_scaffold_forwards_mock_claude(
+        self, mock_repo_cls, mock_validate_dir, mock_validate_files, mock_run_scaffolding
+    ):
+        from click.testing import CliRunner
+        from i2code.implement.cli import scaffold_cmd
+
+        mock_repo = MagicMock()
+        mock_repo.working_tree_dir = "/tmp/fake-repo"
+        mock_repo_cls.return_value = mock_repo
+
+        runner = CliRunner()
+        result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea", "--mock-claude", "/mock.sh"])
+
+        assert result.exit_code == 0
+        call_kwargs = mock_run_scaffolding.call_args[1]
+        assert call_kwargs["mock_claude"] == "/mock.sh"
 
 
 @pytest.mark.unit

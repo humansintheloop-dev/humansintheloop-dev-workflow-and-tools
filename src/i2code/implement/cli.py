@@ -33,6 +33,7 @@ from i2code.implement.implement import (
     build_claude_command,
     run_claude_with_output_capture,
     run_claude_interactive,
+    run_scaffolding,
     check_claude_success,
     has_ci_workflow_files,
     wait_for_workflow_completion,
@@ -230,6 +231,10 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         tasks = parse_tasks_from_plan(plan_content)
         if not tasks:
             print("All tasks completed!")
+            if pr_number:
+                pr_url = get_pr_url(pr_number)
+                if pr_url:
+                    print(f"PR: {pr_url}")
             break
 
         tasks_before = len(tasks)
@@ -347,3 +352,24 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                 print(f"CI failed: {workflow_name}. Will fix on next iteration.")
             elif ci_success:
                 print("CI passed!")
+
+
+@click.command("scaffold")
+@click.argument("idea_directory")
+@click.option("--non-interactive", is_flag=True,
+              help="Run Claude in non-interactive mode (uses -p flag)")
+@click.option("--mock-claude", metavar="SCRIPT",
+              help="Use mock script instead of Claude (for testing)")
+def scaffold_cmd(idea_directory, non_interactive, mock_claude):
+    """Generate project scaffolding for an idea directory."""
+    idea_name = validate_idea_directory(idea_directory)
+    validate_idea_files(idea_directory, idea_name)
+
+    repo = Repo(idea_directory, search_parent_directories=True)
+
+    run_scaffolding(
+        idea_directory,
+        cwd=repo.working_tree_dir,
+        interactive=not non_interactive,
+        mock_claude=mock_claude,
+    )

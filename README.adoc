@@ -105,10 +105,8 @@ It's essential, therefore, to continue update the plugin to improve how Claude C
 
 To support continuous improvement, the `idea-to-code` Claude Code plugin provides the following capabilities:
 
-* `claude-issue-report` - a slash command that reports an issue in `.claude/issues` 
-* hooks - record the Claude sessions (`.claude/sessions`) and associate filed issues with the session
-
-NOTE: it's useful to create symbolic links from `.claude/issues` and `.claude/sessions` to project-specific subdirectory in a centralized location, e.g. `~/hitl-tracking`.
+* `claude-issue-report` - a slash command that reports an issue in `.hitl/issues`
+* hooks - record the Claude sessions (`.hitl/sessions`) and associate filed issues with the session
 
 In addition, there's are the following scripts:
 

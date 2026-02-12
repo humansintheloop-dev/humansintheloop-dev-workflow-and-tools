@@ -3,7 +3,7 @@
  * Session Recorder for Claude Code
  *
  * Records all Claude Code interactions (prompts, responses, tool calls)
- * to markdown files in .claude/sessions/
+ * to markdown files in .hitl/sessions/
  *
  * This script is invoked by Claude Code hooks:
  * - UserPromptSubmit: Captures user prompts
@@ -77,7 +77,7 @@ function findSessionFile(sessionsDir, sessionId) {
 }
 
 /**
- * Writes debug log to .claude/sessions/debug.log
+ * Writes debug log to .hitl/sessions/debug.log
  * @param {string} workspaceDir - The workspace directory path (from hook input cwd)
  * @param {string} message - The message to log
  * @param {Object} data - Optional data to log as JSON
@@ -86,7 +86,7 @@ function debugLog(workspaceDir, message, data = null) {
   try {
     // Use workspaceDir if provided, otherwise fall back to process.cwd()
     const baseDir = workspaceDir || process.cwd();
-    const debugFile = path.join(baseDir, '.claude', 'sessions', 'debug.log');
+    const debugFile = path.join(baseDir, '.hitl', 'sessions', 'debug.log');
     const timestamp = new Date().toISOString();
     let logEntry = `[${timestamp}] ${message}`;
     if (data) {
@@ -100,12 +100,12 @@ function debugLog(workspaceDir, message, data = null) {
 }
 
 /**
- * Creates the .claude/sessions/ directory if it doesn't exist
+ * Creates the .hitl/sessions/ directory if it doesn't exist
  * @param {string} workspaceDir - The workspace directory path
  * @returns {string|null} The sessions directory path, or null on error
  */
 function createSessionsDirectory(workspaceDir) {
-  const sessionsDir = path.join(workspaceDir, '.claude', 'sessions');
+  const sessionsDir = path.join(workspaceDir, '.hitl', 'sessions');
   try {
     fs.mkdirSync(sessionsDir, { recursive: true });
     return sessionsDir;

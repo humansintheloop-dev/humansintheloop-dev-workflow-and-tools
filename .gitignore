@@ -1,7 +1,6 @@
 JUNK-*
 *.code-workspace
-**/.claude/sessions
-**/.claude/issues
+**/.hitl
 .claude/settings.local.json
 tests/kafka-security-poc/kafka-security-poc-discussion.md
 tests/kafka-security-poc/kafka-security-poc-idea.txt

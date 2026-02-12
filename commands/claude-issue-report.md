@@ -14,7 +14,7 @@ Capture a mistake or improvement opportunity. Follow these steps:
    - Create a pre-commit hook
    - Update documentation
    Do NOT write instructions for yourself (Claude) on how to code better
-6. Create a report in the project root's `.claude/issues/active/` directory using an absolute path (first check that directory exists, create if not). IMPORTANT: Use the project root directory (where you started), not the current working directory if you have changed directories during the session. The file path must be absolute (e.g., `/Users/name/project/.claude/issues/active/YYYY-MM-DD-HH-MM-SS.md`). Format:
+6. Create a report in the project root's `.hitl/issues/active/` directory using an absolute path (first check that directory exists, create if not). IMPORTANT: Use the project root directory (where you started), not the current working directory if you have changed directories during the session. The file path must be absolute (e.g., `/Users/name/project/.hitl/issues/active/YYYY-MM-DD-HH-MM-SS.md`). Format:
 
 ```markdown
 ---

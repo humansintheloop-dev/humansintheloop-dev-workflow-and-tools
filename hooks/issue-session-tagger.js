@@ -3,7 +3,7 @@
  * Issue Session Tagger for Claude Code
  *
  * Automatically fills in the claude_session_id field in issue reports
- * when Claude writes to .claude/issues/active/*.md
+ * when Claude writes to .hitl/issues/active/*.md
  *
  * This script is invoked by Claude Code hooks:
  * - PostToolUse: Detects Write operations to issue files
@@ -12,13 +12,13 @@
 const fs = require('fs');
 
 /**
- * Checks if a file path is an issue report in .claude/issues/active/
+ * Checks if a file path is an issue report in .hitl/issues/active/
  * @param {string} filePath - The file path to check
  * @returns {boolean} True if this is an active issue file
  */
 function isActiveIssueFile(filePath) {
   if (!filePath) return false;
-  return filePath.includes('.claude/issues/active/') && filePath.endsWith('.md');
+  return filePath.includes('.hitl/issues/active/') && filePath.endsWith('.md');
 }
 
 /**

@@ -9,7 +9,7 @@ const assert = require('assert');
 
 // Test utilities
 const TEST_DIR = path.join(__dirname, '..', '.test-sessions');
-const SESSIONS_DIR = path.join(TEST_DIR, '.claude', 'sessions');
+const SESSIONS_DIR = path.join(TEST_DIR, '.hitl', 'sessions');
 
 // Suppress stderr during error tests
 const originalStderr = console.error;
@@ -66,7 +66,7 @@ async function runTests() {
 
 // --- Tests for directory creation ---
 
-test('createSessionsDirectory creates .claude/sessions/ if missing', () => {
+test('createSessionsDirectory creates .hitl/sessions/ if missing', () => {
   const result = sessionRecorder.createSessionsDirectory(TEST_DIR);
   assert.strictEqual(fs.existsSync(SESSIONS_DIR), true, 'Sessions directory should exist');
   assert.strictEqual(result, SESSIONS_DIR, 'Should return the sessions directory path');

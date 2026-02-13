@@ -148,3 +148,179 @@ class TestParseAndWrite:
         plan = parse(PLAN_WITH_UNKNOWN_TRAILING_SECTION)
         postamble = '\n'.join(plan._postamble_lines)
         assert '## Notes' in postamble
+
+    def test_full_plan_structure(self):
+        plan = parse(FULL_PLAN)
+        assert len(plan.threads) == 3
+        assert [len(t.tasks) for t in plan.threads] == [2, 2, 1]
+        postamble = '\n'.join(plan._postamble_lines)
+        assert '## Summary' in postamble
+        assert '## Change History' in postamble
+
+    def test_unknown_trailing_section_structure(self):
+        plan = parse(PLAN_WITH_UNKNOWN_TRAILING_SECTION)
+        assert len(plan.threads) == 1
+        assert len(plan.threads[0].tasks) == 1
+        postamble = '\n'.join(plan._postamble_lines)
+        assert '## Notes' in postamble
+
+
+PREAMBLE_ONLY = """\
+# Implementation Plan: Preamble Only
+
+## Overview
+This plan has no steel threads yet.
+
+## Instructions
+Just some notes.
+"""
+
+
+THREAD_NO_TASKS = """\
+# Implementation Plan: Thread No Tasks
+
+## Overview
+A plan with a thread but no tasks.
+
+---
+
+## Steel Thread 1: Planning
+This thread has intro text but no task lines yet.
+
+---
+
+## Summary
+Nothing done yet.
+"""
+
+
+class TestEdgeCases:
+
+    def test_no_threads(self):
+        plan = parse(PREAMBLE_ONLY)
+        assert len(plan.threads) == 0
+        assert plan._postamble_lines == []
+        assert plan.to_text() == PREAMBLE_ONLY
+
+    def test_thread_with_no_tasks(self):
+        plan = parse(THREAD_NO_TASKS)
+        assert len(plan.threads) == 1
+        assert len(plan.threads[0].tasks) == 0
+        header = '\n'.join(plan.threads[0]._header_lines)
+        assert 'Steel Thread 1: Planning' in header
+        assert plan.to_text() == THREAD_NO_TASKS
+
+    def test_no_postamble(self):
+        text = """\
+# Implementation Plan: No Postamble
+
+---
+
+## Steel Thread 1: Work
+Do the work.
+
+- [ ] **Task 1.1: Do something**
+  - Steps:
+    - [ ] Step one
+"""
+        plan = parse(text)
+        assert len(plan.threads) == 1
+        assert len(plan.threads[0].tasks) == 1
+        assert plan._postamble_lines == []
+        assert plan.to_text() == text
+
+    def test_misnumbered_input_renumbers(self):
+        text = """\
+# Plan
+
+---
+
+## Steel Thread 5: Only Thread
+
+- [ ] **Task 5.3: First task**
+  - Steps:
+    - [ ] Do it
+
+- [ ] **Task 5.7: Second task**
+  - Steps:
+    - [ ] Do it too
+"""
+        plan = parse(text)
+        assert len(plan.threads) == 1
+        assert len(plan.threads[0].tasks) == 2
+        output = plan.to_text()
+        assert '## Steel Thread 1: Only Thread' in output
+        assert '**Task 1.1: First task**' in output
+        assert '**Task 1.2: Second task**' in output
+
+    def test_single_thread_single_task(self):
+        text = """\
+# Minimal Plan
+
+## Steel Thread 1: Only
+
+- [ ] **Task 1.1: Only task**
+  - Steps:
+    - [ ] Do it
+"""
+        plan = parse(text)
+        assert len(plan.threads) == 1
+        assert len(plan.threads[0].tasks) == 1
+        assert plan._preamble_lines == ['# Minimal Plan', '']
+        assert plan._postamble_lines == []
+        assert plan.to_text() == text
+
+    def test_no_separator_lines(self):
+        text = """\
+# Plan Without Separators
+
+## Steel Thread 1: First
+First thread intro.
+
+- [ ] **Task 1.1: Task A**
+  - Steps:
+    - [ ] Step
+
+## Steel Thread 2: Second
+Second thread intro.
+
+- [ ] **Task 2.1: Task B**
+  - Steps:
+    - [ ] Step
+
+## Summary
+All done.
+"""
+        plan = parse(text)
+        assert len(plan.threads) == 2
+        assert len(plan.threads[0].tasks) == 1
+        assert len(plan.threads[1].tasks) == 1
+        postamble = '\n'.join(plan._postamble_lines)
+        assert '## Summary' in postamble
+        assert plan.to_text() == text
+
+    def test_change_history_without_summary(self):
+        text = """\
+# Plan
+
+---
+
+## Steel Thread 1: Work
+
+- [ ] **Task 1.1: Do it**
+  - Steps:
+    - [ ] Step
+
+---
+
+## Change History
+### 2026-02-01 - Initial plan
+Created the plan.
+"""
+        plan = parse(text)
+        assert len(plan.threads) == 1
+        assert len(plan.threads[0].tasks) == 1
+        postamble = '\n'.join(plan._postamble_lines)
+        assert '## Change History' in postamble
+        assert '## Summary' not in postamble
+        assert plan.to_text() == text

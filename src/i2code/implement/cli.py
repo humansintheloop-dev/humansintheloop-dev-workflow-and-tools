@@ -158,6 +158,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         worktree_path = ensure_worktree(repo, idea_name, integration_branch)
         print(f"Worktree: {worktree_path}")
         work_dir = worktree_path
+        ensure_claude_permissions(work_dir)
         work_idea_dir = get_worktree_idea_directory(
             worktree_path=worktree_path,
             main_repo_idea_dir=idea_directory,

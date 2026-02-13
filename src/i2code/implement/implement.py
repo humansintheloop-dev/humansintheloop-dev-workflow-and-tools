@@ -266,10 +266,9 @@ REQUIRED_PERMISSIONS = [
     "Bash(mkdir -p:*)",
     "Bash(./test-scripts/test-*.sh)",
     "Bash(docker compose config:*)",
-    "Write",
-    "Edit",
     "Bash(java -version)",
     "Bash(gradle --version)",
+    "Bash(i2code:*)",
 ]
 
 
@@ -294,7 +293,12 @@ def ensure_claude_permissions(repo_root: str) -> None:
 
     allow_list = config.get("permissions", {}).get("allow", [])
 
-    for perm in REQUIRED_PERMISSIONS:
+    all_permissions = REQUIRED_PERMISSIONS + [
+        f"Write(/{repo_root}/)",
+        f"Edit(/{repo_root}/)",
+    ]
+
+    for perm in all_permissions:
         if perm not in allow_list:
             allow_list.append(perm)
 

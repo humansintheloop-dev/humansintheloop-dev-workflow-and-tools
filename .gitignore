@@ -11,3 +11,4 @@ repomix-output.xml
 *-sessionID.txt
 __pycache__
 debug.log
+.claude/sessions

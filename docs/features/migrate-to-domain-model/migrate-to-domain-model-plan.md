@@ -330,7 +330,7 @@ Migrate fix_numbering, list_threads, get_summary, and get_thread to use the doma
     - [x] Delete old test_get_summary.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 4.4: Migrate get_thread to domain model**
+- [x] **Task 4.4: Migrate get_thread to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan get-thread tests/fixtures/plan.md --thread 1`
   - Observable: CLI get-thread reads thread content from domain model. Thread.title, Thread.introduction properties provide data. Task metadata comes from existing Task properties.
@@ -343,17 +343,17 @@ Migrate fix_numbering, list_threads, get_summary, and get_thread to use the doma
     - [x] Delete old test_get_thread.py, update test_error_messages.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 4.5: Delete plans.py, consolidate _helpers.py, final cleanup**
+- [x] **Task 4.5: Delete plans.py, consolidate _helpers.py, final cleanup**
   - TaskType: INFRA
   - Entrypoint: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Observable: plans.py deleted. append_change_history moved from _helpers.py into plan_file_io.py. _helpers.py deleted. No remaining imports of deleted modules. All tests pass.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Verify plans.py has no remaining functions
-    - [ ] Delete plans.py and remove its imports from plan_cli.py
-    - [ ] Move append_change_history into plan_file_io.py
-    - [ ] Delete _helpers.py and update all imports
-    - [ ] Run all tests to confirm nothing breaks
+    - [x] Verify plans.py has no remaining functions
+    - [x] Delete plans.py and remove its imports from plan_cli.py
+    - [x] Move append_change_history into plan_file_io.py
+    - [x] Delete _helpers.py and update all imports
+    - [x] Run all tests to confirm nothing breaks
 
 ---
 
@@ -482,3 +482,9 @@ Deleted old test_get_thread.py, updated test_error_messages.py to use domain mod
 
 ### 2026-02-14 17:49 - mark-step-complete
 No duplicate acceptance tests found - CLI tests cover wiring, domain tests cover behavior
+
+### 2026-02-14 17:49 - mark-task-complete
+Migrated get_thread to domain model: added Thread.introduction property, wired CLI to use with_plan_file and with_error_handling, removed legacy function and old tests
+
+### 2026-02-14 17:52 - mark-task-complete
+Deleted empty plans.py. Moved append_change_history from _helpers.py into plan_file_io.py. Deleted _helpers.py (remaining private functions were dead code). All 256 tests pass.

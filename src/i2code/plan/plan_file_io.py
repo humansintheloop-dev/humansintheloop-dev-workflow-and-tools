@@ -4,11 +4,24 @@ import os
 import sys
 import tempfile
 from contextlib import contextmanager
+from datetime import datetime
 
 import click
 
-from i2code.plan._helpers import append_change_history
 from i2code.plan_domain.parser import parse
+
+
+def append_change_history(plan: str, operation: str, rationale: str) -> str:
+    """Append a change history entry to the plan."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    entry = f"### {timestamp} - {operation}\n{rationale}\n"
+
+    if "## Change History" in plan:
+        # Append to existing change history section
+        return plan.rstrip('\n') + '\n\n' + entry
+    else:
+        # Create the change history section
+        return plan.rstrip('\n') + '\n\n---\n\n## Change History\n' + entry
 
 
 def atomic_write(file_path: str, content: str) -> None:

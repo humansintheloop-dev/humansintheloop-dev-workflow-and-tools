@@ -38,6 +38,7 @@ from i2code.implement.implement import (
     has_ci_workflow_files,
     wait_for_workflow_completion,
     run_trunk_loop,
+    print_task_failure_diagnostics,
 )
 
 
@@ -326,41 +327,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
 
         # Verify success: exit code 0, HEAD advanced, AND task count decreased
         if not check_claude_success(claude_result.returncode, head_before, head_after):
-            print(f"\nError: Task execution failed.", file=sys.stderr)
-            print(f"  Exit code: {claude_result.returncode}", file=sys.stderr)
-            print(f"  HEAD before: {head_before}", file=sys.stderr)
-            print(f"  HEAD after: {head_after}", file=sys.stderr)
-
-            # Display permission denials if any
-            if claude_result.permission_denials:
-                print(f"\nPermission denied for {len(claude_result.permission_denials)} action(s):", file=sys.stderr)
-                for denial in claude_result.permission_denials:
-                    tool_name = denial.get('tool_name', 'Unknown')
-                    tool_input = denial.get('tool_input', {})
-                    cmd = tool_input.get('command', tool_input.get('description', 'N/A'))
-                    print(f"  - {tool_name}: {cmd}", file=sys.stderr)
-                print(f"\nAdd missing permissions to .claude/settings.local.json", file=sys.stderr)
-
-            if claude_result.error_message:
-                print(f"\nClaude error: {claude_result.error_message}", file=sys.stderr)
-
-            # Display last 5 messages for debugging
-            if claude_result.last_messages:
-                print(f"\nLast {len(claude_result.last_messages)} messages from Claude:", file=sys.stderr)
-                for msg in claude_result.last_messages:
-                    msg_type = msg.get('type', 'unknown')
-                    if msg_type == 'assistant':
-                        content = msg.get('message', {}).get('content', [])
-                        for item in content:
-                            if item.get('type') == 'text':
-                                text = item.get('text', '')[:200]
-                                print(f"  [{msg_type}] {text}...", file=sys.stderr)
-                    elif msg_type == 'result':
-                        result = msg.get('result', '')[:200]
-                        print(f"  [{msg_type}] {result}...", file=sys.stderr)
-                    else:
-                        print(f"  [{msg_type}]", file=sys.stderr)
-
+            print_task_failure_diagnostics(claude_result, head_before, head_after)
             sys.exit(1)
 
         if tasks_after >= tasks_before:

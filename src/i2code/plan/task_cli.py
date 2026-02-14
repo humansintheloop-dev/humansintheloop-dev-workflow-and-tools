@@ -5,10 +5,7 @@ import sys
 
 import click
 
-from i2code.plan.plan_file_io import atomic_write, with_error_handling, with_plan_file_update
-from i2code.plan.tasks import (
-    move_task_before, move_task_after,
-)
+from i2code.plan.plan_file_io import with_error_handling, with_plan_file_update
 from i2code.plan_domain.task import Task
 
 
@@ -187,16 +184,9 @@ def reorder_tasks_cmd(plan_file, thread, order, rationale):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def move_task_before_cmd(plan_file, thread, task, before, rationale):
     """Move a task to before another task within the same thread."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
-    try:
-        result = move_task_before(plan, thread, task, before, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "move-task-before", rationale) as domain_plan:
+            domain_plan.move_task_before(thread, task, before)
     click.echo(f"Moved task {thread}.{task} before task {thread}.{before}")
 
 
@@ -208,16 +198,9 @@ def move_task_before_cmd(plan_file, thread, task, before, rationale):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def move_task_after_cmd(plan_file, thread, task, after, rationale):
     """Move a task to after another task within the same thread."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
-    try:
-        result = move_task_after(plan, thread, task, after, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "move-task-after", rationale) as domain_plan:
+            domain_plan.move_task_after(thread, task, after)
     click.echo(f"Moved task {thread}.{task} after task {thread}.{after}")
 
 

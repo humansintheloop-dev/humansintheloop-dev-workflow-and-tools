@@ -47,6 +47,12 @@ class Plan:
     def delete_task(self, thread: int, task: int) -> None:
         self.get_thread(thread).delete_task(task)
 
+    def move_task_before(self, thread: int, task: int, before_task: int) -> None:
+        self.get_thread(thread).move_task_before(task, before_task)
+
+    def move_task_after(self, thread: int, task: int, after_task: int) -> None:
+        self.get_thread(thread).move_task_after(task, after_task)
+
     def reorder_tasks(self, thread: int, task_order: list[int]) -> None:
         self.get_thread(thread).reorder_tasks(task_order)
 

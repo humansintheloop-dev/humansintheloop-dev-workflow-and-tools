@@ -192,18 +192,18 @@ Migrate insert, delete, replace, reorder, and move task operations. These requir
     - [x] Delete old test_reorder_tasks.py, update test_error_messages.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 2.6: Migrate move_task_before and move_task_after to domain model**
+- [x] **Task 2.6: Migrate move_task_before and move_task_after to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan move-task-before tests/fixtures/plan.md --thread 1 --task 2 --before 1 --rationale "moved"`
   - Observable: CLI moves tasks within a thread via domain model. Implemented using Thread.reorder_tasks() internally.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration tests for move_task_before_cmd and move_task_after_cmd
-    - [ ] Add Plan.move_task_before() and Plan.move_task_after() delegation methods with TDD
-    - [ ] Wire both CLI handlers to use with_error_handling + with_plan_file_update
-    - [ ] Remove move_task_before() and move_task_after() from tasks.py
-    - [ ] Delete old test_move_task_before.py and test_move_task_after.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration tests for move_task_before_cmd and move_task_after_cmd
+    - [x] Add Plan.move_task_before() and Plan.move_task_after() delegation methods with TDD
+    - [x] Wire both CLI handlers to use with_error_handling + with_plan_file_update
+    - [x] Remove move_task_before() and move_task_after() from tasks.py
+    - [x] Delete old test_move_task_before.py and test_move_task_after.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 2.7: Delete tasks.py**
   - TaskType: INFRA
@@ -401,3 +401,24 @@ Migrated replace_task to domain model with Thread.replace_task() and Plan.replac
 
 ### 2026-02-14 16:51 - mark-task-complete
 Migrated reorder_tasks to domain model with TDD
+
+### 2026-02-14 16:54 - mark-step-complete
+CLI integration tests written for move_task_before_cmd and move_task_after_cmd
+
+### 2026-02-14 16:56 - mark-step-complete
+Thread.move_task_before/after and Plan delegation methods added with TDD
+
+### 2026-02-14 16:56 - mark-step-complete
+CLI handlers wired to with_error_handling + with_plan_file_update, old imports removed
+
+### 2026-02-14 16:57 - mark-step-complete
+Removed move_task_before and move_task_after from tasks.py
+
+### 2026-02-14 16:58 - mark-step-complete
+Deleted old test files and removed move_task error tests from test_error_messages.py
+
+### 2026-02-14 16:58 - mark-step-complete
+No duplicate acceptance tests found - CLI tests are minimal wiring tests, domain tests own behavior
+
+### 2026-02-14 16:58 - mark-task-complete
+Migrated move_task_before and move_task_after to domain model

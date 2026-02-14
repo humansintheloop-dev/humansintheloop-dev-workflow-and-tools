@@ -3,9 +3,6 @@
 import pytest
 
 from i2code.plan.plans import get_thread
-from i2code.plan.tasks import (
-    move_task_before, move_task_after,
-)
 from i2code.plan_domain.task import Task
 from i2code.plan.threads import delete_thread, replace_thread, reorder_threads
 from i2code.plan_domain.parser import parse
@@ -103,19 +100,4 @@ class TestErrorMessageFormat:
         with pytest.raises(ValueError, match="reorder-tasks:"):
             plan.reorder_tasks(1, [1, 2])
 
-    def test_move_task_before_nonexistent_thread(self):
-        with pytest.raises(ValueError, match="move-task-before:.*does not exist"):
-            move_task_before(SIMPLE_PLAN, 99, 1, 2, "r")
-
-    def test_move_task_before_same_task(self):
-        with pytest.raises(ValueError, match="move-task-before:.*same task"):
-            move_task_before(SIMPLE_PLAN, 1, 1, 1, "r")
-
-    def test_move_task_after_nonexistent_thread(self):
-        with pytest.raises(ValueError, match="move-task-after:.*does not exist"):
-            move_task_after(SIMPLE_PLAN, 99, 1, 2, "r")
-
-    def test_move_task_after_same_task(self):
-        with pytest.raises(ValueError, match="move-task-after:.*same task"):
-            move_task_after(SIMPLE_PLAN, 1, 1, 1, "r")
 

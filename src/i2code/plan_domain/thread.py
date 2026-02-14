@@ -47,6 +47,28 @@ class Thread:
         self.get_task(task_number)
         del self.tasks[task_number - 1]
 
+    def move_task_before(self, task_number: int, before_task: int) -> None:
+        if task_number == before_task:
+            raise ValueError("move-task-before: cannot move task to before the same task")
+        self.get_task(task_number)
+        self.get_task(before_task)
+        current_order = list(range(1, len(self.tasks) + 1))
+        new_order = [n for n in current_order if n != task_number]
+        insert_idx = new_order.index(before_task)
+        new_order.insert(insert_idx, task_number)
+        self.reorder_tasks(new_order)
+
+    def move_task_after(self, task_number: int, after_task: int) -> None:
+        if task_number == after_task:
+            raise ValueError("move-task-after: cannot move task to after the same task")
+        self.get_task(task_number)
+        self.get_task(after_task)
+        current_order = list(range(1, len(self.tasks) + 1))
+        new_order = [n for n in current_order if n != task_number]
+        insert_idx = new_order.index(after_task) + 1
+        new_order.insert(insert_idx, task_number)
+        self.reorder_tasks(new_order)
+
     def reorder_tasks(self, task_order: list[int]) -> None:
         if len(task_order) != len(set(task_order)):
             raise ValueError("reorder-tasks: --order contains duplicate task numbers")

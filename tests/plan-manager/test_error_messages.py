@@ -2,7 +2,6 @@
 
 import pytest
 
-from i2code.plan.plans import get_thread
 from i2code.plan_domain.task import Task
 from i2code.plan_domain.thread import Thread
 from i2code.plan_domain.parser import parse
@@ -42,9 +41,10 @@ Done.
 class TestErrorMessageFormat:
     """Error messages include subcommand name and are human-readable."""
 
-    def test_get_thread_includes_subcommand_name(self):
-        with pytest.raises(ValueError, match="get-thread:"):
-            get_thread(SIMPLE_PLAN, 99)
+    def test_get_thread_nonexistent(self):
+        plan = parse(SIMPLE_PLAN)
+        with pytest.raises(ValueError, match="thread 99 does not exist"):
+            plan.get_thread(99)
 
     def test_mark_task_complete_already_complete(self):
         plan = parse(SIMPLE_PLAN)

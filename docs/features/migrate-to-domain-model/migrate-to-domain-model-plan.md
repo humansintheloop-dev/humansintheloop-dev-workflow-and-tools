@@ -336,12 +336,12 @@ Migrate fix_numbering, list_threads, get_summary, and get_thread to use the doma
   - Observable: CLI get-thread reads thread content from domain model. Thread.title, Thread.introduction properties provide data. Task metadata comes from existing Task properties.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration test for get_thread_cmd
-    - [ ] Add Thread.introduction property with TDD (parse from _header_lines)
-    - [ ] Wire get_thread_cmd to use with_plan_file and with_error_handling
-    - [ ] Remove get_thread() from plans.py
-    - [ ] Delete old test_get_thread.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration test for get_thread_cmd
+    - [x] Add Thread.introduction property with TDD (parse from _header_lines)
+    - [x] Wire get_thread_cmd to use with_plan_file and with_error_handling
+    - [x] Remove get_thread() from plans.py
+    - [x] Delete old test_get_thread.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 4.5: Delete plans.py, consolidate _helpers.py, final cleanup**
   - TaskType: INFRA
@@ -464,3 +464,21 @@ Migrated list_threads to domain model with Thread.title property
 
 ### 2026-02-14 17:43 - mark-task-complete
 Migrated get_summary to domain model: added Plan.name, Plan.idea_type, Plan.overview properties, wired CLI to use with_plan_file, removed legacy function and old tests
+
+### 2026-02-14 17:45 - mark-step-complete
+CLI integration tests for get_thread_cmd written and passing
+
+### 2026-02-14 17:46 - mark-step-complete
+Thread.introduction property implemented with TDD
+
+### 2026-02-14 17:47 - mark-step-complete
+get_thread_cmd wired to use with_plan_file and with_error_handling
+
+### 2026-02-14 17:48 - mark-step-complete
+Removed get_thread() from plans.py
+
+### 2026-02-14 17:48 - mark-step-complete
+Deleted old test_get_thread.py, updated test_error_messages.py to use domain model
+
+### 2026-02-14 17:49 - mark-step-complete
+No duplicate acceptance tests found - CLI tests cover wiring, domain tests cover behavior

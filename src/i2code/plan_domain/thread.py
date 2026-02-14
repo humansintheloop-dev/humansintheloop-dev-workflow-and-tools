@@ -16,6 +16,10 @@ class Thread:
         m = re.match(r'^## Steel Thread \d+: (.+)$', self._header_lines[0])
         return m.group(1) if m else ''
 
+    @property
+    def introduction(self) -> str:
+        return '\n'.join(self._header_lines[1:]).strip()
+
     def get_task(self, task_number: int) -> Task:
         if task_number < 1 or task_number > len(self.tasks):
             raise ValueError(f"task {task_number} does not exist")

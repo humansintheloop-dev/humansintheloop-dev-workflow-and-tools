@@ -1,11 +1,8 @@
 """Click handlers for plan-level commands."""
 
-import sys
-
 import click
 
-from i2code.plan.plan_file_io import atomic_write, with_plan_file, with_plan_file_update
-from i2code.plan.plans import get_thread
+from i2code.plan.plan_file_io import with_error_handling, with_plan_file, with_plan_file_update
 
 
 @click.command("fix-numbering")
@@ -62,31 +59,25 @@ def get_summary_cmd(plan_file):
 @click.option("--thread", required=True, type=int, help="Thread number")
 def get_thread_cmd(plan_file, thread):
     """Get a thread's full content."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
-    try:
-        thread_data = get_thread(plan, thread)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    click.echo(f"Thread {thread_data['number']}: {thread_data['title']}")
-    click.echo()
-    click.echo(thread_data['introduction'])
-    click.echo()
-    for task in thread_data['tasks']:
-        status = 'x' if task['completed'] else ' '
-        click.echo(f"- [{status}] Task {task['thread_number']}.{task['task_number']}: {task['title']}")
-        click.echo(f"  TaskType: {task['task_type']}")
-        click.echo(f"  Entrypoint: {task['entrypoint']}")
-        click.echo(f"  Observable: {task['observable']}")
-        click.echo(f"  Evidence: {task['evidence']}")
-        click.echo(f"  Steps:")
-        for i, step in enumerate(task['steps'], 1):
-            step_status = 'x' if step['completed'] else ' '
-            click.echo(f"    {i}. [{step_status}] {step['description']}")
-        click.echo()
+    with with_error_handling():
+        with with_plan_file(plan_file) as domain_plan:
+            domain_thread = domain_plan.get_thread(thread)
+            click.echo(f"Thread {thread}: {domain_thread.title}")
+            click.echo()
+            click.echo(domain_thread.introduction)
+            click.echo()
+            for task_num, task in enumerate(domain_thread.tasks, 1):
+                status = 'x' if task.is_completed else ' '
+                click.echo(f"- [{status}] Task {thread}.{task_num}: {task.title}")
+                click.echo(f"  TaskType: {task.task_type}")
+                click.echo(f"  Entrypoint: {task.entrypoint}")
+                click.echo(f"  Observable: {task.observable}")
+                click.echo(f"  Evidence: {task.evidence}")
+                click.echo(f"  Steps:")
+                for i, step in enumerate(task.steps, 1):
+                    step_status = 'x' if step['completed'] else ' '
+                    click.echo(f"    {i}. [{step_status}] {step['description']}")
+                click.echo()
 
 
 def register(group):

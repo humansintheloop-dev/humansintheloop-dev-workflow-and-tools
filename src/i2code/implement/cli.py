@@ -19,7 +19,8 @@ from i2code.implement.implement import (
     ensure_claude_permissions,
     ensure_worktree,
     ensure_slice_branch,
-    get_first_task_name,
+    get_next_task,
+    is_task_completed,
     get_worktree_idea_directory,
     find_existing_pr,
     ensure_draft_pr,
@@ -29,7 +30,6 @@ from i2code.implement.implement import (
     fix_ci_failure,
     get_pr_url,
     process_pr_feedback,
-    parse_tasks_from_plan,
     build_claude_command,
     run_claude_with_output_capture,
     run_claude_interactive,
@@ -185,9 +185,8 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
 
     # Read plan file to get first task name for slice naming
     original_plan_file = os.path.join(idea_directory, f"{idea_name}-plan.md")
-    with open(original_plan_file, "r") as f:
-        plan_content = f.read()
-    first_task_name = get_first_task_name(plan_content)
+    next_task = get_next_task(original_plan_file)
+    first_task_name = next_task.task.title if next_task else "implementation"
 
     # Create or reuse slice branch
     slice_branch = ensure_slice_branch(
@@ -277,12 +276,9 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                 # Loop back to check for more feedback or CI failures
                 continue
 
-        # Re-read plan file from the worktree to get current uncompleted tasks
-        with open(work_plan_file, "r") as f:
-            plan_content = f.read()
-
-        tasks = parse_tasks_from_plan(plan_content)
-        if not tasks:
+        # Get next uncompleted task from the plan
+        next_task = get_next_task(work_plan_file)
+        if next_task is None:
             print("All tasks completed!")
             if pr_number:
                 pr_url = get_pr_url(pr_number)
@@ -290,24 +286,20 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                     print(f"PR: {pr_url}")
             break
 
-        tasks_before = len(tasks)
-        print(f"Found {tasks_before} uncompleted task(s)")
-
-        # Execute next uncompleted task
-        current_task = tasks[0]
-        print(f"Executing task: {current_task}")
+        task_description = next_task.print()
+        print(f"Executing task: {task_description}")
 
         # Get HEAD before Claude invocation
         head_before = work_repo.head.commit.hexsha
 
         # Build and run Claude command (or mock script for testing)
         if mock_claude:
-            claude_cmd = [mock_claude, current_task]
+            claude_cmd = [mock_claude, task_description]
             print(f"Using mock Claude: {mock_claude}")
         else:
             claude_cmd = build_claude_command(
                 work_idea_dir,
-                current_task,
+                task_description,
                 interactive=not non_interactive,
                 extra_prompt=extra_prompt
             )
@@ -323,20 +315,13 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         # Get HEAD after Claude invocation
         head_after = work_repo.head.commit.hexsha
 
-        # Re-read plan to check if task was marked complete
-        with open(work_plan_file, "r") as f:
-            updated_plan_content = f.read()
-        tasks_after = len(parse_tasks_from_plan(updated_plan_content))
-
-        # Verify success: exit code 0, HEAD advanced, AND task count decreased
+        # Verify success: exit code 0, HEAD advanced
         if not check_claude_success(claude_result.returncode, head_before, head_after):
             print_task_failure_diagnostics(claude_result, head_before, head_after)
             sys.exit(1)
 
-        if tasks_after >= tasks_before:
-            print(f"Error: Task was not marked complete in plan file.", file=sys.stderr)
-            print(f"  Tasks before: {tasks_before}", file=sys.stderr)
-            print(f"  Tasks after: {tasks_after}", file=sys.stderr)
+        if not is_task_completed(work_plan_file, next_task.number.thread, next_task.number.task):
+            print("Error: Task was not marked complete in plan file.", file=sys.stderr)
             sys.exit(1)
 
         # Verify CI workflow exists before pushing (required for CI checks)

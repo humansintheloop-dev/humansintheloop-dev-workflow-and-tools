@@ -11,6 +11,8 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from conftest import SCRIPT_CMD
+from i2code.plan_domain.numbered_task import NumberedTask, TaskNumber
+from i2code.plan_domain.task import Task
 
 
 @pytest.mark.integration
@@ -55,6 +57,13 @@ class TestCLIHelpFlag:
         assert "worktree" in result.stdout.lower() or "draft pr" in result.stdout.lower()
 
 
+def _make_numbered_task(title: str) -> NumberedTask:
+    return NumberedTask(
+        number=TaskNumber(thread=1, task=1),
+        task=Task(_lines=[f"- [ ] **Task 1.1: {title}**"]),
+    )
+
+
 @pytest.mark.unit
 class TestIsolatedFlagPassthrough:
     """Test that --isolated flag is forwarded to ensure_integration_branch()."""
@@ -66,11 +75,11 @@ class TestIsolatedFlagPassthrough:
         "i2code.implement.cli.validate_idea_files",
         "i2code.implement.cli.validate_idea_files_committed",
         "i2code.implement.cli.init_or_load_state",
-        "i2code.implement.cli.get_first_task_name",
+        "i2code.implement.cli.get_next_task",
         "i2code.implement.cli.Repo",
     ]
 
-    @patch("i2code.implement.cli.get_first_task_name", return_value="setup")
+    @patch("i2code.implement.cli.get_next_task", return_value=_make_numbered_task("setup"))
     @patch("i2code.implement.cli.init_or_load_state", return_value={"slice_number": 1})
     @patch("i2code.implement.cli.ensure_slice_branch", return_value="idea/test-feature/01-setup")
     @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
@@ -96,7 +105,7 @@ class TestIsolatedFlagPassthrough:
 
         mock_ensure_branch.assert_called_once_with(mock_repo, "test-feature", isolated=True)
 
-    @patch("i2code.implement.cli.get_first_task_name", return_value="setup")
+    @patch("i2code.implement.cli.get_next_task", return_value=_make_numbered_task("setup"))
     @patch("i2code.implement.cli.init_or_load_state", return_value={"slice_number": 1})
     @patch("i2code.implement.cli.ensure_slice_branch", return_value="idea/test-feature/01-setup")
     @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")

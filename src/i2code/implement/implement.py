@@ -1734,58 +1734,18 @@ def cleanup_on_interrupt(
     print("State saved. You can resume by running the script again.")
 
 
-# Task Parsing Functions
+# Plan Helpers
 
-def parse_tasks_from_plan(plan_content: str) -> List[str]:
-    """Parse uncompleted top-level tasks from a plan file content.
-
-    Tasks are identified by lines starting with "- [ ]" (uncompleted checkbox)
-    and containing bold text (** markers), which distinguishes main tasks from subtasks.
-
-    Args:
-        plan_content: The full content of the plan file
-
-    Returns:
-        List of task descriptions (the text after the checkbox)
-    """
-    tasks = []
-    # Match lines that start with "- [ ]" and contain bold text (**...**)
-    # This distinguishes main tasks from subtasks
-    pattern = r'^- \[ \] (\*\*.+\*\*.*)$'
-
-    for line in plan_content.split('\n'):
-        match = re.match(pattern, line.strip())
-        if match:
-            task_text = match.group(1)
-            tasks.append(task_text)
-
-    return tasks
+def get_next_task(plan_file: str):
+    from i2code.plan.plan_file_io import with_plan_file
+    with with_plan_file(plan_file) as plan:
+        return plan.get_next_task()
 
 
-def get_first_task_name(plan_content: str) -> str:
-    """Get the name of the first uncompleted task for slice naming.
-
-    Args:
-        plan_content: The full content of the plan file
-
-    Returns:
-        The first task name, or "implementation" if no tasks found
-    """
-    tasks = parse_tasks_from_plan(plan_content)
-    if not tasks:
-        return "implementation"
-
-    # Extract a usable name from the task description
-    # Remove markdown formatting like **bold**
-    task = tasks[0]
-    task = re.sub(r'\*\*([^*]+)\*\*', r'\1', task)
-
-    # Try to extract the task title (after "Task X.X:")
-    title_match = re.search(r'Task \d+\.\d+:\s*(.+)', task)
-    if title_match:
-        return title_match.group(1).strip()
-
-    return task.strip()
+def is_task_completed(plan_file: str, thread: int, task: int) -> bool:
+    from i2code.plan.plan_file_io import with_plan_file
+    with with_plan_file(plan_file) as plan:
+        return plan.is_task_completed(thread, task)
 
 
 # Claude Invocation Functions
@@ -2278,22 +2238,18 @@ def run_trunk_loop(
     plan_file = os.path.join(idea_directory, f"{idea_name}-plan.md")
 
     while True:
-        with open(plan_file, "r") as f:
-            plan_content = f.read()
-
-        tasks = parse_tasks_from_plan(plan_content)
-        if not tasks:
+        next_task = get_next_task(plan_file)
+        if next_task is None:
             print("All tasks completed!")
             return
 
-        tasks_before = len(tasks)
-        current_task = tasks[0]
-        print(f"Executing task: {current_task}")
+        task_description = next_task.print()
+        print(f"Executing task: {task_description}")
 
         head_before = repo.head.commit.hexsha
 
         if mock_claude:
-            claude_cmd = [mock_claude, current_task]
+            claude_cmd = [mock_claude, task_description]
         else:
             extra_cli_args = None
             if non_interactive:
@@ -2301,7 +2257,7 @@ def run_trunk_loop(
                 extra_cli_args = ["--allowedTools", ",".join(permissions)]
             claude_cmd = build_claude_command(
                 idea_directory,
-                current_task,
+                task_description,
                 interactive=not non_interactive,
                 extra_prompt=extra_prompt,
                 extra_cli_args=extra_cli_args,
@@ -2318,11 +2274,7 @@ def run_trunk_loop(
             print_task_failure_diagnostics(claude_result, head_before, head_after)
             sys.exit(1)
 
-        with open(plan_file, "r") as f:
-            updated_plan_content = f.read()
-        tasks_after = len(parse_tasks_from_plan(updated_plan_content))
-
-        if tasks_after >= tasks_before:
+        if not is_task_completed(plan_file, next_task.number.thread, next_task.number.task):
             print("Error: Task was not marked complete in plan file.", file=sys.stderr)
             sys.exit(1)
 

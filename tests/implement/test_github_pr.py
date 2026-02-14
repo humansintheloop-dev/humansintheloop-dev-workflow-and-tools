@@ -7,6 +7,8 @@ import tempfile
 import pytest
 
 from git import Repo
+from i2code.plan_domain.numbered_task import NumberedTask, TaskNumber
+from i2code.plan_domain.task import Task
 
 
 @pytest.mark.unit
@@ -241,7 +243,10 @@ class TestDeferredPRCreation:
         monkeypatch.setattr("i2code.implement.cli.ensure_integration_branch", lambda r, n: "idea/test-idea/integration")
         monkeypatch.setattr("i2code.implement.cli.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
         monkeypatch.setattr("i2code.implement.cli.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
-        monkeypatch.setattr("i2code.implement.cli.get_first_task_name", lambda c: "test-task")
+        monkeypatch.setattr("i2code.implement.cli.get_next_task", lambda f: NumberedTask(
+            number=TaskNumber(thread=1, task=1),
+            task=Task(_lines=["- [ ] **Task 1.1: test-task**"]),
+        ))
         monkeypatch.setattr("i2code.implement.cli.get_worktree_idea_directory", lambda **kwargs: str(tmp_path / "worktree" / "test-idea"))
         monkeypatch.setattr("i2code.implement.cli.find_existing_pr", lambda x: None)
         monkeypatch.setattr("i2code.implement.cli.ensure_draft_pr", mock_ensure_draft_pr)

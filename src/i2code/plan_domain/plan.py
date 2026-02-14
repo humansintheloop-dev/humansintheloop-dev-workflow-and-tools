@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 
 from i2code.plan_domain.numbered_task import NumberedTask
+from i2code.plan_domain.task import Task
 from i2code.plan_domain.thread import Thread
 
 
@@ -38,6 +39,22 @@ class Plan:
         if task < 1 or task > len(t.tasks):
             raise ValueError(f"mark-task-incomplete: task {thread}.{task} does not exist")
         t.tasks[task - 1].mark_incomplete()
+
+    def insert_task_before(self, thread: int, before_task: int, task: Task) -> None:
+        if thread < 1 or thread > len(self.threads):
+            raise ValueError(f"insert-task-before: thread {thread} does not exist")
+        t = self.threads[thread - 1]
+        if before_task < 1 or before_task > len(t.tasks):
+            raise ValueError(f"insert-task-before: task {thread}.{before_task} does not exist")
+        t.insert_task(before_task - 1, task)
+
+    def insert_task_after(self, thread: int, after_task: int, task: Task) -> None:
+        if thread < 1 or thread > len(self.threads):
+            raise ValueError(f"insert-task-after: thread {thread} does not exist")
+        t = self.threads[thread - 1]
+        if after_task < 1 or after_task > len(t.tasks):
+            raise ValueError(f"insert-task-after: task {thread}.{after_task} does not exist")
+        t.insert_task(after_task, task)
 
     def delete_task(self, thread: int, task: int) -> None:
         if thread < 1 or thread > len(self.threads):

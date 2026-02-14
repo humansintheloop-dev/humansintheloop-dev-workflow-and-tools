@@ -11,6 +11,9 @@ class Thread:
     _header_lines: list[str]
     tasks: list[Task] = field(default_factory=list)
 
+    def insert_task(self, index: int, task: Task) -> None:
+        self.tasks.insert(index, task)
+
     def delete_task(self, task_number: int) -> None:
         if task_number < 1 or task_number > len(self.tasks):
             raise ValueError(f"task {task_number} does not exist")

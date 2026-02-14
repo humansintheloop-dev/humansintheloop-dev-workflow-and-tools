@@ -7,10 +7,10 @@ import click
 
 from i2code.plan.plan_file_io import atomic_write, with_error_handling, with_plan_file_update
 from i2code.plan.tasks import (
-    insert_task_before, insert_task_after,
     replace_task, reorder_tasks,
     move_task_before, move_task_after,
 )
+from i2code.plan_domain.task import Task
 
 
 @click.command("mark-task-complete")
@@ -81,23 +81,16 @@ def mark_step_incomplete_cmd(plan_file, thread, task, step, rationale):
 def insert_task_before_cmd(plan_file, thread, before, title, task_type,
                            entrypoint, observable, evidence, steps, rationale):
     """Insert a task before a specified task within a thread."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
     try:
         steps_list = json.loads(steps)
     except json.JSONDecodeError as e:
         click.echo(f"insert-task-before: --steps is not valid JSON: {e}", err=True)
         sys.exit(1)
 
-    try:
-        result = insert_task_before(plan, thread, before, title, task_type,
-                                    entrypoint, observable, evidence, steps_list, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "insert-task-before", rationale) as domain_plan:
+            new_task = Task.create(title, task_type, entrypoint, observable, evidence, steps_list)
+            domain_plan.insert_task_before(thread, before, new_task)
     click.echo(f"Inserted task '{title}' in thread {thread}")
 
 
@@ -115,23 +108,16 @@ def insert_task_before_cmd(plan_file, thread, before, title, task_type,
 def insert_task_after_cmd(plan_file, thread, after, title, task_type,
                           entrypoint, observable, evidence, steps, rationale):
     """Insert a task after a specified task within a thread."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
     try:
         steps_list = json.loads(steps)
     except json.JSONDecodeError as e:
         click.echo(f"insert-task-after: --steps is not valid JSON: {e}", err=True)
         sys.exit(1)
 
-    try:
-        result = insert_task_after(plan, thread, after, title, task_type,
-                                   entrypoint, observable, evidence, steps_list, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "insert-task-after", rationale) as domain_plan:
+            new_task = Task.create(title, task_type, entrypoint, observable, evidence, steps_list)
+            domain_plan.insert_task_after(thread, after, new_task)
     click.echo(f"Inserted task '{title}' in thread {thread}")
 
 

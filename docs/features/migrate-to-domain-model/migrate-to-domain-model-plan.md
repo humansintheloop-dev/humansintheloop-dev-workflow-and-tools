@@ -139,19 +139,19 @@ Migrate insert, delete, replace, reorder, and move task operations. These requir
     - [x] Write tests for Task.create() verifying title, metadata, steps, and to_lines() output
     - [x] Implement Task.create() class method that builds _lines from structured data
 
-- [ ] **Task 2.3: Migrate insert_task_before and insert_task_after to domain model**
+- [x] **Task 2.3: Migrate insert_task_before and insert_task_after to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan insert-task-before tests/fixtures/plan.md --thread 1 --before 1 --title "New" --task-type INFRA --entrypoint "echo" --observable "works" --evidence "echo" --steps '["step"]' --rationale "added"`
   - Observable: CLI inserts tasks via domain model using Task.create() and Thread.insert_task(). Renumbering handled by to_text().
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration tests for insert_task_before_cmd and insert_task_after_cmd
-    - [ ] Add Thread.insert_task(index, task) method with TDD
-    - [ ] Add Plan.insert_task_before() and Plan.insert_task_after() delegation methods with TDD
-    - [ ] Wire both CLI handlers to use with_error_handling + with_plan_file_update
-    - [ ] Remove insert_task_before() and insert_task_after() from tasks.py
-    - [ ] Delete old test_insert_task.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration tests for insert_task_before_cmd and insert_task_after_cmd
+    - [x] Add Thread.insert_task(index, task) method with TDD
+    - [x] Add Plan.insert_task_before() and Plan.insert_task_after() delegation methods with TDD
+    - [x] Wire both CLI handlers to use with_error_handling + with_plan_file_update
+    - [x] Remove insert_task_before() and insert_task_after() from tasks.py
+    - [x] Delete old test_insert_task.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 2.4: Migrate replace_task to domain model**
   - TaskType: OUTCOME
@@ -381,3 +381,6 @@ Migrated mark_step_complete and mark_step_incomplete to domain model; deleted ol
 
 ### 2026-02-14 16:12 - mark-task-complete
 Migrated delete_task to domain model with Thread.delete_task() and Plan.delete_task() methods
+
+### 2026-02-14 16:22 - mark-task-complete
+Migrated insert_task_before and insert_task_after to domain model

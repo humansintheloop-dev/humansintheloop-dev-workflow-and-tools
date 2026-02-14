@@ -82,19 +82,19 @@ After migration, the standalone modules (`tasks.py`, `threads.py`, `plans.py`) a
 ## Steel Thread 1: Task State Mutations
 Migrate mark_task_incomplete, mark_step_complete, and mark_step_incomplete. These follow the exact pattern from the mark_task_complete migration: add mutation method(s) to Task, add delegation to Plan, wire CLI with `with_error_handling` + `with_plan_file_update`, remove standalone function.
 
-- [ ] **Task 1.1: Migrate mark_task_incomplete to domain model**
+- [x] **Task 1.1: Migrate mark_task_incomplete to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan mark-task-incomplete tests/fixtures/plan.md --thread 1 --task 1`
   - Observable: CLI marks a completed task and all its steps as incomplete via domain model. File is updated atomically. Existing behavior preserved.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration test for mark_task_incomplete_cmd
-    - [ ] Add Task.mark_incomplete() mutation method with TDD
-    - [ ] Add Plan.mark_task_incomplete() delegation method with TDD
-    - [ ] Wire mark_task_incomplete_cmd to use with_error_handling + with_plan_file_update
-    - [ ] Remove mark_task_incomplete() from tasks.py
-    - [ ] Delete old test_mark_task_incomplete.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration test for mark_task_incomplete_cmd
+    - [x] Add Task.mark_incomplete() mutation method with TDD
+    - [x] Add Plan.mark_task_incomplete() delegation method with TDD
+    - [x] Wire mark_task_incomplete_cmd to use with_error_handling + with_plan_file_update
+    - [x] Remove mark_task_incomplete() from tasks.py
+    - [x] Delete old test_mark_task_incomplete.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 1.2: Migrate mark_step_complete and mark_step_incomplete to domain model**
   - TaskType: OUTCOME

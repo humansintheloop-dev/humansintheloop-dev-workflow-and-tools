@@ -31,6 +31,14 @@ class Plan:
             raise ValueError(f"mark-task-complete: task {thread}.{task} does not exist")
         t.tasks[task - 1].mark_complete()
 
+    def mark_task_incomplete(self, thread: int, task: int) -> None:
+        if thread < 1 or thread > len(self.threads):
+            raise ValueError(f"mark-task-incomplete: thread {thread} does not exist")
+        t = self.threads[thread - 1]
+        if task < 1 or task > len(t.tasks):
+            raise ValueError(f"mark-task-incomplete: task {thread}.{task} does not exist")
+        t.tasks[task - 1].mark_incomplete()
+
     def to_text(self) -> str:
         lines = list(self._preamble_lines)
         for thread_num, thread in enumerate(self.threads, 1):

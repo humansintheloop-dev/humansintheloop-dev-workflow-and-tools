@@ -60,6 +60,17 @@ class TestErrorMessageFormat:
         with pytest.raises(ValueError, match="mark-task-complete:.*does not exist"):
             plan.mark_task_complete(1, 99)
 
+    def test_mark_task_incomplete_already_incomplete(self):
+        plan = parse(SIMPLE_PLAN)
+        plan.mark_task_incomplete(1, 1)
+        with pytest.raises(ValueError, match="already incomplete"):
+            plan.mark_task_incomplete(1, 1)
+
+    def test_mark_task_incomplete_nonexistent(self):
+        plan = parse(SIMPLE_PLAN)
+        with pytest.raises(ValueError, match="mark-task-incomplete:.*does not exist"):
+            plan.mark_task_incomplete(1, 99)
+
     def test_mark_step_complete_already_complete(self):
         with pytest.raises(ValueError, match="mark-step-complete:.*already complete"):
             mark_step_complete(SIMPLE_PLAN, 1, 1, 1, "reason")

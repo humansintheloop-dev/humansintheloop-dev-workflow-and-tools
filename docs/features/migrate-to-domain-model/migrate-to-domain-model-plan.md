@@ -275,16 +275,16 @@ Migrate insert, delete, replace, and reorder thread operations. These require a 
     - [x] Delete old test_reorder_threads.py, update test_error_messages.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 3.5: Delete threads.py**
+- [x] **Task 3.5: Delete threads.py**
   - TaskType: INFRA
   - Entrypoint: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Observable: threads.py is empty of functions and deleted. All imports of threads.py removed from thread_cli.py. All tests pass.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Verify threads.py has no remaining functions
-    - [ ] Remove threads.py import from thread_cli.py
-    - [ ] Delete threads.py
-    - [ ] Run all tests to confirm nothing breaks
+    - [x] Verify threads.py has no remaining functions
+    - [x] Remove threads.py import from thread_cli.py
+    - [x] Delete threads.py
+    - [x] Run all tests to confirm nothing breaks
 
 ---
 
@@ -452,3 +452,6 @@ Pruned duplicate test_renumbers_tasks_after_reorder from CLI tests (covered by d
 
 ### 2026-02-14 17:28 - mark-task-complete
 Migrated reorder_threads to domain model
+
+### 2026-02-14 17:29 - mark-task-complete
+threads.py was already deleted during prior migration tasks. No imports remain. All 279 tests pass.

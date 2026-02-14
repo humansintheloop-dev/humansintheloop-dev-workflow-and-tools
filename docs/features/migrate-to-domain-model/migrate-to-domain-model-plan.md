@@ -262,18 +262,18 @@ Migrate insert, delete, replace, and reorder thread operations. These require a 
     - [x] Delete old test_replace_thread.py, update test_error_messages.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 3.4: Migrate reorder_threads to domain model**
+- [x] **Task 3.4: Migrate reorder_threads to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan reorder-threads tests/fixtures/plan.md --order 2,1 --rationale "reordered"`
   - Observable: CLI reorders threads via domain model. Renumbering handled by to_text().
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration test for reorder_threads_cmd
-    - [ ] Add Plan.reorder_threads(order) method with TDD
-    - [ ] Wire reorder_threads_cmd to use with_error_handling + with_plan_file_update
-    - [ ] Remove reorder_threads() from threads.py
-    - [ ] Delete old test_reorder_threads.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration test for reorder_threads_cmd
+    - [x] Add Plan.reorder_threads(order) method with TDD
+    - [x] Wire reorder_threads_cmd to use with_error_handling + with_plan_file_update
+    - [x] Remove reorder_threads() from threads.py
+    - [x] Delete old test_reorder_threads.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 3.5: Delete threads.py**
   - TaskType: INFRA
@@ -431,3 +431,24 @@ Migrated delete_thread to domain model
 
 ### 2026-02-14 17:13 - mark-task-complete
 Thread.create() factory, Plan.insert_thread_before/after(), CLI migrated to domain model, old functions removed
+
+### 2026-02-14 17:23 - mark-step-complete
+CLI integration tests written and passing
+
+### 2026-02-14 17:25 - mark-step-complete
+Plan.reorder_threads() implemented with TDD
+
+### 2026-02-14 17:26 - mark-step-complete
+reorder_threads_cmd wired to domain model with context managers
+
+### 2026-02-14 17:26 - mark-step-complete
+Removed reorder_threads from threads.py (deleted entire file)
+
+### 2026-02-14 17:27 - mark-step-complete
+Deleted test_reorder_threads.py and threads.py, updated test_error_messages.py and test_debug_renumber.py to use domain model
+
+### 2026-02-14 17:28 - mark-step-complete
+Pruned duplicate test_renumbers_tasks_after_reorder from CLI tests (covered by domain test)
+
+### 2026-02-14 17:28 - mark-task-complete
+Migrated reorder_threads to domain model

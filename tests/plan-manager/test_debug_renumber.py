@@ -1,6 +1,5 @@
 """Regression test: thread operations must not produce Task 0.x numbering."""
 
-from i2code.plan.threads import reorder_threads
 from i2code.plan_domain.parser import parse
 from i2code.plan_domain.thread import Thread
 
@@ -60,7 +59,9 @@ class TestNoZeroNumbering:
         assert '**Task 1.1: Task B**' in result
 
     def test_reorder_threads_renumbers_correctly(self):
-        result = reorder_threads(PLAN, [2, 1], "swap")
+        plan = parse(PLAN)
+        plan.reorder_threads([2, 1])
+        result = plan.to_text()
         assert '**Task 0.' not in result
         assert '**Task 1.1: Task B**' in result
         assert '**Task 2.1: Task A**' in result

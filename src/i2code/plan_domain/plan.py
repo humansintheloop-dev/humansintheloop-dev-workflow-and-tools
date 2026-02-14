@@ -69,6 +69,24 @@ class Plan:
     def move_task_after(self, thread: int, task: int, after_task: int) -> None:
         self.get_thread(thread).move_task_after(task, after_task)
 
+    def reorder_threads(self, thread_order: list[int]) -> None:
+        if len(thread_order) != len(set(thread_order)):
+            raise ValueError("reorder-threads: --order contains duplicate thread numbers")
+
+        existing_set = set(range(1, len(self.threads) + 1))
+        order_set = set(thread_order)
+        if order_set != existing_set:
+            missing = existing_set - order_set
+            extra = order_set - existing_set
+            parts = []
+            if missing:
+                parts.append(f"missing threads: {sorted(missing)}")
+            if extra:
+                parts.append(f"nonexistent threads: {sorted(extra)}")
+            raise ValueError(f"reorder-threads: --order does not match existing threads ({', '.join(parts)})")
+
+        self.threads = [self.threads[i - 1] for i in thread_order]
+
     def reorder_tasks(self, thread: int, task_order: list[int]) -> None:
         self.get_thread(thread).reorder_tasks(task_order)
 

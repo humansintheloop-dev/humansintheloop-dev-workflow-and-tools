@@ -4,7 +4,6 @@ import pytest
 
 from i2code.plan.plans import get_thread
 from i2code.plan_domain.task import Task
-from i2code.plan.threads import reorder_threads
 from i2code.plan_domain.thread import Thread
 from i2code.plan_domain.parser import parse
 
@@ -91,8 +90,9 @@ class TestErrorMessageFormat:
             plan.replace_thread(99, new_thread)
 
     def test_reorder_threads_invalid(self):
+        plan = parse(SIMPLE_PLAN)
         with pytest.raises(ValueError, match="reorder-threads:"):
-            reorder_threads(SIMPLE_PLAN, [1, 2], "r")
+            plan.reorder_threads([1, 2])
 
     def test_reorder_tasks_nonexistent_thread(self):
         plan = parse(SIMPLE_PLAN)

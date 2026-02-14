@@ -11,6 +11,11 @@ class Thread:
     _header_lines: list[str]
     tasks: list[Task] = field(default_factory=list)
 
+    @property
+    def title(self) -> str:
+        m = re.match(r'^## Steel Thread \d+: (.+)$', self._header_lines[0])
+        return m.group(1) if m else ''
+
     def get_task(self, task_number: int) -> Task:
         if task_number < 1 or task_number > len(self.tasks):
             raise ValueError(f"task {task_number} does not exist")

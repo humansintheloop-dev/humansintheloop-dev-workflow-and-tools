@@ -5,7 +5,7 @@ import sys
 import click
 
 from i2code.plan.plan_file_io import atomic_write, with_plan_file, with_plan_file_update
-from i2code.plan.plans import get_summary, get_thread, list_threads
+from i2code.plan.plans import get_summary, get_thread
 
 
 @click.command("fix-numbering")
@@ -33,12 +33,11 @@ def get_next_task_cmd(plan_file):
 @click.argument("plan_file")
 def list_threads_cmd(plan_file):
     """List all threads with completion status."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
-    threads = list_threads(plan)
-    for t in threads:
-        click.echo(f"Thread {t['number']}: {t['title']} ({t['completed_tasks']}/{t['total_tasks']} tasks completed)")
+    with with_plan_file(plan_file) as domain_plan:
+        for thread_num, thread in enumerate(domain_plan.threads, 1):
+            completed = sum(1 for t in thread.tasks if t.is_completed)
+            total = len(thread.tasks)
+            click.echo(f"Thread {thread_num}: {thread.title} ({completed}/{total} tasks completed)")
 
 
 @click.command("get-summary")

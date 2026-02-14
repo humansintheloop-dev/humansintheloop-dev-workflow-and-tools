@@ -304,18 +304,18 @@ Migrate fix_numbering, list_threads, get_summary, and get_thread to use the doma
     - [x] Delete old test_fix_numbering.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 4.2: Migrate list_threads to domain model**
+- [x] **Task 4.2: Migrate list_threads to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan list-threads tests/fixtures/plan.md`
   - Observable: CLI list-threads reads thread data from domain model properties (Thread.title, task counts). Uses with_plan_file for read-only access.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration test for list_threads_cmd
-    - [ ] Add Thread.title property with TDD (parse from _header_lines[0])
-    - [ ] Wire list_threads_cmd to use with_plan_file and iterate domain model
-    - [ ] Remove list_threads() from plans.py
-    - [ ] Delete old test_list_threads.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration test for list_threads_cmd
+    - [x] Add Thread.title property with TDD (parse from _header_lines[0])
+    - [x] Wire list_threads_cmd to use with_plan_file and iterate domain model
+    - [x] Remove list_threads() from plans.py
+    - [x] Delete old test_list_threads.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 4.3: Migrate get_summary to domain model**
   - TaskType: OUTCOME
@@ -458,3 +458,6 @@ threads.py was already deleted during prior migration tasks. No imports remain. 
 
 ### 2026-02-14 17:34 - mark-task-complete
 Migrated fix_numbering_cmd to domain model using with_plan_file_update round-trip
+
+### 2026-02-14 17:38 - mark-task-complete
+Migrated list_threads to domain model with Thread.title property

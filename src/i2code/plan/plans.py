@@ -7,38 +7,6 @@ from i2code.plan._helpers import _extract_thread_sections, _parse_task_block
 
 
 
-def list_threads(plan: str) -> list[dict]:
-    """Return all threads with their numbers, titles, and completion status."""
-    _, threads, _ = _extract_thread_sections(plan)
-    task_re = re.compile(r'^- \[([ x])\] \*\*Task \d+\.\d+:')
-    heading_re = re.compile(r'^## Steel Thread (\d+): (.+)$')
-
-    result = []
-    for num, text in threads:
-        lines = text.split('\n')
-        title = ''
-        m = heading_re.match(lines[0])
-        if m:
-            title = m.group(2)
-
-        total_tasks = 0
-        completed_tasks = 0
-        for line in lines:
-            tm = task_re.match(line)
-            if tm:
-                total_tasks += 1
-                if tm.group(1) == 'x':
-                    completed_tasks += 1
-
-        result.append({
-            'number': num,
-            'title': title,
-            'total_tasks': total_tasks,
-            'completed_tasks': completed_tasks,
-        })
-
-    return result
-
 
 def get_summary(plan: str) -> dict:
     """Return plan metadata and progress summary."""

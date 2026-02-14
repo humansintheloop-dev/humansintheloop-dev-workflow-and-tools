@@ -1,6 +1,8 @@
-"""Tests for list_threads pure function."""
+"""CLI integration tests for list-threads command."""
 
-from i2code.plan.plans import list_threads
+from click.testing import CliRunner
+
+from i2code.plan.plan_cli import list_threads_cmd
 
 
 PLAN_WITH_THREE_THREADS = """\
@@ -84,33 +86,17 @@ Done.
 """
 
 
-class TestListThreads:
-    """list_threads returns all threads with completion status."""
+class TestListThreadsCli:
+    """CLI integration: list-threads outputs thread info via domain model."""
 
-    def test_returns_all_threads(self):
-        result = list_threads(PLAN_WITH_THREE_THREADS)
-        assert len(result) == 3
+    def test_lists_all_threads_with_completion_status(self, tmp_path):
+        plan_file = tmp_path / "plan.md"
+        plan_file.write_text(PLAN_WITH_THREE_THREADS)
 
-    def test_returns_thread_numbers(self):
-        result = list_threads(PLAN_WITH_THREE_THREADS)
-        assert result[0]['number'] == 1
-        assert result[1]['number'] == 2
-        assert result[2]['number'] == 3
+        runner = CliRunner()
+        result = runner.invoke(list_threads_cmd, [str(plan_file)])
 
-    def test_returns_thread_titles(self):
-        result = list_threads(PLAN_WITH_THREE_THREADS)
-        assert result[0]['title'] == 'Setup Infrastructure'
-        assert result[1]['title'] == 'Core Feature'
-        assert result[2]['title'] == 'Documentation'
-
-    def test_returns_total_tasks(self):
-        result = list_threads(PLAN_WITH_THREE_THREADS)
-        assert result[0]['total_tasks'] == 2
-        assert result[1]['total_tasks'] == 3
-        assert result[2]['total_tasks'] == 1
-
-    def test_returns_completed_tasks(self):
-        result = list_threads(PLAN_WITH_THREE_THREADS)
-        assert result[0]['completed_tasks'] == 2
-        assert result[1]['completed_tasks'] == 1
-        assert result[2]['completed_tasks'] == 0
+        assert result.exit_code == 0
+        assert "Thread 1: Setup Infrastructure (2/2 tasks completed)" in result.output
+        assert "Thread 2: Core Feature (1/3 tasks completed)" in result.output
+        assert "Thread 3: Documentation (0/1 tasks completed)" in result.output

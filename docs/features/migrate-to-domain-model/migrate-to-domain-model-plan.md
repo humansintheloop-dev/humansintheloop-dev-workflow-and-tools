@@ -205,16 +205,16 @@ Migrate insert, delete, replace, reorder, and move task operations. These requir
     - [x] Delete old test_move_task_before.py and test_move_task_after.py, update test_error_messages.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 2.7: Delete tasks.py**
+- [x] **Task 2.7: Delete tasks.py**
   - TaskType: INFRA
   - Entrypoint: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Observable: tasks.py is empty of functions and deleted. All imports of tasks.py removed from task_cli.py. All tests pass.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Verify tasks.py has no remaining functions
-    - [ ] Remove tasks.py import from task_cli.py
-    - [ ] Delete tasks.py
-    - [ ] Run all tests to confirm nothing breaks
+    - [x] Verify tasks.py has no remaining functions
+    - [x] Remove tasks.py import from task_cli.py
+    - [x] Delete tasks.py
+    - [x] Run all tests to confirm nothing breaks
 
 ---
 
@@ -422,3 +422,6 @@ No duplicate acceptance tests found - CLI tests are minimal wiring tests, domain
 
 ### 2026-02-14 16:58 - mark-task-complete
 Migrated move_task_before and move_task_after to domain model
+
+### 2026-02-14 17:00 - mark-task-complete
+Deleted tasks.py - was empty (only docstring), no imports found anywhere

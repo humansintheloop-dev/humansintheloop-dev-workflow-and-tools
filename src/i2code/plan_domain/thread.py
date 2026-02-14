@@ -25,6 +25,9 @@ class Thread:
             raise ValueError(f"task {task_number} does not exist")
         return self.tasks[task_number - 1]
 
+    def is_task_completed(self, task_number: int) -> bool:
+        return self.get_task(task_number).is_completed
+
     def mark_task_complete(self, task_number: int) -> None:
         self.get_task(task_number).mark_complete()
 

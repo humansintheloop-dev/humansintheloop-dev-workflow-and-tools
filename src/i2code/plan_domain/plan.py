@@ -60,7 +60,7 @@ class Plan:
         return None
 
     def is_task_completed(self, thread: int, task: int) -> bool:
-        return self.get_thread(thread).get_task(task).is_completed
+        return self.get_thread(thread).is_task_completed(task)
 
     def mark_task_complete(self, thread: int, task: int) -> None:
         self.get_thread(thread).mark_task_complete(task)

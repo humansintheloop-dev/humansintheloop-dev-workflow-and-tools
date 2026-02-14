@@ -12,3 +12,4 @@ repomix-output.xml
 __pycache__
 debug.log
 .claude/sessions
+.claude/issues

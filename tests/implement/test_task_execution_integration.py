@@ -49,7 +49,7 @@ PLAN_FILE="$IDEA_NAME/$IDEA_NAME-plan.md"
 
 # Mark the first unchecked task as complete using awk
 # This replaces only the first occurrence of "- [ ] **Task" with "- [x] **Task"
-awk '!done && /- \\[ \\] \\*\\*Task/ {{sub(/- \\[ \\] \\*\\*Task/, "- [x] **Task"); done=1}} 1' "$PLAN_FILE" > "$PLAN_FILE.tmp"
+awk '!done && /- \\[ \\] \\*\\*Task [0-9]+\\.[0-9]+:/ {{sub(/- \\[ \\] \\*\\*Task/, "- [x] **Task"); done=1}} 1' "$PLAN_FILE" > "$PLAN_FILE.tmp"
 mv "$PLAN_FILE.tmp" "$PLAN_FILE"
 
 # Stage and commit the change
@@ -70,16 +70,31 @@ SIMPLE_PLAN_CONTENT = """# Simple Test Plan
 
 ---
 
-## Steel Thread 1 – Test Tasks
+## Steel Thread 1: Test Tasks
 
-- [ ] **Task 1: First task**
-  - [ ] Do something first
+- [ ] **Task 1.1: First task**
+  - TaskType: code
+  - Entrypoint: `src/main.py`
+  - Observable: First thing works
+  - Evidence: `pytest`
+  - Steps:
+    - [ ] Do something first
 
-- [ ] **Task 2: Second task**
-  - [ ] Do something second
+- [ ] **Task 1.2: Second task**
+  - TaskType: code
+  - Entrypoint: `src/main.py`
+  - Observable: Second thing works
+  - Evidence: `pytest`
+  - Steps:
+    - [ ] Do something second
 
-- [ ] **Task 3: Third task**
-  - [ ] Do something third
+- [ ] **Task 1.3: Third task**
+  - TaskType: code
+  - Entrypoint: `src/main.py`
+  - Observable: Third thing works
+  - Evidence: `pytest`
+  - Steps:
+    - [ ] Do something third
 """
 
 
@@ -374,10 +389,15 @@ COMPLETED_PLAN_CONTENT = """# Test Plan (All Complete)
 
 ---
 
-## Steel Thread 1 – Test Tasks
+## Steel Thread 1: Test Tasks
 
-- [x] **Task 1: Already complete**
-  - [x] This is done
+- [x] **Task 1.1: Already complete**
+  - TaskType: code
+  - Entrypoint: `src/main.py`
+  - Observable: It works
+  - Evidence: `pytest`
+  - Steps:
+    - [x] This is done
 """
 
 

@@ -11,17 +11,40 @@ class Thread:
     _header_lines: list[str]
     tasks: list[Task] = field(default_factory=list)
 
+    def get_task(self, task_number: int) -> Task:
+        if task_number < 1 or task_number > len(self.tasks):
+            raise ValueError(f"task {task_number} does not exist")
+        return self.tasks[task_number - 1]
+
+    def mark_task_complete(self, task_number: int) -> None:
+        self.get_task(task_number).mark_complete()
+
+    def mark_task_incomplete(self, task_number: int) -> None:
+        self.get_task(task_number).mark_incomplete()
+
+    def mark_step_complete(self, task_number: int, step: int) -> None:
+        self.get_task(task_number).mark_step_complete(step)
+
+    def mark_step_incomplete(self, task_number: int, step: int) -> None:
+        self.get_task(task_number).mark_step_incomplete(step)
+
+    def insert_task_before(self, before_task: int, task: Task) -> None:
+        self.get_task(before_task)
+        self.tasks.insert(before_task - 1, task)
+
+    def insert_task_after(self, after_task: int, task: Task) -> None:
+        self.get_task(after_task)
+        self.tasks.insert(after_task, task)
+
     def insert_task(self, index: int, task: Task) -> None:
         self.tasks.insert(index, task)
 
     def replace_task(self, task_number: int, task: Task) -> None:
-        if task_number < 1 or task_number > len(self.tasks):
-            raise ValueError(f"task {task_number} does not exist")
+        self.get_task(task_number)
         self.tasks[task_number - 1] = task
 
     def delete_task(self, task_number: int) -> None:
-        if task_number < 1 or task_number > len(self.tasks):
-            raise ValueError(f"task {task_number} does not exist")
+        self.get_task(task_number)
         del self.tasks[task_number - 1]
 
     def to_lines(self, thread_number: int) -> list[str]:

@@ -55,7 +55,7 @@ class TestPlanMarkTaskComplete:
 
     def test_error_for_nonexistent_task(self):
         plan = parse(PLAN_TEXT)
-        with pytest.raises(ValueError, match="task 1.99 does not exist"):
+        with pytest.raises(ValueError, match="task 99 does not exist"):
             plan.mark_task_complete(1, 99)
 
     def test_error_for_already_complete(self):

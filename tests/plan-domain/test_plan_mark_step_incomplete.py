@@ -51,17 +51,17 @@ class TestPlanMarkStepIncomplete:
 
     def test_error_for_nonexistent_thread(self):
         plan = parse(PLAN_TEXT)
-        with pytest.raises(ValueError, match="mark-step-incomplete: thread 99 does not exist"):
+        with pytest.raises(ValueError, match="thread 99 does not exist"):
             plan.mark_step_incomplete(99, 1, 1)
 
     def test_error_for_nonexistent_task(self):
         plan = parse(PLAN_TEXT)
-        with pytest.raises(ValueError, match="mark-step-incomplete: task 1.99 does not exist"):
+        with pytest.raises(ValueError, match="task 99 does not exist"):
             plan.mark_step_incomplete(1, 99, 1)
 
     def test_error_for_nonexistent_step(self):
         plan = parse(PLAN_TEXT)
-        with pytest.raises(ValueError, match="mark-step-incomplete: step 99 does not exist"):
+        with pytest.raises(ValueError, match="step 99 does not exist"):
             plan.mark_step_incomplete(1, 1, 99)
 
     def test_error_for_already_incomplete(self):

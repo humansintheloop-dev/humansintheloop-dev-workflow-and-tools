@@ -65,11 +65,11 @@ class TestPlanReplaceTask:
     def test_error_for_nonexistent_thread(self):
         plan = parse(PLAN_TEXT)
         new_task = Task.create("New", "INFRA", "echo", "obs", "ev", ["step"])
-        with pytest.raises(ValueError, match="replace-task: thread 99 does not exist"):
+        with pytest.raises(ValueError, match="thread 99 does not exist"):
             plan.replace_task(99, 1, new_task)
 
     def test_error_for_nonexistent_task(self):
         plan = parse(PLAN_TEXT)
         new_task = Task.create("New", "INFRA", "echo", "obs", "ev", ["step"])
-        with pytest.raises(ValueError, match="replace-task: task 1.99 does not exist"):
+        with pytest.raises(ValueError, match="task 99 does not exist"):
             plan.replace_task(1, 99, new_task)

@@ -13,6 +13,11 @@ class Plan:
     threads: list[Thread] = field(default_factory=list)
     _postamble_lines: list[str] = field(default_factory=list)
 
+    def get_thread(self, thread: int) -> Thread:
+        if thread < 1 or thread > len(self.threads):
+            raise ValueError(f"thread {thread} does not exist")
+        return self.threads[thread - 1]
+
     def get_next_task(self) -> NumberedTask | None:
         from i2code.plan_domain.numbered_task import TaskNumber
         for thread_num, thread in enumerate(self.threads, 1):
@@ -25,74 +30,28 @@ class Plan:
         return None
 
     def mark_task_complete(self, thread: int, task: int) -> None:
-        if thread < 1 or thread > len(self.threads):
-            raise ValueError(f"mark-task-complete: thread {thread} does not exist")
-        t = self.threads[thread - 1]
-        if task < 1 or task > len(t.tasks):
-            raise ValueError(f"mark-task-complete: task {thread}.{task} does not exist")
-        t.tasks[task - 1].mark_complete()
+        self.get_thread(thread).mark_task_complete(task)
 
     def mark_task_incomplete(self, thread: int, task: int) -> None:
-        if thread < 1 or thread > len(self.threads):
-            raise ValueError(f"mark-task-incomplete: thread {thread} does not exist")
-        t = self.threads[thread - 1]
-        if task < 1 or task > len(t.tasks):
-            raise ValueError(f"mark-task-incomplete: task {thread}.{task} does not exist")
-        t.tasks[task - 1].mark_incomplete()
+        self.get_thread(thread).mark_task_incomplete(task)
 
     def insert_task_before(self, thread: int, before_task: int, task: Task) -> None:
-        if thread < 1 or thread > len(self.threads):
-            raise ValueError(f"insert-task-before: thread {thread} does not exist")
-        t = self.threads[thread - 1]
-        if before_task < 1 or before_task > len(t.tasks):
-            raise ValueError(f"insert-task-before: task {thread}.{before_task} does not exist")
-        t.insert_task(before_task - 1, task)
+        self.get_thread(thread).insert_task_before(before_task, task)
 
     def insert_task_after(self, thread: int, after_task: int, task: Task) -> None:
-        if thread < 1 or thread > len(self.threads):
-            raise ValueError(f"insert-task-after: thread {thread} does not exist")
-        t = self.threads[thread - 1]
-        if after_task < 1 or after_task > len(t.tasks):
-            raise ValueError(f"insert-task-after: task {thread}.{after_task} does not exist")
-        t.insert_task(after_task, task)
+        self.get_thread(thread).insert_task_after(after_task, task)
 
     def replace_task(self, thread: int, task: int, new_task: Task) -> None:
-        if thread < 1 or thread > len(self.threads):
-            raise ValueError(f"replace-task: thread {thread} does not exist")
-        t = self.threads[thread - 1]
-        if task < 1 or task > len(t.tasks):
-            raise ValueError(f"replace-task: task {thread}.{task} does not exist")
-        t.replace_task(task, new_task)
+        self.get_thread(thread).replace_task(task, new_task)
 
     def delete_task(self, thread: int, task: int) -> None:
-        if thread < 1 or thread > len(self.threads):
-            raise ValueError(f"delete-task: thread {thread} does not exist")
-        t = self.threads[thread - 1]
-        if task < 1 or task > len(t.tasks):
-            raise ValueError(f"delete-task: task {thread}.{task} does not exist")
-        t.delete_task(task)
+        self.get_thread(thread).delete_task(task)
 
     def mark_step_complete(self, thread: int, task: int, step: int) -> None:
-        if thread < 1 or thread > len(self.threads):
-            raise ValueError(f"mark-step-complete: thread {thread} does not exist")
-        t = self.threads[thread - 1]
-        if task < 1 or task > len(t.tasks):
-            raise ValueError(f"mark-step-complete: task {thread}.{task} does not exist")
-        try:
-            t.tasks[task - 1].mark_step_complete(step)
-        except ValueError as e:
-            raise ValueError(f"mark-step-complete: {e}") from e
+        self.get_thread(thread).mark_step_complete(task, step)
 
     def mark_step_incomplete(self, thread: int, task: int, step: int) -> None:
-        if thread < 1 or thread > len(self.threads):
-            raise ValueError(f"mark-step-incomplete: thread {thread} does not exist")
-        t = self.threads[thread - 1]
-        if task < 1 or task > len(t.tasks):
-            raise ValueError(f"mark-step-incomplete: task {thread}.{task} does not exist")
-        try:
-            t.tasks[task - 1].mark_step_incomplete(step)
-        except ValueError as e:
-            raise ValueError(f"mark-step-incomplete: {e}") from e
+        self.get_thread(thread).mark_step_incomplete(task, step)
 
     def to_text(self) -> str:
         lines = list(self._preamble_lines)

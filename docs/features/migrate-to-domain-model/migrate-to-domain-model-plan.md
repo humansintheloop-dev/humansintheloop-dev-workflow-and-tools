@@ -44,6 +44,17 @@ Each operation migration follows these steps:
 5. Delete old unit tests (replaced by domain + CLI tests)
 6. Prune duplicate acceptance tests per removing-acceptance-tests guidelines
 
+### Delegation Pattern
+
+Plan methods are pure one-liner delegations — they never validate task ranges or reach into `thread.tasks[]` directly:
+
+- `Plan.get_thread(thread)` validates and returns the Thread (1-based)
+- `Thread.get_task(task)` validates and returns the Task (1-based)
+- Plan delegates to Thread: `self.get_thread(thread).some_method(task, ...)`
+- Thread delegates to Task: `self.get_task(task).some_method(...)`
+
+Error messages are owned by the layer that validates: `get_thread` raises `"thread N does not exist"`, `get_task` raises `"task N does not exist"`.
+
 ### Key Files
 
 | File | Role |

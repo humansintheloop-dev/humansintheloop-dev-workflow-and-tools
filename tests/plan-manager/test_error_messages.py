@@ -56,7 +56,7 @@ class TestErrorMessageFormat:
 
     def test_mark_task_complete_nonexistent(self):
         plan = parse(SIMPLE_PLAN)
-        with pytest.raises(ValueError, match="mark-task-complete:.*does not exist"):
+        with pytest.raises(ValueError, match="task 99 does not exist"):
             plan.mark_task_complete(1, 99)
 
     def test_mark_task_incomplete_already_incomplete(self):
@@ -67,7 +67,7 @@ class TestErrorMessageFormat:
 
     def test_mark_task_incomplete_nonexistent(self):
         plan = parse(SIMPLE_PLAN)
-        with pytest.raises(ValueError, match="mark-task-incomplete:.*does not exist"):
+        with pytest.raises(ValueError, match="task 99 does not exist"):
             plan.mark_task_incomplete(1, 99)
 
     def test_delete_thread_nonexistent(self):
@@ -76,13 +76,13 @@ class TestErrorMessageFormat:
 
     def test_delete_task_nonexistent(self):
         plan = parse(SIMPLE_PLAN)
-        with pytest.raises(ValueError, match="delete-task:.*does not exist"):
+        with pytest.raises(ValueError, match="task 99 does not exist"):
             plan.delete_task(1, 99)
 
     def test_insert_task_before_nonexistent(self):
         plan = parse(SIMPLE_PLAN)
         new_task = Task.create("t", "INFRA", "e", "o", "v", ["s"])
-        with pytest.raises(ValueError, match="insert-task-before:.*does not exist"):
+        with pytest.raises(ValueError, match="task 99 does not exist"):
             plan.insert_task_before(1, 99, new_task)
 
     def test_replace_thread_nonexistent(self):

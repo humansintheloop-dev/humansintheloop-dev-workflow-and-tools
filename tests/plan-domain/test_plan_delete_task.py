@@ -62,10 +62,10 @@ class TestPlanDeleteTask:
 
     def test_error_for_nonexistent_thread(self):
         plan = parse(PLAN_TEXT)
-        with pytest.raises(ValueError, match="delete-task: thread 99 does not exist"):
+        with pytest.raises(ValueError, match="thread 99 does not exist"):
             plan.delete_task(99, 1)
 
     def test_error_for_nonexistent_task(self):
         plan = parse(PLAN_TEXT)
-        with pytest.raises(ValueError, match="delete-task: task 1.99 does not exist"):
+        with pytest.raises(ValueError, match="task 99 does not exist"):
             plan.delete_task(1, 99)

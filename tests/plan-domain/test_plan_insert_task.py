@@ -67,13 +67,13 @@ class TestPlanInsertTaskBefore:
     def test_error_for_nonexistent_thread(self):
         plan = parse(PLAN_TEXT)
         new_task = Task.create("New", "INFRA", "e", "o", "v", ["s"])
-        with pytest.raises(ValueError, match="insert-task-before: thread 99 does not exist"):
+        with pytest.raises(ValueError, match="thread 99 does not exist"):
             plan.insert_task_before(99, 1, new_task)
 
     def test_error_for_nonexistent_task(self):
         plan = parse(PLAN_TEXT)
         new_task = Task.create("New", "INFRA", "e", "o", "v", ["s"])
-        with pytest.raises(ValueError, match="insert-task-before: task 1.99 does not exist"):
+        with pytest.raises(ValueError, match="task 99 does not exist"):
             plan.insert_task_before(1, 99, new_task)
 
 
@@ -109,11 +109,11 @@ class TestPlanInsertTaskAfter:
     def test_error_for_nonexistent_thread(self):
         plan = parse(PLAN_TEXT)
         new_task = Task.create("New", "INFRA", "e", "o", "v", ["s"])
-        with pytest.raises(ValueError, match="insert-task-after: thread 99 does not exist"):
+        with pytest.raises(ValueError, match="thread 99 does not exist"):
             plan.insert_task_after(99, 1, new_task)
 
     def test_error_for_nonexistent_task(self):
         plan = parse(PLAN_TEXT)
         new_task = Task.create("New", "INFRA", "e", "o", "v", ["s"])
-        with pytest.raises(ValueError, match="insert-task-after: task 1.99 does not exist"):
+        with pytest.raises(ValueError, match="task 99 does not exist"):
             plan.insert_task_after(1, 99, new_task)

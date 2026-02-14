@@ -1,0 +1,1 @@
+Migrate all plan-management operations from standalone string-manipulation functions to the line-owning domain model (plan_domain).

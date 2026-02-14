@@ -26,7 +26,8 @@ def migrate(project_dir, dry_run=False):
             continue
 
         if os.path.exists(dst):
-            print(f"  Skipping {_rel(project_dir, src)} (destination {_rel(project_dir, dst)} already exists)")
+            _merge_into_existing(project_dir, src, dst, dry_run)
+            moved_any = True
             continue
 
         print(f"  Move {_rel(project_dir, src)} -> {_rel(project_dir, dst)}")
@@ -89,6 +90,37 @@ def _migrate_symlink(project_dir, src, dst, dry_run):
     print(f"  Remove {_rel(project_dir, src)}")
     if not dry_run:
         os.remove(src)
+
+
+def _merge_into_existing(project_dir, src, dst, dry_run):
+    """Merge files from src into dst, then remove src.
+
+    Walks src recursively, moving files that don't exist in dst.
+    Ignores debug.log.
+    """
+    moved = 0
+    for dirpath, _, filenames in os.walk(src):
+        rel_dir = os.path.relpath(dirpath, src)
+        dst_dir = os.path.join(dst, rel_dir) if rel_dir != "." else dst
+
+        for fname in filenames:
+            if fname == "debug.log":
+                continue
+            file_src = os.path.join(dirpath, fname)
+            file_dst = os.path.join(dst_dir, fname)
+            if os.path.exists(file_dst):
+                continue
+            if not dry_run:
+                os.makedirs(dst_dir, exist_ok=True)
+                shutil.move(file_src, file_dst)
+            moved += 1
+
+    if moved:
+        print(f"  Move {moved} file(s) from {_rel(project_dir, src)} to {_rel(project_dir, dst)}")
+
+    print(f"  Remove {_rel(project_dir, src)}")
+    if not dry_run:
+        shutil.rmtree(src)
 
 
 def link(project_dir, target_base, dry_run=False):

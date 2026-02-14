@@ -96,14 +96,25 @@ class TestMigrate:
         assert os.path.islink(str(project / ".claude" / "sessions"))
         assert not (project / ".hitl" / "sessions").exists()
 
-    def test_skips_when_destination_exists(self, project):
+    def test_merges_when_destination_exists(self, project):
+        """When .hitl already exists and .claude/{sessions,issues} have files,
+        merge files into .hitl and remove .claude/{sessions,issues}."""
         _make_claude_dirs(project)
         (project / ".hitl" / "sessions").mkdir(parents=True)
         (project / ".hitl" / "sessions" / "existing.md").write_text("keep")
+        (project / ".hitl" / "issues" / "active").mkdir(parents=True)
+        (project / ".claude" / "sessions" / "debug.log").write_text("debug stuff")
         migrate(str(project))
-        # sessions not moved because destination exists
-        assert (project / ".claude" / "sessions" / "sample.md").exists()
-        assert (project / ".hitl" / "sessions" / "existing.md").exists()
+        # session files merged into .hitl
+        assert (project / ".hitl" / "sessions" / "sample.md").exists()
+        assert (project / ".hitl" / "sessions" / "existing.md").read_text() == "keep"
+        # debug.log not moved
+        assert not (project / ".hitl" / "sessions" / "debug.log").exists()
+        # issue files merged into .hitl
+        assert (project / ".hitl" / "issues" / "active" / "sample.md").exists()
+        # .claude/{sessions,issues} removed
+        assert not (project / ".claude" / "sessions").exists()
+        assert not (project / ".claude" / "issues").exists()
 
 
     def test_warns_about_stale_subdirectories(self, project, capsys):

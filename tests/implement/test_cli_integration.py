@@ -121,3 +121,44 @@ class TestIsolatedFlagPassthrough:
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--setup-only"])
 
         mock_ensure_branch.assert_called_once_with(mock_repo, "test-feature", isolated=False)
+
+
+@pytest.mark.unit
+class TestIgnoreUncommittedIdeaChanges:
+    """--ignore-uncommitted-idea-changes skips validate_idea_files_committed."""
+
+    @patch("i2code.implement.cli.run_trunk_loop")
+    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.cli.validate_idea_files")
+    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    def test_skips_committed_validation(
+        self, mock_validate_dir, mock_validate_files, mock_validate_committed,
+        mock_run_trunk_loop,
+    ):
+        from click.testing import CliRunner
+        from i2code.implement.cli import implement_cmd
+
+        runner = CliRunner()
+        result = runner.invoke(implement_cmd, [
+            "/tmp/fake-idea", "--trunk", "--ignore-uncommitted-idea-changes",
+        ])
+
+        assert result.exit_code == 0
+        mock_validate_committed.assert_not_called()
+
+    @patch("i2code.implement.cli.run_trunk_loop")
+    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.cli.validate_idea_files")
+    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    def test_without_flag_calls_committed_validation(
+        self, mock_validate_dir, mock_validate_files, mock_validate_committed,
+        mock_run_trunk_loop,
+    ):
+        from click.testing import CliRunner
+        from i2code.implement.cli import implement_cmd
+
+        runner = CliRunner()
+        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk"])
+
+        assert result.exit_code == 0
+        mock_validate_committed.assert_called_once()

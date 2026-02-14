@@ -68,9 +68,12 @@ from i2code.implement.implement import (
               help="Execute tasks locally on the current branch (no worktree, PR, or CI)")
 @click.option("--dry-run", is_flag=True,
               help="Print what mode would be used and exit without executing")
+@click.option("--ignore-uncommitted-idea-changes", is_flag=True,
+              help="Skip validation that idea files are committed")
 def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                   non_interactive, extra_prompt, skip_ci_wait,
-                  ci_fix_retries, ci_timeout, isolate, isolated, trunk, dry_run):
+                  ci_fix_retries, ci_timeout, isolate, isolated, trunk, dry_run,
+                  ignore_uncommitted_idea_changes):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
     # Validate idea directory exists
     idea_name = validate_idea_directory(idea_directory)
@@ -78,7 +81,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
     # Validate required idea files exist
     validate_idea_files(idea_directory, idea_name)
 
-    if not isolated:
+    if not isolated and not ignore_uncommitted_idea_changes:
         validate_idea_files_committed(idea_directory, idea_name)
 
     if dry_run:

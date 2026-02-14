@@ -37,6 +37,7 @@ from i2code.implement.implement import (
     check_claude_success,
     has_ci_workflow_files,
     wait_for_workflow_completion,
+    run_trunk_loop,
 )
 
 
@@ -62,9 +63,13 @@ from i2code.implement.implement import (
               help="Run inside an isolarium VM")
 @click.option("--isolated", is_flag=True, hidden=True,
               help="Running inside isolarium VM (internal flag)")
+@click.option("--trunk", is_flag=True,
+              help="Execute tasks locally on the current branch (no worktree, PR, or CI)")
+@click.option("--dry-run", is_flag=True,
+              help="Print what mode would be used and exit without executing")
 def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                   non_interactive, extra_prompt, skip_ci_wait,
-                  ci_fix_retries, ci_timeout, isolate, isolated):
+                  ci_fix_retries, ci_timeout, isolate, isolated, trunk, dry_run):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
     # Validate idea directory exists
     idea_name = validate_idea_directory(idea_directory)
@@ -74,6 +79,49 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
 
     if not isolated:
         validate_idea_files_committed(idea_directory, idea_name)
+
+    if dry_run:
+        if trunk:
+            mode = "trunk"
+        elif isolate:
+            mode = "isolate"
+        else:
+            mode = "worktree"
+        print(f"Mode: {mode}")
+        print(f"Idea: {idea_name}")
+        print(f"Directory: {idea_directory}")
+        return
+
+    # Trunk mode: execute tasks locally on current branch
+    if trunk:
+        incompatible = []
+        if cleanup:
+            incompatible.append("--cleanup")
+        if setup_only:
+            incompatible.append("--setup-only")
+        if isolate:
+            incompatible.append("--isolate")
+        if isolated:
+            incompatible.append("--isolated")
+        if skip_ci_wait:
+            incompatible.append("--skip-ci-wait")
+        if ci_fix_retries != 3:
+            incompatible.append("--ci-fix-retries")
+        if ci_timeout != 600:
+            incompatible.append("--ci-timeout")
+        if incompatible:
+            raise click.UsageError(
+                f"--trunk cannot be combined with: {', '.join(incompatible)}"
+            )
+
+        run_trunk_loop(
+            idea_directory=idea_directory,
+            idea_name=idea_name,
+            non_interactive=non_interactive,
+            mock_claude=mock_claude,
+            extra_prompt=extra_prompt,
+        )
+        return
 
     # Delegate to isolarium VM if --isolate is set
     if isolate:

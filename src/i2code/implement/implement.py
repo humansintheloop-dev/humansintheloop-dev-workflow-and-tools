@@ -2262,6 +2262,62 @@ def push_to_slice_branch(slice_branch: str, pr_number: int, force: bool = False)
     return True
 
 
+def run_trunk_loop(
+    idea_directory: str,
+    idea_name: str,
+    non_interactive: bool = False,
+    mock_claude: Optional[str] = None,
+    extra_prompt: Optional[str] = None,
+) -> None:
+    """Execute plan tasks locally on the current branch (trunk mode)."""
+    repo = Repo(idea_directory, search_parent_directories=True)
+    plan_file = os.path.join(idea_directory, f"{idea_name}-plan.md")
+
+    while True:
+        with open(plan_file, "r") as f:
+            plan_content = f.read()
+
+        tasks = parse_tasks_from_plan(plan_content)
+        if not tasks:
+            print("All tasks completed!")
+            return
+
+        tasks_before = len(tasks)
+        current_task = tasks[0]
+        print(f"Executing task: {current_task}")
+
+        head_before = repo.head.commit.hexsha
+
+        if mock_claude:
+            claude_cmd = [mock_claude, current_task]
+        else:
+            claude_cmd = build_claude_command(
+                idea_directory,
+                current_task,
+                interactive=not non_interactive,
+                extra_prompt=extra_prompt,
+            )
+
+        if non_interactive:
+            claude_result = run_claude_with_output_capture(claude_cmd, cwd=repo.working_tree_dir)
+        else:
+            claude_result = run_claude_interactive(claude_cmd, cwd=repo.working_tree_dir)
+
+        head_after = repo.head.commit.hexsha
+
+        if not check_claude_success(claude_result.returncode, head_before, head_after):
+            print("Error: Task execution failed.", file=sys.stderr)
+            sys.exit(1)
+
+        with open(plan_file, "r") as f:
+            updated_plan_content = f.read()
+        tasks_after = len(parse_tasks_from_plan(updated_plan_content))
+
+        if tasks_after >= tasks_before:
+            print("Error: Task was not marked complete in plan file.", file=sys.stderr)
+            sys.exit(1)
+
+
 def check_claude_success(exit_code: int, head_before: str, head_after: str) -> bool:
     """Check if Claude invocation was successful.
 

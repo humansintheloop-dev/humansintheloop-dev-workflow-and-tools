@@ -4,7 +4,7 @@ import pytest
 
 from i2code.plan.plans import get_thread
 from i2code.plan_domain.task import Task
-from i2code.plan.threads import delete_thread, replace_thread, reorder_threads
+from i2code.plan.threads import replace_thread, reorder_threads
 from i2code.plan_domain.parser import parse
 
 
@@ -68,8 +68,9 @@ class TestErrorMessageFormat:
             plan.mark_task_incomplete(1, 99)
 
     def test_delete_thread_nonexistent(self):
-        with pytest.raises(ValueError, match="delete-thread:.*does not exist"):
-            delete_thread(SIMPLE_PLAN, 99, "reason")
+        plan = parse(SIMPLE_PLAN)
+        with pytest.raises(ValueError, match="thread 99 does not exist"):
+            plan.delete_thread(99)
 
     def test_delete_task_nonexistent(self):
         plan = parse(SIMPLE_PLAN)

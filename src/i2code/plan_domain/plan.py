@@ -44,6 +44,10 @@ class Plan:
     def replace_task(self, thread: int, task: int, new_task: Task) -> None:
         self.get_thread(thread).replace_task(task, new_task)
 
+    def delete_thread(self, thread: int) -> None:
+        self.get_thread(thread)
+        del self.threads[thread - 1]
+
     def delete_task(self, thread: int, task: int) -> None:
         self.get_thread(thread).delete_task(task)
 

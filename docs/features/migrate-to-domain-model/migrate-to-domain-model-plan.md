@@ -221,18 +221,18 @@ Migrate insert, delete, replace, reorder, and move task operations. These requir
 ## Steel Thread 3: Thread Structural Operations
 Migrate insert, delete, replace, and reorder thread operations. These require a Thread factory method (`Thread.create()`) to build new threads from structured data, and Plan-level methods for structural manipulation.
 
-- [ ] **Task 3.1: Migrate delete_thread to domain model**
+- [x] **Task 3.1: Migrate delete_thread to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan delete-thread tests/fixtures/plan.md --thread 1 --rationale "removed"`
   - Observable: CLI removes a thread via domain model. Remaining threads renumbered by to_text(). No Thread factory needed for this operation.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration test for delete_thread_cmd
-    - [ ] Add Plan.delete_thread(thread) method with TDD
-    - [ ] Wire delete_thread_cmd to use with_error_handling + with_plan_file_update
-    - [ ] Remove delete_thread() from threads.py
-    - [ ] Delete old test_delete_thread.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration test for delete_thread_cmd
+    - [x] Add Plan.delete_thread(thread) method with TDD
+    - [x] Wire delete_thread_cmd to use with_error_handling + with_plan_file_update
+    - [x] Remove delete_thread() from threads.py
+    - [x] Delete old test_delete_thread.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 3.2: Add Thread.create() factory method and migrate insert_thread_before/after**
   - TaskType: OUTCOME
@@ -425,3 +425,6 @@ Migrated move_task_before and move_task_after to domain model
 
 ### 2026-02-14 17:00 - mark-task-complete
 Deleted tasks.py - was empty (only docstring), no imports found anywhere
+
+### 2026-02-14 17:06 - mark-task-complete
+Migrated delete_thread to domain model

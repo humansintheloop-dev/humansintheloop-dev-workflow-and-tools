@@ -54,22 +54,6 @@ def insert_thread_after(plan: str, after_thread: int, title: str,
     return append_change_history(result, "insert-thread-after", rationale)
 
 
-def delete_thread(plan: str, thread_number: int, rationale: str) -> str:
-    """Remove a thread entirely and renumber remaining threads.
-
-    Raises ValueError if thread_number does not exist.
-    """
-    preamble, threads, postamble = _extract_thread_sections(plan)
-    existing_numbers = {num for num, _ in threads}
-
-    if thread_number not in existing_numbers:
-        raise ValueError(f"delete-thread: thread {thread_number} does not exist")
-
-    remaining = [(num, text) for num, text in threads if num != thread_number]
-    assembled = preamble + '\n'.join(text for _, text in remaining) + postamble
-    result = fix_numbering(assembled)
-    return append_change_history(result, "delete-thread", rationale)
-
 
 def replace_thread(plan: str, thread_number: int, title: str,
                     introduction: str, tasks: list[dict], rationale: str) -> str:

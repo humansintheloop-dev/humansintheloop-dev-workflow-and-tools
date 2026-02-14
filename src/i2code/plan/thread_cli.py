@@ -5,10 +5,10 @@ import sys
 
 import click
 
-from i2code.plan.plan_file_io import atomic_write
+from i2code.plan.plan_file_io import atomic_write, with_error_handling, with_plan_file_update
 from i2code.plan.threads import (
     insert_thread_before, insert_thread_after,
-    delete_thread, replace_thread, reorder_threads,
+    replace_thread, reorder_threads,
 )
 
 
@@ -74,16 +74,9 @@ def insert_thread_after_cmd(plan_file, after, title, introduction, tasks, ration
 @click.option("--rationale", required=True, help="Rationale for change history")
 def delete_thread_cmd(plan_file, thread, rationale):
     """Remove a thread entirely."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
-    try:
-        result = delete_thread(plan, thread, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "delete-thread", rationale) as domain_plan:
+            domain_plan.delete_thread(thread)
     click.echo(f"Deleted thread {thread}")
 
 

@@ -1,8 +1,9 @@
 """Regression test: thread operations must not produce Task 0.x numbering."""
 
 from i2code.plan.threads import (
-    delete_thread, reorder_threads, insert_thread_before, replace_thread,
+    reorder_threads, insert_thread_before, replace_thread,
 )
+from i2code.plan_domain.parser import parse
 
 
 PLAN = """\
@@ -53,7 +54,9 @@ class TestNoZeroNumbering:
     """Thread operations must never produce Task 0.x numbering."""
 
     def test_delete_first_thread_renumbers_correctly(self):
-        result = delete_thread(PLAN, 1, "remove first")
+        plan = parse(PLAN)
+        plan.delete_thread(1)
+        result = plan.to_text()
         assert '**Task 0.' not in result
         assert '**Task 1.1: Task B**' in result
 

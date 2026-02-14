@@ -6,7 +6,7 @@ import sys
 import click
 
 from i2code.plan.plan_file_io import atomic_write, with_error_handling, with_plan_file_update
-from i2code.plan.threads import replace_thread, reorder_threads
+from i2code.plan.threads import reorder_threads
 from i2code.plan_domain.thread import Thread
 
 
@@ -75,22 +75,16 @@ def delete_thread_cmd(plan_file, thread, rationale):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def replace_thread_cmd(plan_file, thread, title, introduction, tasks, rationale):
     """Replace a thread's entire content in place."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
     try:
         tasks_list = json.loads(tasks)
     except json.JSONDecodeError as e:
         click.echo(f"replace-thread: --tasks is not valid JSON: {e}", err=True)
         sys.exit(1)
 
-    try:
-        result = replace_thread(plan, thread, title, introduction, tasks_list, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    new_thread = Thread.create(title=title, introduction=introduction, tasks=tasks_list)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "replace-thread", rationale) as domain_plan:
+            domain_plan.replace_thread(thread, new_thread)
     click.echo(f"Replaced thread {thread}")
 
 

@@ -52,6 +52,10 @@ class Plan:
         self.get_thread(after_thread)
         self.threads.insert(after_thread, thread)
 
+    def replace_thread(self, thread: int, new_thread: Thread) -> None:
+        self.get_thread(thread)
+        self.threads[thread - 1] = new_thread
+
     def delete_thread(self, thread: int) -> None:
         self.get_thread(thread)
         del self.threads[thread - 1]

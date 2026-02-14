@@ -249,18 +249,18 @@ Migrate insert, delete, replace, and reorder thread operations. These require a 
     - [x] Delete old test_insert_thread.py, update test_error_messages.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 3.3: Migrate replace_thread to domain model**
+- [x] **Task 3.3: Migrate replace_thread to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan replace-thread tests/fixtures/plan.md --thread 1 --title "Replaced" --introduction "New intro" --tasks '[{"title":"T","task_type":"INFRA","entrypoint":"echo","observable":"x","evidence":"echo","steps":["s"]}]' --rationale "replaced"`
   - Observable: CLI replaces a thread via domain model using Thread.create() and Plan.replace_thread().
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration test for replace_thread_cmd
-    - [ ] Add Plan.replace_thread() method with TDD
-    - [ ] Wire replace_thread_cmd to use with_error_handling + with_plan_file_update
-    - [ ] Remove replace_thread() from threads.py
-    - [ ] Delete old test_replace_thread.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration test for replace_thread_cmd
+    - [x] Add Plan.replace_thread() method with TDD
+    - [x] Wire replace_thread_cmd to use with_error_handling + with_plan_file_update
+    - [x] Remove replace_thread() from threads.py
+    - [x] Delete old test_replace_thread.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 3.4: Migrate reorder_threads to domain model**
   - TaskType: OUTCOME

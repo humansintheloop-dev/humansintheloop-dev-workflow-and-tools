@@ -1,6 +1,6 @@
 """Regression test: thread operations must not produce Task 0.x numbering."""
 
-from i2code.plan.threads import reorder_threads, replace_thread
+from i2code.plan.threads import reorder_threads
 from i2code.plan_domain.parser import parse
 from i2code.plan_domain.thread import Thread
 
@@ -78,10 +78,13 @@ class TestNoZeroNumbering:
         assert '**Task 1.1: New task**' in result
 
     def test_replace_first_thread_renumbers_correctly(self):
-        result = replace_thread(PLAN, 1, "Replaced", "Replaced intro.", [{
+        plan = parse(PLAN)
+        new_thread = Thread.create(title="Replaced", introduction="Replaced intro.", tasks=[{
             'title': 'Replaced task', 'task_type': 'INFRA',
             'entrypoint': 'echo r', 'observable': 'R done',
             'evidence': 'echo r', 'steps': ['Do r']
-        }], "replace first")
+        }])
+        plan.replace_thread(1, new_thread)
+        result = plan.to_text()
         assert '**Task 0.' not in result
         assert '**Task 1.1: Replaced task**' in result

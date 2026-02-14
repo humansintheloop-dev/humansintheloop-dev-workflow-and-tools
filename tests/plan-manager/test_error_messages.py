@@ -4,7 +4,8 @@ import pytest
 
 from i2code.plan.plans import get_thread
 from i2code.plan_domain.task import Task
-from i2code.plan.threads import replace_thread, reorder_threads
+from i2code.plan.threads import reorder_threads
+from i2code.plan_domain.thread import Thread
 from i2code.plan_domain.parser import parse
 
 
@@ -84,8 +85,10 @@ class TestErrorMessageFormat:
             plan.insert_task_before(1, 99, new_task)
 
     def test_replace_thread_nonexistent(self):
-        with pytest.raises(ValueError, match="replace-thread:.*does not exist"):
-            replace_thread(SIMPLE_PLAN, 99, "t", "i", [], "r")
+        plan = parse(SIMPLE_PLAN)
+        new_thread = Thread.create(title="t", introduction="i", tasks=[])
+        with pytest.raises(ValueError, match="thread 99 does not exist"):
+            plan.replace_thread(99, new_thread)
 
     def test_reorder_threads_invalid(self):
         with pytest.raises(ValueError, match="reorder-threads:"):

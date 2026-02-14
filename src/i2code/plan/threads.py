@@ -1,33 +1,7 @@
 """Thread-level pure functions."""
 
-from i2code.plan._helpers import _extract_thread_sections, _serialize_thread, append_change_history
+from i2code.plan._helpers import _extract_thread_sections, append_change_history
 from i2code.plan.plans import fix_numbering
-
-
-def replace_thread(plan: str, thread_number: int, title: str,
-                    introduction: str, tasks: list[dict], rationale: str) -> str:
-    """Replace a thread's content in place and renumber.
-
-    Raises ValueError if thread_number does not exist.
-    """
-    preamble, threads, postamble = _extract_thread_sections(plan)
-    existing_numbers = {num for num, _ in threads}
-
-    if thread_number not in existing_numbers:
-        raise ValueError(f"replace-thread: thread {thread_number} does not exist")
-
-    new_thread_text = _serialize_thread(title, introduction, tasks)
-
-    replaced = []
-    for num, text in threads:
-        if num == thread_number:
-            replaced.append((num, new_thread_text))
-        else:
-            replaced.append((num, text))
-
-    assembled = preamble + '\n'.join(text for _, text in replaced) + postamble
-    result = fix_numbering(assembled)
-    return append_change_history(result, "replace-thread", rationale)
 
 
 def reorder_threads(plan: str, thread_order: list[int], rationale: str) -> str:

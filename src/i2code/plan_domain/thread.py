@@ -47,6 +47,24 @@ class Thread:
         self.get_task(task_number)
         del self.tasks[task_number - 1]
 
+    def reorder_tasks(self, task_order: list[int]) -> None:
+        if len(task_order) != len(set(task_order)):
+            raise ValueError("reorder-tasks: --order contains duplicate task numbers")
+
+        existing_set = set(range(1, len(self.tasks) + 1))
+        order_set = set(task_order)
+        if order_set != existing_set:
+            missing = existing_set - order_set
+            extra = order_set - existing_set
+            parts = []
+            if missing:
+                parts.append(f"missing tasks: {sorted(missing)}")
+            if extra:
+                parts.append(f"nonexistent tasks: {sorted(extra)}")
+            raise ValueError(f"reorder-tasks: --order does not match existing tasks ({', '.join(parts)})")
+
+        self.tasks = [self.tasks[i - 1] for i in task_order]
+
     def to_lines(self, thread_number: int) -> list[str]:
         lines = list(self._header_lines)
         lines[0] = re.sub(r'Steel Thread \d+:', f'Steel Thread {thread_number}:', lines[0])

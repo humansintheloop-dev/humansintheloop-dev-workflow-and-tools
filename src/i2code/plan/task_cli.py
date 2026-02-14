@@ -7,7 +7,6 @@ import click
 
 from i2code.plan.plan_file_io import atomic_write, with_error_handling, with_plan_file_update
 from i2code.plan.tasks import (
-    reorder_tasks,
     move_task_before, move_task_after,
 )
 from i2code.plan_domain.task import Task
@@ -168,22 +167,15 @@ def replace_task_cmd(plan_file, thread, task, title, task_type,
 @click.option("--rationale", required=True, help="Rationale for change history")
 def reorder_tasks_cmd(plan_file, thread, order, rationale):
     """Reorder tasks within a thread."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
     try:
         task_order = [int(n.strip()) for n in order.split(',')]
     except ValueError:
         click.echo("reorder-tasks: --order must be comma-separated integers", err=True)
         sys.exit(1)
 
-    try:
-        result = reorder_tasks(plan, thread, task_order, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "reorder-tasks", rationale) as domain_plan:
+            domain_plan.reorder_tasks(thread, task_order)
     click.echo(f"Reordered tasks in thread {thread} to [{order}]")
 
 

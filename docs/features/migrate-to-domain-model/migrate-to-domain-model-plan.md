@@ -178,19 +178,19 @@ Migrate insert, delete, replace, reorder, and move task operations. These requir
     - [x] Delete old test_replace_task.py, update test_error_messages.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 2.5: Migrate reorder_tasks to domain model**
+- [x] **Task 2.5: Migrate reorder_tasks to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan reorder-tasks tests/fixtures/plan.md --thread 1 --order 2,1 --rationale "reordered"`
   - Observable: CLI reorders tasks within a thread via domain model. Renumbering handled by to_text().
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration test for reorder_tasks_cmd
-    - [ ] Add Thread.reorder_tasks(order) method with TDD
-    - [ ] Add Plan.reorder_tasks() delegation method with TDD
-    - [ ] Wire reorder_tasks_cmd to use with_error_handling + with_plan_file_update
-    - [ ] Remove reorder_tasks() from tasks.py
-    - [ ] Delete old test_reorder_tasks.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration test for reorder_tasks_cmd
+    - [x] Add Thread.reorder_tasks(order) method with TDD
+    - [x] Add Plan.reorder_tasks() delegation method with TDD
+    - [x] Wire reorder_tasks_cmd to use with_error_handling + with_plan_file_update
+    - [x] Remove reorder_tasks() from tasks.py
+    - [x] Delete old test_reorder_tasks.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 2.6: Migrate move_task_before and move_task_after to domain model**
   - TaskType: OUTCOME
@@ -398,3 +398,6 @@ Migrated insert_task_before and insert_task_after to domain model
 
 ### 2026-02-14 16:29 - mark-task-complete
 Migrated replace_task to domain model with Thread.replace_task() and Plan.replace_task()
+
+### 2026-02-14 16:51 - mark-task-complete
+Migrated reorder_tasks to domain model with TDD

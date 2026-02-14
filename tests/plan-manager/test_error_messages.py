@@ -4,7 +4,7 @@ import pytest
 
 from i2code.plan.plans import get_thread
 from i2code.plan.tasks import (
-    reorder_tasks, move_task_before, move_task_after,
+    move_task_before, move_task_after,
 )
 from i2code.plan_domain.task import Task
 from i2code.plan.threads import delete_thread, replace_thread, reorder_threads
@@ -94,12 +94,14 @@ class TestErrorMessageFormat:
             reorder_threads(SIMPLE_PLAN, [1, 2], "r")
 
     def test_reorder_tasks_nonexistent_thread(self):
-        with pytest.raises(ValueError, match="reorder-tasks:.*does not exist"):
-            reorder_tasks(SIMPLE_PLAN, 99, [1], "r")
+        plan = parse(SIMPLE_PLAN)
+        with pytest.raises(ValueError, match="thread 99 does not exist"):
+            plan.reorder_tasks(99, [1])
 
     def test_reorder_tasks_invalid_order(self):
+        plan = parse(SIMPLE_PLAN)
         with pytest.raises(ValueError, match="reorder-tasks:"):
-            reorder_tasks(SIMPLE_PLAN, 1, [1, 2], "r")
+            plan.reorder_tasks(1, [1, 2])
 
     def test_move_task_before_nonexistent_thread(self):
         with pytest.raises(ValueError, match="move-task-before:.*does not exist"):

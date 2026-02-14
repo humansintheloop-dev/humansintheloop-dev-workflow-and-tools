@@ -1,19 +1,11 @@
 """Click handlers for plan-level commands."""
 
 import sys
-from contextlib import contextmanager
 
 import click
 
-from i2code.plan._helpers import atomic_write
+from i2code.plan.plan_file_io import atomic_write, with_plan_file
 from i2code.plan.plans import fix_numbering, get_summary, get_thread, list_threads
-from i2code.plan_domain.parser import parse
-
-
-@contextmanager
-def with_plan_file(plan_file):
-    with open(plan_file, "r", encoding="utf-8") as f:
-        yield parse(f.read())
 
 
 @click.command("fix-numbering")

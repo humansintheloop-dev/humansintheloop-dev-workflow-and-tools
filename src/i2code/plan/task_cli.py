@@ -5,9 +5,9 @@ import sys
 
 import click
 
-from i2code.plan._helpers import atomic_write
+from i2code.plan.plan_file_io import atomic_write, with_error_handling, with_plan_file_update
 from i2code.plan.tasks import (
-    mark_task_complete, mark_task_incomplete,
+    mark_task_incomplete,
     mark_step_complete, mark_step_incomplete,
     insert_task_before, insert_task_after,
     delete_task, replace_task, reorder_tasks,
@@ -22,16 +22,9 @@ from i2code.plan.tasks import (
 @click.option("--rationale", default=None, help="Rationale for change history")
 def mark_task_complete_cmd(plan_file, thread, task, rationale):
     """Mark a task and all its steps as complete."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
-    try:
-        result = mark_task_complete(plan, thread, task, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "mark-task-complete", rationale) as domain_plan:
+            domain_plan.mark_task_complete(thread, task)
     click.echo(f"Marked task {thread}.{task} as complete")
 
 

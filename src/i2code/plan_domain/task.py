@@ -63,6 +63,14 @@ class Task:
                 return val
         return ''
 
+    def mark_complete(self) -> None:
+        if self.is_completed:
+            raise ValueError(f"task is already complete")
+        self._lines[0] = self._lines[0].replace('- [ ]', '- [x]', 1)
+        for i, line in enumerate(self._lines[1:], 1):
+            if _STEP_RE.match(line):
+                self._lines[i] = line.replace('[ ]', '[x]', 1)
+
     def to_lines(self, thread_num: int, task_num: int) -> list[str]:
         lines = list(self._lines)
         lines[0] = re.sub(r'Task \d+\.\d+:', f'Task {thread_num}.{task_num}:', lines[0])

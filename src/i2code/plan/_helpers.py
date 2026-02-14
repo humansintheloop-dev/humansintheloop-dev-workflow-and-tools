@@ -1,22 +1,7 @@
 """Shared internal functions used by plan operation modules."""
 
-import os
 import re
-import tempfile
 from datetime import datetime
-
-
-def atomic_write(file_path: str, content: str) -> None:
-    """Write content to file atomically using temp file + rename."""
-    dir_name = os.path.dirname(os.path.abspath(file_path))
-    fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix='.tmp')
-    try:
-        with os.fdopen(fd, 'w', encoding='utf-8') as f:
-            f.write(content)
-        os.rename(tmp_path, file_path)
-    except Exception:
-        os.unlink(tmp_path)
-        raise
 
 
 def append_change_history(plan: str, operation: str, rationale: str) -> str:

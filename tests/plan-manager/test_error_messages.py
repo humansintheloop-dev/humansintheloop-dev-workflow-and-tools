@@ -4,11 +4,12 @@ import pytest
 
 from i2code.plan.plans import get_thread
 from i2code.plan.tasks import (
-    mark_task_complete, mark_step_complete,
+    mark_step_complete,
     delete_task, insert_task_before,
     reorder_tasks, move_task_before, move_task_after, replace_task,
 )
 from i2code.plan.threads import delete_thread, replace_thread, reorder_threads
+from i2code.plan_domain.parser import parse
 
 
 SIMPLE_PLAN = """\
@@ -50,12 +51,14 @@ class TestErrorMessageFormat:
             get_thread(SIMPLE_PLAN, 99)
 
     def test_mark_task_complete_already_complete(self):
-        with pytest.raises(ValueError, match="mark-task-complete:.*already complete"):
-            mark_task_complete(SIMPLE_PLAN, 1, 1)
+        plan = parse(SIMPLE_PLAN)
+        with pytest.raises(ValueError, match="already complete"):
+            plan.mark_task_complete(1, 1)
 
     def test_mark_task_complete_nonexistent(self):
+        plan = parse(SIMPLE_PLAN)
         with pytest.raises(ValueError, match="mark-task-complete:.*does not exist"):
-            mark_task_complete(SIMPLE_PLAN, 1, 99)
+            plan.mark_task_complete(1, 99)
 
     def test_mark_step_complete_already_complete(self):
         with pytest.raises(ValueError, match="mark-step-complete:.*already complete"):

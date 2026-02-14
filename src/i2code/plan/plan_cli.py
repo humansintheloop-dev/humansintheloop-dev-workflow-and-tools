@@ -5,7 +5,7 @@ import sys
 import click
 
 from i2code.plan.plan_file_io import atomic_write, with_plan_file, with_plan_file_update
-from i2code.plan.plans import get_summary, get_thread
+from i2code.plan.plans import get_thread
 
 
 @click.command("fix-numbering")
@@ -44,15 +44,17 @@ def list_threads_cmd(plan_file):
 @click.argument("plan_file")
 def get_summary_cmd(plan_file):
     """Get plan metadata and progress summary."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
-    summary = get_summary(plan)
-    click.echo(f"Plan: {summary['plan_name']}")
-    click.echo(f"Idea Type: {summary['idea_type']}")
-    click.echo(f"Overview: {summary['overview']}")
-    click.echo(f"Threads: {summary['total_threads']}")
-    click.echo(f"Tasks: {summary['completed_tasks']}/{summary['total_tasks']} completed")
+    with with_plan_file(plan_file) as domain_plan:
+        total_threads = len(domain_plan.threads)
+        total_tasks = sum(len(t.tasks) for t in domain_plan.threads)
+        completed_tasks = sum(
+            1 for t in domain_plan.threads for task in t.tasks if task.is_completed
+        )
+        click.echo(f"Plan: {domain_plan.name}")
+        click.echo(f"Idea Type: {domain_plan.idea_type}")
+        click.echo(f"Overview: {domain_plan.overview}")
+        click.echo(f"Threads: {total_threads}")
+        click.echo(f"Tasks: {completed_tasks}/{total_tasks} completed")
 
 
 @click.command("get-thread")

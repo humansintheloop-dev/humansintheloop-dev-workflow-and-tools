@@ -317,18 +317,18 @@ Migrate fix_numbering, list_threads, get_summary, and get_thread to use the doma
     - [x] Delete old test_list_threads.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 4.3: Migrate get_summary to domain model**
+- [x] **Task 4.3: Migrate get_summary to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan get-summary tests/fixtures/plan.md`
   - Observable: CLI get-summary reads plan metadata from domain model properties. Uses with_plan_file for read-only access.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration test for get_summary_cmd
-    - [ ] Add Plan.name, Plan.idea_type, Plan.overview properties with TDD (parse from _preamble_lines)
-    - [ ] Wire get_summary_cmd to use with_plan_file and read domain properties
-    - [ ] Remove get_summary() from plans.py
-    - [ ] Delete old test_get_summary.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration test for get_summary_cmd
+    - [x] Add Plan.name, Plan.idea_type, Plan.overview properties with TDD (parse from _preamble_lines)
+    - [x] Wire get_summary_cmd to use with_plan_file and read domain properties
+    - [x] Remove get_summary() from plans.py
+    - [x] Delete old test_get_summary.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 4.4: Migrate get_thread to domain model**
   - TaskType: OUTCOME
@@ -461,3 +461,6 @@ Migrated fix_numbering_cmd to domain model using with_plan_file_update round-tri
 
 ### 2026-02-14 17:38 - mark-task-complete
 Migrated list_threads to domain model with Thread.title property
+
+### 2026-02-14 17:43 - mark-task-complete
+Migrated get_summary to domain model: added Plan.name, Plan.idea_type, Plan.overview properties, wired CLI to use with_plan_file, removed legacy function and old tests

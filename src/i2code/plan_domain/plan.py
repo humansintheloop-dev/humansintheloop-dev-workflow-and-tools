@@ -1,5 +1,6 @@
 """Plan aggregate root — owns preamble/postamble lines, contains Threads."""
 
+import re
 from dataclasses import dataclass, field
 
 from i2code.plan_domain.numbered_task import NumberedTask
@@ -12,6 +13,35 @@ class Plan:
     _preamble_lines: list[str]
     threads: list[Thread] = field(default_factory=list)
     _postamble_lines: list[str] = field(default_factory=list)
+
+    @property
+    def name(self) -> str:
+        for line in self._preamble_lines:
+            m = re.match(r'^# Implementation Plan: (.+)$', line)
+            if m:
+                return m.group(1)
+        return ''
+
+    @property
+    def idea_type(self) -> str:
+        return self._extract_section('## Idea Type')
+
+    @property
+    def overview(self) -> str:
+        return self._extract_section('## Overview')
+
+    def _extract_section(self, heading: str) -> str:
+        section_lines = []
+        in_section = False
+        for line in self._preamble_lines:
+            if line.startswith(heading):
+                in_section = True
+                continue
+            if in_section:
+                if line.startswith('##') or line.strip() == '---':
+                    break
+                section_lines.append(line)
+        return '\n'.join(section_lines).strip()
 
     def get_thread(self, thread: int) -> Thread:
         if thread < 1 or thread > len(self.threads):

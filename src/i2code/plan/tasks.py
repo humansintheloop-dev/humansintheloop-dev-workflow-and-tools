@@ -80,36 +80,6 @@ def insert_task_after(plan: str, thread_number: int, after_task: int,
     raise ValueError(f"insert-task-after: task {after_task} in thread {thread_number} does not exist")
 
 
-def delete_task(plan: str, thread_number: int, task_number: int, rationale: str) -> str:
-    """Remove a task from a thread and renumber remaining tasks.
-
-    Raises ValueError if thread_number or task_number does not exist.
-    """
-    lines = plan.split('\n')
-    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
-
-    # Validate thread exists
-    thread_exists = any(
-        thread_heading_re.match(l) and int(thread_heading_re.match(l).group(1)) == thread_number
-        for l in lines
-    )
-    if not thread_exists:
-        raise ValueError(f"delete-task: thread {thread_number} does not exist")
-
-    task_bounds = _find_task_boundaries(lines, thread_number)
-    task_numbers = {tk_num for _, _, tk_num in task_bounds}
-
-    if task_number not in task_numbers:
-        raise ValueError(f"delete-task: task {task_number} in thread {thread_number} does not exist")
-
-    for start, end, tk_num in task_bounds:
-        if tk_num == task_number:
-            new_lines = lines[:start] + lines[end:]
-            result = fix_numbering('\n'.join(new_lines))
-            return append_change_history(result, "delete-task", rationale)
-
-    raise ValueError(f"delete-task: task {task_number} in thread {thread_number} does not exist")
-
 
 def replace_task(plan: str, thread_number: int, task_number: int,
                   title: str, task_type: str, entrypoint: str,

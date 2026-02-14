@@ -116,19 +116,19 @@ Migrate mark_task_incomplete, mark_step_complete, and mark_step_incomplete. Thes
 ## Steel Thread 2: Task Structural Operations
 Migrate insert, delete, replace, reorder, and move task operations. These require a Task factory method (`Task.create()`) to build new tasks from structured data, and Thread-level methods for structural manipulation. The domain model's `to_text()` handles renumbering, eliminating the need for explicit `fix_numbering()` calls.
 
-- [ ] **Task 2.1: Migrate delete_task to domain model**
+- [x] **Task 2.1: Migrate delete_task to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan delete-task tests/fixtures/plan.md --thread 1 --task 1 --rationale "removed"`
   - Observable: CLI removes a task from a thread via domain model. Remaining tasks are renumbered by to_text(). No Task factory needed for this operation.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration test for delete_task_cmd
-    - [ ] Add Thread.delete_task(task_index) method with TDD
-    - [ ] Add Plan.delete_task(thread, task) delegation method with TDD
-    - [ ] Wire delete_task_cmd to use with_error_handling + with_plan_file_update
-    - [ ] Remove delete_task() from tasks.py
-    - [ ] Delete old test_delete_task.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration test for delete_task_cmd
+    - [x] Add Thread.delete_task(task_index) method with TDD
+    - [x] Add Plan.delete_task(thread, task) delegation method with TDD
+    - [x] Wire delete_task_cmd to use with_error_handling + with_plan_file_update
+    - [x] Remove delete_task() from tasks.py
+    - [x] Delete old test_delete_task.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 2.2: Add Task.create() factory method**
   - TaskType: INFRA
@@ -378,3 +378,6 @@ Removed 4 duplicate mark_step error tests from test_error_messages.py (covered b
 
 ### 2026-02-14 16:06 - mark-task-complete
 Migrated mark_step_complete and mark_step_incomplete to domain model; deleted old tests and pruned duplicates
+
+### 2026-02-14 16:12 - mark-task-complete
+Migrated delete_task to domain model with Thread.delete_task() and Plan.delete_task() methods

@@ -39,6 +39,14 @@ class Plan:
             raise ValueError(f"mark-task-incomplete: task {thread}.{task} does not exist")
         t.tasks[task - 1].mark_incomplete()
 
+    def delete_task(self, thread: int, task: int) -> None:
+        if thread < 1 or thread > len(self.threads):
+            raise ValueError(f"delete-task: thread {thread} does not exist")
+        t = self.threads[thread - 1]
+        if task < 1 or task > len(t.tasks):
+            raise ValueError(f"delete-task: task {thread}.{task} does not exist")
+        t.delete_task(task)
+
     def mark_step_complete(self, thread: int, task: int, step: int) -> None:
         if thread < 1 or thread > len(self.threads):
             raise ValueError(f"mark-step-complete: thread {thread} does not exist")

@@ -11,6 +11,11 @@ class Thread:
     _header_lines: list[str]
     tasks: list[Task] = field(default_factory=list)
 
+    def delete_task(self, task_number: int) -> None:
+        if task_number < 1 or task_number > len(self.tasks):
+            raise ValueError(f"task {task_number} does not exist")
+        del self.tasks[task_number - 1]
+
     def to_lines(self, thread_number: int) -> list[str]:
         lines = list(self._header_lines)
         lines[0] = re.sub(r'Steel Thread \d+:', f'Steel Thread {thread_number}:', lines[0])

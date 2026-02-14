@@ -4,7 +4,7 @@ import pytest
 
 from i2code.plan.plans import get_thread
 from i2code.plan.tasks import (
-    delete_task, insert_task_before,
+    insert_task_before,
     reorder_tasks, move_task_before, move_task_after, replace_task,
 )
 from i2code.plan.threads import delete_thread, replace_thread, reorder_threads
@@ -75,8 +75,9 @@ class TestErrorMessageFormat:
             delete_thread(SIMPLE_PLAN, 99, "reason")
 
     def test_delete_task_nonexistent(self):
+        plan = parse(SIMPLE_PLAN)
         with pytest.raises(ValueError, match="delete-task:.*does not exist"):
-            delete_task(SIMPLE_PLAN, 1, 99, "reason")
+            plan.delete_task(1, 99)
 
     def test_insert_task_before_nonexistent(self):
         with pytest.raises(ValueError, match="insert-task-before:.*does not exist"):

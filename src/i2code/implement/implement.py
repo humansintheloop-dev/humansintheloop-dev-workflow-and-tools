@@ -272,6 +272,14 @@ REQUIRED_PERMISSIONS = [
 ]
 
 
+def calculate_claude_permissions(repo_root: str) -> List[str]:
+    """Calculate the full list of Claude permissions for a repo root."""
+    return REQUIRED_PERMISSIONS + [
+        f"Write(/{repo_root}/)",
+        f"Edit(/{repo_root}/)",
+    ]
+
+
 def ensure_claude_permissions(repo_root: str) -> None:
     """Ensure .claude/settings.local.json has required permissions.
 
@@ -293,12 +301,7 @@ def ensure_claude_permissions(repo_root: str) -> None:
 
     allow_list = config.get("permissions", {}).get("allow", [])
 
-    all_permissions = REQUIRED_PERMISSIONS + [
-        f"Write(/{repo_root}/)",
-        f"Edit(/{repo_root}/)",
-    ]
-
-    for perm in all_permissions:
+    for perm in calculate_claude_permissions(repo_root):
         if perm not in allow_list:
             allow_list.append(perm)
 
@@ -1938,7 +1941,8 @@ def build_claude_command(
     idea_directory: str,
     task_description: str,
     interactive: bool = True,
-    extra_prompt: Optional[str] = None
+    extra_prompt: Optional[str] = None,
+    extra_cli_args: Optional[List[str]] = None,
 ) -> List[str]:
     """Build the command to invoke Claude Code for a task.
 
@@ -1972,14 +1976,13 @@ If all tasks are complete, stop and report success.
     if extra_prompt:
         prompt += f"\n{extra_prompt}\n"
 
+    extra = extra_cli_args or []
+
     if interactive:
-        # Invoke Claude interactively with prompt as positional argument
-        return ["claude", prompt]
+        return ["claude"] + extra + [prompt]
     else:
-        # Invoke Claude non-interactively with -p flag
-        # --verbose and --output-format=stream-json are needed to see output
         non_interactive_prompt = prompt + "\n\nIMPORTANT: if you don't have permission to perform an action, print an informative error message and exit"
-        return ["claude", "--verbose", "--output-format=stream-json", "-p", non_interactive_prompt]
+        return ["claude"] + extra + ["--verbose", "--output-format=stream-json", "-p", non_interactive_prompt]
 
 
 class ClaudeResult:
@@ -2291,11 +2294,16 @@ def run_trunk_loop(
         if mock_claude:
             claude_cmd = [mock_claude, current_task]
         else:
+            extra_cli_args = None
+            if non_interactive:
+                permissions = calculate_claude_permissions(repo.working_tree_dir)
+                extra_cli_args = ["--allowedTools", ",".join(permissions)]
             claude_cmd = build_claude_command(
                 idea_directory,
                 current_task,
                 interactive=not non_interactive,
                 extra_prompt=extra_prompt,
+                extra_cli_args=extra_cli_args,
             )
 
         if non_interactive:

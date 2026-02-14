@@ -159,6 +159,7 @@ class TestRunTrunkLoop:
             "**Task 1: Set up project**",
             interactive=True,
             extra_prompt=None,
+            extra_cli_args=None,
         )
         mock_run_claude.assert_called_once()
 
@@ -307,3 +308,43 @@ class TestRunTrunkLoop:
         mock_run_claude.assert_called_once()
         cmd_used = mock_run_claude.call_args[0][0]
         assert cmd_used == ["/path/to/mock-script", "**Task 1: Set up**"]
+
+    @patch("i2code.implement.implement.calculate_claude_permissions", return_value=["Bash(git commit:*)", "Write(/fake/repo/)"])
+    @patch("i2code.implement.implement.check_claude_success", return_value=True)
+    @patch("i2code.implement.implement.run_claude_with_output_capture")
+    @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "-p", "do task"])
+    @patch("i2code.implement.implement.parse_tasks_from_plan")
+    @patch("builtins.open", create=True)
+    @patch("i2code.implement.implement.Repo")
+    def test_non_interactive_passes_allowed_tools(
+        self, mock_repo_cls, mock_open, mock_parse,
+        mock_build_cmd, mock_run_claude, mock_check,
+        mock_calc_perms,
+    ):
+        from i2code.implement.implement import run_trunk_loop
+
+        mock_repo = MagicMock()
+        mock_repo.working_tree_dir = "/fake/repo"
+        mock_repo.head.commit.hexsha = "aaa"
+        mock_repo_cls.return_value = mock_repo
+
+        mock_open.return_value.__enter__ = lambda s: MagicMock(read=lambda: "plan")
+        mock_open.return_value.__exit__ = MagicMock(return_value=False)
+
+        mock_parse.side_effect = [["**Task 1**"], [], []]
+        mock_run_claude.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
+
+        run_trunk_loop(
+            idea_directory="/fake/repo/ideas/test-feature",
+            idea_name="test-feature",
+            non_interactive=True,
+        )
+
+        mock_calc_perms.assert_called_once_with("/fake/repo")
+        mock_build_cmd.assert_called_once_with(
+            "/fake/repo/ideas/test-feature",
+            "**Task 1**",
+            interactive=False,
+            extra_prompt=None,
+            extra_cli_args=["--allowedTools", "Bash(git commit:*),Write(/fake/repo/)"],
+        )

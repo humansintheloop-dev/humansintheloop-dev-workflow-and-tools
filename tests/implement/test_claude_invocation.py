@@ -133,6 +133,58 @@ class TestClaudeCommandConstruction:
         assert cmd[0] == "claude"
         assert "Task 1.1" in cmd[1], "Prompt should contain the task description"
 
+    def test_build_claude_command_non_interactive_includes_extra_cli_args(self):
+        """Non-interactive command should include extra_cli_args before -p."""
+        from i2code.implement.implement import build_claude_command
+
+        cmd = build_claude_command(
+            idea_directory="docs/features/my-feature",
+            task_description="Task 1.1: Create config file",
+            interactive=False,
+            extra_cli_args=["--allowedTools", "Bash(git commit:*),Write(/repo/)"],
+        )
+
+        assert "--allowedTools" in cmd
+        allowed_idx = cmd.index("--allowedTools")
+        assert cmd[allowed_idx + 1] == "Bash(git commit:*),Write(/repo/)"
+        # -p should still be present
+        assert "-p" in cmd
+
+    def test_build_claude_command_interactive_includes_extra_cli_args(self):
+        """Interactive command should include extra_cli_args."""
+        from i2code.implement.implement import build_claude_command
+
+        cmd = build_claude_command(
+            idea_directory="docs/features/my-feature",
+            task_description="Task 1.1: Create config file",
+            interactive=True,
+            extra_cli_args=["--allowedTools", "Bash(git commit:*)"],
+        )
+
+        assert "--allowedTools" in cmd
+        assert cmd[0] == "claude"
+
+
+@pytest.mark.unit
+class TestCalculateClaudePermissions:
+    """Test calculation of Claude permissions for --allowedTools."""
+
+    def test_includes_required_permissions(self):
+        from i2code.implement.implement import calculate_claude_permissions, REQUIRED_PERMISSIONS
+
+        perms = calculate_claude_permissions("/fake/repo")
+
+        for req in REQUIRED_PERMISSIONS:
+            assert req in perms
+
+    def test_includes_write_and_edit_for_repo_root(self):
+        from i2code.implement.implement import calculate_claude_permissions
+
+        perms = calculate_claude_permissions("/fake/repo")
+
+        assert "Write(//fake/repo/)" in perms
+        assert "Edit(//fake/repo/)" in perms
+
 
 @pytest.mark.unit
 class TestRunClaudeWithOutputCapture:

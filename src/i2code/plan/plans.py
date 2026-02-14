@@ -36,42 +36,6 @@ def fix_numbering(plan: str) -> str:
     return '\n'.join(result)
 
 
-def get_next_task(plan: str) -> dict | None:
-    """Return the first uncompleted task across the plan, or None if all complete."""
-    lines = plan.split('\n')
-    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
-    task_line_re = re.compile(r'^- \[[ x]\] \*\*Task \d+\.\d+:')
-
-    current_thread = 0
-    task_starts = []
-
-    for i, line in enumerate(lines):
-        m = thread_heading_re.match(line)
-        if m:
-            current_thread = int(m.group(1))
-            continue
-
-        if task_line_re.match(line):
-            task_starts.append((i, current_thread))
-
-    # Determine task boundaries
-    for idx, (start, thread_num) in enumerate(task_starts):
-        if idx + 1 < len(task_starts):
-            end = task_starts[idx + 1][0]
-        else:
-            # Find end: next --- or thread heading or end of file
-            end = len(lines)
-            for j in range(start + 1, len(lines)):
-                if thread_heading_re.match(lines[j]) or lines[j].strip() == '---':
-                    end = j
-                    break
-
-        task = _parse_task_block(lines, start, end, thread_num)
-        if task and not task['completed']:
-            return task
-
-    return None
-
 
 def list_threads(plan: str) -> list[dict]:
     """Return all threads with their numbers, titles, and completion status."""

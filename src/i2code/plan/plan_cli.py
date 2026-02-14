@@ -1,11 +1,19 @@
 """Click handlers for plan-level commands."""
 
 import sys
+from contextlib import contextmanager
 
 import click
 
 from i2code.plan._helpers import atomic_write
-from i2code.plan.plans import fix_numbering, get_next_task, get_summary, get_thread, list_threads
+from i2code.plan.plans import fix_numbering, get_summary, get_thread, list_threads
+from i2code.plan_domain.parser import parse
+
+
+@contextmanager
+def with_plan_file(plan_file):
+    with open(plan_file, "r", encoding="utf-8") as f:
+        yield parse(f.read())
 
 
 @click.command("fix-numbering")
@@ -24,22 +32,12 @@ def fix_numbering_cmd(plan_file):
 @click.argument("plan_file")
 def get_next_task_cmd(plan_file):
     """Get the first uncompleted task."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
-    task = get_next_task(plan)
+    with with_plan_file(plan_file) as domain_plan:
+        task = domain_plan.get_next_task()
     if task is None:
         click.echo("All tasks are complete.")
     else:
-        click.echo(f"Thread {task['thread_number']}, Task {task['thread_number']}.{task['task_number']}: {task['title']}")
-        click.echo(f"  TaskType: {task['task_type']}")
-        click.echo(f"  Entrypoint: {task['entrypoint']}")
-        click.echo(f"  Observable: {task['observable']}")
-        click.echo(f"  Evidence: {task['evidence']}")
-        click.echo(f"  Steps:")
-        for i, step in enumerate(task['steps'], 1):
-            status = 'x' if step['completed'] else ' '
-            click.echo(f"    {i}. [{status}] {step['description']}")
+        click.echo(task.print())
 
 
 @click.command("list-threads")

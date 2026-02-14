@@ -96,20 +96,20 @@ Migrate mark_task_incomplete, mark_step_complete, and mark_step_incomplete. Thes
     - [x] Delete old test_mark_task_incomplete.py, update test_error_messages.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 1.2: Migrate mark_step_complete and mark_step_incomplete to domain model**
+- [x] **Task 1.2: Migrate mark_step_complete and mark_step_incomplete to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan mark-step-complete tests/fixtures/plan.md --thread 1 --task 1 --step 1 --rationale "done"`
   - Observable: CLI marks individual steps complete/incomplete via domain model. Both operations work through Task-level step mutation methods.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration tests for mark_step_complete_cmd and mark_step_incomplete_cmd
-    - [ ] Add Task.mark_step_complete(step_number) mutation method with TDD
-    - [ ] Add Task.mark_step_incomplete(step_number) mutation method with TDD
-    - [ ] Add Plan.mark_step_complete() and Plan.mark_step_incomplete() delegation methods with TDD
-    - [ ] Wire both CLI handlers to use with_error_handling + with_plan_file_update
-    - [ ] Remove mark_step_complete() and mark_step_incomplete() from tasks.py
-    - [ ] Delete old test_mark_step_complete.py and test_mark_step_incomplete.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration tests for mark_step_complete_cmd and mark_step_incomplete_cmd
+    - [x] Add Task.mark_step_complete(step_number) mutation method with TDD
+    - [x] Add Task.mark_step_incomplete(step_number) mutation method with TDD
+    - [x] Add Plan.mark_step_complete() and Plan.mark_step_incomplete() delegation methods with TDD
+    - [x] Wire both CLI handlers to use with_error_handling + with_plan_file_update
+    - [x] Remove mark_step_complete() and mark_step_incomplete() from tasks.py
+    - [x] Delete old test_mark_step_complete.py and test_mark_step_incomplete.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 ---
 
@@ -348,3 +348,33 @@ Migrate fix_numbering, list_threads, get_summary, and get_thread to use the doma
 
 ## Summary
 This plan migrates 19 remaining operations across 4 threads: 3 task state mutations, 7 task structural operations, 5 thread structural operations, and 4 plan-level read operations. Each migration follows the established pattern from commits d6fcd97 and 26d3ec2. After completion, all plan logic lives in the domain model (plan_domain), all I/O in plan_file_io.py, and the standalone modules (tasks.py, threads.py, plans.py, _helpers.py) are deleted.
+
+---
+
+## Change History
+### 2026-02-14 15:37 - mark-step-complete
+CLI integration tests for mark_step_complete_cmd and mark_step_incomplete_cmd written and passing
+
+### 2026-02-14 15:37 - mark-step-complete
+Task.mark_step_complete(step_number) implemented with TDD
+
+### 2026-02-14 15:38 - mark-step-complete
+Task.mark_step_incomplete(step_number) implemented with TDD, extracted shared _validated_step_line_index helper
+
+### 2026-02-14 15:40 - mark-step-complete
+Plan.mark_step_complete() and Plan.mark_step_incomplete() delegation methods implemented with TDD
+
+### 2026-02-14 15:40 - mark-step-complete
+CLI handlers wired to use with_error_handling + with_plan_file_update
+
+### 2026-02-14 15:41 - mark-step-complete
+Removed mark_step_complete() and mark_step_incomplete() from tasks.py
+
+### 2026-02-14 16:05 - mark-step-complete
+Deleted old test_mark_step_complete.py and test_mark_step_incomplete.py; test_error_messages.py already uses domain model
+
+### 2026-02-14 16:06 - mark-step-complete
+Removed 4 duplicate mark_step error tests from test_error_messages.py (covered by plan-domain tests)
+
+### 2026-02-14 16:06 - mark-task-complete
+Migrated mark_step_complete and mark_step_incomplete to domain model; deleted old tests and pruned duplicates

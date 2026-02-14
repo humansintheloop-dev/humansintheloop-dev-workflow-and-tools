@@ -71,6 +71,24 @@ class Task:
             if _STEP_RE.match(line):
                 self._lines[i] = line.replace('[ ]', '[x]', 1)
 
+    def mark_step_complete(self, step_number: int) -> None:
+        idx = self._validated_step_line_index(step_number)
+        if _STEP_RE.match(self._lines[idx]).group(1) == 'x':
+            raise ValueError(f"step {step_number} is already complete")
+        self._lines[idx] = self._lines[idx].replace('[ ]', '[x]', 1)
+
+    def mark_step_incomplete(self, step_number: int) -> None:
+        idx = self._validated_step_line_index(step_number)
+        if _STEP_RE.match(self._lines[idx]).group(1) == ' ':
+            raise ValueError(f"step {step_number} is already incomplete")
+        self._lines[idx] = self._lines[idx].replace('[x]', '[ ]', 1)
+
+    def _validated_step_line_index(self, step_number: int) -> int:
+        step_indices = [i for i, line in enumerate(self._lines) if _STEP_RE.match(line)]
+        if step_number < 1 or step_number > len(step_indices):
+            raise ValueError(f"step {step_number} does not exist")
+        return step_indices[step_number - 1]
+
     def mark_incomplete(self) -> None:
         if not self.is_completed:
             raise ValueError(f"task is already incomplete")

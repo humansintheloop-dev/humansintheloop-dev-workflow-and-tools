@@ -39,6 +39,28 @@ class Plan:
             raise ValueError(f"mark-task-incomplete: task {thread}.{task} does not exist")
         t.tasks[task - 1].mark_incomplete()
 
+    def mark_step_complete(self, thread: int, task: int, step: int) -> None:
+        if thread < 1 or thread > len(self.threads):
+            raise ValueError(f"mark-step-complete: thread {thread} does not exist")
+        t = self.threads[thread - 1]
+        if task < 1 or task > len(t.tasks):
+            raise ValueError(f"mark-step-complete: task {thread}.{task} does not exist")
+        try:
+            t.tasks[task - 1].mark_step_complete(step)
+        except ValueError as e:
+            raise ValueError(f"mark-step-complete: {e}") from e
+
+    def mark_step_incomplete(self, thread: int, task: int, step: int) -> None:
+        if thread < 1 or thread > len(self.threads):
+            raise ValueError(f"mark-step-incomplete: thread {thread} does not exist")
+        t = self.threads[thread - 1]
+        if task < 1 or task > len(t.tasks):
+            raise ValueError(f"mark-step-incomplete: task {thread}.{task} does not exist")
+        try:
+            t.tasks[task - 1].mark_step_incomplete(step)
+        except ValueError as e:
+            raise ValueError(f"mark-step-incomplete: {e}") from e
+
     def to_text(self) -> str:
         lines = list(self._preamble_lines)
         for thread_num, thread in enumerate(self.threads, 1):

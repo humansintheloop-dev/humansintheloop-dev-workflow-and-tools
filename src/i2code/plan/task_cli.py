@@ -7,7 +7,6 @@ import click
 
 from i2code.plan.plan_file_io import atomic_write, with_error_handling, with_plan_file_update
 from i2code.plan.tasks import (
-    mark_step_complete, mark_step_incomplete,
     insert_task_before, insert_task_after,
     delete_task, replace_task, reorder_tasks,
     move_task_before, move_task_after,
@@ -48,16 +47,9 @@ def mark_task_incomplete_cmd(plan_file, thread, task, rationale):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def mark_step_complete_cmd(plan_file, thread, task, step, rationale):
     """Mark a single step as complete."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
-    try:
-        result = mark_step_complete(plan, thread, task, step, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "mark-step-complete", rationale) as domain_plan:
+            domain_plan.mark_step_complete(thread, task, step)
     click.echo(f"Marked step {step} of task {thread}.{task} as complete")
 
 
@@ -69,16 +61,9 @@ def mark_step_complete_cmd(plan_file, thread, task, step, rationale):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def mark_step_incomplete_cmd(plan_file, thread, task, step, rationale):
     """Mark a single completed step as incomplete."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
-    try:
-        result = mark_step_incomplete(plan, thread, task, step, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "mark-step-incomplete", rationale) as domain_plan:
+            domain_plan.mark_step_incomplete(thread, task, step)
     click.echo(f"Marked step {step} of task {thread}.{task} as incomplete")
 
 

@@ -277,6 +277,7 @@ def calculate_claude_permissions(repo_root: str) -> List[str]:
     return REQUIRED_PERMISSIONS + [
         f"Write(/{repo_root}/)",
         f"Edit(/{repo_root}/)",
+        f"Bash(rm {repo_root}/*)",
     ]
 
 

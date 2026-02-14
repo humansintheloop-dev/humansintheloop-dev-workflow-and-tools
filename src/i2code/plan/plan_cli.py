@@ -4,19 +4,16 @@ import sys
 
 import click
 
-from i2code.plan.plan_file_io import atomic_write, with_plan_file
-from i2code.plan.plans import fix_numbering, get_summary, get_thread, list_threads
+from i2code.plan.plan_file_io import atomic_write, with_plan_file, with_plan_file_update
+from i2code.plan.plans import get_summary, get_thread, list_threads
 
 
 @click.command("fix-numbering")
 @click.argument("plan_file")
 def fix_numbering_cmd(plan_file):
     """Renumber all threads and tasks sequentially."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
-    result = fix_numbering(plan)
-    atomic_write(plan_file, result)
+    with with_plan_file_update(plan_file):
+        pass  # parse + to_text() round-trip handles renumbering
     click.echo(f"Fixed numbering in {plan_file}")
 
 

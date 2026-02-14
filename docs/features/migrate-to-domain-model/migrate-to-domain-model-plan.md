@@ -291,18 +291,18 @@ Migrate insert, delete, replace, and reorder thread operations. These require a 
 ## Steel Thread 4: Plan Read Operations and Final Cleanup
 Migrate fix_numbering, list_threads, get_summary, and get_thread to use the domain model. Then delete the now-empty standalone modules and consolidate _helpers.py.
 
-- [ ] **Task 4.1: Migrate fix_numbering to domain model**
+- [x] **Task 4.1: Migrate fix_numbering to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan fix-numbering tests/fixtures/plan.md`
   - Observable: CLI fix-numbering is implemented as a parse + to_text() round-trip via with_plan_file_update. The domain model's serialization handles renumbering inherently.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration test for fix_numbering_cmd
-    - [ ] Wire fix_numbering_cmd to use with_plan_file_update (parse + to_text round-trip renumbers)
-    - [ ] Remove fix_numbering() from plans.py
-    - [ ] Update any remaining callers (should be none after threads 1-3)
-    - [ ] Delete old test_fix_numbering.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration test for fix_numbering_cmd
+    - [x] Wire fix_numbering_cmd to use with_plan_file_update (parse + to_text round-trip renumbers)
+    - [x] Remove fix_numbering() from plans.py
+    - [x] Update any remaining callers (should be none after threads 1-3)
+    - [x] Delete old test_fix_numbering.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 4.2: Migrate list_threads to domain model**
   - TaskType: OUTCOME
@@ -455,3 +455,6 @@ Migrated reorder_threads to domain model
 
 ### 2026-02-14 17:29 - mark-task-complete
 threads.py was already deleted during prior migration tasks. No imports remain. All 279 tests pass.
+
+### 2026-02-14 17:34 - mark-task-complete
+Migrated fix_numbering_cmd to domain model using with_plan_file_update round-trip

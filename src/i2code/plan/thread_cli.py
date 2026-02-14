@@ -6,10 +6,8 @@ import sys
 import click
 
 from i2code.plan.plan_file_io import atomic_write, with_error_handling, with_plan_file_update
-from i2code.plan.threads import (
-    insert_thread_before, insert_thread_after,
-    replace_thread, reorder_threads,
-)
+from i2code.plan.threads import replace_thread, reorder_threads
+from i2code.plan_domain.thread import Thread
 
 
 @click.command("insert-thread-before")
@@ -21,22 +19,16 @@ from i2code.plan.threads import (
 @click.option("--rationale", required=True, help="Rationale for change history")
 def insert_thread_before_cmd(plan_file, before, title, introduction, tasks, rationale):
     """Insert a thread before a specified thread."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
     try:
         tasks_list = json.loads(tasks)
     except json.JSONDecodeError as e:
         click.echo(f"insert-thread-before: --tasks is not valid JSON: {e}", err=True)
         sys.exit(1)
 
-    try:
-        result = insert_thread_before(plan, before, title, introduction, tasks_list, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    new_thread = Thread.create(title=title, introduction=introduction, tasks=tasks_list)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "insert-thread-before", rationale) as domain_plan:
+            domain_plan.insert_thread_before(before, new_thread)
     click.echo(f"Inserted thread '{title}'")
 
 
@@ -49,22 +41,16 @@ def insert_thread_before_cmd(plan_file, before, title, introduction, tasks, rati
 @click.option("--rationale", required=True, help="Rationale for change history")
 def insert_thread_after_cmd(plan_file, after, title, introduction, tasks, rationale):
     """Insert a thread after a specified thread."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
     try:
         tasks_list = json.loads(tasks)
     except json.JSONDecodeError as e:
         click.echo(f"insert-thread-after: --tasks is not valid JSON: {e}", err=True)
         sys.exit(1)
 
-    try:
-        result = insert_thread_after(plan, after, title, introduction, tasks_list, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    new_thread = Thread.create(title=title, introduction=introduction, tasks=tasks_list)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "insert-thread-after", rationale) as domain_plan:
+            domain_plan.insert_thread_after(after, new_thread)
     click.echo(f"Inserted thread '{title}'")
 
 

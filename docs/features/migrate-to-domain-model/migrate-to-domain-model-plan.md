@@ -234,20 +234,20 @@ Migrate insert, delete, replace, and reorder thread operations. These require a 
     - [x] Delete old test_delete_thread.py, update test_error_messages.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 3.2: Add Thread.create() factory method and migrate insert_thread_before/after**
+- [x] **Task 3.2: Add Thread.create() factory method and migrate insert_thread_before/after**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan insert-thread-before tests/fixtures/plan.md --before 1 --title "New" --introduction "Intro" --tasks '[{"title":"T","task_type":"INFRA","entrypoint":"echo","observable":"x","evidence":"echo","steps":["s"]}]' --rationale "added"`
   - Observable: Thread.create() builds a Thread from structured data using Task.create() for each task. CLI inserts threads via domain model.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write tests for Thread.create() verifying header lines and task construction
-    - [ ] Implement Thread.create() class method
-    - [ ] Write CLI integration tests for insert_thread_before_cmd and insert_thread_after_cmd
-    - [ ] Add Plan.insert_thread_before() and Plan.insert_thread_after() methods with TDD
-    - [ ] Wire both CLI handlers to use with_error_handling + with_plan_file_update
-    - [ ] Remove insert_thread_before() and insert_thread_after() from threads.py
-    - [ ] Delete old test_insert_thread.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write tests for Thread.create() verifying header lines and task construction
+    - [x] Implement Thread.create() class method
+    - [x] Write CLI integration tests for insert_thread_before_cmd and insert_thread_after_cmd
+    - [x] Add Plan.insert_thread_before() and Plan.insert_thread_after() methods with TDD
+    - [x] Wire both CLI handlers to use with_error_handling + with_plan_file_update
+    - [x] Remove insert_thread_before() and insert_thread_after() from threads.py
+    - [x] Delete old test_insert_thread.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 3.3: Migrate replace_thread to domain model**
   - TaskType: OUTCOME
@@ -428,3 +428,6 @@ Deleted tasks.py - was empty (only docstring), no imports found anywhere
 
 ### 2026-02-14 17:06 - mark-task-complete
 Migrated delete_thread to domain model
+
+### 2026-02-14 17:13 - mark-task-complete
+Thread.create() factory, Plan.insert_thread_before/after(), CLI migrated to domain model, old functions removed

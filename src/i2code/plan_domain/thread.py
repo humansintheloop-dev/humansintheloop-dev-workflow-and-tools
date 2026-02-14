@@ -87,6 +87,22 @@ class Thread:
 
         self.tasks = [self.tasks[i - 1] for i in task_order]
 
+    @classmethod
+    def create(cls, title: str, introduction: str, tasks: list[dict]) -> 'Thread':
+        header_lines = [f'## Steel Thread 0: {title}', introduction, '']
+        domain_tasks = [
+            Task.create(
+                title=t['title'],
+                task_type=t['task_type'],
+                entrypoint=t['entrypoint'],
+                observable=t['observable'],
+                evidence=t['evidence'],
+                steps=t['steps'],
+            )
+            for t in tasks
+        ]
+        return cls(_header_lines=header_lines, tasks=domain_tasks)
+
     def to_lines(self, thread_number: int) -> list[str]:
         lines = list(self._header_lines)
         lines[0] = re.sub(r'Steel Thread \d+:', f'Steel Thread {thread_number}:', lines[0])

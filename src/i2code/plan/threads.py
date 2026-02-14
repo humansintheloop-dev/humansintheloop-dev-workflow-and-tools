@@ -4,57 +4,6 @@ from i2code.plan._helpers import _extract_thread_sections, _serialize_thread, ap
 from i2code.plan.plans import fix_numbering
 
 
-def insert_thread_before(plan: str, before_thread: int, title: str,
-                          introduction: str, tasks: list[dict], rationale: str) -> str:
-    """Insert a new thread before the specified thread and renumber.
-
-    Raises ValueError if before_thread does not exist.
-    """
-    preamble, threads, postamble = _extract_thread_sections(plan)
-    existing_numbers = {num for num, _ in threads}
-
-    if before_thread not in existing_numbers:
-        raise ValueError(f"insert-thread-before: thread {before_thread} does not exist")
-
-    new_thread_text = _serialize_thread(title, introduction, tasks)
-
-    reordered = []
-    for num, text in threads:
-        if num == before_thread:
-            reordered.append((0, new_thread_text))
-        reordered.append((num, text))
-
-    assembled = preamble + '\n'.join(text for _, text in reordered) + postamble
-    result = fix_numbering(assembled)
-    return append_change_history(result, "insert-thread-before", rationale)
-
-
-def insert_thread_after(plan: str, after_thread: int, title: str,
-                         introduction: str, tasks: list[dict], rationale: str) -> str:
-    """Insert a new thread after the specified thread and renumber.
-
-    Raises ValueError if after_thread does not exist.
-    """
-    preamble, threads, postamble = _extract_thread_sections(plan)
-    existing_numbers = {num for num, _ in threads}
-
-    if after_thread not in existing_numbers:
-        raise ValueError(f"insert-thread-after: thread {after_thread} does not exist")
-
-    new_thread_text = _serialize_thread(title, introduction, tasks)
-
-    reordered = []
-    for num, text in threads:
-        reordered.append((num, text))
-        if num == after_thread:
-            reordered.append((0, new_thread_text))
-
-    assembled = preamble + '\n'.join(text for _, text in reordered) + postamble
-    result = fix_numbering(assembled)
-    return append_change_history(result, "insert-thread-after", rationale)
-
-
-
 def replace_thread(plan: str, thread_number: int, title: str,
                     introduction: str, tasks: list[dict], rationale: str) -> str:
     """Replace a thread's content in place and renumber.

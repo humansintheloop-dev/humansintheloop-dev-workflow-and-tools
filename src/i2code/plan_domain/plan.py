@@ -56,6 +56,14 @@ class Plan:
             raise ValueError(f"insert-task-after: task {thread}.{after_task} does not exist")
         t.insert_task(after_task, task)
 
+    def replace_task(self, thread: int, task: int, new_task: Task) -> None:
+        if thread < 1 or thread > len(self.threads):
+            raise ValueError(f"replace-task: thread {thread} does not exist")
+        t = self.threads[thread - 1]
+        if task < 1 or task > len(t.tasks):
+            raise ValueError(f"replace-task: task {thread}.{task} does not exist")
+        t.replace_task(task, new_task)
+
     def delete_task(self, thread: int, task: int) -> None:
         if thread < 1 or thread > len(self.threads):
             raise ValueError(f"delete-task: thread {thread} does not exist")

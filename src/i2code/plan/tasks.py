@@ -2,44 +2,8 @@
 
 import re
 
-from i2code.plan._helpers import append_change_history, _serialize_task, _find_task_boundaries
+from i2code.plan._helpers import append_change_history, _find_task_boundaries
 from i2code.plan.plans import fix_numbering
-
-
-def replace_task(plan: str, thread_number: int, task_number: int,
-                  title: str, task_type: str, entrypoint: str,
-                  observable: str, evidence: str, steps: list[str],
-                  rationale: str) -> str:
-    """Replace a task's content in place within a thread and renumber.
-
-    Raises ValueError if thread_number or task_number does not exist.
-    """
-    lines = plan.split('\n')
-    thread_heading_re = re.compile(r'^## Steel Thread (\d+):')
-
-    # Validate thread exists
-    thread_exists = any(
-        thread_heading_re.match(l) and int(thread_heading_re.match(l).group(1)) == thread_number
-        for l in lines
-    )
-    if not thread_exists:
-        raise ValueError(f"replace-task: thread {thread_number} does not exist")
-
-    task_bounds = _find_task_boundaries(lines, thread_number)
-    existing_numbers = {tk_num for _, _, tk_num in task_bounds}
-
-    if task_number not in existing_numbers:
-        raise ValueError(f"replace-task: task {task_number} in thread {thread_number} does not exist")
-
-    new_task_text = _serialize_task(title, task_type, entrypoint, observable, evidence, steps)
-
-    for start, end, tk_num in task_bounds:
-        if tk_num == task_number:
-            new_lines = lines[:start] + new_task_text.split('\n') + lines[end:]
-            result = fix_numbering('\n'.join(new_lines))
-            return append_change_history(result, "replace-task", rationale)
-
-    raise ValueError(f"replace-task: task {task_number} in thread {thread_number} does not exist")
 
 
 def reorder_tasks(plan: str, thread_number: int, task_order: list[int],

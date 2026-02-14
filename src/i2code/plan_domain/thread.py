@@ -14,6 +14,11 @@ class Thread:
     def insert_task(self, index: int, task: Task) -> None:
         self.tasks.insert(index, task)
 
+    def replace_task(self, task_number: int, task: Task) -> None:
+        if task_number < 1 or task_number > len(self.tasks):
+            raise ValueError(f"task {task_number} does not exist")
+        self.tasks[task_number - 1] = task
+
     def delete_task(self, task_number: int) -> None:
         if task_number < 1 or task_number > len(self.tasks):
             raise ValueError(f"task {task_number} does not exist")

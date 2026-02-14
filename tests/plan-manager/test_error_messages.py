@@ -4,7 +4,7 @@ import pytest
 
 from i2code.plan.plans import get_thread
 from i2code.plan.tasks import (
-    reorder_tasks, move_task_before, move_task_after, replace_task,
+    reorder_tasks, move_task_before, move_task_after,
 )
 from i2code.plan_domain.task import Task
 from i2code.plan.threads import delete_thread, replace_thread, reorder_threads
@@ -117,10 +117,3 @@ class TestErrorMessageFormat:
         with pytest.raises(ValueError, match="move-task-after:.*same task"):
             move_task_after(SIMPLE_PLAN, 1, 1, 1, "r")
 
-    def test_replace_task_nonexistent_thread(self):
-        with pytest.raises(ValueError, match="replace-task:.*does not exist"):
-            replace_task(SIMPLE_PLAN, 99, 1, "t", "INFRA", "e", "o", "v", ["s"], "r")
-
-    def test_replace_task_nonexistent_task(self):
-        with pytest.raises(ValueError, match="replace-task:.*does not exist"):
-            replace_task(SIMPLE_PLAN, 1, 99, "t", "INFRA", "e", "o", "v", ["s"], "r")

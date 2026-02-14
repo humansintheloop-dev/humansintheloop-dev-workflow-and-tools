@@ -7,7 +7,7 @@ import click
 
 from i2code.plan.plan_file_io import atomic_write, with_error_handling, with_plan_file_update
 from i2code.plan.tasks import (
-    replace_task, reorder_tasks,
+    reorder_tasks,
     move_task_before, move_task_after,
 )
 from i2code.plan_domain.task import Task
@@ -148,23 +148,16 @@ def delete_task_cmd(plan_file, thread, task, rationale):
 def replace_task_cmd(plan_file, thread, task, title, task_type,
                      entrypoint, observable, evidence, steps, rationale):
     """Replace a task's content in place within a thread."""
-    with open(plan_file, "r", encoding="utf-8") as f:
-        plan = f.read()
-
     try:
         steps_list = json.loads(steps)
     except json.JSONDecodeError as e:
         click.echo(f"replace-task: --steps is not valid JSON: {e}", err=True)
         sys.exit(1)
 
-    try:
-        result = replace_task(plan, thread, task, title, task_type,
-                              entrypoint, observable, evidence, steps_list, rationale)
-    except ValueError as e:
-        click.echo(str(e), err=True)
-        sys.exit(1)
-
-    atomic_write(plan_file, result)
+    with with_error_handling():
+        with with_plan_file_update(plan_file, "replace-task", rationale) as domain_plan:
+            new_task = Task.create(title, task_type, entrypoint, observable, evidence, steps_list)
+            domain_plan.replace_task(thread, task, new_task)
     click.echo(f"Replaced task {thread}.{task}")
 
 

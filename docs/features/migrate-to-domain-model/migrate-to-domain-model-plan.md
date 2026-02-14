@@ -153,19 +153,19 @@ Migrate insert, delete, replace, reorder, and move task operations. These requir
     - [x] Delete old test_insert_task.py, update test_error_messages.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 2.4: Migrate replace_task to domain model**
+- [x] **Task 2.4: Migrate replace_task to domain model**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code plan replace-task tests/fixtures/plan.md --thread 1 --task 1 --title "Replaced" --task-type OUTCOME --entrypoint "echo" --observable "new" --evidence "echo" --steps '["step"]' --rationale "replaced"`
   - Observable: CLI replaces a task's content in place via domain model using Task.create() and Thread.replace_task().
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ tests/plan-manager/ -v`
   - Steps:
-    - [ ] Write CLI integration test for replace_task_cmd
-    - [ ] Add Thread.replace_task(index, task) method with TDD
-    - [ ] Add Plan.replace_task() delegation method with TDD
-    - [ ] Wire replace_task_cmd to use with_error_handling + with_plan_file_update
-    - [ ] Remove replace_task() from tasks.py
-    - [ ] Delete old test_replace_task.py, update test_error_messages.py
-    - [ ] Prune duplicate acceptance tests
+    - [x] Write CLI integration test for replace_task_cmd
+    - [x] Add Thread.replace_task(index, task) method with TDD
+    - [x] Add Plan.replace_task() delegation method with TDD
+    - [x] Wire replace_task_cmd to use with_error_handling + with_plan_file_update
+    - [x] Remove replace_task() from tasks.py
+    - [x] Delete old test_replace_task.py, update test_error_messages.py
+    - [x] Prune duplicate acceptance tests
 
 - [ ] **Task 2.5: Migrate reorder_tasks to domain model**
   - TaskType: OUTCOME
@@ -384,3 +384,6 @@ Migrated delete_task to domain model with Thread.delete_task() and Plan.delete_t
 
 ### 2026-02-14 16:22 - mark-task-complete
 Migrated insert_task_before and insert_task_after to domain model
+
+### 2026-02-14 16:29 - mark-task-complete
+Migrated replace_task to domain model with Thread.replace_task() and Plan.replace_task()

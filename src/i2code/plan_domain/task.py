@@ -97,6 +97,19 @@ class Task:
             if _STEP_RE.match(line):
                 self._lines[i] = line.replace('[x]', '[ ]', 1)
 
+    @classmethod
+    def create(cls, title: str, task_type: str, entrypoint: str,
+               observable: str, evidence: str, steps: list[str]) -> 'Task':
+        lines = [f'- [ ] **Task 0.0: {title}**']
+        lines.append(f'  - TaskType: {task_type}')
+        lines.append(f'  - Entrypoint: `{entrypoint}`')
+        lines.append(f'  - Observable: {observable}')
+        lines.append(f'  - Evidence: `{evidence}`')
+        lines.append('  - Steps:')
+        for step in steps:
+            lines.append(f'    - [ ] {step}')
+        return cls(_lines=lines)
+
     def to_lines(self, thread_num: int, task_num: int) -> list[str]:
         lines = list(self._lines)
         lines[0] = re.sub(r'Task \d+\.\d+:', f'Task {thread_num}.{task_num}:', lines[0])

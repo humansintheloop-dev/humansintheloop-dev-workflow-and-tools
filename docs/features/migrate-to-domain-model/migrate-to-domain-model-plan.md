@@ -130,14 +130,14 @@ Migrate insert, delete, replace, reorder, and move task operations. These requir
     - [x] Delete old test_delete_task.py, update test_error_messages.py
     - [x] Prune duplicate acceptance tests
 
-- [ ] **Task 2.2: Add Task.create() factory method**
+- [x] **Task 2.2: Add Task.create() factory method**
   - TaskType: INFRA
   - Entrypoint: `uv run --with pytest pytest tests/plan-domain/test_task_create.py -v`
   - Observable: Task.create(title, task_type, entrypoint, observable, evidence, steps) returns a Task with correctly formatted markdown lines. Round-trips through to_lines() produce expected output.
   - Evidence: `uv run --with pytest pytest tests/plan-domain/ -v`
   - Steps:
-    - [ ] Write tests for Task.create() verifying title, metadata, steps, and to_lines() output
-    - [ ] Implement Task.create() class method that builds _lines from structured data
+    - [x] Write tests for Task.create() verifying title, metadata, steps, and to_lines() output
+    - [x] Implement Task.create() class method that builds _lines from structured data
 
 - [ ] **Task 2.3: Migrate insert_task_before and insert_task_after to domain model**
   - TaskType: OUTCOME

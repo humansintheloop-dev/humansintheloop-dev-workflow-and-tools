@@ -4,6 +4,11 @@
 
 IMPORTANT: Use simple commands that you have permission to execute. Avoid complex commands that may fail due to permission issues.
 
+When running scripts:
+- Run scripts directly: `./script.sh` (NOT `bash ./script.sh`)
+- Do not append `2>&1` to redirect stderr
+- Don not use `git -C directory` - cd to the top-level directory and run git commands from there
+
 When copying or moving files:
 - Avoid compound commands with `&&` - run commands separately
 - Avoid wildcard patterns (`*.java`) - copy files individually
@@ -20,6 +25,10 @@ IMPORTANT: Always invoke the relevant skill before performing these actions:
 - **When creating Dockerfiles**: Use the `idea-to-code:dockerfile-guidelines` skill
 - **When moving/renaming files**: Use the `idea-to-code:file-organization` skill
 - **When writing multiple similar files**: Use the `idea-to-code:incremental-development` skill
+
+## Code Health
+
+Before committing code changes, read and follow [CODE_SCENE.md](CODE_SCENE.md) for Code Health safeguard and refactoring instructions.
 
 ## Code Style
 

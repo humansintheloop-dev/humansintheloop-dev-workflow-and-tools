@@ -15,6 +15,10 @@ When writing commit messages for this project, follow these guidelines:
 - The first line of the commit message should describe the high-level goal of the change
 - If the work is associated with an issue, include the issue number in the commit message
 
+## Code Health Safeguard
+
+If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it before committing code changes. If Code Health regresses or fails quality gates, refactor before committing.
+
 ## Git Add and Commit Separately
 
 Run `git add` and `git commit` as separate tool calls rather than chaining with `&&`. This provides:

@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: precommit-check
         name: Run precommit.sh checks
-        entry: ./pre-commit.sh
+        entry: ./test-scripts/test-precommit.sh
         language: script
         pass_filenames: false
         always_run: true

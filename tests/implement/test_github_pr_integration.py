@@ -14,7 +14,7 @@ import uuid
 import pytest
 from git import Repo
 
-from conftest import run_script
+from conftest import run_script, create_github_repo, delete_github_repo
 
 
 # Test idea directory source
@@ -22,53 +22,6 @@ TEST_IDEA_SOURCE = os.path.join(
     os.path.dirname(__file__),
     '../../test-ideas/kafka-security-poc'
 )
-
-
-def get_github_username():
-    """Get the authenticated GitHub username."""
-    result = subprocess.run(
-        ["gh", "api", "user", "--jq", ".login"],
-        capture_output=True,
-        text=True
-    )
-    if result.returncode != 0:
-        return None
-    return result.stdout.strip()
-
-
-def create_github_repo(repo_name):
-    """Create a new GitHub repository.
-
-    Returns:
-        Tuple of (repo_full_name, clone_url) or None if creation failed
-    """
-    result = subprocess.run(
-        ["gh", "repo", "create", repo_name, "--private"],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        return None
-
-    # Get username to construct full name
-    username = get_github_username()
-    if not username:
-        return None
-
-    repo_full_name = f"{username}/{repo_name}"
-    clone_url = f"git@github.com:{repo_full_name}.git"
-
-    return repo_full_name, clone_url
-
-
-def delete_github_repo(repo_full_name):
-    """Delete a GitHub repository."""
-    subprocess.run(
-        ["gh", "repo", "delete", repo_full_name, "--yes"],
-        capture_output=True,
-        text=True
-    )
 
 
 def get_pr_count(repo_full_name):
@@ -117,11 +70,7 @@ def github_test_repo():
     repo_name = f"test-tmp-wt-integration-{uuid.uuid4().hex[:8]}"
 
     # Create GitHub repo
-    result = create_github_repo(repo_name)
-    if result is None:
-        pytest.skip("Could not create GitHub repository (check gh auth)")
-
-    repo_full_name, clone_url = result
+    repo_full_name, clone_url = create_github_repo(repo_name)
 
     try:
         # Create temp directory and clone
@@ -136,7 +85,7 @@ def github_test_repo():
 
         if clone_result.returncode != 0:
             delete_github_repo(repo_full_name)
-            pytest.skip(f"Could not clone repository: {clone_result.stderr}")
+            raise RuntimeError(f"Could not clone repository: {clone_result.stderr}")
 
         # Initialize git config
         repo = Repo(tmpdir)

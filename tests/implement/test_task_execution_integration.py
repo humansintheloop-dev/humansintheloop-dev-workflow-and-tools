@@ -13,7 +13,7 @@ import uuid
 import pytest
 from git import Repo
 
-from conftest import SCRIPT_CMD
+from conftest import SCRIPT_CMD, create_github_repo, delete_github_repo
 
 
 def create_mock_claude_script_that_marks_tasks_complete(tmpdir, idea_name):
@@ -114,40 +114,6 @@ SIMPLE_PLAN_CONTENT = """# Simple Test Plan
 """
 
 
-def create_github_repo(repo_name):
-    """Create a new GitHub repository."""
-    result = subprocess.run(
-        ["gh", "repo", "create", repo_name, "--private"],
-        capture_output=True,
-        text=True
-    )
-    if result.returncode != 0:
-        return None
-
-    # Get username
-    user_result = subprocess.run(
-        ["gh", "api", "user", "--jq", ".login"],
-        capture_output=True,
-        text=True
-    )
-    if user_result.returncode != 0:
-        return None
-
-    username = user_result.stdout.strip()
-    repo_full_name = f"{username}/{repo_name}"
-    clone_url = f"git@github.com:{repo_full_name}.git"
-    return repo_full_name, clone_url
-
-
-def delete_github_repo(repo_full_name):
-    """Delete a GitHub repository."""
-    subprocess.run(
-        ["gh", "repo", "delete", repo_full_name, "--yes"],
-        capture_output=True,
-        text=True
-    )
-
-
 @pytest.mark.integration
 class TestTaskDetectionAndExecution:
     """Test that script detects and executes tasks from plan file."""
@@ -224,11 +190,7 @@ def github_test_repo_with_simple_plan():
     """Create a GitHub repository with a simple 3-task plan for testing sequential execution."""
     repo_name = f"test-tmp-seq-exec-{uuid.uuid4().hex[:8]}"
 
-    result = create_github_repo(repo_name)
-    if result is None:
-        pytest.skip("Could not create GitHub repository")
-
-    repo_full_name, clone_url = result
+    repo_full_name, clone_url = create_github_repo(repo_name)
 
     try:
         tmpdir = tempfile.mkdtemp()
@@ -422,11 +384,7 @@ def github_test_repo_with_pr_and_comments():
     """Create a GitHub repository with a PR that has review comments."""
     repo_name = f"test-tmp-feedback-{uuid.uuid4().hex[:8]}"
 
-    result = create_github_repo(repo_name)
-    if result is None:
-        pytest.skip("Could not create GitHub repository")
-
-    repo_full_name, clone_url = result
+    repo_full_name, clone_url = create_github_repo(repo_name)
     tmpdir = None
 
     try:
@@ -502,7 +460,7 @@ def github_test_repo_with_pr_and_comments():
         )
 
         if pr_result.returncode != 0:
-            pytest.skip(f"Could not create PR: {pr_result.stderr}")
+            raise RuntimeError(f"Could not create PR: {pr_result.stderr}")
 
         # Parse PR number from URL
         pr_url = pr_result.stdout.strip()
@@ -587,8 +545,7 @@ class TestFeedbackDetectionIntegration:
         finally:
             os.chdir(original_cwd)
 
-        if not comments:
-            pytest.skip("No comments found on PR")
+        assert comments, "Expected comments on PR but found none"
 
         # Mark all comments as processed
         processed_ids = [c["id"] for c in comments]
@@ -623,8 +580,7 @@ class TestFeedbackDetectionIntegration:
         finally:
             os.chdir(original_cwd)
 
-        if not comments:
-            pytest.skip("No comments found on PR")
+        assert comments, "Expected comments on PR but found none"
 
         # Get new feedback (all should be new)
         new_feedback = get_new_feedback(comments, state["processed_comment_ids"])

@@ -23,19 +23,7 @@ echo "--- pytest integration tests ---"
 uv run --python 3.12 --with pytest --with GitPython --with pytest-mock --with Jinja2 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m integration
 
 echo ""
-echo "=== Verifying All Tests Have Markers ==="
-
-UNMARKED=$(uv run --python 3.12 --with pytest --with GitPython --with pytest-mock --with Jinja2 \
-    python3 -m pytest "$PROJECT_ROOT/tests/" --co -q -m "not unit and not integration" 2>&1)
-UNMARKED_COUNT=$(echo "$UNMARKED" | tail -1 | grep -o '^[0-9]*' || echo "0")
-
-if [[ "$UNMARKED_COUNT" -gt 0 ]]; then
-    echo ""
-    echo "FAIL: $UNMARKED_COUNT tests missing unit/integration marker:"
-    echo "$UNMARKED"
-    exit 1
-fi
-echo "PASS: All tests have markers"
+"$SCRIPT_DIR/test-verify-all-tests-have-markers.sh"
 
 echo ""
 echo "=== All Tests Passed ==="

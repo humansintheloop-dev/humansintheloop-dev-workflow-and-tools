@@ -12,6 +12,56 @@ from git import Repo
 SCRIPT_CMD = ["i2code", "implement"]
 
 
+def get_github_username():
+    """Get the authenticated GitHub username.
+
+    Raises:
+        RuntimeError: If GitHub username lookup fails
+    """
+    result = subprocess.run(
+        ["gh", "api", "user", "--jq", ".login"],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Failed to get GitHub username: {result.stderr}")
+    return result.stdout.strip()
+
+
+def create_github_repo(repo_name):
+    """Create a new GitHub repository.
+
+    Returns:
+        Tuple of (repo_full_name, clone_url)
+
+    Raises:
+        RuntimeError: If repository creation fails
+    """
+    result = subprocess.run(
+        ["gh", "repo", "create", repo_name, "--private"],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        raise RuntimeError(f"Failed to create GitHub repo: {result.stderr}")
+
+    username = get_github_username()
+    repo_full_name = f"{username}/{repo_name}"
+    clone_url = f"git@github.com:{repo_full_name}.git"
+
+    return repo_full_name, clone_url
+
+
+def delete_github_repo(repo_full_name):
+    """Delete a GitHub repository."""
+    subprocess.run(
+        ["gh", "repo", "delete", repo_full_name, "--yes"],
+        capture_output=True,
+        text=True
+    )
+
+
 def run_script(idea_dir, cwd=None, setup_only=False, mock_claude=None):
     """Run the i2code implement command.
 

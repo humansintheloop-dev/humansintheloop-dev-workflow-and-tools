@@ -87,7 +87,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
 
     # Detect the default branch for PR creation (skip for dry-run and trunk modes)
     base_branch = None
-    if not dry_run and not trunk:
+    if not dry_run and not trunk and not setup_only:
         base_branch = get_default_branch()
 
     if dry_run:

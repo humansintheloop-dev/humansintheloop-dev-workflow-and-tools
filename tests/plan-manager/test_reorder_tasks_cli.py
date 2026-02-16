@@ -59,7 +59,7 @@ class TestReorderTasksCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(reorder_tasks_cmd, [
             str(plan_file), "--thread", "1", "--order", "3,2,1", "--rationale", "reversed",
         ])
@@ -74,7 +74,7 @@ class TestReorderTasksCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(reorder_tasks_cmd, [
             str(plan_file), "--thread", "1", "--order", "3,2,1", "--rationale", "reversed",
         ])
@@ -85,7 +85,7 @@ class TestReorderTasksCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(reorder_tasks_cmd, [
             str(plan_file), "--thread", "1", "--order", "3,2,1", "--rationale", "reversed for priority",
         ])
@@ -99,7 +99,7 @@ class TestReorderTasksCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(reorder_tasks_cmd, [
             str(plan_file), "--thread", "1", "--order", "a,b,c", "--rationale", "reason",
         ])

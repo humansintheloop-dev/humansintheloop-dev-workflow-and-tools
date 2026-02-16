@@ -69,7 +69,7 @@ class TestGetThreadCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(get_thread_cmd, [str(plan_file), "--thread", "1"])
 
         assert result.exit_code == 0
@@ -86,7 +86,7 @@ class TestGetThreadCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(get_thread_cmd, [str(plan_file), "--thread", "99"])
 
         assert result.exit_code == 1

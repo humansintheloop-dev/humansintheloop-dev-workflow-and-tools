@@ -93,7 +93,7 @@ class TestListThreadsCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(list_threads_cmd, [str(plan_file)])
 
         assert result.exit_code == 0

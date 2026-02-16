@@ -72,7 +72,7 @@ class TestGetSummaryCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_MIXED_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(get_summary_cmd, [str(plan_file)])
 
         assert result.exit_code == 0

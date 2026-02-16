@@ -59,7 +59,7 @@ class TestMoveTaskBeforeCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(move_task_before_cmd, [
             str(plan_file), "--thread", "1", "--task", "3", "--before", "1", "--rationale", "priority",
         ])
@@ -74,7 +74,7 @@ class TestMoveTaskBeforeCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(move_task_before_cmd, [
             str(plan_file), "--thread", "1", "--task", "3", "--before", "1", "--rationale", "priority",
         ])
@@ -85,7 +85,7 @@ class TestMoveTaskBeforeCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(move_task_before_cmd, [
             str(plan_file), "--thread", "1", "--task", "3", "--before", "1", "--rationale", "priority change",
         ])

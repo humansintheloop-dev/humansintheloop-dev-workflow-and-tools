@@ -54,7 +54,7 @@ class TestFixNumberingCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(MISNUMBERED_PLAN)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(fix_numbering_cmd, [str(plan_file)])
 
         assert result.exit_code == 0
@@ -79,7 +79,7 @@ class TestFixNumberingCli:
         plan_file.write_text(correctly_numbered)
         mtime_before = plan_file.stat().st_mtime
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(fix_numbering_cmd, [str(plan_file)])
 
         assert result.exit_code == 0

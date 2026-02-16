@@ -100,7 +100,7 @@ class TestIsolatedFlagPassthrough:
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolated", "--setup-only"])
 
         mock_ensure_branch.assert_called_once_with(mock_repo, "test-feature", isolated=True)
@@ -126,7 +126,7 @@ class TestIsolatedFlagPassthrough:
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--setup-only"])
 
         mock_ensure_branch.assert_called_once_with(mock_repo, "test-feature", isolated=False)
@@ -147,7 +147,7 @@ class TestIgnoreUncommittedIdeaChanges:
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, [
             "/tmp/fake-idea", "--trunk", "--ignore-uncommitted-idea-changes",
         ])
@@ -166,7 +166,7 @@ class TestIgnoreUncommittedIdeaChanges:
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk"])
 
         assert result.exit_code == 0
@@ -219,7 +219,7 @@ class TestGetDefaultBranchWiring:
             mock_ensure_pr.return_value = 42
             mock_run_claude.return_value = MagicMock(returncode=0, stdout="", stderr="", permission_denials=[], error_message=None, last_messages=[])
 
-            runner = CliRunner()
+            runner = CliRunner(catch_exceptions=False)
             result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--non-interactive", "--skip-ci-wait"])
 
         mock_get_default.assert_called_once()

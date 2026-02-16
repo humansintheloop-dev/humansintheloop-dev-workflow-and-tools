@@ -261,7 +261,7 @@ class TestDeferredPRCreation:
         monkeypatch.setattr("i2code.implement.cli.validate_idea_files", lambda x, y: None)
         monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda x, y: None)
         monkeypatch.setattr("i2code.implement.cli.init_or_load_state", lambda x, y: {"slice_number": 1, "processed_comment_ids": [], "processed_review_ids": []})
-        monkeypatch.setattr("i2code.implement.cli.ensure_integration_branch", lambda r, n: "idea/test-idea/integration")
+        monkeypatch.setattr("i2code.implement.cli.ensure_integration_branch", lambda r, n, isolated=False: "idea/test-idea/integration")
         monkeypatch.setattr("i2code.implement.cli.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
         monkeypatch.setattr("i2code.implement.cli.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
         monkeypatch.setattr("i2code.implement.cli.get_next_task", lambda f: NumberedTask(
@@ -273,7 +273,7 @@ class TestDeferredPRCreation:
         monkeypatch.setattr("i2code.implement.cli.ensure_draft_pr", mock_ensure_draft_pr)
 
         # Run via Click test runner
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, [str(tmp_path), "--setup-only"])
 
         # Verify ensure_draft_pr was NOT called

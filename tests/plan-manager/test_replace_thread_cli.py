@@ -75,7 +75,7 @@ class TestReplaceThreadCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(replace_thread_cmd, [
             str(plan_file), "--thread", "1",
             "--title", "Replaced Thread", "--introduction", "New intro.",
@@ -93,7 +93,7 @@ class TestReplaceThreadCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         runner.invoke(replace_thread_cmd, [
             str(plan_file), "--thread", "1",
             "--title", "Replaced", "--introduction", "New.",
@@ -108,7 +108,7 @@ class TestReplaceThreadCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         runner.invoke(replace_thread_cmd, [
             str(plan_file), "--thread", "1",
             "--title", "Replaced", "--introduction", "New.",
@@ -123,7 +123,7 @@ class TestReplaceThreadCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(replace_thread_cmd, [
             str(plan_file), "--thread", "99",
             "--title", "T", "--introduction", "I",

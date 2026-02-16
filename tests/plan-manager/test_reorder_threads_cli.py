@@ -54,7 +54,7 @@ class TestReorderThreadsCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(reorder_threads_cmd, [
             str(plan_file), "--order", "2,1", "--rationale", "swapped",
         ])
@@ -68,7 +68,7 @@ class TestReorderThreadsCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         runner.invoke(reorder_threads_cmd, [
             str(plan_file), "--order", "2,1", "--rationale", "priority change",
         ])
@@ -81,7 +81,7 @@ class TestReorderThreadsCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(reorder_threads_cmd, [
             str(plan_file), "--order", "1,3", "--rationale", "bad",
         ])
@@ -92,7 +92,7 @@ class TestReorderThreadsCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(reorder_threads_cmd, [
             str(plan_file), "--order", "a,b", "--rationale", "bad",
         ])

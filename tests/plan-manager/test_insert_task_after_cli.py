@@ -51,7 +51,7 @@ class TestInsertTaskAfterCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(insert_task_after_cmd, [
             str(plan_file), "--thread", "1", "--after", "1",
             "--title", "New task", "--task-type", "INFRA",
@@ -70,7 +70,7 @@ class TestInsertTaskAfterCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(insert_task_after_cmd, [
             str(plan_file), "--thread", "1", "--after", "2",
             "--title", "New task", "--task-type", "OUTCOME",
@@ -89,7 +89,7 @@ class TestInsertTaskAfterCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(insert_task_after_cmd, [
             str(plan_file), "--thread", "1", "--after", "1",
             "--title", "New task", "--task-type", "INFRA",
@@ -104,7 +104,7 @@ class TestInsertTaskAfterCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(insert_task_after_cmd, [
             str(plan_file), "--thread", "1", "--after", "1",
             "--title", "New task", "--task-type", "INFRA",
@@ -122,7 +122,7 @@ class TestInsertTaskAfterCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(insert_task_after_cmd, [
             str(plan_file), "--thread", "99", "--after", "1",
             "--title", "New", "--task-type", "INFRA",
@@ -138,7 +138,7 @@ class TestInsertTaskAfterCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(insert_task_after_cmd, [
             str(plan_file), "--thread", "1", "--after", "99",
             "--title", "New", "--task-type", "INFRA",

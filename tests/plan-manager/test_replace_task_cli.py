@@ -59,7 +59,7 @@ class TestReplaceTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(replace_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "2",
             "--title", "Replaced task", "--task-type", "INFRA",
@@ -79,7 +79,7 @@ class TestReplaceTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(replace_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "2",
             "--title", "Replaced", "--task-type", "INFRA",
@@ -98,7 +98,7 @@ class TestReplaceTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(replace_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "1",
             "--title", "New first", "--task-type", "OUTCOME",
@@ -115,7 +115,7 @@ class TestReplaceTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(replace_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "2",
             "--title", "Replaced", "--task-type", "INFRA",
@@ -130,7 +130,7 @@ class TestReplaceTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(replace_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "2",
             "--title", "Replaced", "--task-type", "INFRA",
@@ -148,7 +148,7 @@ class TestReplaceTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(replace_task_cmd, [
             str(plan_file), "--thread", "99", "--task", "1",
             "--title", "New", "--task-type", "INFRA",
@@ -164,7 +164,7 @@ class TestReplaceTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(replace_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "99",
             "--title", "New", "--task-type", "INFRA",
@@ -180,7 +180,7 @@ class TestReplaceTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(replace_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "1",
             "--title", "New", "--task-type", "INFRA",

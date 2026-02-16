@@ -59,7 +59,7 @@ class TestDeleteTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(delete_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "2", "--rationale", "not needed",
         ])
@@ -72,7 +72,7 @@ class TestDeleteTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(delete_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "1", "--rationale", "not needed",
         ])
@@ -86,7 +86,7 @@ class TestDeleteTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(delete_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "1", "--rationale", "not needed",
         ])
@@ -97,7 +97,7 @@ class TestDeleteTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(delete_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "1", "--rationale", "covered elsewhere",
         ])
@@ -111,7 +111,7 @@ class TestDeleteTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(delete_task_cmd, [
             str(plan_file), "--thread", "99", "--task", "1", "--rationale", "reason",
         ])
@@ -123,7 +123,7 @@ class TestDeleteTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_TASKS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(delete_task_cmd, [
             str(plan_file), "--thread", "1", "--task", "99", "--rationale", "reason",
         ])

@@ -65,7 +65,7 @@ class TestDeleteThreadCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(delete_thread_cmd, [
             str(plan_file), "--thread", "2", "--rationale", "not needed",
         ])
@@ -78,7 +78,7 @@ class TestDeleteThreadCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(delete_thread_cmd, [
             str(plan_file), "--thread", "1", "--rationale", "covered elsewhere",
         ])
@@ -92,7 +92,7 @@ class TestDeleteThreadCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_THREE_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(delete_thread_cmd, [
             str(plan_file), "--thread", "99", "--rationale", "reason",
         ])

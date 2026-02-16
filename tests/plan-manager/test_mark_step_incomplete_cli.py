@@ -68,7 +68,7 @@ class TestMarkStepIncompleteCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_COMPLETED_STEP)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(mark_step_incomplete_cmd, [
             str(plan_file), "--thread", "1", "--task", "1",
             "--step", "1", "--rationale", "undo",
@@ -83,7 +83,7 @@ class TestMarkStepIncompleteCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_COMPLETED_STEP)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(mark_step_incomplete_cmd, [
             str(plan_file), "--thread", "1", "--task", "1",
             "--step", "1", "--rationale", "undo",
@@ -95,7 +95,7 @@ class TestMarkStepIncompleteCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_INCOMPLETE_STEP)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(mark_step_incomplete_cmd, [
             str(plan_file), "--thread", "1", "--task", "1",
             "--step", "1", "--rationale", "undo",

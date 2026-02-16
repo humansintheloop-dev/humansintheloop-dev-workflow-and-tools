@@ -75,7 +75,7 @@ class TestMarkTaskIncompleteCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_COMPLETED)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(mark_task_incomplete_cmd, [
             str(plan_file), "--thread", "1", "--task", "1",
         ])
@@ -88,7 +88,7 @@ class TestMarkTaskIncompleteCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_COMPLETED)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(mark_task_incomplete_cmd, [
             str(plan_file), "--thread", "1", "--task", "1",
         ])
@@ -101,7 +101,7 @@ class TestMarkTaskIncompleteCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_COMPLETED)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(mark_task_incomplete_cmd, [
             str(plan_file), "--thread", "1", "--task", "1",
         ])
@@ -112,7 +112,7 @@ class TestMarkTaskIncompleteCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_INCOMPLETE)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(mark_task_incomplete_cmd, [
             str(plan_file), "--thread", "1", "--task", "1",
         ])

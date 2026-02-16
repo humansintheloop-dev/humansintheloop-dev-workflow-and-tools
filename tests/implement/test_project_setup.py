@@ -511,7 +511,7 @@ class TestScaffoldCmd:
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea"])
 
         assert result.exit_code == 0
@@ -538,7 +538,7 @@ class TestScaffoldCmd:
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea", "--non-interactive"])
 
         assert result.exit_code == 0
@@ -559,7 +559,7 @@ class TestScaffoldCmd:
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea", "--mock-claude", "/mock.sh"])
 
         assert result.exit_code == 0
@@ -591,7 +591,7 @@ class TestCLIIsolateProjectSetup:
         mock_repo_cls.return_value = mock_repo
         mock_subprocess.run.return_value = MagicMock(returncode=0)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolate"])
 
         mock_ensure_branch.assert_called_once()
@@ -618,7 +618,7 @@ class TestCLIIsolateProjectSetup:
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolate"])
 
         assert result.exit_code != 0
@@ -644,7 +644,7 @@ class TestCLIIsolateProjectSetup:
         mock_repo_cls.return_value = mock_repo
         mock_subprocess.run.return_value = MagicMock(returncode=0)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, [
             "/tmp/fake-idea", "--isolate",
             "--non-interactive",
@@ -686,7 +686,7 @@ class TestCLIIsolateProjectSetup:
         mock_repo_cls.return_value = mock_repo
         mock_subprocess.run.return_value = MagicMock(returncode=0)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolate", "--non-interactive"])
 
         call_kwargs = mock_ensure_setup.call_args[1]
@@ -712,7 +712,7 @@ class TestCLIIsolateProjectSetup:
         mock_repo_cls.return_value = mock_repo
         mock_subprocess.run.return_value = MagicMock(returncode=0)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolate"])
 
         call_kwargs = mock_ensure_setup.call_args[1]

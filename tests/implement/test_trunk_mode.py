@@ -31,7 +31,7 @@ class TestTrunkModeAcceptance:
         self, mock_validate_dir, mock_validate_files, mock_validate_committed,
         mock_run_trunk_loop
     ):
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk"])
 
         assert result.exit_code == 0
@@ -62,7 +62,7 @@ class TestTrunkModeIncompatibleFlags:
         self, mock_validate_dir, mock_validate_files, mock_validate_committed,
         flag,
     ):
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk", flag])
 
         assert result.exit_code != 0
@@ -79,7 +79,7 @@ class TestTrunkModeIncompatibleFlags:
         self, mock_validate_dir, mock_validate_files, mock_validate_committed,
         flag, value,
     ):
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk", flag, value])
 
         assert result.exit_code != 0

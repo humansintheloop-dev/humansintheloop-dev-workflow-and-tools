@@ -65,7 +65,7 @@ class TestInsertThreadBeforeCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(insert_thread_before_cmd, [
             str(plan_file), "--before", "1",
             "--title", "New Thread", "--introduction", "New intro.",
@@ -82,7 +82,7 @@ class TestInsertThreadBeforeCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         runner.invoke(insert_thread_before_cmd, [
             str(plan_file), "--before", "2",
             "--title", "New Thread", "--introduction", "New intro.",
@@ -97,7 +97,7 @@ class TestInsertThreadBeforeCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(insert_thread_before_cmd, [
             str(plan_file), "--before", "99",
             "--title", "New", "--introduction", "Intro",
@@ -114,7 +114,7 @@ class TestInsertThreadAfterCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(insert_thread_after_cmd, [
             str(plan_file), "--after", "1",
             "--title", "New Thread", "--introduction", "New intro.",
@@ -131,7 +131,7 @@ class TestInsertThreadAfterCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_TWO_THREADS)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(insert_thread_after_cmd, [
             str(plan_file), "--after", "99",
             "--title", "New", "--introduction", "Intro",

@@ -67,7 +67,7 @@ class TestGetNextTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_WITH_INCOMPLETE)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(get_next_task_cmd, [str(plan_file)])
 
         assert result.exit_code == 0
@@ -83,7 +83,7 @@ class TestGetNextTaskCli:
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(ALL_COMPLETE)
 
-        runner = CliRunner()
+        runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(get_next_task_cmd, [str(plan_file)])
 
         assert result.exit_code == 0

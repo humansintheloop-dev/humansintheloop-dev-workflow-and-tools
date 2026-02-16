@@ -99,7 +99,7 @@ Migrate the triage and fix feedback prompts, which are closely related.
 ## Steel Thread 2: Scaffolding and CI Prompts
 Migrate the remaining two prompts.
 
-- [ ] **Task 2.1: Migrate build_scaffolding_prompt to scaffolding.j2**
+- [x] **Task 2.1: Migrate build_scaffolding_prompt to scaffolding.j2**
   - TaskType: code
   - Entrypoint: `build_scaffolding_prompt` in implement.py:1829
   - Observable: Function uses `render_template("scaffolding.j2", ...)` instead of f-string. Existing tests pass unchanged.
@@ -124,3 +124,9 @@ Migrate the remaining two prompts.
 ## Summary
 
 This plan migrates 5 remaining f-string prompts across 2 threads: 3 PR feedback prompts and 2 scaffolding/CI prompts. Each migration follows the pattern established in the `task_execution.j2` extraction. After completion, all Claude prompts in implement.py will be Jinja2 templates, editable without touching Python code.
+
+---
+
+## Change History
+### 2026-02-17 06:20 - mark-task-complete
+Migrated build_scaffolding_prompt to use render_template('scaffolding.j2', ...). All 194 unit tests pass unchanged.

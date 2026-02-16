@@ -1,0 +1,36 @@
+You are triaging feedback on a pull request. Analyze each piece of feedback and categorize it.
+
+The following feedback needs to be triaged:
+
+{{ feedback_content }}
+
+Your task:
+
+1. Review each piece of feedback carefully
+2. Categorize each comment as either:
+   - "will_fix": You understand what's being asked and can fix it
+   - "needs_clarification": The feedback is unclear and you need to ask a question
+
+3. Group related "will_fix" comments that should be addressed together in one commit
+
+4. For "needs_clarification" comments, write a specific, clear question to ask the reviewer
+
+Output your triage as JSON in exactly this format:
+```json
+{
+  "will_fix": [
+    {"comment_ids": [123, 456], "description": "Brief description of what to fix"},
+    {"comment_ids": [789], "description": "Another fix"}
+  ],
+  "needs_clarification": [
+    {"comment_id": 101, "question": "Your specific question here"},
+    {"comment_id": 102, "question": "Another question"}
+  ]
+}
+```
+
+IMPORTANT:
+- Use the exact comment IDs from the feedback above
+- Group related fixes together
+- Be specific in clarification questions
+- Output ONLY the JSON, no other text

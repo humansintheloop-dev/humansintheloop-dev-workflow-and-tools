@@ -64,15 +64,15 @@ The `task_execution.j2` template extraction established the pattern. Five f-stri
 ## Steel Thread 1: PR Feedback Prompts
 Migrate the triage and fix feedback prompts, which are closely related.
 
-- [ ] **Task 1.1: Migrate build_triage_command prompt to triage_feedback.j2**
+- [x] **Task 1.1: Migrate build_triage_command prompt to triage_feedback.j2**
   - TaskType: code
   - Entrypoint: `build_triage_command` in implement.py:729
   - Observable: Function uses `render_template("triage_feedback.j2", ...)` instead of f-string. Existing tests pass unchanged.
   - Evidence: `uv run --with pytest pytest tests/implement/ -m unit`
   - Steps:
-    1. [ ] Create `src/i2code/implement/templates/triage_feedback.j2` with the prompt text
-    2. [ ] Replace f-string in `build_triage_command` with `render_template` call
-    3. [ ] Run tests to verify
+    1. [x] Create `src/i2code/implement/templates/triage_feedback.j2` with the prompt text
+    2. [x] Replace f-string in `build_triage_command` with `render_template` call
+    3. [x] Run tests to verify
 
 - [ ] **Task 1.2: Migrate build_fix_command prompt to fix_feedback.j2**
   - TaskType: code

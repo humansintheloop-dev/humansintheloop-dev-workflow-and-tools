@@ -1916,34 +1916,23 @@ def build_claude_command(
     Returns:
         Command as a list suitable for subprocess
     """
-    # Build the prompt that will be passed to Claude
-    prompt = f"""You are implementing the following application:
+    from i2code.templates.template_renderer import render_template
 
-* Idea: @{idea_directory}/*-idea.*
-* Specification: @{idea_directory}/*-spec.md
-* Implementation tasks: @{idea_directory}/*-plan.md
-
-Your task:
-
-{task_description}
-
-Follow the active TDD and plan-tracking skills:
-
-Do not work on future tasks until the current one is complete.
-If all tasks are complete, stop and report success.
-"""
-
-    # Append extra prompt if provided
-    if extra_prompt:
-        prompt += f"\n{extra_prompt}\n"
+    prompt = render_template(
+        "task_execution.j2",
+        package=__package__,
+        idea_directory=idea_directory,
+        task_description=task_description,
+        extra_prompt=extra_prompt,
+        interactive=interactive,
+    )
 
     extra = extra_cli_args or []
 
     if interactive:
         return ["claude"] + extra + [prompt]
     else:
-        non_interactive_prompt = prompt + "\n\nIMPORTANT: if you don't have permission to perform an action, print an informative error message and exit"
-        return ["claude"] + extra + ["--verbose", "--output-format=stream-json", "-p", non_interactive_prompt]
+        return ["claude"] + extra + ["--verbose", "--output-format=stream-json", "-p", prompt]
 
 
 class ClaudeResult:

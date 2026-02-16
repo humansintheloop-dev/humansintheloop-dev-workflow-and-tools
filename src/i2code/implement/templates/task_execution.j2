@@ -1,0 +1,22 @@
+You are implementing the following application:
+
+* Idea: @{{ idea_directory }}/*-idea.*
+* Specification: @{{ idea_directory }}/*-spec.md
+* Implementation tasks: @{{ idea_directory }}/*-plan.md
+
+Your task:
+
+{{ task_description }}
+
+Follow the active TDD and plan-tracking skills:
+
+Do not work on future tasks until the current one is complete.
+If all tasks are complete, stop and report success.
+{% if extra_prompt %}
+
+{{ extra_prompt }}
+{% endif %}
+{% if not interactive %}
+
+IMPORTANT: if you don't have permission to perform an action, print an informative error message and exit
+{%- endif %}

@@ -578,7 +578,7 @@ class TestMainBranchAdvancement:
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = "abc123def456\trefs/heads/main\n"
 
-        sha = get_remote_main_head()
+        sha = get_remote_main_head(branch="main")
 
         assert sha == "abc123def456"
         # Called twice: once for fetch, once for ls-remote
@@ -602,12 +602,38 @@ class TestMainBranchAdvancement:
 
         mocker.patch('i2code.implement.implement.subprocess.run', side_effect=mock_run)
 
-        get_remote_main_head()
+        get_remote_main_head(branch="main")
 
         # Verify fetch was called before ls-remote
         assert len(calls) == 2
         assert "fetch" in calls[0]
         assert "ls-remote" in calls[1]
+
+    def test_get_remote_main_head_uses_passed_branch(self, mocker):
+        """Should fetch and query the passed branch, not hardcoded 'main'."""
+        from i2code.implement.implement import get_remote_main_head
+
+        calls = []
+        def mock_run(*args, **kwargs):
+            calls.append(args[0])
+            result = mocker.MagicMock()
+            result.returncode = 0
+            if "fetch" in args[0]:
+                result.stdout = ""
+            else:
+                result.stdout = "abc123\trefs/heads/master\n"
+            return result
+
+        mocker.patch('i2code.implement.implement.subprocess.run', side_effect=mock_run)
+
+        sha = get_remote_main_head(branch="master")
+
+        assert sha == "abc123"
+        # Verify "master" appears in the fetch and ls-remote commands
+        fetch_cmd = calls[0]
+        assert "master" in fetch_cmd
+        ls_remote_cmd = calls[1]
+        assert "refs/heads/master" in ls_remote_cmd
 
 
 @pytest.mark.unit
@@ -622,7 +648,7 @@ class TestRebaseOperations:
         mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
         mock_run.return_value.returncode = 0
 
-        result = rebase_integration_branch("idea/my-feature/integration")
+        result = rebase_integration_branch("idea/my-feature/integration", base_branch="main")
 
         assert result is True
 
@@ -634,7 +660,7 @@ class TestRebaseOperations:
         mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
         mock_run.return_value.returncode = 1
 
-        result = rebase_integration_branch("idea/my-feature/integration")
+        result = rebase_integration_branch("idea/my-feature/integration", base_branch="main")
 
         assert result is False
 
@@ -655,11 +681,30 @@ class TestRebaseOperations:
 
         mocker.patch('i2code.implement.implement.subprocess.run', side_effect=mock_run)
 
-        rebase_integration_branch("idea/my-feature/integration")
+        rebase_integration_branch("idea/my-feature/integration", base_branch="main")
 
         # Verify abort was called after failed rebase
         abort_calls = [c for c in calls if "--abort" in c]
         assert len(abort_calls) == 1
+
+    def test_rebase_integration_branch_uses_passed_base_branch(self, mocker):
+        """Should rebase onto the passed base_branch, not hardcoded 'main'."""
+        from i2code.implement.implement import rebase_integration_branch
+
+        calls = []
+        def mock_run(cmd, **kwargs):
+            calls.append(cmd)
+            result = mocker.MagicMock()
+            result.returncode = 0
+            return result
+
+        mocker.patch('i2code.implement.implement.subprocess.run', side_effect=mock_run)
+
+        rebase_integration_branch("idea/my-feature/integration", base_branch="master")
+
+        rebase_cmd = [c for c in calls if "rebase" in c and "--abort" not in c]
+        assert len(rebase_cmd) == 1
+        assert "origin/master" in rebase_cmd[0]
 
     def test_update_slice_after_rebase_force_pushes(self, mocker):
         """Should force push slice branch after rebase."""
@@ -683,7 +728,7 @@ class TestRebaseConflictHandling:
         """Should return a message explaining the conflict."""
         from i2code.implement.implement import get_rebase_conflict_message
 
-        message = get_rebase_conflict_message("idea/my-feature/integration")
+        message = get_rebase_conflict_message("idea/my-feature/integration", base_branch="main")
 
         assert "conflict" in message.lower()
         assert "idea/my-feature/integration" in message
@@ -692,10 +737,19 @@ class TestRebaseConflictHandling:
         """Should include instructions for manual resolution."""
         from i2code.implement.implement import get_rebase_conflict_message
 
-        message = get_rebase_conflict_message("idea/my-feature/integration")
+        message = get_rebase_conflict_message("idea/my-feature/integration", base_branch="main")
 
         # Should tell user what to do
         assert "manual" in message.lower() or "resolve" in message.lower()
+
+    def test_rebase_conflict_message_uses_passed_base_branch(self):
+        """Should use the passed base_branch, not hardcoded 'main'."""
+        from i2code.implement.implement import get_rebase_conflict_message
+
+        message = get_rebase_conflict_message("idea/my-feature/integration", base_branch="master")
+
+        assert "origin/master" in message
+        assert "origin/main" not in message
 
 
 @pytest.mark.unit

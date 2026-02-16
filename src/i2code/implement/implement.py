@@ -451,7 +451,7 @@ def create_draft_pr(
     slice_branch: str,
     title: str,
     body: str,
-    base_branch: str = "main"
+    base_branch: str,
 ) -> int:
     """Create a Draft PR for the slice branch.
 
@@ -494,7 +494,8 @@ def ensure_draft_pr(
     slice_branch: str,
     idea_directory: str,
     idea_name: str,
-    slice_number: int
+    slice_number: int,
+    base_branch: str,
 ) -> Optional[int]:
     """Ensure a Draft PR exists for the slice branch.
 
@@ -505,6 +506,7 @@ def ensure_draft_pr(
         idea_directory: Path to the idea directory
         idea_name: Name of the idea
         slice_number: Current slice number
+        base_branch: The base branch to merge into
 
     Returns:
         PR number if exists or created, None if failed
@@ -521,7 +523,7 @@ def ensure_draft_pr(
     body = generate_pr_body(idea_directory, idea_name, slice_number)
 
     # Create new Draft PR
-    pr_number = create_draft_pr(slice_branch, title, body)
+    pr_number = create_draft_pr(slice_branch, title, body, base_branch)
     if pr_number:
         print(f"Created Draft PR #{pr_number}")
     return pr_number
@@ -1439,14 +1441,14 @@ def has_main_advanced(original_head: str, current_head: str) -> bool:
     return original_head != current_head
 
 
-def get_remote_main_head(remote: str = "origin", branch: str = "main") -> str:
+def get_remote_main_head(branch: str, remote: str = "origin") -> str:
     """Get the current HEAD SHA of the remote main branch.
 
     Fetches from the remote first to ensure we have the latest refs.
 
     Args:
+        branch: The branch name
         remote: The remote name (default: "origin")
-        branch: The branch name (default: "main")
 
     Returns:
         The SHA of the remote main branch HEAD
@@ -1472,7 +1474,7 @@ def get_remote_main_head(remote: str = "origin", branch: str = "main") -> str:
     return result.stdout.split()[0]
 
 
-def rebase_integration_branch(integration_branch: str, base_branch: str = "main") -> bool:
+def rebase_integration_branch(integration_branch: str, base_branch: str) -> bool:
     """Attempt to rebase the integration branch onto the updated main.
 
     If rebase has conflicts, aborts the rebase and returns False.
@@ -1528,11 +1530,12 @@ def update_slice_after_rebase(slice_branch: str) -> bool:
     return result.returncode == 0
 
 
-def get_rebase_conflict_message(integration_branch: str) -> str:
+def get_rebase_conflict_message(integration_branch: str, base_branch: str) -> str:
     """Generate a message explaining rebase conflict and how to resolve it.
 
     Args:
         integration_branch: The integration branch that had conflicts
+        base_branch: The base branch to rebase onto
 
     Returns:
         A human-readable message with instructions
@@ -1544,7 +1547,7 @@ The main branch has advanced and there are conflicts that require manual resolut
 
 To resolve:
 1. Navigate to the worktree directory
-2. Run: git rebase origin/main
+2. Run: git rebase origin/{base_branch}
 3. Resolve the conflicts in each file
 4. Run: git add <resolved-files>
 5. Run: git rebase --continue

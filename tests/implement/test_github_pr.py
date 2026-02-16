@@ -170,7 +170,28 @@ class TestCreateDraftPRFailure:
         monkeypatch.setattr("i2code.implement.implement.create_draft_pr", mock_create)
 
         with pytest.raises(RuntimeError):
-            ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1)
+            ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1, base_branch="main")
+
+    def test_ensure_draft_pr_passes_base_branch_to_create(self, monkeypatch):
+        """ensure_draft_pr should pass base_branch through to create_draft_pr."""
+        from i2code.implement.implement import ensure_draft_pr
+
+        monkeypatch.setattr("i2code.implement.implement.find_existing_pr", lambda *a, **k: None)
+
+        captured_kwargs = {}
+        def mock_create(*args, **kwargs):
+            captured_kwargs.update(kwargs)
+            # Also capture positional args
+            captured_kwargs["_args"] = args
+            return 42
+
+        monkeypatch.setattr("i2code.implement.implement.create_draft_pr", mock_create)
+
+        ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1, base_branch="master")
+
+        # Verify base_branch="master" was passed to create_draft_pr
+        all_args = captured_kwargs.get("_args", ())
+        assert "master" in all_args or captured_kwargs.get("base_branch") == "master"
 
 
 @pytest.mark.unit

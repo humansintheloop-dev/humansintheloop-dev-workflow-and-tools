@@ -22,10 +22,12 @@ echo ""
 echo "--- pytest integration tests ---"
 uv run --python 3.12 --with pytest --with GitPython --with pytest-mock --with Jinja2 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m integration
 
+echo ""
+echo "--- pytest integration_gh tests (requires gh auth) ---"
 if [[ -z "${CI:-}" ]]; then
-    echo ""
-    echo "--- pytest integration_gh tests (local only) ---"
     uv run --python 3.12 --with pytest --with GitPython --with pytest-mock --with Jinja2 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m integration_gh
+else
+    echo "SKIPPED: integration_gh tests not run in CI (no GH_TOKEN)"
 fi
 
 echo ""

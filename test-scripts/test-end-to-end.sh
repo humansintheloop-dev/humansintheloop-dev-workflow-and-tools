@@ -22,6 +22,12 @@ echo ""
 echo "--- pytest integration tests ---"
 uv run --python 3.12 --with pytest --with GitPython --with pytest-mock --with Jinja2 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m integration
 
+if [[ -z "${CI:-}" ]]; then
+    echo ""
+    echo "--- pytest integration_gh tests (local only) ---"
+    uv run --python 3.12 --with pytest --with GitPython --with pytest-mock --with Jinja2 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m integration_gh
+fi
+
 echo ""
 "$SCRIPT_DIR/test-verify-all-tests-have-markers.sh"
 

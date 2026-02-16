@@ -114,7 +114,7 @@ SIMPLE_PLAN_CONTENT = """# Simple Test Plan
 """
 
 
-@pytest.mark.integration
+@pytest.mark.integration_gh
 class TestTaskDetectionAndExecution:
     """Test that script detects and executes tasks from plan file."""
 
@@ -253,7 +253,7 @@ def github_test_repo_with_simple_plan():
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-@pytest.mark.integration
+@pytest.mark.integration_gh
 class TestSequentialTaskExecution:
     """Test that script executes all tasks sequentially until complete."""
 
@@ -508,7 +508,7 @@ def github_test_repo_with_pr_and_comments():
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-@pytest.mark.integration
+@pytest.mark.integration_gh
 class TestFeedbackDetectionIntegration:
     """Test feedback detection with real GitHub PRs."""
 
@@ -607,7 +607,7 @@ class TestFeedbackDetectionIntegration:
             "No new feedback should exist after marking all as processed"
 
 
-@pytest.mark.integration
+@pytest.mark.integration_gh
 class TestMainBranchAdvancementIntegration:
     """Test main branch advancement detection with real git operations."""
 
@@ -660,7 +660,7 @@ class TestMainBranchAdvancementIntegration:
             os.chdir(original_cwd)
 
 
-@pytest.mark.integration
+@pytest.mark.integration_gh
 class TestPRCompletionIntegration:
     """Test PR completion detection with real GitHub PRs."""
 

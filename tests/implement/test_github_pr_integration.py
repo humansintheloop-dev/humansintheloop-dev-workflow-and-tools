@@ -129,7 +129,7 @@ def github_test_repo():
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-@pytest.mark.integration
+@pytest.mark.integration_gh
 class TestDraftPRCreation:
     """Test that script creates Draft PR on GitHub."""
 
@@ -220,7 +220,7 @@ class TestDraftPRCreation:
             f"Expected 1 new PR. Before: {initial_count}, After: {new_count}"
 
 
-@pytest.mark.integration
+@pytest.mark.integration_gh
 class TestPRContent:
     """Test that PR has correct title and body."""
 
@@ -248,7 +248,7 @@ class TestPRContent:
             f"PR is not a draft: isDraft={pr_details.get('isDraft')}"
 
 
-@pytest.mark.integration
+@pytest.mark.integration_gh
 class TestPRReuse:
     """Test that running script again reuses existing PR."""
 

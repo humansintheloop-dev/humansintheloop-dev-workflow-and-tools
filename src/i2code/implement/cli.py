@@ -85,11 +85,6 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
     if not isolated and not ignore_uncommitted_idea_changes:
         validate_idea_files_committed(idea_directory, idea_name)
 
-    # Detect the default branch for PR creation (skip for dry-run and trunk modes)
-    base_branch = None
-    if not dry_run and not trunk and not setup_only:
-        base_branch = get_default_branch()
-
     if dry_run:
         if trunk:
             mode = "trunk"
@@ -345,6 +340,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
 
         # Create PR after first push if it doesn't exist yet
         if pr_number is None:
+            base_branch = get_default_branch()
             pr_number = ensure_draft_pr(
                 slice_branch, idea_directory, idea_name, state["slice_number"],
                 base_branch=base_branch,

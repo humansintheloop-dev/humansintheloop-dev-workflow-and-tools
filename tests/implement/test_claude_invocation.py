@@ -995,3 +995,75 @@ class TestInterruptHandling:
         )
 
         mock_save.assert_called_once()
+
+
+@pytest.mark.unit
+class TestBuildCiFixCommand:
+    """Test building Claude command for CI fix."""
+
+    def test_build_ci_fix_command_renders_ci_fix_template(self, mocker):
+        """Should render prompt from ci_fix.j2 template."""
+        from i2code.implement.implement import build_ci_fix_command
+
+        mock_render = mocker.patch("i2code.templates.template_renderer.render_template", return_value="rendered prompt")
+
+        build_ci_fix_command(
+            run_id=12345,
+            workflow_name="CI Build",
+            failure_logs="Error: test failed",
+            interactive=True
+        )
+
+        mock_render.assert_called_once_with(
+            "ci_fix.j2",
+            package="i2code.implement",
+            run_id=12345,
+            workflow_name="CI Build",
+            failure_logs="Error: test failed",
+        )
+
+    def test_build_ci_fix_command_includes_variables_in_prompt(self):
+        """Should include run_id, workflow_name, and failure_logs in prompt."""
+        from i2code.implement.implement import build_ci_fix_command
+
+        cmd = build_ci_fix_command(
+            run_id=12345,
+            workflow_name="CI Build",
+            failure_logs="Error: test failed",
+            interactive=True
+        )
+
+        prompt = cmd[1]
+        assert "CI Build" in prompt
+        assert "12345" in prompt
+        assert "Error: test failed" in prompt
+
+    def test_build_ci_fix_command_truncates_long_logs(self):
+        """Should truncate logs longer than 5000 chars."""
+        from i2code.implement.implement import build_ci_fix_command
+
+        long_logs = "x" * 6000
+        cmd = build_ci_fix_command(
+            run_id=1,
+            workflow_name="Build",
+            failure_logs=long_logs,
+            interactive=True
+        )
+
+        prompt = cmd[1]
+        assert "truncated" in prompt.lower()
+
+    def test_build_ci_fix_command_non_interactive(self):
+        """Should build non-interactive Claude command with -p flag."""
+        from i2code.implement.implement import build_ci_fix_command
+
+        cmd = build_ci_fix_command(
+            run_id=1,
+            workflow_name="Build",
+            failure_logs="some error",
+            interactive=False
+        )
+
+        assert "claude" in cmd
+        assert "-p" in cmd
+        assert "--verbose" in cmd

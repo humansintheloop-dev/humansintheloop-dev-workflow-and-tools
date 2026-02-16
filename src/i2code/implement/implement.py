@@ -2077,24 +2077,15 @@ def build_ci_fix_command(
     if len(failure_logs) > max_log_length:
         failure_logs = f"... (truncated)\n{failure_logs[-max_log_length:]}"
 
-    prompt = f"""CI build failure detected. Use the debugging-ci-failures skill.
+    from i2code.templates.template_renderer import render_template
 
-Workflow: {workflow_name}
-Run ID: {run_id}
-
-Failure logs:
-```
-{failure_logs}
-```
-
-Your task:
-1. Analyze the failure logs to understand what went wrong
-2. Identify the root cause of the failure
-3. Make the necessary code changes to fix the issue
-4. Commit your changes with a clear message explaining the fix
-
-IMPORTANT: if you don't have permission to perform an action, print an informative error message and exit.
-"""
+    prompt = render_template(
+        "ci_fix.j2",
+        package=__package__,
+        run_id=run_id,
+        workflow_name=workflow_name,
+        failure_logs=failure_logs,
+    )
 
     if interactive:
         return ["claude", prompt]

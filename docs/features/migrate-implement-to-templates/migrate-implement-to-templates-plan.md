@@ -109,7 +109,7 @@ Migrate the remaining two prompts.
     2. [ ] Replace f-string in `build_scaffolding_prompt` with `render_template` call
     3. [ ] Run tests to verify
 
-- [ ] **Task 2.2: Migrate build_ci_fix_command prompt to ci_fix.j2**
+- [x] **Task 2.2: Migrate build_ci_fix_command prompt to ci_fix.j2**
   - TaskType: code
   - Entrypoint: `build_ci_fix_command` in implement.py:2150
   - Observable: Function uses `render_template("ci_fix.j2", ...)` instead of f-string. Existing tests pass unchanged.

@@ -1,0 +1,1 @@
+Migrate all remaining f-string prompts in implement.py to Jinja2 templates, using the shared render_template() helper established in the task_execution.j2 extraction.

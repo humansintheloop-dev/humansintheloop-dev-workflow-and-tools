@@ -34,7 +34,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Configuration paths
 CONFIG_FILES_DIR="$PROJECT_ROOT/config-files"
-TEST_IDEA_SOURCE="$PROJECT_ROOT/tests/kafka-security-poc"
+TEST_IDEA_SOURCE="$PROJECT_ROOT/test-ideas/kafka-security-poc"
 WORKTREE_SCRIPT="$PROJECT_ROOT/workflow-scripts/implement-with-worktree.sh"
 
 # Test configuration

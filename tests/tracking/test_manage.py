@@ -22,6 +22,7 @@ def _make_claude_dirs(project):
         (d / "sample.md").write_text("sample")
 
 
+@pytest.mark.unit
 class TestMigrate:
     def test_moves_directories(self, project):
         _make_claude_dirs(project)
@@ -136,6 +137,7 @@ class TestMigrate:
         assert "no longer gitignored" not in output
 
 
+@pytest.mark.unit
 class TestLink:
     def test_creates_symlinks(self, project):
         target_base = project / "tracking" / "my-project"
@@ -183,6 +185,7 @@ class TestLink:
         assert not (target_base / "sessions").exists()
 
 
+@pytest.mark.unit
 class TestMigrateAndLink:
     def test_migrate_then_link(self, project):
         _make_claude_dirs(project)

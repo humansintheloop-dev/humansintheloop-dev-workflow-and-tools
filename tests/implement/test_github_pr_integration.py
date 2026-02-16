@@ -20,7 +20,7 @@ from conftest import run_script
 # Test idea directory source
 TEST_IDEA_SOURCE = os.path.join(
     os.path.dirname(__file__),
-    '../kafka-security-poc'
+    '../../test-ideas/kafka-security-poc'
 )
 
 

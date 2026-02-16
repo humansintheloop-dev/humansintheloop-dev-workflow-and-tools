@@ -44,6 +44,22 @@ set -e  # Exit on error
 TASK_DESC="$1"
 IDEA_NAME="{idea_name}"
 
+# Ensure CI workflow exists (required by the script before pushing)
+mkdir -p .github/workflows
+if [ ! -f .github/workflows/ci.yml ]; then
+    cat > .github/workflows/ci.yml << 'CIEOF'
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "ok"
+CIEOF
+    git add .github/workflows/ci.yml
+fi
+
 # Find the plan file in the worktree (relative path from worktree root)
 PLAN_FILE="$IDEA_NAME/$IDEA_NAME-plan.md"
 
@@ -334,12 +350,12 @@ class TestSequentialTaskExecution:
 
         # Verify tasks were executed in order
         stdout = result.stdout
-        task1_pos = stdout.find("Task 1")
-        task2_pos = stdout.find("Task 2")
-        task3_pos = stdout.find("Task 3")
+        task1_pos = stdout.find("Task 1.1")
+        task2_pos = stdout.find("Task 1.2")
+        task3_pos = stdout.find("Task 1.3")
 
         assert task1_pos < task2_pos < task3_pos, \
-            f"Tasks not in order. Positions: Task1={task1_pos}, Task2={task2_pos}, Task3={task3_pos}"
+            f"Tasks not in order. Positions: Task1.1={task1_pos}, Task1.2={task2_pos}, Task1.3={task3_pos}"
 
     def test_plan_file_updated_after_completion(self, github_test_repo_with_simple_plan):
         """Plan file in worktree should have all tasks marked complete after script finishes."""

@@ -2064,21 +2064,15 @@ def build_feedback_command(
     Returns:
         Command as a list suitable for subprocess
     """
-    prompt = f"""You are addressing feedback on a pull request.
+    from i2code.templates.template_renderer import render_template
 
-* PR URL: {pr_url}
-* Feedback type: {feedback_type}
-
-The feedback to address:
-
-{feedback_content}
-
-Your task:
-
-1. Understand the feedback and what changes are being requested
-2. Make the necessary code changes to address the feedback
-3. Commit your changes with a clear message explaining how you addressed the feedback
-"""
+    prompt = render_template(
+        "address_feedback.j2",
+        package=__package__,
+        pr_url=pr_url,
+        feedback_type=feedback_type,
+        feedback_content=feedback_content,
+    )
 
     return [
         "claude",

@@ -9,7 +9,7 @@ echo "=== Running Unit Tests ==="
 
 echo ""
 echo "--- pytest unit tests ---"
-uv run --python 3.12 --with pytest --with GitPython --with pytest-mock --with Jinja2 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m unit
+uv run --python 3.12 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m unit
 
 echo ""
 echo "--- CLI smoke tests ---"
@@ -20,12 +20,12 @@ echo "=== Running Integration Tests ==="
 
 echo ""
 echo "--- pytest integration tests ---"
-uv run --python 3.12 --with pytest --with GitPython --with pytest-mock --with Jinja2 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m integration
+uv run --python 3.12 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m integration
 
 echo ""
 echo "--- pytest integration_gh tests (requires gh auth) ---"
 if [[ -z "${CI:-}" ]]; then
-    uv run --python 3.12 --with pytest --with GitPython --with pytest-mock --with Jinja2 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m integration_gh
+    uv run --python 3.12 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m integration_gh
 else
     echo "SKIPPED: integration_gh tests not run in CI (no GH_TOKEN)"
 fi

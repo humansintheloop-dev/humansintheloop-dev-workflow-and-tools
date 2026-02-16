@@ -74,7 +74,7 @@ Migrate the triage and fix feedback prompts, which are closely related.
     2. [x] Replace f-string in `build_triage_command` with `render_template` call
     3. [x] Run tests to verify
 
-- [ ] **Task 1.2: Migrate build_fix_command prompt to fix_feedback.j2**
+- [x] **Task 1.2: Migrate build_fix_command prompt to fix_feedback.j2**
   - TaskType: code
   - Entrypoint: `build_fix_command` in implement.py:790
   - Observable: Function uses `render_template("fix_feedback.j2", ...)` instead of f-string. Existing tests pass unchanged.

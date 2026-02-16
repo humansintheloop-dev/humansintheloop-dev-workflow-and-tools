@@ -759,26 +759,15 @@ def build_fix_command(
     Returns:
         Command as a list suitable for subprocess
     """
-    prompt = f"""You are fixing feedback on a pull request.
+    from i2code.templates.template_renderer import render_template
 
-PR URL: {pr_url}
-
-The following feedback needs to be addressed:
-
-{feedback_content}
-
-Fix description: {fix_description}
-
-Your task:
-
-1. Make the necessary code changes to address all the feedback
-2. Commit your changes with a clear message explaining how you addressed the feedback
-
-IMPORTANT:
-- Make all changes in a single commit
-- The commit message should clearly describe what was fixed
-- If you don't have permission to perform an action, print an informative error message and exit
-"""
+    prompt = render_template(
+        "fix_feedback.j2",
+        package=__package__,
+        pr_url=pr_url,
+        feedback_content=feedback_content,
+        fix_description=fix_description,
+    )
 
     if interactive:
         return ["claude", prompt]

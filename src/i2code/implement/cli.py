@@ -9,6 +9,7 @@ import click
 from git import Repo
 
 from i2code.implement.git_utils import get_default_branch
+from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.implement import (
@@ -21,13 +22,11 @@ from i2code.implement.implement import (
     get_next_task,
     is_task_completed,
     get_worktree_idea_directory,
-    find_existing_pr,
     ensure_draft_pr,
     push_branch_to_remote,
     branch_has_been_pushed,
     get_failing_workflow_run,
     fix_ci_failure,
-    get_pr_url,
     process_pr_feedback,
     build_claude_command,
     run_claude_with_output_capture,
@@ -221,8 +220,11 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         print("Setup complete. Exiting (--setup-only mode).")
         return
 
+    # Create GitHubClient for PR operations
+    gh_client = GitHubClient()
+
     # Check for existing PR (creation is deferred until after first push)
-    pr_number = find_existing_pr(slice_branch)
+    pr_number = gh_client.find_pr(slice_branch)
     if pr_number:
         print(f"Reusing existing PR #{pr_number}")
 
@@ -252,7 +254,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
 
         # Check for PR feedback (only after CI passes and PR exists)
         if pr_number and branch_has_been_pushed(slice_branch):
-            pr_url = get_pr_url(pr_number)
+            pr_url = gh_client.get_pr_url(pr_number)
             had_feedback, made_changes = process_pr_feedback(
                 pr_number=pr_number,
                 pr_url=pr_url,
@@ -277,7 +279,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         if next_task is None:
             print("All tasks completed!")
             if pr_number:
-                pr_url = get_pr_url(pr_number)
+                pr_url = gh_client.get_pr_url(pr_number)
                 if pr_url:
                     print(f"PR: {pr_url}")
             break
@@ -339,6 +341,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
             pr_number = ensure_draft_pr(
                 slice_branch, project.directory, project.name, state.slice_number,
                 base_branch=base_branch,
+                gh_client=gh_client,
             )
             print(f"Created Draft PR #{pr_number}")
 

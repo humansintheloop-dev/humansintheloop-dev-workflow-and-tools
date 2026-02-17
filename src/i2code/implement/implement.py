@@ -293,95 +293,24 @@ This PR implements slice #{slice_number} of the development plan.
 """
 
 
+def _default_gh_client():
+    from i2code.implement.github_client import GitHubClient
+    return GitHubClient()
+
+
 def find_existing_pr(branch_name: str) -> Optional[int]:
-    """Find an existing PR for the given branch.
-
-    Args:
-        branch_name: The branch name to search for
-
-    Returns:
-        PR number if found, None otherwise
-    """
-    result = subprocess.run(
-        ["gh", "pr", "list", "--json", "number,headRefName,isDraft", "--state", "open"],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        return None
-
-    prs = json.loads(result.stdout)
-    for pr in prs:
-        if pr.get("headRefName") == branch_name:
-            return pr.get("number")
-
-    return None
+    """Delegate to GitHubClient.find_pr()."""
+    return _default_gh_client().find_pr(branch_name)
 
 
 def is_pr_draft(pr_number: int) -> bool:
-    """Check if a PR is in draft state.
-
-    Args:
-        pr_number: The PR number to check
-
-    Returns:
-        True if PR is draft, False if ready for review
-    """
-    result = subprocess.run(
-        ["gh", "pr", "view", str(pr_number), "--json", "isDraft"],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        return False
-
-    data = json.loads(result.stdout)
-    return data.get("isDraft", False)
+    """Delegate to GitHubClient.is_pr_draft()."""
+    return _default_gh_client().is_pr_draft(pr_number)
 
 
-def create_draft_pr(
-    slice_branch: str,
-    title: str,
-    body: str,
-    base_branch: str,
-) -> int:
-    """Create a Draft PR for the slice branch.
-
-    Args:
-        slice_branch: The head branch for the PR
-        title: PR title
-        body: PR body/description
-        base_branch: The base branch to merge into
-
-    Returns:
-        PR number if created
-
-    Raises:
-        RuntimeError: If PR creation fails
-    """
-    result = subprocess.run(
-        ["gh", "pr", "create",
-         "--draft",
-         "--title", title,
-         "--body", body,
-         "--head", slice_branch,
-         "--base", base_branch],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        raise RuntimeError(f"PR creation failed: {result.stderr}")
-
-    # Parse PR number from output URL (e.g., https://github.com/owner/repo/pull/123)
-    url = result.stdout.strip()
-    try:
-        pr_number = int(url.split("/")[-1])
-        return pr_number
-    except (ValueError, IndexError):
-        raise RuntimeError(f"Could not parse PR number from: {url}")
+def create_draft_pr(slice_branch: str, title: str, body: str, base_branch: str) -> int:
+    """Delegate to GitHubClient.create_draft_pr()."""
+    return _default_gh_client().create_draft_pr(slice_branch, title, body, base_branch)
 
 
 def ensure_draft_pr(
@@ -390,6 +319,7 @@ def ensure_draft_pr(
     idea_name: str,
     slice_number: int,
     base_branch: str,
+    gh_client=None,
 ) -> Optional[int]:
     """Ensure a Draft PR exists for the slice branch.
 
@@ -401,12 +331,17 @@ def ensure_draft_pr(
         idea_name: Name of the idea
         slice_number: Current slice number
         base_branch: The base branch to merge into
+        gh_client: GitHubClient instance (uses standalone functions if None)
 
     Returns:
         PR number if exists or created, None if failed
     """
+    if gh_client is None:
+        from i2code.implement.github_client import GitHubClient
+        gh_client = GitHubClient()
+
     # Check for existing PR
-    existing_pr = find_existing_pr(slice_branch)
+    existing_pr = gh_client.find_pr(slice_branch)
     if existing_pr is not None:
         print(f"Reusing existing PR #{existing_pr}")
         return existing_pr
@@ -417,7 +352,7 @@ def ensure_draft_pr(
     body = generate_pr_body(idea_directory, idea_name, slice_number)
 
     # Create new Draft PR
-    pr_number = create_draft_pr(slice_branch, title, body, base_branch)
+    pr_number = gh_client.create_draft_pr(slice_branch, title, body, base_branch)
     if pr_number:
         print(f"Created Draft PR #{pr_number}")
     return pr_number
@@ -532,24 +467,8 @@ def fetch_pr_conversation_comments(pr_number: int) -> List[Dict[str, Any]]:
 
 
 def get_pr_url(pr_number: int) -> str:
-    """Get the HTML URL for a PR.
-
-    Args:
-        pr_number: The PR number
-
-    Returns:
-        The HTML URL for the PR, or empty string on error
-    """
-    result = subprocess.run(
-        ["gh", "pr", "view", str(pr_number), "--json", "url", "--jq", ".url"],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        return ""
-
-    return result.stdout.strip()
+    """Delegate to GitHubClient.get_pr_url()."""
+    return _default_gh_client().get_pr_url(pr_number)
 
 
 def format_all_feedback(
@@ -1401,43 +1320,13 @@ The script will now pause. Press Enter when ready to exit, or Ctrl+C to abort.
 # PR Completion Functions
 
 def mark_pr_ready(pr_number: int) -> bool:
-    """Mark a PR as ready for review (convert from Draft to Ready).
-
-    Args:
-        pr_number: The PR number to mark as ready
-
-    Returns:
-        True if successful, False otherwise
-    """
-    result = subprocess.run(
-        ["gh", "pr", "ready", str(pr_number)],
-        capture_output=True,
-        text=True
-    )
-
-    return result.returncode == 0
+    """Delegate to GitHubClient.mark_pr_ready()."""
+    return _default_gh_client().mark_pr_ready(pr_number)
 
 
 def get_pr_state(pr_number: int) -> str:
-    """Get the current state of a PR (OPEN, MERGED, or CLOSED).
-
-    Args:
-        pr_number: The PR number to check
-
-    Returns:
-        The PR state string, or empty string on error
-    """
-    result = subprocess.run(
-        ["gh", "pr", "view", str(pr_number), "--json", "state"],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        return ""
-
-    data = json.loads(result.stdout)
-    return data.get("state", "")
+    """Delegate to GitHubClient.get_pr_state()."""
+    return _default_gh_client().get_pr_state(pr_number)
 
 
 def is_pr_complete(state: str) -> bool:
@@ -1492,7 +1381,7 @@ def delete_local_branch(branch_name: str) -> bool:
 
 # Slice Rollover Functions
 
-def should_rollover(pr_number: int, has_unpushed_commits: bool) -> bool:
+def should_rollover(pr_number: int, has_unpushed_commits: bool, gh_client=None) -> bool:
     """Check if we should rollover to a new slice.
 
     Rollover is needed when:
@@ -1502,14 +1391,19 @@ def should_rollover(pr_number: int, has_unpushed_commits: bool) -> bool:
     Args:
         pr_number: The PR number to check
         has_unpushed_commits: Whether there are local commits not pushed
+        gh_client: GitHubClient instance (uses default if None)
 
     Returns:
         True if rollover is needed, False otherwise
     """
+    if gh_client is None:
+        from i2code.implement.github_client import GitHubClient
+        gh_client = GitHubClient()
+
     if not has_unpushed_commits:
         return False
 
-    if is_pr_draft(pr_number):
+    if gh_client.is_pr_draft(pr_number):
         return False
 
     return True
@@ -1987,19 +1881,24 @@ def build_push_command(branch_name: str, force: bool = False) -> List[str]:
     return cmd
 
 
-def push_to_slice_branch(slice_branch: str, pr_number: int, force: bool = False) -> bool:
+def push_to_slice_branch(slice_branch: str, pr_number: int, force: bool = False, gh_client=None) -> bool:
     """Push to slice branch after verifying PR is still in Draft state.
 
     Args:
         slice_branch: The slice branch name to push to
         pr_number: The PR number to check Draft state
         force: If True, use force-with-lease
+        gh_client: GitHubClient instance (uses default if None)
 
     Returns:
         True if push succeeded, False if PR is not Draft or push failed
     """
+    if gh_client is None:
+        from i2code.implement.github_client import GitHubClient
+        gh_client = GitHubClient()
+
     # Verify PR is still in Draft state
-    if not is_pr_draft(pr_number):
+    if not gh_client.is_pr_draft(pr_number):
         print(f"Error: PR #{pr_number} is no longer in Draft state", file=sys.stderr)
         return False
 

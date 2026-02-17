@@ -2,11 +2,17 @@
 
 import os
 import subprocess
+import sys
 import tempfile
 
 import pytest
 from git import Repo
 
+# Ensure tests/implement/ is on sys.path so test files can import
+# fake_github_client unambiguously (avoids conftest module name collisions).
+sys.path.insert(0, os.path.dirname(__file__))
+
+from fake_github_client import FakeGitHubClient  # noqa: E402, F401
 
 # Command to invoke the implement CLI
 SCRIPT_CMD = ["i2code", "implement"]

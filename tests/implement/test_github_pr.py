@@ -47,148 +47,51 @@ class TestPRBodyGeneration:
 
 
 @pytest.mark.unit
-class TestCheckExistingPR:
-    """Test checking for existing PRs (mocked gh output)."""
+class TestEnsureDraftPR:
+    """Test ensure_draft_pr orchestration with FakeGitHubClient."""
 
-    def test_find_existing_pr_returns_pr_number(self, monkeypatch):
-        """Should return PR number if PR exists for branch."""
-        from i2code.implement.implement import find_existing_pr
-
-        # Mock gh pr list output
-        mock_output = json.dumps([
-            {"number": 123, "headRefName": "idea/my-feature/01-project-setup", "isDraft": True},
-            {"number": 456, "headRefName": "other-branch", "isDraft": False}
-        ])
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                stdout = mock_output
-                returncode = 0
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        pr_number = find_existing_pr("idea/my-feature/01-project-setup")
-        assert pr_number == 123
-
-    def test_find_existing_pr_returns_none_when_not_found(self, monkeypatch):
-        """Should return None if no PR exists for branch."""
-        from i2code.implement.implement import find_existing_pr
-
-        # Mock gh pr list output with no matching PR
-        mock_output = json.dumps([
-            {"number": 456, "headRefName": "other-branch", "isDraft": False}
-        ])
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                stdout = mock_output
-                returncode = 0
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        pr_number = find_existing_pr("idea/my-feature/01-project-setup")
-        assert pr_number is None
-
-
-@pytest.mark.unit
-class TestCheckPRDraftState:
-    """Test checking if PR is still in draft state."""
-
-    def test_is_pr_draft_returns_true_for_draft(self, monkeypatch):
-        """Should return True if PR is in draft state."""
-        from i2code.implement.implement import is_pr_draft
-
-        mock_output = json.dumps({"isDraft": True})
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                stdout = mock_output
-                returncode = 0
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        assert is_pr_draft(123) is True
-
-    def test_is_pr_draft_returns_false_for_ready(self, monkeypatch):
-        """Should return False if PR is ready for review."""
-        from i2code.implement.implement import is_pr_draft
-
-        mock_output = json.dumps({"isDraft": False})
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                stdout = mock_output
-                returncode = 0
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        assert is_pr_draft(123) is False
-
-
-@pytest.mark.unit
-class TestCreateDraftPRFailure:
-    """Test that PR creation failure is treated as fatal error."""
-
-    def test_create_draft_pr_raises_on_failure(self, monkeypatch):
-        """Should raise RuntimeError when gh pr create fails."""
-        from i2code.implement.implement import create_draft_pr
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                stdout = ""
-                stderr = "pull request create failed: GraphQL: No commits between main and branch"
-                returncode = 1
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        with pytest.raises(RuntimeError) as excinfo:
-            create_draft_pr("idea/test/01-setup", "Test PR", "Body", "main")
-
-        assert "No commits" in str(excinfo.value) or "failed" in str(excinfo.value).lower()
-
-    def test_ensure_draft_pr_raises_on_creation_failure(self, monkeypatch):
+    def test_ensure_draft_pr_raises_on_creation_failure(self):
         """ensure_draft_pr should raise when PR creation fails."""
+        from fake_github_client import FakeGitHubClient
         from i2code.implement.implement import ensure_draft_pr
 
-        # Mock find_existing_pr to return None (no existing PR)
-        def mock_find(*args, **kwargs):
-            return None
+        class FailingFakeClient(FakeGitHubClient):
+            def create_draft_pr(self, *args, **kwargs):
+                raise RuntimeError("PR creation failed")
 
-        # Mock create_draft_pr to fail
-        def mock_create(*args, **kwargs):
-            raise RuntimeError("PR creation failed")
-
-        monkeypatch.setattr("i2code.implement.implement.find_existing_pr", mock_find)
-        monkeypatch.setattr("i2code.implement.implement.create_draft_pr", mock_create)
-
+        fake = FailingFakeClient()
         with pytest.raises(RuntimeError):
-            ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1, base_branch="main")
+            ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1,
+                            base_branch="main", gh_client=fake)
 
-    def test_ensure_draft_pr_passes_base_branch_to_create(self, monkeypatch):
+    def test_ensure_draft_pr_passes_base_branch_to_create(self):
         """ensure_draft_pr should pass base_branch through to create_draft_pr."""
+        from fake_github_client import FakeGitHubClient
         from i2code.implement.implement import ensure_draft_pr
 
-        monkeypatch.setattr("i2code.implement.implement.find_existing_pr", lambda *a, **k: None)
+        fake = FakeGitHubClient()
+        fake.set_next_pr_number(42)
 
-        captured_kwargs = {}
-        def mock_create(*args, **kwargs):
-            captured_kwargs.update(kwargs)
-            # Also capture positional args
-            captured_kwargs["_args"] = args
-            return 42
+        ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1,
+                        base_branch="master", gh_client=fake)
 
-        monkeypatch.setattr("i2code.implement.implement.create_draft_pr", mock_create)
+        # Verify create_draft_pr was called with base_branch="master"
+        assert len(fake._created_prs) == 1
+        assert fake._created_prs[0]["base"] == "master"
 
-        ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1, base_branch="master")
+    def test_ensure_draft_pr_reuses_existing_pr(self):
+        """ensure_draft_pr should return existing PR number if one exists."""
+        from fake_github_client import FakeGitHubClient
+        from i2code.implement.implement import ensure_draft_pr
 
-        # Verify base_branch="master" was passed to create_draft_pr
-        all_args = captured_kwargs.get("_args", ())
-        assert "master" in all_args or captured_kwargs.get("base_branch") == "master"
+        fake = FakeGitHubClient()
+        fake.set_pr_list([{"number": 77, "headRefName": "idea/test/01-setup"}])
+
+        result = ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1,
+                                 base_branch="main", gh_client=fake)
+
+        assert result == 77
+        assert len(fake._created_prs) == 0
 
 
 @pytest.mark.unit
@@ -199,7 +102,7 @@ class TestDeferredPRCreation:
         """Running with --setup-only should NOT attempt to create a PR."""
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
-        import builtins
+        from fake_github_client import FakeGitHubClient
 
         # Track if ensure_draft_pr was called
         ensure_draft_pr_called = False
@@ -233,23 +136,6 @@ class TestDeferredPRCreation:
         monkeypatch.setattr("i2code.implement.implement.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
         monkeypatch.setattr("i2code.implement.implement.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
 
-        # Create a minimal plan file in the expected location
-        plan_file = tmp_path / "test-idea-plan.md"
-        plan_file.write_text("# Plan\n- [ ] **Task 1.1: Test task**\n")
-
-        # Mock open to return our plan file for plan file reads
-        original_open = builtins.open
-        def mock_open(*args, **kwargs):
-            if args and "plan" in str(args[0]):
-                return original_open(plan_file, *args[1:], **kwargs)
-            return original_open(*args, **kwargs)
-        monkeypatch.setattr("builtins.open", mock_open)
-
-        # Mock the PR functions
-        monkeypatch.setattr("i2code.implement.implement.push_branch_to_remote", lambda x: True)
-        monkeypatch.setattr("i2code.implement.implement.find_existing_pr", lambda x: None)
-        monkeypatch.setattr("i2code.implement.implement.ensure_draft_pr", mock_ensure_draft_pr)
-
         # Also patch the cli module's imported references
         from unittest.mock import MagicMock
         mock_project = MagicMock()
@@ -260,8 +146,7 @@ class TestDeferredPRCreation:
         mock_project.validate_files.return_value = None
         monkeypatch.setattr("i2code.implement.cli.IdeaProject", lambda x: mock_project)
         monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda x, y: None)
-        from unittest.mock import MagicMock as _MagicMock
-        _mock_state = _MagicMock(slice_number=1, processed_comment_ids=[], processed_review_ids=[], processed_conversation_ids=[])
+        _mock_state = MagicMock(slice_number=1, processed_comment_ids=[], processed_review_ids=[], processed_conversation_ids=[])
         monkeypatch.setattr("i2code.implement.cli.WorkflowState.load", lambda x: _mock_state)
         monkeypatch.setattr("i2code.implement.cli.ensure_integration_branch", lambda r, n, isolated=False: "idea/test-idea/integration")
         monkeypatch.setattr("i2code.implement.cli.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
@@ -271,12 +156,12 @@ class TestDeferredPRCreation:
             task=Task(_lines=["- [ ] **Task 1.1: test-task**"]),
         ))
         monkeypatch.setattr("i2code.implement.cli.get_worktree_idea_directory", lambda **kwargs: str(tmp_path / "worktree" / "test-idea"))
-        monkeypatch.setattr("i2code.implement.cli.find_existing_pr", lambda x: None)
+        monkeypatch.setattr("i2code.implement.cli.GitHubClient", lambda: FakeGitHubClient())
         monkeypatch.setattr("i2code.implement.cli.ensure_draft_pr", mock_ensure_draft_pr)
 
         # Run via Click test runner
         runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, [str(tmp_path), "--setup-only"])
+        _result = runner.invoke(implement_cmd, [str(tmp_path), "--setup-only"])
 
         # Verify ensure_draft_pr was NOT called
         assert not ensure_draft_pr_called, "ensure_draft_pr should not be called in --setup-only mode"
@@ -323,41 +208,6 @@ class TestFetchPRConversationComments:
 
         comments = fetch_pr_conversation_comments(123)
         assert comments == []
-
-
-@pytest.mark.unit
-class TestGetPRUrl:
-    """Test getting PR URL."""
-
-    def test_get_pr_url_returns_url(self, monkeypatch):
-        """Should return the PR URL."""
-        from i2code.implement.implement import get_pr_url
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                stdout = "https://github.com/owner/repo/pull/123\n"
-                returncode = 0
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        url = get_pr_url(123)
-        assert url == "https://github.com/owner/repo/pull/123"
-
-    def test_get_pr_url_returns_empty_on_error(self, monkeypatch):
-        """Should return empty string on error."""
-        from i2code.implement.implement import get_pr_url
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                stdout = ""
-                returncode = 1
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        url = get_pr_url(123)
-        assert url == ""
 
 
 @pytest.mark.unit

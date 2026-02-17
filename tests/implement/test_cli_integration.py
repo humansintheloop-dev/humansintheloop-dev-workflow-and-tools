@@ -186,7 +186,7 @@ class TestGetDefaultBranchWiring:
     @patch("i2code.implement.cli.run_claude_with_output_capture")
     @patch("i2code.implement.cli.build_claude_command", return_value=["echo", "mock"])
     @patch("i2code.implement.cli.branch_has_been_pushed", return_value=False)
-    @patch("i2code.implement.cli.find_existing_pr", return_value=None)
+    @patch("i2code.implement.cli.GitHubClient")
     @patch("i2code.implement.cli.wait_for_workflow_completion", return_value=(True, None))
     @patch("i2code.implement.cli.get_worktree_idea_directory", return_value="/tmp/wt/idea")
     @patch("i2code.implement.cli.ensure_claude_permissions")
@@ -202,7 +202,7 @@ class TestGetDefaultBranchWiring:
         self, mock_get_default, mock_repo_cls, mock_idea_project_cls,
         mock_validate_committed, mock_load_state,
         mock_ensure_integration, mock_ensure_slice, mock_ensure_worktree,
-        mock_ensure_perms, mock_get_wt_idea, mock_wait_ci, mock_find_pr,
+        mock_ensure_perms, mock_get_wt_idea, mock_wait_ci, mock_gh_client_cls,
         mock_branch_pushed, mock_build_cmd, mock_run_claude, mock_check_success,
         mock_is_completed, mock_has_ci, mock_push, mock_ensure_pr,
     ):
@@ -215,6 +215,11 @@ class TestGetDefaultBranchWiring:
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
 
+        # Mock GitHubClient instance
+        mock_gh = MagicMock()
+        mock_gh.find_pr.return_value = None
+        mock_gh_client_cls.return_value = mock_gh
+
         # get_next_task is called: 1) before loop for slice naming, 2) in loop to execute, 3) in loop to check done
         task = _make_numbered_task("setup")
         with patch("i2code.implement.cli.get_next_task", side_effect=[task, task, None]):
@@ -222,7 +227,7 @@ class TestGetDefaultBranchWiring:
             mock_run_claude.return_value = MagicMock(returncode=0, stdout="", stderr="", permission_denials=[], error_message=None, last_messages=[])
 
             runner = CliRunner(catch_exceptions=False)
-            result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--non-interactive", "--skip-ci-wait"])
+            _result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--non-interactive", "--skip-ci-wait"])
 
         mock_get_default.assert_called_once()
         mock_ensure_pr.assert_called_once()

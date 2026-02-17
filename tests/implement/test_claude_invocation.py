@@ -296,16 +296,18 @@ class TestPushToSliceBranch:
 
     def test_push_returns_false_if_pr_not_draft(self, mocker):
         """Should not push and return False if PR is not in Draft state."""
+        from fake_github_client import FakeGitHubClient
         from i2code.implement.implement import push_to_slice_branch
 
-        # Mock is_pr_draft to return False (PR is not draft)
-        mocker.patch('i2code.implement.implement.is_pr_draft', return_value=False)
+        fake = FakeGitHubClient()
+        fake.set_pr_view(123, {"isDraft": False})
         # Mock subprocess.run to track if it was called
         mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
 
         result = push_to_slice_branch(
             slice_branch="idea/my-feature/01-setup",
-            pr_number=123
+            pr_number=123,
+            gh_client=fake,
         )
 
         assert result is False
@@ -313,17 +315,19 @@ class TestPushToSliceBranch:
 
     def test_push_succeeds_when_pr_is_draft(self, mocker):
         """Should push and return True when PR is in Draft state."""
+        from fake_github_client import FakeGitHubClient
         from i2code.implement.implement import push_to_slice_branch
 
-        # Mock is_pr_draft to return True
-        mocker.patch('i2code.implement.implement.is_pr_draft', return_value=True)
+        fake = FakeGitHubClient()
+        fake.set_pr_view(123, {"isDraft": True})
         # Mock subprocess.run to simulate successful push
         mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
         mock_run.return_value.returncode = 0
 
         result = push_to_slice_branch(
             slice_branch="idea/my-feature/01-setup",
-            pr_number=123
+            pr_number=123,
+            gh_client=fake,
         )
 
         assert result is True
@@ -331,17 +335,19 @@ class TestPushToSliceBranch:
 
     def test_push_returns_false_on_push_failure(self, mocker):
         """Should return False when git push fails."""
+        from fake_github_client import FakeGitHubClient
         from i2code.implement.implement import push_to_slice_branch
 
-        # Mock is_pr_draft to return True
-        mocker.patch('i2code.implement.implement.is_pr_draft', return_value=True)
+        fake = FakeGitHubClient()
+        fake.set_pr_view(123, {"isDraft": True})
         # Mock subprocess.run to simulate failed push
         mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
         mock_run.return_value.returncode = 1
 
         result = push_to_slice_branch(
             slice_branch="idea/my-feature/01-setup",
-            pr_number=123
+            pr_number=123,
+            gh_client=fake,
         )
 
         assert result is False
@@ -905,34 +911,39 @@ class TestCleanupOperations:
 class TestSliceRollover:
     """Test slice rollover when PR exits Draft state unexpectedly."""
 
-    def test_should_rollover_true_when_not_draft_with_local_commits(self, mocker):
+    def test_should_rollover_true_when_not_draft_with_local_commits(self):
         """Should return True when PR is not draft and has unpushed commits."""
+        from fake_github_client import FakeGitHubClient
         from i2code.implement.implement import should_rollover
 
-        # Mock is_pr_draft to return False (PR is ready, not draft)
-        mocker.patch('i2code.implement.implement.is_pr_draft', return_value=False)
+        fake = FakeGitHubClient()
+        fake.set_pr_view(123, {"isDraft": False})
 
-        result = should_rollover(pr_number=123, has_unpushed_commits=True)
+        result = should_rollover(pr_number=123, has_unpushed_commits=True, gh_client=fake)
 
         assert result is True
 
-    def test_should_rollover_false_when_draft(self, mocker):
+    def test_should_rollover_false_when_draft(self):
         """Should return False when PR is still in draft state."""
+        from fake_github_client import FakeGitHubClient
         from i2code.implement.implement import should_rollover
 
-        mocker.patch('i2code.implement.implement.is_pr_draft', return_value=True)
+        fake = FakeGitHubClient()
+        fake.set_pr_view(123, {"isDraft": True})
 
-        result = should_rollover(pr_number=123, has_unpushed_commits=True)
+        result = should_rollover(pr_number=123, has_unpushed_commits=True, gh_client=fake)
 
         assert result is False
 
-    def test_should_rollover_false_when_no_unpushed_commits(self, mocker):
+    def test_should_rollover_false_when_no_unpushed_commits(self):
         """Should return False when there are no unpushed commits."""
+        from fake_github_client import FakeGitHubClient
         from i2code.implement.implement import should_rollover
 
-        mocker.patch('i2code.implement.implement.is_pr_draft', return_value=False)
+        fake = FakeGitHubClient()
+        fake.set_pr_view(123, {"isDraft": False})
 
-        result = should_rollover(pr_number=123, has_unpushed_commits=False)
+        result = should_rollover(pr_number=123, has_unpushed_commits=False, gh_client=fake)
 
         assert result is False
 

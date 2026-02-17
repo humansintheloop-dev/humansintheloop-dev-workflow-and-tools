@@ -126,19 +126,19 @@ Extract `(idea_directory, idea_name)` pair into a value object that owns validat
 ## Steel Thread 2: Extract GitHubClient
 Extract all `gh` CLI calls into an injectable class. This is the highest-leverage extraction — it eliminates ~15 duplicate `MockResult` classes in tests and creates the component that `GitRepository` will later compose with.
 
-- [ ] **Task 2.1: Extract GitHubClient with PR operations**
+- [x] **Task 2.1: Extract GitHubClient with PR operations**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/ -v`
   - Observable: `GitHubClient` class exists in `github_client.py` with a shared `_run_gh()` helper. PR operations (`find_pr`, `create_draft_pr`, `is_pr_draft`, `get_pr_state`, `get_pr_url`, `mark_pr_ready`) are methods. `FakeGitHubClient` exists in test conftest.
   - Evidence: Pre-commit checklist passes. Tests for PR operations use `FakeGitHubClient` instead of `monkeypatch`/`MockResult`.
   - Steps:
-    - [ ] Write `FakeGitHubClient` in test conftest with canned responses
-    - [ ] Write unit tests for GitHubClient PR methods using FakeGitHubClient pattern
-    - [ ] Implement GitHubClient class with `_run_gh()` helper and PR methods
-    - [ ] Migrate `test_github_pr.py` PR tests to use FakeGitHubClient
-    - [ ] Update callers in `implement.py` to accept GitHubClient
-    - [ ] Remove standalone PR functions from `implement.py`
-    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+    - [x] Write `FakeGitHubClient` in test conftest with canned responses
+    - [x] Write unit tests for GitHubClient PR methods using FakeGitHubClient pattern
+    - [x] Implement GitHubClient class with `_run_gh()` helper and PR methods
+    - [x] Migrate `test_github_pr.py` PR tests to use FakeGitHubClient
+    - [x] Update callers in `implement.py` to accept GitHubClient
+    - [x] Remove standalone PR functions from `implement.py`
+    - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
 - [ ] **Task 2.2: Move feedback and CI operations to GitHubClient**
   - TaskType: OUTCOME
@@ -318,3 +318,6 @@ Pre-commit checklist: ruff passes (no new issues), all unit/integration tests pa
 
 ### 2026-02-17 19:26 - mark-task-complete
 WorkflowState class extracted: owns load/save, mark_comments/reviews/conversations_processed. No raw dict mutation in process_pr_feedback. 11 new unit tests, all existing tests updated.
+
+### 2026-02-17 20:31 - mark-task-complete
+Extracted GitHubClient class with _run_gh() helper, FakeGitHubClient test double, migrated tests

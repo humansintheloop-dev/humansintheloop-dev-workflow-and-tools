@@ -3,9 +3,7 @@
 These tests run the actual i2code implement command and verify its behavior.
 """
 
-import os
 import subprocess
-import tempfile
 
 import pytest
 from unittest.mock import patch, MagicMock

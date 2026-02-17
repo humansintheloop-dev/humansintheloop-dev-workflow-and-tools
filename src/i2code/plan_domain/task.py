@@ -65,7 +65,7 @@ class Task:
 
     def mark_complete(self) -> None:
         if self.is_completed:
-            raise ValueError(f"task is already complete")
+            raise ValueError("task is already complete")
         self._lines[0] = self._lines[0].replace('- [ ]', '- [x]', 1)
         for i, line in enumerate(self._lines[1:], 1):
             if _STEP_RE.match(line):
@@ -91,7 +91,7 @@ class Task:
 
     def mark_incomplete(self) -> None:
         if not self.is_completed:
-            raise ValueError(f"task is already incomplete")
+            raise ValueError("task is already incomplete")
         self._lines[0] = self._lines[0].replace('- [x]', '- [ ]', 1)
         for i, line in enumerate(self._lines[1:], 1):
             if _STEP_RE.match(line):

@@ -331,7 +331,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
             print("Tasks must create a CI workflow (e.g., .github/workflows/ci.yml) before pushing.", file=sys.stderr)
             sys.exit(1)
 
-        print(f"Task completed successfully. Pushing changes...")
+        print("Task completed successfully. Pushing changes...")
 
         # Push the commit to slice branch
         if not push_branch_to_remote(slice_branch):

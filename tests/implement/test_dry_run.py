@@ -2,7 +2,7 @@
 
 import pytest
 from click.testing import CliRunner
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from i2code.implement.cli import implement_cmd
 

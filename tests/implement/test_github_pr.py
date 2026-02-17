@@ -1,12 +1,9 @@
 """Tests for GitHub PR management in implement-with-worktree."""
 
 import json
-import os
 import subprocess
-import tempfile
 import pytest
 
-from git import Repo
 from i2code.plan_domain.numbered_task import NumberedTask, TaskNumber
 from i2code.plan_domain.task import Task
 
@@ -156,7 +153,7 @@ class TestCreateDraftPRFailure:
 
     def test_ensure_draft_pr_raises_on_creation_failure(self, monkeypatch):
         """ensure_draft_pr should raise when PR creation fails."""
-        from i2code.implement.implement import ensure_draft_pr, find_existing_pr
+        from i2code.implement.implement import ensure_draft_pr
 
         # Mock find_existing_pr to return None (no existing PR)
         def mock_find(*args, **kwargs):

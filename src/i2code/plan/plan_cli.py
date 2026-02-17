@@ -73,7 +73,7 @@ def get_thread_cmd(plan_file, thread):
                 click.echo(f"  Entrypoint: {task.entrypoint}")
                 click.echo(f"  Observable: {task.observable}")
                 click.echo(f"  Evidence: {task.evidence}")
-                click.echo(f"  Steps:")
+                click.echo("  Steps:")
                 for i, step in enumerate(task.steps, 1):
                     step_status = 'x' if step['completed'] else ' '
                     click.echo(f"    {i}. [{step_status}] {step['description']}")

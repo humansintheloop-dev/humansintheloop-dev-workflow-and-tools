@@ -1,6 +1,5 @@
 """Tests for Thread.insert_task() method."""
 
-import pytest
 
 from i2code.plan_domain.parser import parse
 from i2code.plan_domain.task import Task

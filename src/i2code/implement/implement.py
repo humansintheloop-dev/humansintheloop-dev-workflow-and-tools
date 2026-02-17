@@ -135,7 +135,7 @@ def validate_idea_files_committed(idea_directory: str, idea_name: str) -> None:
             uncommitted.append(idea_file)
 
     if uncommitted:
-        print(f"Error: Idea files have uncommitted changes:", file=sys.stderr)
+        print("Error: Idea files have uncommitted changes:", file=sys.stderr)
         for f in uncommitted:
             print(f"  - {f}", file=sys.stderr)
         sys.exit(1)
@@ -1236,7 +1236,7 @@ def wait_for_workflow_completion(
 
         runs = get_workflow_runs_for_commit(branch, sha)
         if not runs:
-            print(f"  No workflow runs found yet, waiting...")
+            print("  No workflow runs found yet, waiting...")
             time.sleep(poll_interval)
 
     # Watch each pending run using gh run watch
@@ -1343,7 +1343,7 @@ def fix_ci_failure(
                 run_id, workflow_name, failure_logs, interactive=interactive
             )
 
-        print(f"  Invoking Claude to fix CI failure...")
+        print("  Invoking Claude to fix CI failure...")
         head_before = worktree_repo.head.commit.hexsha
 
         if interactive:

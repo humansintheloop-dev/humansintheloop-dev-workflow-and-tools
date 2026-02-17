@@ -1,9 +1,7 @@
 """Tests for Claude Code invocation in implement-with-worktree."""
 
 import os
-import tempfile
 import pytest
-from git import Repo
 
 
 @pytest.mark.unit
@@ -982,7 +980,7 @@ class TestInterruptHandling:
 
     def test_cleanup_on_interrupt_saves_state(self, mocker):
         """Should save state when interrupted."""
-        from i2code.implement.implement import cleanup_on_interrupt, save_state
+        from i2code.implement.implement import cleanup_on_interrupt
 
         # Mock save_state
         mock_save = mocker.patch('i2code.implement.implement.save_state')

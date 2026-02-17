@@ -1,10 +1,9 @@
 """Tests for --trunk mode of i2code implement."""
 
-import os
 
 import pytest
 from click.testing import CliRunner
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 
 from i2code.implement.cli import implement_cmd
 from i2code.implement.implement import ClaudeResult

@@ -404,35 +404,6 @@ class TestFeedbackTemplate:
 class TestFeedbackDetection:
     """Test detection of new PR comments and reviews."""
 
-    def test_fetch_pr_comments_returns_list(self, mocker):
-        """Should return list of comments from GitHub API."""
-        from i2code.implement.implement import fetch_pr_comments
-
-        # Mock subprocess.run to return sample comments
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = '[{"id": 1, "body": "Fix this"}, {"id": 2, "body": "And this"}]'
-
-        comments = fetch_pr_comments(123)
-
-        assert len(comments) == 2
-        assert comments[0]["id"] == 1
-        assert comments[1]["id"] == 2
-
-    def test_fetch_pr_reviews_returns_list(self, mocker):
-        """Should return list of reviews from GitHub API."""
-        from i2code.implement.implement import fetch_pr_reviews
-
-        # Mock subprocess.run to return sample reviews
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = '[{"id": 100, "state": "CHANGES_REQUESTED"}]'
-
-        reviews = fetch_pr_reviews(123)
-
-        assert len(reviews) == 1
-        assert reviews[0]["id"] == 100
-
     def test_get_new_comments_filters_processed(self):
         """Should return only comments not in processed_comment_ids."""
         from i2code.implement.implement import get_new_feedback
@@ -462,50 +433,6 @@ class TestFeedbackDetection:
         new_comments = get_new_feedback(all_comments, processed_ids)
 
         assert len(new_comments) == 0
-
-
-@pytest.mark.unit
-class TestStatusCheckDetection:
-    """Test detection of failed status checks."""
-
-    def test_fetch_failed_checks_returns_failures(self, mocker):
-        """Should return list of failed checks."""
-        from i2code.implement.implement import fetch_failed_checks
-
-        # Mock subprocess.run to return check results with failures
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = 'build\tfail\t1234\ntest\tpass\t5678\nlint\tfail\t9012'
-
-        failed = fetch_failed_checks(123)
-
-        assert len(failed) == 2
-        assert failed[0]["name"] == "build"
-        assert failed[1]["name"] == "lint"
-
-    def test_fetch_failed_checks_returns_empty_if_all_pass(self, mocker):
-        """Should return empty list if all checks pass."""
-        from i2code.implement.implement import fetch_failed_checks
-
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = 'build\tpass\t1234\ntest\tpass\t5678'
-
-        failed = fetch_failed_checks(123)
-
-        assert len(failed) == 0
-
-    def test_fetch_failed_checks_handles_no_checks(self, mocker):
-        """Should return empty list if no checks exist."""
-        from i2code.implement.implement import fetch_failed_checks
-
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = ''
-
-        failed = fetch_failed_checks(123)
-
-        assert len(failed) == 0
 
 
 @pytest.mark.unit

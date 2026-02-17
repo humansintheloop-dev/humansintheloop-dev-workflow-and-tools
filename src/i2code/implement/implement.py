@@ -380,52 +380,6 @@ def push_branch_to_remote(branch_name: str) -> bool:
     return True
 
 
-# Feedback Detection Functions
-
-def fetch_pr_comments(pr_number: int) -> List[Dict[str, Any]]:
-    """Fetch comments on a PR from GitHub API.
-
-    Args:
-        pr_number: The PR number to fetch comments for
-
-    Returns:
-        List of comment dictionaries with 'id' and 'body' fields
-    """
-    result = subprocess.run(
-        ["gh", "api", f"repos/{{owner}}/{{repo}}/pulls/{pr_number}/comments",
-         "--jq", "."],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        return []
-
-    return json.loads(result.stdout)
-
-
-def fetch_pr_reviews(pr_number: int) -> List[Dict[str, Any]]:
-    """Fetch reviews on a PR from GitHub API.
-
-    Args:
-        pr_number: The PR number to fetch reviews for
-
-    Returns:
-        List of review dictionaries with 'id' and 'state' fields
-    """
-    result = subprocess.run(
-        ["gh", "api", f"repos/{{owner}}/{{repo}}/pulls/{pr_number}/reviews",
-         "--jq", "."],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        return []
-
-    return json.loads(result.stdout)
-
-
 def get_new_feedback(
     all_feedback: List[Dict[str, Any]],
     processed_ids: List[int]
@@ -440,30 +394,6 @@ def get_new_feedback(
         List of feedback items with IDs not in processed_ids
     """
     return [f for f in all_feedback if f.get("id") not in processed_ids]
-
-
-def fetch_pr_conversation_comments(pr_number: int) -> List[Dict[str, Any]]:
-    """Fetch general conversation comments on a PR (not review comments).
-
-    These are comments on the PR itself, not attached to specific code lines.
-
-    Args:
-        pr_number: The PR number to fetch comments for
-
-    Returns:
-        List of comment dictionaries with 'id' and 'body' fields
-    """
-    result = subprocess.run(
-        ["gh", "api", f"repos/{{owner}}/{{repo}}/issues/{pr_number}/comments",
-         "--jq", "."],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        return []
-
-    return json.loads(result.stdout)
 
 
 def get_pr_url(pr_number: int) -> str:
@@ -588,44 +518,6 @@ def build_fix_command(
         return ["claude", "--verbose", "--output-format=stream-json", "-p", prompt]
 
 
-def reply_to_review_comment(pr_number: int, comment_id: int, body: str) -> bool:
-    """Reply to a specific review comment.
-
-    Args:
-        pr_number: The PR number
-        comment_id: The review comment ID to reply to
-        body: The reply text
-
-    Returns:
-        True if successful, False otherwise
-    """
-    result = subprocess.run(
-        ["gh", "api", f"repos/{{owner}}/{{repo}}/pulls/{pr_number}/comments/{comment_id}/replies",
-         "-f", f"body={body}"],
-        capture_output=True,
-        text=True
-    )
-    return result.returncode == 0
-
-
-def reply_to_pr_comment(pr_number: int, body: str) -> bool:
-    """Add a general comment to a PR.
-
-    Args:
-        pr_number: The PR number
-        body: The comment text
-
-    Returns:
-        True if successful, False otherwise
-    """
-    result = subprocess.run(
-        ["gh", "pr", "comment", str(pr_number), "--body", body],
-        capture_output=True,
-        text=True
-    )
-    return result.returncode == 0
-
-
 def parse_triage_result(claude_output: str) -> Optional[Dict[str, Any]]:
     """Parse the JSON triage result from Claude's output.
 
@@ -695,7 +587,8 @@ def process_pr_feedback(
     interactive: bool = True,
     mock_claude: Optional[str] = None,
     skip_ci_wait: bool = False,
-    ci_timeout: int = 600
+    ci_timeout: int = 600,
+    gh_client=None,
 ) -> tuple:
     """Process new PR feedback using triage-based approach.
 
@@ -723,10 +616,13 @@ def process_pr_feedback(
     """
     from git import Repo as GitRepo
 
+    if gh_client is None:
+        gh_client = _default_gh_client()
+
     # Fetch all feedback types
-    review_comments = fetch_pr_comments(pr_number)
-    reviews = fetch_pr_reviews(pr_number)
-    conversation_comments = fetch_pr_conversation_comments(pr_number)
+    review_comments = gh_client.fetch_pr_comments(pr_number)
+    reviews = gh_client.fetch_pr_reviews(pr_number)
+    conversation_comments = gh_client.fetch_pr_conversation_comments(pr_number)
 
     # Filter to new/unprocessed
     new_review_comments = get_new_feedback(
@@ -788,10 +684,9 @@ def process_pr_feedback(
 
         print(f"Asking for clarification on comment {comment_id}...")
         if comment_type == "review":
-            success = reply_to_review_comment(pr_number, comment_id, question)
+            success = gh_client.reply_to_review_comment(pr_number, comment_id, question)
         else:
-            # For conversation comments, just add a general reply
-            success = reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{question}")
+            success = gh_client.reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{question}")
 
         if success:
             print(f"  Replied to comment {comment_id}")
@@ -858,9 +753,9 @@ def process_pr_feedback(
 
             reply_body = f"Fixed in {commit_sha}"
             if comment_type == "review":
-                success = reply_to_review_comment(pr_number, comment_id, reply_body)
+                success = gh_client.reply_to_review_comment(pr_number, comment_id, reply_body)
             else:
-                success = reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{reply_body}")
+                success = gh_client.reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{reply_body}")
 
             if success:
                 print(f"  Replied to comment {comment_id}: {reply_body}")
@@ -870,7 +765,7 @@ def process_pr_feedback(
         # Wait for CI
         if not skip_ci_wait:
             print("  Waiting for CI...")
-            ci_success, failing_run = wait_for_workflow_completion(
+            ci_success, failing_run = gh_client.wait_for_workflow_completion(
                 slice_branch, head_after, timeout_seconds=ci_timeout
             )
 
@@ -887,63 +782,6 @@ def process_pr_feedback(
     state.mark_conversations_processed([c["id"] for c in new_conversation])
 
     return (True, made_any_changes)
-
-
-def fetch_failed_checks(pr_number: int) -> List[Dict[str, Any]]:
-    """Fetch failed status checks for a PR.
-
-    Args:
-        pr_number: The PR number to check
-
-    Returns:
-        List of failed check dictionaries with 'name' field
-    """
-    result = subprocess.run(
-        ["gh", "pr", "checks", str(pr_number), "--json", "name,state",
-         "--jq", '.[] | "\\(.name)\\t\\(.state)"'],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0 or not result.stdout.strip():
-        return []
-
-    failed = []
-    for line in result.stdout.strip().split('\n'):
-        if not line:
-            continue
-        parts = line.split('\t')
-        if len(parts) >= 2:
-            name, state = parts[0], parts[1]
-            if state.lower() == "fail":
-                failed.append({"name": name, "state": state})
-
-    return failed
-
-
-# Workflow Run Functions
-
-def get_workflow_runs_for_commit(branch: str, sha: str) -> List[Dict[str, Any]]:
-    """Get workflow runs for a specific branch and commit SHA.
-
-    Args:
-        branch: The branch name
-        sha: The commit SHA
-
-    Returns:
-        List of workflow run dictionaries with databaseId, status, conclusion, name, headSha
-    """
-    result = subprocess.run(
-        ["gh", "run", "list", "--branch", branch, "-c", sha,
-         "--json", "databaseId,status,conclusion,name,headSha"],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0 or not result.stdout.strip():
-        return []
-
-    return json.loads(result.stdout)
 
 
 def has_ci_workflow_files(repo_path: str) -> bool:
@@ -966,105 +804,26 @@ def has_ci_workflow_files(repo_path: str) -> bool:
     return False
 
 
-def get_failing_workflow_run(branch: str, sha: str) -> Optional[Dict[str, Any]]:
+def get_failing_workflow_run(branch: str, sha: str, gh_client=None) -> Optional[Dict[str, Any]]:
     """Get failing workflow run for the branch/SHA, if any.
 
     Args:
         branch: The branch name
         sha: The commit SHA
+        gh_client: GitHubClient instance
 
     Returns:
         The first failing workflow run dict, or None if no failures
     """
-    runs = get_workflow_runs_for_commit(branch, sha)
+    if gh_client is None:
+        gh_client = _default_gh_client()
+    runs = gh_client.get_workflow_runs_for_commit(branch, sha)
 
     for run in runs:
         if run.get("conclusion") == "failure":
             return run
 
     return None
-
-
-def get_workflow_failure_logs(run_id: int) -> str:
-    """Get failure logs from a workflow run.
-
-    Args:
-        run_id: The workflow run database ID
-
-    Returns:
-        The failed log output as a string
-    """
-    result = subprocess.run(
-        ["gh", "run", "view", str(run_id), "--log-failed"],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        return f"Error fetching logs: {result.stderr}"
-
-    return result.stdout
-
-
-def wait_for_workflow_completion(
-    branch: str,
-    sha: str,
-    timeout_seconds: int = 600
-) -> tuple:
-    """Wait for workflow runs for the branch/SHA to complete using gh run watch.
-
-    Args:
-        branch: The branch name
-        sha: The commit SHA
-        timeout_seconds: Maximum time to wait (default 600s = 10 minutes)
-
-    Returns:
-        Tuple of (success, failing_run):
-        - success=True if all runs passed, False if any failed or timeout
-        - failing_run: The first failing run dict if any, None otherwise
-    """
-    import time
-    start_time = time.time()
-    poll_interval = 10  # Initial poll to find runs
-
-    # Wait for runs to appear
-    runs = []
-    while not runs:
-        elapsed = time.time() - start_time
-        if elapsed >= timeout_seconds:
-            print(f"Timeout waiting for CI runs to appear after {timeout_seconds}s")
-            return (False, None)
-
-        runs = get_workflow_runs_for_commit(branch, sha)
-        if not runs:
-            print("  No workflow runs found yet, waiting...")
-            time.sleep(poll_interval)
-
-    # Watch each pending run using gh run watch
-    for run in runs:
-        if run.get("status") != "completed":
-            run_id = run.get("databaseId")
-            run_name = run.get("name", "unknown")
-            print(f"  Watching workflow '{run_name}' (run {run_id})...")
-
-            # gh run watch blocks until the run completes
-            result = subprocess.run(
-                ["gh", "run", "watch", str(run_id)],
-                capture_output=True,
-                text=True,
-                timeout=timeout_seconds
-            )
-
-            if result.returncode != 0:
-                print(f"  Warning: gh run watch returned {result.returncode}")
-
-    # After all runs complete, check for failures
-    runs = get_workflow_runs_for_commit(branch, sha)
-    for run in runs:
-        if run.get("conclusion") == "failure":
-            return (False, run)
-
-    return (True, None)
 
 
 def branch_has_been_pushed(branch: str) -> bool:
@@ -1091,7 +850,8 @@ def fix_ci_failure(
     worktree_path: str,
     max_retries: int = 3,
     interactive: bool = True,
-    mock_claude: Optional[str] = None
+    mock_claude: Optional[str] = None,
+    gh_client=None,
 ) -> bool:
     """Attempt to fix CI failure for a branch.
 
@@ -1116,6 +876,9 @@ def fix_ci_failure(
     """
     from git import Repo as GitRepo
 
+    if gh_client is None:
+        gh_client = _default_gh_client()
+
     worktree_repo = GitRepo(worktree_path)
     current_sha = head_sha
 
@@ -1123,7 +886,7 @@ def fix_ci_failure(
         print(f"\nCI fix attempt {attempt}/{max_retries}")
 
         # Get the failing workflow run
-        failing_run = get_failing_workflow_run(slice_branch, current_sha)
+        failing_run = get_failing_workflow_run(slice_branch, current_sha, gh_client=gh_client)
         if not failing_run:
             print("No failing workflow found - CI may have passed")
             return True
@@ -1134,7 +897,7 @@ def fix_ci_failure(
 
         # Get failure logs
         print("  Fetching failure logs...")
-        failure_logs = get_workflow_failure_logs(run_id)
+        failure_logs = gh_client.get_workflow_failure_logs(run_id)
 
         # Build and run Claude command to fix
         if mock_claude:
@@ -1171,7 +934,7 @@ def fix_ci_failure(
 
         # Wait for CI to complete
         print("  Waiting for CI to complete...")
-        ci_success, new_failing_run = wait_for_workflow_completion(
+        ci_success, new_failing_run = gh_client.wait_for_workflow_completion(
             slice_branch, current_sha
         )
 
@@ -1513,11 +1276,15 @@ def ensure_project_setup(
     ci_fix_retries: int = 3,
     ci_timeout: int = 600,
     skip_ci_wait: bool = False,
+    gh_client=None,
 ) -> bool:
     """Ensure project scaffolding exists on the integration branch.
 
     Returns True if setup succeeded (CI passes), False otherwise.
     """
+    if gh_client is None:
+        gh_client = _default_gh_client()
+
     repo.git.checkout(integration_branch)
 
     head_before = repo.head.commit.hexsha
@@ -1534,7 +1301,7 @@ def ensure_project_setup(
     if skip_ci_wait:
         return True
 
-    ci_success, failing_run = wait_for_workflow_completion(
+    ci_success, failing_run = gh_client.wait_for_workflow_completion(
         integration_branch, head_after, timeout_seconds=ci_timeout
     )
 
@@ -1546,6 +1313,7 @@ def ensure_project_setup(
             max_retries=ci_fix_retries,
             interactive=interactive,
             mock_claude=mock_claude,
+            gh_client=gh_client,
         )
 
     return ci_success

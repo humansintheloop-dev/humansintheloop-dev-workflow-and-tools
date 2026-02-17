@@ -140,19 +140,19 @@ Extract all `gh` CLI calls into an injectable class. This is the highest-leverag
     - [x] Remove standalone PR functions from `implement.py`
     - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
-- [ ] **Task 2.2: Move feedback and CI operations to GitHubClient**
+- [x] **Task 2.2: Move feedback and CI operations to GitHubClient**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/ -v`
   - Observable: `fetch_pr_comments`, `fetch_pr_reviews`, `fetch_pr_conversation_comments`, `reply_to_review_comment`, `reply_to_pr_comment`, `fetch_failed_checks`, `get_workflow_runs_for_commit`, `get_workflow_failure_logs`, `wait_for_workflow_completion`, `get_default_branch` are methods on GitHubClient.
   - Evidence: Pre-commit checklist passes. `git_utils.py` deleted (absorbed into GitHubClient).
   - Steps:
-    - [ ] Add feedback methods to GitHubClient with tests
-    - [ ] Add CI/workflow methods to GitHubClient with tests
-    - [ ] Move `get_default_branch` from `git_utils.py` into GitHubClient
-    - [ ] Migrate `test_claude_invocation.py` feedback/CI tests to use FakeGitHubClient
-    - [ ] Delete `git_utils.py`
-    - [ ] Remove standalone feedback/CI functions from `implement.py`
-    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+    - [x] Add feedback methods to GitHubClient with tests
+    - [x] Add CI/workflow methods to GitHubClient with tests
+    - [x] Move `get_default_branch` from `git_utils.py` into GitHubClient
+    - [x] Migrate `test_claude_invocation.py` feedback/CI tests to use FakeGitHubClient
+    - [x] Delete `git_utils.py`
+    - [x] Remove standalone feedback/CI functions from `implement.py`
+    - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
 ---
 
@@ -321,3 +321,6 @@ WorkflowState class extracted: owns load/save, mark_comments/reviews/conversatio
 
 ### 2026-02-17 20:31 - mark-task-complete
 Extracted GitHubClient class with _run_gh() helper, FakeGitHubClient test double, migrated tests
+
+### 2026-02-18 07:45 - mark-task-complete
+Moved 10 methods into GitHubClient, deleted git_utils.py, removed standalone functions from implement.py, updated all callers and tests

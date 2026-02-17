@@ -27,6 +27,15 @@ class FakeGitHubClient:
         self._created_prs = []
         self._ready_prs = set()
         self._next_pr_number = 100
+        self._pr_comments = {}
+        self._pr_reviews = {}
+        self._pr_conversation_comments = {}
+        self._failed_checks = {}
+        self._workflow_runs = {}
+        self._workflow_failure_logs = {}
+        self._default_branch = "main"
+        self._reply_results = True
+        self._workflow_completion_results = {}
         self.calls = []
 
     def set_pr_list(self, prs):
@@ -81,3 +90,72 @@ class FakeGitHubClient:
         self.calls.append(("mark_pr_ready", pr_number))
         self._ready_prs.add(pr_number)
         return True
+
+    def set_pr_comments(self, pr_number, comments):
+        self._pr_comments[pr_number] = comments
+
+    def set_pr_reviews(self, pr_number, reviews):
+        self._pr_reviews[pr_number] = reviews
+
+    def set_pr_conversation_comments(self, pr_number, comments):
+        self._pr_conversation_comments[pr_number] = comments
+
+    def set_failed_checks(self, pr_number, checks):
+        self._failed_checks[pr_number] = checks
+
+    def set_workflow_runs(self, branch, sha, runs):
+        self._workflow_runs[(branch, sha)] = runs
+
+    def set_workflow_failure_logs(self, run_id, logs):
+        self._workflow_failure_logs[run_id] = logs
+
+    def set_default_branch(self, branch):
+        self._default_branch = branch
+
+    def set_reply_results(self, success):
+        self._reply_results = success
+
+    def set_workflow_completion_result(self, branch, sha, result):
+        self._workflow_completion_results[(branch, sha)] = result
+
+    def fetch_pr_comments(self, pr_number):
+        self.calls.append(("fetch_pr_comments", pr_number))
+        return self._pr_comments.get(pr_number, [])
+
+    def fetch_pr_reviews(self, pr_number):
+        self.calls.append(("fetch_pr_reviews", pr_number))
+        return self._pr_reviews.get(pr_number, [])
+
+    def fetch_pr_conversation_comments(self, pr_number):
+        self.calls.append(("fetch_pr_conversation_comments", pr_number))
+        return self._pr_conversation_comments.get(pr_number, [])
+
+    def reply_to_review_comment(self, pr_number, comment_id, body):
+        self.calls.append(("reply_to_review_comment", pr_number, comment_id, body))
+        return self._reply_results
+
+    def reply_to_pr_comment(self, pr_number, body):
+        self.calls.append(("reply_to_pr_comment", pr_number, body))
+        return self._reply_results
+
+    def fetch_failed_checks(self, pr_number):
+        self.calls.append(("fetch_failed_checks", pr_number))
+        return self._failed_checks.get(pr_number, [])
+
+    def get_workflow_runs_for_commit(self, branch, sha):
+        self.calls.append(("get_workflow_runs_for_commit", branch, sha))
+        return self._workflow_runs.get((branch, sha), [])
+
+    def get_workflow_failure_logs(self, run_id):
+        self.calls.append(("get_workflow_failure_logs", run_id))
+        return self._workflow_failure_logs.get(run_id, "")
+
+    def wait_for_workflow_completion(self, branch, sha, timeout_seconds=600):
+        self.calls.append(("wait_for_workflow_completion", branch, sha))
+        if (branch, sha) in self._workflow_completion_results:
+            return self._workflow_completion_results[(branch, sha)]
+        return (True, None)
+
+    def get_default_branch(self):
+        self.calls.append(("get_default_branch",))
+        return self._default_branch

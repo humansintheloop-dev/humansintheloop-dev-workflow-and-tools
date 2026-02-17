@@ -8,7 +8,6 @@ import click
 
 from git import Repo
 
-from i2code.implement.git_utils import get_default_branch
 from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
@@ -35,7 +34,6 @@ from i2code.implement.implement import (
     run_scaffolding,
     check_claude_success,
     has_ci_workflow_files,
-    wait_for_workflow_completion,
     run_trunk_loop,
     print_task_failure_diagnostics,
 )
@@ -95,6 +93,7 @@ def implement(opts: ImplementOpts, project: IdeaProject):
     # Delegate to isolarium VM if --isolate is set
     if opts.isolate:
         repo = Repo(project.directory, search_parent_directories=True)
+        gh_client = GitHubClient()
 
         # Run project scaffolding on host before delegating to VM
         integration_branch = ensure_integration_branch(repo, project.name)
@@ -108,6 +107,7 @@ def implement(opts: ImplementOpts, project: IdeaProject):
             ci_fix_retries=opts.ci_fix_retries,
             ci_timeout=opts.ci_timeout,
             skip_ci_wait=opts.skip_ci_wait,
+            gh_client=gh_client,
         )
         if not setup_ok:
             print("Error: Project scaffolding setup failed", file=sys.stderr)
@@ -202,7 +202,7 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         # Check for failing CI build on current HEAD (only if branch has been pushed)
         head_sha = work_repo.head.commit.hexsha
         if branch_has_been_pushed(slice_branch):
-            failing_run = get_failing_workflow_run(slice_branch, head_sha)
+            failing_run = get_failing_workflow_run(slice_branch, head_sha, gh_client=gh_client)
 
             if failing_run:
                 workflow_name = failing_run.get("name", "unknown")
@@ -214,7 +214,8 @@ def implement(opts: ImplementOpts, project: IdeaProject):
                     work_dir,
                     max_retries=opts.ci_fix_retries,
                     interactive=not opts.non_interactive,
-                    mock_claude=opts.mock_claude
+                    mock_claude=opts.mock_claude,
+                    gh_client=gh_client,
                 ):
                     print("Error: Could not fix CI failure after max retries", file=sys.stderr)
                     sys.exit(1)
@@ -233,7 +234,8 @@ def implement(opts: ImplementOpts, project: IdeaProject):
                 interactive=not opts.non_interactive,
                 mock_claude=opts.mock_claude,
                 skip_ci_wait=opts.skip_ci_wait,
-                ci_timeout=opts.ci_timeout
+                ci_timeout=opts.ci_timeout,
+                gh_client=gh_client,
             )
 
             if had_feedback:
@@ -310,7 +312,7 @@ def implement(opts: ImplementOpts, project: IdeaProject):
 
         # Create PR after first push if it doesn't exist yet
         if pr_number is None:
-            base_branch = get_default_branch()
+            base_branch = gh_client.get_default_branch()
             pr_number = ensure_draft_pr(
                 slice_branch, project.directory, project.name, state.slice_number,
                 base_branch=base_branch,
@@ -321,7 +323,7 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         # Wait for CI to complete (unless --skip-ci-wait)
         if not opts.skip_ci_wait:
             print("Waiting for CI to complete...")
-            ci_success, failing_run = wait_for_workflow_completion(
+            ci_success, failing_run = gh_client.wait_for_workflow_completion(
                 slice_branch, head_after, timeout_seconds=opts.ci_timeout
             )
 

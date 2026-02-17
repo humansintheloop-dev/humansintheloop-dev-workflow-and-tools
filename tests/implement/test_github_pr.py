@@ -1,7 +1,5 @@
 """Tests for GitHub PR management in implement-with-worktree."""
 
-import json
-import subprocess
 import pytest
 
 from i2code.plan_domain.numbered_task import NumberedTask, TaskNumber
@@ -165,49 +163,6 @@ class TestDeferredPRCreation:
 
         # Verify ensure_draft_pr was NOT called
         assert not ensure_draft_pr_called, "ensure_draft_pr should not be called in --setup-only mode"
-
-
-@pytest.mark.unit
-class TestFetchPRConversationComments:
-    """Test fetching general PR conversation comments."""
-
-    def test_fetch_pr_conversation_comments_returns_comments(self, monkeypatch):
-        """Should return list of conversation comments."""
-        from i2code.implement.implement import fetch_pr_conversation_comments
-
-        mock_output = json.dumps([
-            {"id": 1001, "body": "This looks great!", "user": {"login": "reviewer1"}},
-            {"id": 1002, "body": "Can you add more tests?", "user": {"login": "reviewer2"}}
-        ])
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                stdout = mock_output
-                returncode = 0
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        comments = fetch_pr_conversation_comments(123)
-        assert len(comments) == 2
-        assert comments[0]["id"] == 1001
-        assert comments[1]["body"] == "Can you add more tests?"
-
-    def test_fetch_pr_conversation_comments_returns_empty_on_error(self, monkeypatch):
-        """Should return empty list on API error."""
-        from i2code.implement.implement import fetch_pr_conversation_comments
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                stdout = ""
-                stderr = "API error"
-                returncode = 1
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        comments = fetch_pr_conversation_comments(123)
-        assert comments == []
 
 
 @pytest.mark.unit
@@ -457,58 +412,6 @@ class TestParseTriageResult:
         result = parse_triage_result("This is not JSON at all")
 
         assert result is None
-
-
-@pytest.mark.unit
-class TestReplyToReviewComment:
-    """Test replying to review comments."""
-
-    def test_reply_to_review_comment_success(self, monkeypatch):
-        """Should return True on successful reply."""
-        from i2code.implement.implement import reply_to_review_comment
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                returncode = 0
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        result = reply_to_review_comment(123, 456, "Fixed!")
-        assert result is True
-
-    def test_reply_to_review_comment_failure(self, monkeypatch):
-        """Should return False on API error."""
-        from i2code.implement.implement import reply_to_review_comment
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                returncode = 1
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        result = reply_to_review_comment(123, 456, "Fixed!")
-        assert result is False
-
-
-@pytest.mark.unit
-class TestReplyToPRComment:
-    """Test adding general PR comments."""
-
-    def test_reply_to_pr_comment_success(self, monkeypatch):
-        """Should return True on successful comment."""
-        from i2code.implement.implement import reply_to_pr_comment
-
-        def mock_run(*args, **kwargs):
-            class MockResult:
-                returncode = 0
-            return MockResult()
-
-        monkeypatch.setattr(subprocess, "run", mock_run)
-
-        result = reply_to_pr_comment(123, "Thanks for the review!")
-        assert result is True
 
 
 @pytest.mark.unit

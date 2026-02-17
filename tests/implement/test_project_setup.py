@@ -193,12 +193,11 @@ class TestEnsureProjectSetup:
     def _make_claude_result(self, returncode=0, stdout="<SUCCESS>Scaffold created</SUCCESS>"):
         return ClaudeResult(returncode=returncode, stdout=stdout, stderr="")
 
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
     @patch("i2code.implement.implement.push_branch_to_remote")
     @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_scaffolding_prompt")
     def test_ensure_project_setup_checks_out_integration_branch(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait
+        self, mock_build_prompt, mock_run_claude, mock_push
     ):
         """Should checkout integration branch before invoking Claude."""
         from i2code.implement.implement import ensure_project_setup
@@ -211,22 +210,23 @@ class TestEnsureProjectSetup:
 
         mock_build_prompt.return_value = ["claude", "prompt"]
         mock_run_claude.return_value = self._make_claude_result()
+        mock_gh = MagicMock()
 
         ensure_project_setup(
             repo=mock_repo,
             idea_directory="/tmp/idea",
             idea_name="test",
             integration_branch="idea/test/integration",
+            gh_client=mock_gh,
         )
 
         mock_repo.git.checkout.assert_called_with("idea/test/integration")
 
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
     @patch("i2code.implement.implement.push_branch_to_remote")
     @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_scaffolding_prompt")
     def test_ensure_project_setup_interactive_calls_run_claude_interactive(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait
+        self, mock_build_prompt, mock_run_claude, mock_push
     ):
         """Interactive mode should use run_claude_interactive."""
         from i2code.implement.implement import ensure_project_setup
@@ -239,6 +239,7 @@ class TestEnsureProjectSetup:
 
         mock_build_prompt.return_value = ["claude", "prompt"]
         mock_run_claude.return_value = self._make_claude_result()
+        mock_gh = MagicMock()
 
         ensure_project_setup(
             repo=mock_repo,
@@ -246,16 +247,16 @@ class TestEnsureProjectSetup:
             idea_name="test",
             integration_branch="idea/test/integration",
             interactive=True,
+            gh_client=mock_gh,
         )
 
         mock_run_claude.assert_called_once_with(["claude", "prompt"], cwd="/tmp/fake-repo")
 
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
     @patch("i2code.implement.implement.push_branch_to_remote")
     @patch("i2code.implement.implement.run_claude_with_output_capture")
     @patch("i2code.implement.implement.build_scaffolding_prompt")
     def test_ensure_project_setup_non_interactive_calls_output_capture(
-        self, mock_build_prompt, mock_run_capture, mock_push, mock_wait
+        self, mock_build_prompt, mock_run_capture, mock_push
     ):
         """Non-interactive mode should use run_claude_with_output_capture."""
         from i2code.implement.implement import ensure_project_setup
@@ -268,6 +269,7 @@ class TestEnsureProjectSetup:
 
         mock_build_prompt.return_value = ["claude", "-p", "prompt"]
         mock_run_capture.return_value = self._make_claude_result()
+        mock_gh = MagicMock()
 
         ensure_project_setup(
             repo=mock_repo,
@@ -275,16 +277,16 @@ class TestEnsureProjectSetup:
             idea_name="test",
             integration_branch="idea/test/integration",
             interactive=False,
+            gh_client=mock_gh,
         )
 
         mock_run_capture.assert_called_once_with(["claude", "-p", "prompt"], cwd="/tmp/fake-repo")
 
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
     @patch("i2code.implement.implement.push_branch_to_remote")
     @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_scaffolding_prompt")
     def test_ensure_project_setup_no_new_commits_skips_push_and_ci(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait
+        self, mock_build_prompt, mock_run_claude, mock_push
     ):
         """When Claude makes no commits, should skip push and CI, return True."""
         from i2code.implement.implement import ensure_project_setup
@@ -292,36 +294,35 @@ class TestEnsureProjectSetup:
         mock_repo = MagicMock()
         mock_commit = MagicMock()
         mock_commit.hexsha = "abc123"
-        # HEAD stays the same before and after Claude
         mock_repo.head.commit = mock_commit
         mock_repo.working_tree_dir = "/tmp/fake-repo"
 
         mock_build_prompt.return_value = ["claude", "prompt"]
         mock_run_claude.return_value = self._make_claude_result()
+        mock_gh = MagicMock()
 
         result = ensure_project_setup(
             repo=mock_repo,
             idea_directory="/tmp/idea",
             idea_name="test",
             integration_branch="idea/test/integration",
+            gh_client=mock_gh,
         )
 
         assert result is True
         mock_push.assert_not_called()
-        mock_wait.assert_not_called()
+        mock_gh.wait_for_workflow_completion.assert_not_called()
 
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
     @patch("i2code.implement.implement.push_branch_to_remote")
     @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_scaffolding_prompt")
     def test_ensure_project_setup_push_and_ci_when_commits_made(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait
+        self, mock_build_prompt, mock_run_claude, mock_push
     ):
         """When Claude makes commits, should push and wait for CI."""
         from i2code.implement.implement import ensure_project_setup
 
         mock_repo = MagicMock()
-        # HEAD advances after Claude invocation
         commit_before = MagicMock()
         commit_before.hexsha = "aaa111"
         commit_after = MagicMock()
@@ -332,7 +333,8 @@ class TestEnsureProjectSetup:
         mock_build_prompt.return_value = ["claude", "prompt"]
         mock_run_claude.return_value = self._make_claude_result()
         mock_push.return_value = True
-        mock_wait.return_value = (True, None)  # CI passes
+        mock_gh = MagicMock()
+        mock_gh.wait_for_workflow_completion.return_value = (True, None)
 
         result = ensure_project_setup(
             repo=mock_repo,
@@ -340,19 +342,21 @@ class TestEnsureProjectSetup:
             idea_name="test",
             integration_branch="idea/test/integration",
             ci_timeout=300,
+            gh_client=mock_gh,
         )
 
         assert result is True
         mock_push.assert_called_once_with("idea/test/integration")
-        mock_wait.assert_called_once_with("idea/test/integration", "bbb222", timeout_seconds=300)
+        mock_gh.wait_for_workflow_completion.assert_called_once_with(
+            "idea/test/integration", "bbb222", timeout_seconds=300
+        )
 
     @patch("i2code.implement.implement.fix_ci_failure")
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
     @patch("i2code.implement.implement.push_branch_to_remote")
     @patch("i2code.implement.implement.run_claude_with_output_capture")
     @patch("i2code.implement.implement.build_scaffolding_prompt")
     def test_ensure_project_setup_ci_failure_retry_success(
-        self, mock_build_prompt, mock_run_capture, mock_push, mock_wait, mock_fix_ci
+        self, mock_build_prompt, mock_run_capture, mock_push, mock_fix_ci
     ):
         """When CI fails, should invoke fix_ci_failure and return its result."""
         from i2code.implement.implement import ensure_project_setup
@@ -368,8 +372,9 @@ class TestEnsureProjectSetup:
         mock_build_prompt.return_value = ["claude", "-p", "prompt"]
         mock_run_capture.return_value = self._make_claude_result()
         mock_push.return_value = True
-        mock_wait.return_value = (False, {"name": "CI", "id": 123})  # CI fails
-        mock_fix_ci.return_value = True  # fix succeeds
+        mock_gh = MagicMock()
+        mock_gh.wait_for_workflow_completion.return_value = (False, {"name": "CI", "id": 123})
+        mock_fix_ci.return_value = True
 
         result = ensure_project_setup(
             repo=mock_repo,
@@ -379,6 +384,7 @@ class TestEnsureProjectSetup:
             interactive=False,
             mock_claude="/mock.sh",
             ci_fix_retries=5,
+            gh_client=mock_gh,
         )
 
         assert result is True
@@ -389,15 +395,15 @@ class TestEnsureProjectSetup:
             max_retries=5,
             interactive=False,
             mock_claude="/mock.sh",
+            gh_client=mock_gh,
         )
 
     @patch("i2code.implement.implement.fix_ci_failure")
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
     @patch("i2code.implement.implement.push_branch_to_remote")
     @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_scaffolding_prompt")
     def test_ensure_project_setup_ci_failure_retry_fails(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait, mock_fix_ci
+        self, mock_build_prompt, mock_run_claude, mock_push, mock_fix_ci
     ):
         """When CI fails and fix_ci_failure also fails, should return False."""
         from i2code.implement.implement import ensure_project_setup
@@ -413,24 +419,25 @@ class TestEnsureProjectSetup:
         mock_build_prompt.return_value = ["claude", "prompt"]
         mock_run_claude.return_value = self._make_claude_result()
         mock_push.return_value = True
-        mock_wait.return_value = (False, {"name": "CI", "id": 123})
-        mock_fix_ci.return_value = False  # fix fails
+        mock_gh = MagicMock()
+        mock_gh.wait_for_workflow_completion.return_value = (False, {"name": "CI", "id": 123})
+        mock_fix_ci.return_value = False
 
         result = ensure_project_setup(
             repo=mock_repo,
             idea_directory="/tmp/idea",
             idea_name="test",
             integration_branch="idea/test/integration",
+            gh_client=mock_gh,
         )
 
         assert result is False
 
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
     @patch("i2code.implement.implement.push_branch_to_remote")
     @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_scaffolding_prompt")
     def test_ensure_project_setup_skip_ci_wait_pushes_but_no_wait(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait
+        self, mock_build_prompt, mock_run_claude, mock_push
     ):
         """When skip_ci_wait=True and commits made, should push but not wait for CI."""
         from i2code.implement.implement import ensure_project_setup
@@ -446,6 +453,7 @@ class TestEnsureProjectSetup:
         mock_build_prompt.return_value = ["claude", "prompt"]
         mock_run_claude.return_value = self._make_claude_result()
         mock_push.return_value = True
+        mock_gh = MagicMock()
 
         result = ensure_project_setup(
             repo=mock_repo,
@@ -453,11 +461,12 @@ class TestEnsureProjectSetup:
             idea_name="test",
             integration_branch="idea/test/integration",
             skip_ci_wait=True,
+            gh_client=mock_gh,
         )
 
         assert result is True
         mock_push.assert_called_once_with("idea/test/integration")
-        mock_wait.assert_not_called()
+        mock_gh.wait_for_workflow_completion.assert_not_called()
 
 
 @pytest.mark.unit
@@ -667,17 +676,18 @@ class TestCLIIsolateProjectSetup:
             "--skip-ci-wait",
         ])
 
-        mock_ensure_setup.assert_called_once_with(
-            repo=mock_repo,
-            idea_directory="/tmp/fake-idea",
-            idea_name="test-feature",
-            integration_branch="idea/test-feature/integration",
-            interactive=False,
-            mock_claude="/mock.sh",
-            ci_fix_retries=5,
-            ci_timeout=900,
-            skip_ci_wait=True,
-        )
+        mock_ensure_setup.assert_called_once()
+        call_kwargs = mock_ensure_setup.call_args[1]
+        assert call_kwargs["repo"] == mock_repo
+        assert call_kwargs["idea_directory"] == "/tmp/fake-idea"
+        assert call_kwargs["idea_name"] == "test-feature"
+        assert call_kwargs["integration_branch"] == "idea/test-feature/integration"
+        assert call_kwargs["interactive"] is False
+        assert call_kwargs["mock_claude"] == "/mock.sh"
+        assert call_kwargs["ci_fix_retries"] == 5
+        assert call_kwargs["ci_timeout"] == 900
+        assert call_kwargs["skip_ci_wait"] is True
+        assert call_kwargs["gh_client"] is not None
 
     @patch("i2code.implement.cli.subprocess")
     @patch("i2code.implement.cli.ensure_project_setup", return_value=True)

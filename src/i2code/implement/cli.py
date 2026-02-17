@@ -3,7 +3,6 @@
 import os
 import subprocess
 import sys
-from dataclasses import dataclass
 
 import click
 
@@ -12,6 +11,7 @@ from git import Repo
 from i2code.implement.git_utils import get_default_branch
 from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
+from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.implement import (
     validate_idea_files_committed,
@@ -41,29 +41,8 @@ from i2code.implement.implement import (
 )
 
 
-@dataclass
-class ImplementOpts:
-    """All options for the implement command."""
-
-    idea_directory: str
-    cleanup: bool = False
-    mock_claude: str | None = None
-    setup_only: bool = False
-    non_interactive: bool = False
-    extra_prompt: str | None = None
-    skip_ci_wait: bool = False
-    ci_fix_retries: int = 3
-    ci_timeout: int = 600
-    isolate: bool = False
-    isolated: bool = False
-    trunk: bool = False
-    dry_run: bool = False
-    ignore_uncommitted_idea_changes: bool = False
-
-
-def implement(opts: ImplementOpts):
+def implement(opts: ImplementOpts, project: IdeaProject):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
-    project = IdeaProject(opts.idea_directory)
     project.validate()
     project.validate_files()
 
@@ -379,7 +358,9 @@ def implement(opts: ImplementOpts):
               help="Skip validation that idea files are committed")
 def implement_cmd(**kwargs):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
-    implement(ImplementOpts(**kwargs))
+    opts = ImplementOpts(**kwargs)
+    project = IdeaProject(opts.idea_directory)
+    implement(opts, project)
 
 
 @click.command("scaffold")

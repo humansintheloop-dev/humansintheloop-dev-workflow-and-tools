@@ -1,7 +1,15 @@
 ---
 name: commit-guidelines
-description: Provides commit message formatting standards for this project. Claude should use this skill when creating git commits to ensure messages follow project conventions, including proper co-authorship attribution and concise formatting.
+description: Provides a pre-commit checklist and commit message formatting standards for this project. Claude should use this skill when creating git commits to ensure messages follow project conventions, including proper co-authorship attribution and concise formatting.
 ---
+
+# Pre-Commit Checklist
+
+Before committing, complete these steps in order:
+
+1. Run `uvx ruff check --fix` to auto-fix lint issues. Resolve any unfixable errors.
+2. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it. If Code Health regresses, refactor before committing.
+3. Run `git add` and `git commit` as separate tool calls (not chained with `&&`).
 
 # Commit Message Guidelines
 
@@ -15,20 +23,6 @@ When writing commit messages for this project, follow these guidelines:
 - The first line of the commit message should describe the high-level goal of the change
 - If the work is associated with an issue, include the issue number in the commit message
 
-## Lint Check
-
-Before committing, run `uvx ruff check --fix` to auto-fix lint issues. If unfixable errors remain, resolve them before committing.
-
-## Code Health Safeguard
-
-If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it before committing code changes. If Code Health regresses or fails quality gates, refactor before committing.
-
-## Git Add and Commit Separately
-
-Run `git add` and `git commit` as separate tool calls rather than chaining with `&&`. This provides:
-- Visibility into what was staged
-- Opportunity for user to intervene before commit
-- Clearer error attribution if something fails
 
 ## Co-authorship Attribution
 

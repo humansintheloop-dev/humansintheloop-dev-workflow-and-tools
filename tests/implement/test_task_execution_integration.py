@@ -152,11 +152,21 @@ class TestTaskDetectionAndExecution:
         self._assert_pr_is_open_and_not_complete(pr["number"])
 
         self._add_task_to_plan(after_task=3)
+
         result2 = self._run_implement()
         self._assert_all_tasks_completed(expected_count=4)
         assert "All tasks completed!" in result2.stdout
 
         self._assert_pr_reused(pr["number"])
+
+        head_before = self._get_head_sha()
+        result3 = self._run_implement()
+        assert "All tasks completed!" in result3.stdout
+        assert self._get_head_sha() == head_before, \
+            "Expected no new commits when all tasks complete"
+
+    def _get_head_sha(self):
+        return Repo(self.repo.worktree_path).head.commit.hexsha
 
     def _assert_setup_only_creates_no_pr(self):
         subprocess.run(

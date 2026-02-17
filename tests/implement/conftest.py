@@ -12,24 +12,8 @@ from git import Repo
 SCRIPT_CMD = ["i2code", "implement"]
 
 
-def get_github_username():
-    """Get the authenticated GitHub username.
-
-    Raises:
-        RuntimeError: If GitHub username lookup fails
-    """
-    result = subprocess.run(
-        ["gh", "api", "user", "--jq", ".login"],
-        capture_output=True,
-        text=True
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"Failed to get GitHub username: {result.stderr}")
-    return result.stdout.strip()
-
-
 def create_github_repo(repo_name):
-    """Create a new GitHub repository.
+    """Create a new GitHub repository in the test organization.
 
     Returns:
         Tuple of (repo_full_name, clone_url)
@@ -37,8 +21,9 @@ def create_github_repo(repo_name):
     Raises:
         RuntimeError: If repository creation fails
     """
+    repo_full_name = f"{os.environ['GH_TEST_ORG']}/{repo_name}"
     result = subprocess.run(
-        ["gh", "repo", "create", repo_name, "--private"],
+        ["gh", "repo", "create", repo_full_name, "--private"],
         capture_output=True,
         text=True
     )
@@ -46,8 +31,6 @@ def create_github_repo(repo_name):
     if result.returncode != 0:
         raise RuntimeError(f"Failed to create GitHub repo: {result.stderr}")
 
-    username = get_github_username()
-    repo_full_name = f"{username}/{repo_name}"
     clone_url = f"git@github.com:{repo_full_name}.git"
 
     return repo_full_name, clone_url

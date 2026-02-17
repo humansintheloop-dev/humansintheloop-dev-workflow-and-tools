@@ -30,4 +30,5 @@ jobs:
       - name: Run integration_gh tests
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TEST_ORG: ${{ secrets.GH_TEST_ORG }}
         run: uv run --python 3.12 python3 -m pytest tests/ -v -m integration_gh

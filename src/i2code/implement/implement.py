@@ -1687,12 +1687,15 @@ def run_trunk_loop(
     non_interactive: bool = False,
     mock_claude: Optional[str] = None,
     extra_prompt: Optional[str] = None,
+    git_repo=None,
 ) -> None:
     """Execute plan tasks locally on the current branch (trunk mode)."""
     from i2code.implement.idea_project import IdeaProject
+    from i2code.implement.git_repository import GitRepository
 
     project = IdeaProject(idea_directory)
-    repo = Repo(project.directory, search_parent_directories=True)
+    if git_repo is None:
+        git_repo = GitRepository(Repo(project.directory, search_parent_directories=True))
 
     while True:
         next_task = get_next_task(project.plan_file)
@@ -1703,14 +1706,14 @@ def run_trunk_loop(
         task_description = next_task.print()
         print(f"Executing task: {task_description}")
 
-        head_before = repo.head.commit.hexsha
+        head_before = git_repo.head_sha
 
         if mock_claude:
             claude_cmd = [mock_claude, task_description]
         else:
             extra_cli_args = None
             if non_interactive:
-                permissions = calculate_claude_permissions(repo.working_tree_dir)
+                permissions = calculate_claude_permissions(git_repo.working_tree_dir)
                 extra_cli_args = ["--allowedTools", ",".join(permissions)]
             claude_cmd = build_claude_command(
                 project.directory,
@@ -1721,11 +1724,11 @@ def run_trunk_loop(
             )
 
         if non_interactive:
-            claude_result = run_claude_with_output_capture(claude_cmd, cwd=repo.working_tree_dir)
+            claude_result = run_claude_with_output_capture(claude_cmd, cwd=git_repo.working_tree_dir)
         else:
-            claude_result = run_claude_interactive(claude_cmd, cwd=repo.working_tree_dir)
+            claude_result = run_claude_interactive(claude_cmd, cwd=git_repo.working_tree_dir)
 
-        head_after = repo.head.commit.hexsha
+        head_after = git_repo.head_sha
 
         if not check_claude_success(claude_result.returncode, head_before, head_after):
             print_task_failure_diagnostics(claude_result, head_before, head_after)

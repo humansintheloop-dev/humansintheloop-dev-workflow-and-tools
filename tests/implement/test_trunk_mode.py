@@ -10,6 +10,8 @@ from i2code.implement.implement import ClaudeResult
 from i2code.plan_domain.numbered_task import NumberedTask, TaskNumber
 from i2code.plan_domain.task import Task
 
+from fake_git_repository import FakeGitRepository
+
 
 def make_numbered_task(thread: int, task: int, title: str) -> NumberedTask:
     return NumberedTask(
@@ -98,23 +100,21 @@ class TestTrunkModeIncompatibleFlags:
 
 @pytest.mark.unit
 class TestRunTrunkLoop:
-    """Unit tests for run_trunk_loop."""
+    """Unit tests for run_trunk_loop using FakeGitRepository."""
 
     @patch("i2code.implement.implement.get_next_task", return_value=None)
-    @patch("i2code.implement.implement.Repo")
     def test_no_tasks_remaining_prints_all_completed(
-        self, mock_repo_cls, mock_get_next,
+        self, mock_get_next,
         capsys,
     ):
         from i2code.implement.implement import run_trunk_loop
 
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/fake/repo"
-        mock_repo_cls.return_value = mock_repo
+        fake_repo = FakeGitRepository()
 
         run_trunk_loop(
             idea_directory="/fake/repo/ideas/test-feature",
             idea_name="test-feature",
+            git_repo=fake_repo,
         )
 
         mock_get_next.assert_called_once()
@@ -126,18 +126,14 @@ class TestRunTrunkLoop:
     @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "do task"])
     @patch("i2code.implement.implement.get_next_task")
-    @patch("i2code.implement.implement.Repo")
     def test_invokes_claude_for_first_task(
-        self, mock_repo_cls, mock_get_next,
+        self, mock_get_next,
         mock_build_cmd, mock_run_claude, mock_check, mock_is_completed,
         capsys,
     ):
         from i2code.implement.implement import run_trunk_loop
 
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/fake/repo"
-        mock_repo.head.commit.hexsha = "aaa"
-        mock_repo_cls.return_value = mock_repo
+        fake_repo = FakeGitRepository()
 
         task = make_numbered_task(1, 1, "Set up project")
         # First call: task found; second call (after completion): no tasks
@@ -148,6 +144,7 @@ class TestRunTrunkLoop:
         run_trunk_loop(
             idea_directory="/fake/repo/ideas/test-feature",
             idea_name="test-feature",
+            git_repo=fake_repo,
         )
 
         mock_get_next.assert_called()
@@ -165,17 +162,13 @@ class TestRunTrunkLoop:
     @patch("i2code.implement.implement.run_claude_with_output_capture")
     @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "-p", "do task"])
     @patch("i2code.implement.implement.get_next_task")
-    @patch("i2code.implement.implement.Repo")
     def test_exits_on_claude_failure(
-        self, mock_repo_cls, mock_get_next,
+        self, mock_get_next,
         mock_build_cmd, mock_run_claude, mock_calc_perms,
     ):
         from i2code.implement.implement import run_trunk_loop
 
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/fake/repo"
-        mock_repo.head.commit.hexsha = "aaa"
-        mock_repo_cls.return_value = mock_repo
+        fake_repo = FakeGitRepository()
 
         mock_get_next.return_value = make_numbered_task(1, 1, "Set up")
 
@@ -186,6 +179,7 @@ class TestRunTrunkLoop:
                 idea_directory="/fake/repo/ideas/test-feature",
                 idea_name="test-feature",
                 non_interactive=True,
+                git_repo=fake_repo,
             )
 
         assert exc_info.value.code == 1
@@ -196,18 +190,14 @@ class TestRunTrunkLoop:
     @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "do task"])
     @patch("i2code.implement.implement.get_next_task")
-    @patch("i2code.implement.implement.Repo")
     def test_loops_through_multiple_tasks(
-        self, mock_repo_cls, mock_get_next,
+        self, mock_get_next,
         mock_build_cmd, mock_run_claude, mock_check, mock_is_completed,
         capsys,
     ):
         from i2code.implement.implement import run_trunk_loop
 
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/fake/repo"
-        mock_repo.head.commit.hexsha = "aaa"
-        mock_repo_cls.return_value = mock_repo
+        fake_repo = FakeGitRepository()
 
         task1 = make_numbered_task(1, 1, "Task 1")
         task2 = make_numbered_task(1, 2, "Task 2")
@@ -219,6 +209,7 @@ class TestRunTrunkLoop:
         run_trunk_loop(
             idea_directory="/fake/repo/ideas/test-feature",
             idea_name="test-feature",
+            git_repo=fake_repo,
         )
 
         assert mock_run_claude.call_count == 2
@@ -232,17 +223,13 @@ class TestRunTrunkLoop:
     @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "do task"])
     @patch("i2code.implement.implement.get_next_task")
-    @patch("i2code.implement.implement.Repo")
     def test_exits_when_task_not_marked_complete(
-        self, mock_repo_cls, mock_get_next,
+        self, mock_get_next,
         mock_build_cmd, mock_run_claude, mock_check, mock_is_completed,
     ):
         from i2code.implement.implement import run_trunk_loop
 
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/fake/repo"
-        mock_repo.head.commit.hexsha = "aaa"
-        mock_repo_cls.return_value = mock_repo
+        fake_repo = FakeGitRepository()
 
         mock_get_next.return_value = make_numbered_task(1, 1, "Set up")
 
@@ -252,6 +239,7 @@ class TestRunTrunkLoop:
             run_trunk_loop(
                 idea_directory="/fake/repo/ideas/test-feature",
                 idea_name="test-feature",
+                git_repo=fake_repo,
             )
 
         assert exc_info.value.code == 1
@@ -263,18 +251,14 @@ class TestRunTrunkLoop:
     @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_claude_command")
     @patch("i2code.implement.implement.get_next_task")
-    @patch("i2code.implement.implement.Repo")
     def test_uses_mock_claude_when_provided(
-        self, mock_repo_cls, mock_get_next,
+        self, mock_get_next,
         mock_build_cmd, mock_run_claude, mock_check, mock_is_completed,
         capsys,
     ):
         from i2code.implement.implement import run_trunk_loop
 
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/fake/repo"
-        mock_repo.head.commit.hexsha = "aaa"
-        mock_repo_cls.return_value = mock_repo
+        fake_repo = FakeGitRepository()
 
         task = make_numbered_task(1, 1, "Set up")
         mock_get_next.side_effect = [task, None]
@@ -285,6 +269,7 @@ class TestRunTrunkLoop:
             idea_directory="/fake/repo/ideas/test-feature",
             idea_name="test-feature",
             mock_claude="/path/to/mock-script",
+            git_repo=fake_repo,
         )
 
         mock_get_next.assert_called()
@@ -302,18 +287,14 @@ class TestRunTrunkLoop:
     @patch("i2code.implement.implement.run_claude_with_output_capture")
     @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "-p", "do task"])
     @patch("i2code.implement.implement.get_next_task")
-    @patch("i2code.implement.implement.Repo")
     def test_non_interactive_passes_allowed_tools(
-        self, mock_repo_cls, mock_get_next,
+        self, mock_get_next,
         mock_build_cmd, mock_run_claude, mock_check,
         mock_calc_perms, mock_is_completed,
     ):
         from i2code.implement.implement import run_trunk_loop
 
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/fake/repo"
-        mock_repo.head.commit.hexsha = "aaa"
-        mock_repo_cls.return_value = mock_repo
+        fake_repo = FakeGitRepository()
 
         task = make_numbered_task(1, 1, "Task 1")
         mock_get_next.side_effect = [task, None]
@@ -323,6 +304,7 @@ class TestRunTrunkLoop:
             idea_directory="/fake/repo/ideas/test-feature",
             idea_name="test-feature",
             non_interactive=True,
+            git_repo=fake_repo,
         )
 
         mock_get_next.assert_called()

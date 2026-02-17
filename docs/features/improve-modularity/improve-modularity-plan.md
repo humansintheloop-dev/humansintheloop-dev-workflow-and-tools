@@ -159,18 +159,18 @@ Extract all `gh` CLI calls into an injectable class. This is the highest-leverag
 ## Steel Thread 3: Extract GitRepository
 Extract all Git operations into a class that tracks branch and PR state. Composes with GitHubClient for remote operations. This eliminates the `(slice_branch, pr_number)` parameter threading.
 
-- [ ] **Task 3.1: Extract GitRepository with branch operations**
+- [x] **Task 3.1: Extract GitRepository with branch operations**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/ -v`
   - Observable: `GitRepository` class exists in `git_repository.py`. Owns `head_sha`, `head_advanced_since()`, `ensure_branch()`, `checkout()`, `ensure_worktree()`. Wraps GitPython `Repo`. `FakeGitRepository` exists in test conftest.
   - Evidence: Pre-commit checklist passes. `test_git_infrastructure.py` integration tests unchanged.
   - Steps:
-    - [ ] Write `FakeGitRepository` in test conftest
-    - [ ] Write unit tests for GitRepository branch operations
-    - [ ] Implement GitRepository class wrapping GitPython Repo
-    - [ ] Update `run_trunk_loop` to accept GitRepository
-    - [ ] Migrate `test_trunk_mode.py` to use FakeGitRepository (remove `@patch("...Repo")`)
-    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+    - [x] Write `FakeGitRepository` in test conftest
+    - [x] Write unit tests for GitRepository branch operations
+    - [x] Implement GitRepository class wrapping GitPython Repo
+    - [x] Update `run_trunk_loop` to accept GitRepository
+    - [x] Migrate `test_trunk_mode.py` to use FakeGitRepository (remove `@patch("...Repo")`)
+    - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
 - [ ] **Task 3.2: Add push, PR, and CI tracking to GitRepository**
   - TaskType: OUTCOME
@@ -324,3 +324,24 @@ Extracted GitHubClient class with _run_gh() helper, FakeGitHubClient test double
 
 ### 2026-02-18 07:45 - mark-task-complete
 Moved 10 methods into GitHubClient, deleted git_utils.py, removed standalone functions from implement.py, updated all callers and tests
+
+### 2026-02-18 08:01 - mark-step-complete
+FakeGitRepository created in tests/implement/fake_git_repository.py and exported from conftest.py
+
+### 2026-02-18 08:01 - mark-step-complete
+10 unit tests for GitRepository in test_git_repository.py covering head_sha, head_advanced_since, ensure_branch, checkout, ensure_worktree, working_tree_dir
+
+### 2026-02-18 08:01 - mark-step-complete
+GitRepository class in src/i2code/implement/git_repository.py wrapping GitPython Repo with head_sha, head_advanced_since, ensure_branch, checkout, ensure_worktree
+
+### 2026-02-18 08:01 - mark-step-complete
+run_trunk_loop accepts optional git_repo parameter, defaults to creating GitRepository from Repo
+
+### 2026-02-18 08:01 - mark-step-complete
+test_trunk_mode.py TestRunTrunkLoop migrated to use FakeGitRepository, removed @patch for Repo
+
+### 2026-02-18 08:01 - mark-step-complete
+Pre-commit checklist passes: ruff clean, CodeScene 10.0 for new files, test_git_infrastructure unchanged, all tests pass
+
+### 2026-02-18 08:01 - mark-task-complete
+GitRepository class extracted with branch operations. FakeGitRepository test double created. run_trunk_loop accepts GitRepository. test_trunk_mode.py migrated.

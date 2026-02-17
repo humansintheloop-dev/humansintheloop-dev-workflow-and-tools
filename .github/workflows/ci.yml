@@ -27,6 +27,11 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
+      - name: Configure git to use gh for authentication
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: gh auth setup-git
+
       - name: Run integration_gh tests
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}

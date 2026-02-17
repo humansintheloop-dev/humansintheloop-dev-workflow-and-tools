@@ -15,6 +15,10 @@ When writing commit messages for this project, follow these guidelines:
 - The first line of the commit message should describe the high-level goal of the change
 - If the work is associated with an issue, include the issue number in the commit message
 
+## Lint Check
+
+Before committing, run `uvx ruff check --fix` to auto-fix lint issues. If unfixable errors remain, resolve them before committing.
+
 ## Code Health Safeguard
 
 If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it before committing code changes. If Code Health regresses or fails quality gates, refactor before committing.

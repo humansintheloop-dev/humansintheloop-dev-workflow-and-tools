@@ -1,6 +1,12 @@
 repos:
   - repo: local
     hooks:
+      - id: ruff-check
+        name: Run ruff check --fix
+        entry: bash -c 'uvx ruff check --fix; true'
+        language: system
+        types: [python]
+        pass_filenames: false
       - id: precommit-check
         name: Run precommit.sh checks
         entry: ./test-scripts/test-precommit.sh

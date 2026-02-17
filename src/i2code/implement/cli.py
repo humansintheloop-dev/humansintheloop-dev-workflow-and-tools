@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
 
 import click
 
@@ -40,50 +41,39 @@ from i2code.implement.implement import (
 )
 
 
-@click.command("implement")
-@click.argument("idea_directory")
-@click.option("--cleanup", is_flag=True,
-              help="Perform cleanup (remove worktree, delete local branches) after PR is merged/closed")
-@click.option("--mock-claude", metavar="SCRIPT",
-              help="Use mock script instead of Claude (for testing)")
-@click.option("--setup-only", is_flag=True,
-              help="Only set up infrastructure (branches, worktree, PR), don't execute tasks")
-@click.option("--non-interactive", is_flag=True,
-              help="Run Claude in non-interactive mode (uses -p flag)")
-@click.option("--extra-prompt", metavar="TEXT",
-              help="Extra text to append to Claude's prompt (after a blank line)")
-@click.option("--skip-ci-wait", is_flag=True,
-              help="Skip waiting for CI after push (for testing)")
-@click.option("--ci-fix-retries", type=int, default=3,
-              help="Maximum retries for fixing CI failures (default: 3)")
-@click.option("--ci-timeout", type=int, default=600,
-              help="Timeout in seconds for CI completion (default: 600)")
-@click.option("--isolate", is_flag=True,
-              help="Run inside an isolarium VM")
-@click.option("--isolated", is_flag=True, hidden=True,
-              help="Running inside isolarium VM (internal flag)")
-@click.option("--trunk", is_flag=True,
-              help="Execute tasks locally on the current branch (no worktree, PR, or CI)")
-@click.option("--dry-run", is_flag=True,
-              help="Print what mode would be used and exit without executing")
-@click.option("--ignore-uncommitted-idea-changes", is_flag=True,
-              help="Skip validation that idea files are committed")
-def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
-                  non_interactive, extra_prompt, skip_ci_wait,
-                  ci_fix_retries, ci_timeout, isolate, isolated, trunk, dry_run,
-                  ignore_uncommitted_idea_changes):
+@dataclass
+class ImplementOpts:
+    """All options for the implement command."""
+
+    idea_directory: str
+    cleanup: bool = False
+    mock_claude: str | None = None
+    setup_only: bool = False
+    non_interactive: bool = False
+    extra_prompt: str | None = None
+    skip_ci_wait: bool = False
+    ci_fix_retries: int = 3
+    ci_timeout: int = 600
+    isolate: bool = False
+    isolated: bool = False
+    trunk: bool = False
+    dry_run: bool = False
+    ignore_uncommitted_idea_changes: bool = False
+
+
+def implement(opts: ImplementOpts):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
-    project = IdeaProject(idea_directory)
+    project = IdeaProject(opts.idea_directory)
     project.validate()
     project.validate_files()
 
-    if not isolated and not ignore_uncommitted_idea_changes:
+    if not opts.isolated and not opts.ignore_uncommitted_idea_changes:
         validate_idea_files_committed(project.directory, project.name)
 
-    if dry_run:
-        if trunk:
+    if opts.dry_run:
+        if opts.trunk:
             mode = "trunk"
-        elif isolate:
+        elif opts.isolate:
             mode = "isolate"
         else:
             mode = "worktree"
@@ -93,21 +83,21 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         return
 
     # Trunk mode: execute tasks locally on current branch
-    if trunk:
+    if opts.trunk:
         incompatible = []
-        if cleanup:
+        if opts.cleanup:
             incompatible.append("--cleanup")
-        if setup_only:
+        if opts.setup_only:
             incompatible.append("--setup-only")
-        if isolate:
+        if opts.isolate:
             incompatible.append("--isolate")
-        if isolated:
+        if opts.isolated:
             incompatible.append("--isolated")
-        if skip_ci_wait:
+        if opts.skip_ci_wait:
             incompatible.append("--skip-ci-wait")
-        if ci_fix_retries != 3:
+        if opts.ci_fix_retries != 3:
             incompatible.append("--ci-fix-retries")
-        if ci_timeout != 600:
+        if opts.ci_timeout != 600:
             incompatible.append("--ci-timeout")
         if incompatible:
             raise click.UsageError(
@@ -117,14 +107,14 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         run_trunk_loop(
             idea_directory=project.directory,
             idea_name=project.name,
-            non_interactive=non_interactive,
-            mock_claude=mock_claude,
-            extra_prompt=extra_prompt,
+            non_interactive=opts.non_interactive,
+            mock_claude=opts.mock_claude,
+            extra_prompt=opts.extra_prompt,
         )
         return
 
     # Delegate to isolarium VM if --isolate is set
-    if isolate:
+    if opts.isolate:
         repo = Repo(project.directory, search_parent_directories=True)
 
         # Run project scaffolding on host before delegating to VM
@@ -134,11 +124,11 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
             idea_directory=project.directory,
             idea_name=project.name,
             integration_branch=integration_branch,
-            interactive=not non_interactive,
-            mock_claude=mock_claude,
-            ci_fix_retries=ci_fix_retries,
-            ci_timeout=ci_timeout,
-            skip_ci_wait=skip_ci_wait,
+            interactive=not opts.non_interactive,
+            mock_claude=opts.mock_claude,
+            ci_fix_retries=opts.ci_fix_retries,
+            ci_timeout=opts.ci_timeout,
+            skip_ci_wait=opts.skip_ci_wait,
         )
         if not setup_ok:
             print("Error: Project scaffolding setup failed", file=sys.stderr)
@@ -146,25 +136,25 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
 
         rel_idea_dir = os.path.relpath(project.directory, repo.working_tree_dir)
         isolarium_args = ["isolarium", "--name", f"i2code-{project.name}", "run"]
-        if not non_interactive:
+        if not opts.non_interactive:
             isolarium_args.append("--interactive")
         cmd = isolarium_args + ["--", "i2code", "--with-sdkman", "implement", "--isolated", rel_idea_dir]
-        if cleanup:
+        if opts.cleanup:
             cmd.append("--cleanup")
-        if mock_claude:
-            cmd.extend(["--mock-claude", mock_claude])
-        if setup_only:
+        if opts.mock_claude:
+            cmd.extend(["--mock-claude", opts.mock_claude])
+        if opts.setup_only:
             cmd.append("--setup-only")
-        if non_interactive:
+        if opts.non_interactive:
             cmd.append("--non-interactive")
-        if extra_prompt:
-            cmd.extend(["--extra-prompt", extra_prompt])
-        if skip_ci_wait:
+        if opts.extra_prompt:
+            cmd.extend(["--extra-prompt", opts.extra_prompt])
+        if opts.skip_ci_wait:
             cmd.append("--skip-ci-wait")
-        if ci_fix_retries != 3:
-            cmd.extend(["--ci-fix-retries", str(ci_fix_retries)])
-        if ci_timeout != 600:
-            cmd.extend(["--ci-timeout", str(ci_timeout)])
+        if opts.ci_fix_retries != 3:
+            cmd.extend(["--ci-fix-retries", str(opts.ci_fix_retries)])
+        if opts.ci_timeout != 600:
+            cmd.extend(["--ci-timeout", str(opts.ci_timeout)])
         print(f"Running: {' '.join(cmd)}")
         result = subprocess.run(cmd)
         sys.exit(result.returncode)
@@ -176,7 +166,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
     repo = Repo(project.directory, search_parent_directories=True)
 
     # Create or reuse integration branch
-    integration_branch = ensure_integration_branch(repo, project.name, isolated=isolated)
+    integration_branch = ensure_integration_branch(repo, project.name, isolated=opts.isolated)
     print(f"Integration branch: {integration_branch}")
 
     # Read plan file to get first task name for slice naming
@@ -189,7 +179,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
     )
     print(f"Slice branch: {slice_branch}")
 
-    if isolated:
+    if opts.isolated:
         # Running inside isolarium VM - work directly in the repo
         work_dir = repo.working_tree_dir
         repo.config_writer().set_value("user", "email", "test@test.com").release()
@@ -216,7 +206,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
 
     # Skip task execution if --setup-only was provided
     # Note: PR creation is deferred until after first push (when there are commits)
-    if setup_only:
+    if opts.setup_only:
         print("Setup complete. Exiting (--setup-only mode).")
         return
 
@@ -243,9 +233,9 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                     slice_branch,
                     head_sha,
                     work_dir,
-                    max_retries=ci_fix_retries,
-                    interactive=not non_interactive,
-                    mock_claude=mock_claude
+                    max_retries=opts.ci_fix_retries,
+                    interactive=not opts.non_interactive,
+                    mock_claude=opts.mock_claude
                 ):
                     print("Error: Could not fix CI failure after max retries", file=sys.stderr)
                     sys.exit(1)
@@ -261,10 +251,10 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                 state=state,
                 worktree_path=work_dir,
                 slice_branch=slice_branch,
-                interactive=not non_interactive,
-                mock_claude=mock_claude,
-                skip_ci_wait=skip_ci_wait,
-                ci_timeout=ci_timeout
+                interactive=not opts.non_interactive,
+                mock_claude=opts.mock_claude,
+                skip_ci_wait=opts.skip_ci_wait,
+                ci_timeout=opts.ci_timeout
             )
 
             if had_feedback:
@@ -291,21 +281,21 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         head_before = work_repo.head.commit.hexsha
 
         # Build and run Claude command (or mock script for testing)
-        if mock_claude:
-            claude_cmd = [mock_claude, task_description]
-            print(f"Using mock Claude: {mock_claude}")
+        if opts.mock_claude:
+            claude_cmd = [opts.mock_claude, task_description]
+            print(f"Using mock Claude: {opts.mock_claude}")
         else:
             claude_cmd = build_claude_command(
                 work_idea_dir,
                 task_description,
-                interactive=not non_interactive,
-                extra_prompt=extra_prompt
+                interactive=not opts.non_interactive,
+                extra_prompt=opts.extra_prompt
             )
             print(f"Invoking Claude: {' '.join(claude_cmd)}")
 
         # Run Claude (or mock)
         # In non-interactive mode, capture output; in interactive mode, use terminal directly
-        if non_interactive:
+        if opts.non_interactive:
             claude_result = run_claude_with_output_capture(claude_cmd, cwd=work_dir)
         else:
             claude_result = run_claude_interactive(claude_cmd, cwd=work_dir)
@@ -346,10 +336,10 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
             print(f"Created Draft PR #{pr_number}")
 
         # Wait for CI to complete (unless --skip-ci-wait)
-        if not skip_ci_wait:
+        if not opts.skip_ci_wait:
             print("Waiting for CI to complete...")
             ci_success, failing_run = wait_for_workflow_completion(
-                slice_branch, head_after, timeout_seconds=ci_timeout
+                slice_branch, head_after, timeout_seconds=opts.ci_timeout
             )
 
             if not ci_success and failing_run:
@@ -357,6 +347,39 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                 print(f"CI failed: {workflow_name}. Will fix on next iteration.")
             elif ci_success:
                 print("CI passed!")
+
+
+@click.command("implement")
+@click.argument("idea_directory")
+@click.option("--cleanup", is_flag=True,
+              help="Perform cleanup (remove worktree, delete local branches) after PR is merged/closed")
+@click.option("--mock-claude", metavar="SCRIPT",
+              help="Use mock script instead of Claude (for testing)")
+@click.option("--setup-only", is_flag=True,
+              help="Only set up infrastructure (branches, worktree, PR), don't execute tasks")
+@click.option("--non-interactive", is_flag=True,
+              help="Run Claude in non-interactive mode (uses -p flag)")
+@click.option("--extra-prompt", metavar="TEXT",
+              help="Extra text to append to Claude's prompt (after a blank line)")
+@click.option("--skip-ci-wait", is_flag=True,
+              help="Skip waiting for CI after push (for testing)")
+@click.option("--ci-fix-retries", type=int, default=3,
+              help="Maximum retries for fixing CI failures (default: 3)")
+@click.option("--ci-timeout", type=int, default=600,
+              help="Timeout in seconds for CI completion (default: 600)")
+@click.option("--isolate", is_flag=True,
+              help="Run inside an isolarium VM")
+@click.option("--isolated", is_flag=True, hidden=True,
+              help="Running inside isolarium VM (internal flag)")
+@click.option("--trunk", is_flag=True,
+              help="Execute tasks locally on the current branch (no worktree, PR, or CI)")
+@click.option("--dry-run", is_flag=True,
+              help="Print what mode would be used and exit without executing")
+@click.option("--ignore-uncommitted-idea-changes", is_flag=True,
+              help="Skip validation that idea files are committed")
+def implement_cmd(**kwargs):
+    """Implement a development plan using Git worktrees and GitHub Draft PRs."""
+    implement(ImplementOpts(**kwargs))
 
 
 @click.command("scaffold")

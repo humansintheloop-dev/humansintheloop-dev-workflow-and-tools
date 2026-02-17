@@ -161,14 +161,14 @@ class TestRunTrunkLoop:
         )
         mock_run_claude.assert_called_once()
 
-    @patch("i2code.implement.implement.check_claude_success", return_value=False)
-    @patch("i2code.implement.implement.run_claude_interactive")
-    @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "do task"])
+    @patch("i2code.implement.implement.calculate_claude_permissions", return_value=["Bash(git commit:*)"])
+    @patch("i2code.implement.implement.run_claude_with_output_capture")
+    @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "-p", "do task"])
     @patch("i2code.implement.implement.get_next_task")
     @patch("i2code.implement.implement.Repo")
     def test_exits_on_claude_failure(
         self, mock_repo_cls, mock_get_next,
-        mock_build_cmd, mock_run_claude, mock_check,
+        mock_build_cmd, mock_run_claude, mock_calc_perms,
     ):
         from i2code.implement.implement import run_trunk_loop
 
@@ -179,12 +179,13 @@ class TestRunTrunkLoop:
 
         mock_get_next.return_value = make_numbered_task(1, 1, "Set up")
 
-        mock_run_claude.return_value = ClaudeResult(returncode=1, stdout="", stderr="")
+        mock_run_claude.return_value = ClaudeResult(returncode=1, stdout="<FAILURE>something went wrong</FAILURE>", stderr="")
 
         with pytest.raises(SystemExit) as exc_info:
             run_trunk_loop(
                 idea_directory="/fake/repo/ideas/test-feature",
                 idea_name="test-feature",
+                non_interactive=True,
             )
 
         assert exc_info.value.code == 1
@@ -316,7 +317,7 @@ class TestRunTrunkLoop:
 
         task = make_numbered_task(1, 1, "Task 1")
         mock_get_next.side_effect = [task, None]
-        mock_run_claude.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
+        mock_run_claude.return_value = ClaudeResult(returncode=0, stdout="<SUCCESS>task implemented: abc123</SUCCESS>", stderr="")
 
         run_trunk_loop(
             idea_directory="/fake/repo/ideas/test-feature",

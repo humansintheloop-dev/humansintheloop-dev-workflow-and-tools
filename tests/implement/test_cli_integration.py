@@ -224,7 +224,7 @@ class TestGetDefaultBranchWiring:
         task = _make_numbered_task("setup")
         with patch("i2code.implement.cli.get_next_task", side_effect=[task, task, None]):
             mock_ensure_pr.return_value = 42
-            mock_run_claude.return_value = MagicMock(returncode=0, stdout="", stderr="", permission_denials=[], error_message=None, last_messages=[])
+            mock_run_claude.return_value = MagicMock(returncode=0, stdout="<SUCCESS>task implemented: abc123</SUCCESS>", stderr="", permission_denials=[], error_message=None, last_messages=[])
 
             runner = CliRunner(catch_exceptions=False)
             _result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--non-interactive", "--skip-ci-wait"])

@@ -1963,6 +1963,12 @@ def run_trunk_loop(
             print_task_failure_diagnostics(claude_result, head_before, head_after)
             sys.exit(1)
 
+        # In non-interactive mode, also check for outcome tags
+        if non_interactive:
+            if "<SUCCESS>" not in claude_result.stdout:
+                print_task_failure_diagnostics(claude_result, head_before, head_after)
+                sys.exit(1)
+
         if not is_task_completed(project.plan_file, next_task.number.thread, next_task.number.task):
             print("Error: Task was not marked complete in plan file.", file=sys.stderr)
             sys.exit(1)

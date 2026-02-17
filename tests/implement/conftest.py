@@ -31,7 +31,7 @@ def create_github_repo(repo_name):
     if result.returncode != 0:
         raise RuntimeError(f"Failed to create GitHub repo: {result.stderr}")
 
-    clone_url = f"git@github.com:{repo_full_name}.git"
+    clone_url = f"https://github.com/{repo_full_name}.git"
 
     return repo_full_name, clone_url
 

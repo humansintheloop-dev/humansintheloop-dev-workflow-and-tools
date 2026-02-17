@@ -358,7 +358,7 @@ def github_test_repo_with_simple_plan():
         tmpdir = tempfile.mkdtemp()
 
         # Clone
-        subprocess.run(["git", "clone", clone_url, tmpdir], capture_output=True)
+        subprocess.run(["git", "clone", clone_url, tmpdir], capture_output=True, check=True)
 
         repo = Repo(tmpdir)
         repo.config_writer().set_value("user", "email", "test@test.com").release()

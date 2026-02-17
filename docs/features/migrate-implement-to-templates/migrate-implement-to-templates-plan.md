@@ -64,17 +64,17 @@ The `task_execution.j2` template extraction established the pattern. Five f-stri
 ## Steel Thread 1: PR Feedback Prompts
 Migrate the triage and fix feedback prompts, which are closely related.
 
-- [ ] **Task 1.1: Migrate build_triage_command prompt to triage_feedback.j2**
+- [x] **Task 1.1: Migrate build_triage_command prompt to triage_feedback.j2**
   - TaskType: code
   - Entrypoint: `build_triage_command` in implement.py:729
   - Observable: Function uses `render_template("triage_feedback.j2", ...)` instead of f-string. Existing tests pass unchanged.
   - Evidence: `uv run --with pytest pytest tests/implement/ -m unit`
   - Steps:
-    1. [ ] Create `src/i2code/implement/templates/triage_feedback.j2` with the prompt text
-    2. [ ] Replace f-string in `build_triage_command` with `render_template` call
-    3. [ ] Run tests to verify
+    1. [x] Create `src/i2code/implement/templates/triage_feedback.j2` with the prompt text
+    2. [x] Replace f-string in `build_triage_command` with `render_template` call
+    3. [x] Run tests to verify
 
-- [ ] **Task 1.2: Migrate build_fix_command prompt to fix_feedback.j2**
+- [x] **Task 1.2: Migrate build_fix_command prompt to fix_feedback.j2**
   - TaskType: code
   - Entrypoint: `build_fix_command` in implement.py:790
   - Observable: Function uses `render_template("fix_feedback.j2", ...)` instead of f-string. Existing tests pass unchanged.
@@ -84,7 +84,7 @@ Migrate the triage and fix feedback prompts, which are closely related.
     2. [ ] Replace f-string in `build_fix_command` with `render_template` call
     3. [ ] Run tests to verify
 
-- [ ] **Task 1.3: Migrate build_feedback_command prompt to address_feedback.j2**
+- [x] **Task 1.3: Migrate build_feedback_command prompt to address_feedback.j2**
   - TaskType: code
   - Entrypoint: `build_feedback_command` in implement.py:2105
   - Observable: Function uses `render_template("address_feedback.j2", ...)` instead of f-string. Existing tests pass unchanged.
@@ -99,7 +99,7 @@ Migrate the triage and fix feedback prompts, which are closely related.
 ## Steel Thread 2: Scaffolding and CI Prompts
 Migrate the remaining two prompts.
 
-- [ ] **Task 2.1: Migrate build_scaffolding_prompt to scaffolding.j2**
+- [x] **Task 2.1: Migrate build_scaffolding_prompt to scaffolding.j2**
   - TaskType: code
   - Entrypoint: `build_scaffolding_prompt` in implement.py:1829
   - Observable: Function uses `render_template("scaffolding.j2", ...)` instead of f-string. Existing tests pass unchanged.
@@ -109,7 +109,7 @@ Migrate the remaining two prompts.
     2. [ ] Replace f-string in `build_scaffolding_prompt` with `render_template` call
     3. [ ] Run tests to verify
 
-- [ ] **Task 2.2: Migrate build_ci_fix_command prompt to ci_fix.j2**
+- [x] **Task 2.2: Migrate build_ci_fix_command prompt to ci_fix.j2**
   - TaskType: code
   - Entrypoint: `build_ci_fix_command` in implement.py:2150
   - Observable: Function uses `render_template("ci_fix.j2", ...)` instead of f-string. Existing tests pass unchanged.
@@ -124,3 +124,9 @@ Migrate the remaining two prompts.
 ## Summary
 
 This plan migrates 5 remaining f-string prompts across 2 threads: 3 PR feedback prompts and 2 scaffolding/CI prompts. Each migration follows the pattern established in the `task_execution.j2` extraction. After completion, all Claude prompts in implement.py will be Jinja2 templates, editable without touching Python code.
+
+---
+
+## Change History
+### 2026-02-17 06:20 - mark-task-complete
+Migrated build_scaffolding_prompt to use render_template('scaffolding.j2', ...). All 194 unit tests pass unchanged.

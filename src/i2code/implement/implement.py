@@ -728,43 +728,13 @@ def build_triage_command(
     Returns:
         Command as a list suitable for subprocess
     """
-    prompt = f"""You are triaging feedback on a pull request. Analyze each piece of feedback and categorize it.
+    from i2code.templates.template_renderer import render_template
 
-The following feedback needs to be triaged:
-
-{feedback_content}
-
-Your task:
-
-1. Review each piece of feedback carefully
-2. Categorize each comment as either:
-   - "will_fix": You understand what's being asked and can fix it
-   - "needs_clarification": The feedback is unclear and you need to ask a question
-
-3. Group related "will_fix" comments that should be addressed together in one commit
-
-4. For "needs_clarification" comments, write a specific, clear question to ask the reviewer
-
-Output your triage as JSON in exactly this format:
-```json
-{{
-  "will_fix": [
-    {{"comment_ids": [123, 456], "description": "Brief description of what to fix"}},
-    {{"comment_ids": [789], "description": "Another fix"}}
-  ],
-  "needs_clarification": [
-    {{"comment_id": 101, "question": "Your specific question here"}},
-    {{"comment_id": 102, "question": "Another question"}}
-  ]
-}}
-```
-
-IMPORTANT:
-- Use the exact comment IDs from the feedback above
-- Group related fixes together
-- Be specific in clarification questions
-- Output ONLY the JSON, no other text
-"""
+    prompt = render_template(
+        "triage_feedback.j2",
+        package=__package__,
+        feedback_content=feedback_content,
+    )
 
     if interactive:
         return ["claude", prompt]
@@ -789,26 +759,15 @@ def build_fix_command(
     Returns:
         Command as a list suitable for subprocess
     """
-    prompt = f"""You are fixing feedback on a pull request.
+    from i2code.templates.template_renderer import render_template
 
-PR URL: {pr_url}
-
-The following feedback needs to be addressed:
-
-{feedback_content}
-
-Fix description: {fix_description}
-
-Your task:
-
-1. Make the necessary code changes to address all the feedback
-2. Commit your changes with a clear message explaining how you addressed the feedback
-
-IMPORTANT:
-- Make all changes in a single commit
-- The commit message should clearly describe what was fixed
-- If you don't have permission to perform an action, print an informative error message and exit
-"""
+    prompt = render_template(
+        "fix_feedback.j2",
+        package=__package__,
+        pr_url=pr_url,
+        feedback_content=feedback_content,
+        fix_description=fix_description,
+    )
 
     if interactive:
         return ["claude", prompt]
@@ -1829,39 +1788,13 @@ def build_scaffolding_prompt(
 
     Returns command as a list suitable for subprocess.
     """
-    prompt = f"""You are setting up project scaffolding for a new idea.
+    from i2code.templates.template_renderer import render_template
 
-Read the idea files to understand the project:
-
-* Idea: @{idea_directory}/*-idea.*
-* Specification: @{idea_directory}/*-spec.md
-
-Based on the idea files, create minimal project scaffolding that compiles/runs and passes CI:
-
-- If it's a Java project: create a Gradle skeleton (build.gradle, settings.gradle, gradlew wrapper, placeholder source and test that compile and pass)
-- If it involves infrastructure or test scripts: create test-scripts/test-end-to-end.sh (executable, exits 0 as placeholder)
-- These are not mutually exclusive — create both if the project needs both
-- Create .github/workflows/ci.yaml that builds and runs whatever scaffolding you created
-- Technology versions and choices should come from the idea/spec files, not from defaults
-- Create or update .gitignore with entries to exclude build artifacts and other files that must not be in Git
-
-The goal is a minimal buildable project with passing CI and placeholder code. Do not implement real functionality — just enough for the build and tests to pass.
-
-Commit all scaffolding changes when done. If scaffolding already exists and is sufficient, make no changes.
-
-IMPORTANT:
-- Make all changes in a single commit
-- The commit message should clearly describe what was fixed
-- If you don't have permission to perform an action, print an informative error message and exit
-
-CRITICAL:
-
-Immediately, before exiting output one of the following messages
-- If the scaffolding already exists: <NOTHING-TO-DO>No changes needed</NOTHING-TO-DO>
-- If successful: <SUCCESS>Scaffold created: COMMIT_SHA</SUCCESS>
-- If failed: <FAILURE>Explanation of failure - if permission include those required permissions</FAILURE>
-
-"""
+    prompt = render_template(
+        "scaffolding.j2",
+        package=__package__,
+        idea_directory=idea_directory,
+    )
 
     if mock_claude:
         return [mock_claude, "setup"]
@@ -2105,21 +2038,15 @@ def build_feedback_command(
     Returns:
         Command as a list suitable for subprocess
     """
-    prompt = f"""You are addressing feedback on a pull request.
+    from i2code.templates.template_renderer import render_template
 
-* PR URL: {pr_url}
-* Feedback type: {feedback_type}
-
-The feedback to address:
-
-{feedback_content}
-
-Your task:
-
-1. Understand the feedback and what changes are being requested
-2. Make the necessary code changes to address the feedback
-3. Commit your changes with a clear message explaining how you addressed the feedback
-"""
+    prompt = render_template(
+        "address_feedback.j2",
+        package=__package__,
+        pr_url=pr_url,
+        feedback_type=feedback_type,
+        feedback_content=feedback_content,
+    )
 
     return [
         "claude",
@@ -2150,24 +2077,15 @@ def build_ci_fix_command(
     if len(failure_logs) > max_log_length:
         failure_logs = f"... (truncated)\n{failure_logs[-max_log_length:]}"
 
-    prompt = f"""CI build failure detected. Use the debugging-ci-failures skill.
+    from i2code.templates.template_renderer import render_template
 
-Workflow: {workflow_name}
-Run ID: {run_id}
-
-Failure logs:
-```
-{failure_logs}
-```
-
-Your task:
-1. Analyze the failure logs to understand what went wrong
-2. Identify the root cause of the failure
-3. Make the necessary code changes to fix the issue
-4. Commit your changes with a clear message explaining the fix
-
-IMPORTANT: if you don't have permission to perform an action, print an informative error message and exit.
-"""
+    prompt = render_template(
+        "ci_fix.j2",
+        package=__package__,
+        run_id=run_id,
+        workflow_name=workflow_name,
+        failure_logs=failure_logs,
+    )
 
     if interactive:
         return ["claude", prompt]

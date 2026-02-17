@@ -4,9 +4,12 @@ import os
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
 
 import pytest
 from git import Repo
+
+from i2code.implement.idea_project import IdeaProject
 
 # Ensure tests/implement/ is on sys.path so test files can import
 # fake_github_client unambiguously (avoids conftest module name collisions).
@@ -72,6 +75,20 @@ def run_script(idea_dir, cwd=None, setup_only=False, mock_claude=None):
         text=True,
         cwd=cwd
     )
+
+
+@contextmanager
+def TempIdeaProject(name):
+    """Create a temporary IdeaProject with its directory on disk.
+
+    Usage:
+        with TempIdeaProject("my-feature") as project:
+            assert project.name == "my-feature"
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        idea_dir = os.path.join(tmpdir, name)
+        os.makedirs(idea_dir)
+        yield IdeaProject(idea_dir)
 
 
 @pytest.fixture

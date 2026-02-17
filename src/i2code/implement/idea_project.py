@@ -46,29 +46,28 @@ class IdeaProject:
             sys.exit(1)
         return self
 
-    def validate_files(self) -> None:
-        """Validate that all required idea files exist.
-
-        Required files:
-        - <name>-idea.md or <name>-idea.txt
-        - <name>-discussion.md
-        - <name>-spec.md
-        - <name>-plan.md
-
-        Raises:
-            SystemExit: If any required files are missing
-        """
-        missing_files = []
+    def find_missing_files(self) -> list[str]:
+        """Return list of required idea files that are missing from the directory."""
+        missing = []
 
         idea_pattern = os.path.join(self._directory, f"{self._name}-idea.*")
         if not glob.glob(idea_pattern):
-            missing_files.append(f"{self._name}-idea.md (or .txt)")
+            missing.append(f"{self._name}-idea.md (or .txt)")
 
         for suffix in ["discussion.md", "spec.md", "plan.md"]:
             filepath = os.path.join(self._directory, f"{self._name}-{suffix}")
             if not os.path.isfile(filepath):
-                missing_files.append(f"{self._name}-{suffix}")
+                missing.append(f"{self._name}-{suffix}")
 
+        return missing
+
+    def validate_files(self) -> None:
+        """Validate that all required idea files exist.
+
+        Raises:
+            SystemExit: If any required files are missing
+        """
+        missing_files = self.find_missing_files()
         if missing_files:
             print(
                 f"Error: Missing required idea files in {self._directory}:",

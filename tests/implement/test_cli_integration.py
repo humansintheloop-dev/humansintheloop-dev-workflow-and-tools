@@ -176,16 +176,14 @@ class TestIgnoreUncommittedIdeaChanges:
 
 @pytest.mark.unit
 class TestGetDefaultBranchWiring:
-    """Test that implement_cmd detects the default branch and passes it to ensure_draft_pr."""
+    """Test that implement_cmd detects the default branch and passes it to GitRepository.ensure_pr()."""
 
-    @patch("i2code.implement.cli.ensure_draft_pr")
-    @patch("i2code.implement.cli.push_branch_to_remote", return_value=True)
     @patch("i2code.implement.cli.has_ci_workflow_files", return_value=True)
     @patch("i2code.implement.cli.is_task_completed", return_value=True)
     @patch("i2code.implement.cli.check_claude_success", return_value=True)
     @patch("i2code.implement.cli.run_claude_with_output_capture")
     @patch("i2code.implement.cli.build_claude_command", return_value=["echo", "mock"])
-    @patch("i2code.implement.cli.branch_has_been_pushed", return_value=False)
+    @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.GitHubClient")
     @patch("i2code.implement.cli.get_worktree_idea_directory", return_value="/tmp/wt/idea")
     @patch("i2code.implement.cli.ensure_claude_permissions")
@@ -196,13 +194,14 @@ class TestGetDefaultBranchWiring:
     @patch("i2code.implement.cli.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.Repo")
-    def test_passes_detected_branch_to_ensure_draft_pr(
+    def test_passes_detected_branch_to_ensure_pr(
         self, mock_repo_cls, mock_idea_project_cls,
         mock_validate_committed, mock_load_state,
         mock_ensure_integration, mock_ensure_slice, mock_ensure_worktree,
         mock_ensure_perms, mock_get_wt_idea, mock_gh_client_cls,
-        mock_branch_pushed, mock_build_cmd, mock_run_claude, mock_check_success,
-        mock_is_completed, mock_has_ci, mock_push, mock_ensure_pr,
+        mock_git_repo_cls,
+        mock_build_cmd, mock_run_claude, mock_check_success,
+        mock_is_completed, mock_has_ci,
     ):
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
@@ -219,16 +218,25 @@ class TestGetDefaultBranchWiring:
         mock_gh.get_default_branch.return_value = "master"
         mock_gh_client_cls.return_value = mock_gh
 
+        # Mock GitRepository instance
+        mock_git_repo = MagicMock()
+        mock_git_repo.pr_number = None
+        mock_git_repo.branch = None
+        mock_git_repo.branch_has_been_pushed.return_value = False
+        mock_git_repo.push.return_value = True
+        mock_git_repo.head_sha = "abc123"
+        mock_git_repo.ensure_pr.return_value = 42
+        mock_git_repo_cls.return_value = mock_git_repo
+
         # get_next_task is called: 1) before loop for slice naming, 2) in loop to execute, 3) in loop to check done
         task = _make_numbered_task("setup")
         with patch("i2code.implement.cli.get_next_task", side_effect=[task, task, None]):
-            mock_ensure_pr.return_value = 42
             mock_run_claude.return_value = MagicMock(returncode=0, stdout="<SUCCESS>task implemented: abc123</SUCCESS>", stderr="", permission_denials=[], error_message=None, last_messages=[])
 
             runner = CliRunner(catch_exceptions=False)
             _result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--non-interactive", "--skip-ci-wait"])
 
         mock_gh.get_default_branch.assert_called_once()
-        mock_ensure_pr.assert_called_once()
+        mock_git_repo.ensure_pr.assert_called_once()
         # base_branch should be "master" (from get_default_branch mock)
-        assert mock_ensure_pr.call_args[1].get("base_branch") == "master"
+        assert mock_git_repo.ensure_pr.call_args[1].get("base_branch") == "master"

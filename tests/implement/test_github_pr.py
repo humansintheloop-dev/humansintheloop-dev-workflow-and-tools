@@ -45,48 +45,55 @@ class TestPRBodyGeneration:
 
 
 @pytest.mark.unit
-class TestEnsureDraftPR:
-    """Test ensure_draft_pr orchestration with FakeGitHubClient."""
+class TestEnsurePrOnGitRepository:
+    """Test GitRepository.ensure_pr() orchestration with FakeGitHubClient."""
 
-    def test_ensure_draft_pr_raises_on_creation_failure(self):
-        """ensure_draft_pr should raise when PR creation fails."""
+    def test_ensure_pr_raises_on_creation_failure(self, test_git_repo_with_commit):
+        """ensure_pr should raise when PR creation fails."""
         from fake_github_client import FakeGitHubClient
-        from i2code.implement.implement import ensure_draft_pr
+        from i2code.implement.git_repository import GitRepository
 
         class FailingFakeClient(FakeGitHubClient):
             def create_draft_pr(self, *args, **kwargs):
                 raise RuntimeError("PR creation failed")
 
+        tmpdir, repo = test_git_repo_with_commit
         fake = FailingFakeClient()
+        git_repo = GitRepository(repo, gh_client=fake)
+        git_repo.branch = "idea/test/01-setup"
+
         with pytest.raises(RuntimeError):
-            ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1,
-                            base_branch="main", gh_client=fake)
+            git_repo.ensure_pr("/path/to/idea", "test", 1, base_branch="main")
 
-    def test_ensure_draft_pr_passes_base_branch_to_create(self):
-        """ensure_draft_pr should pass base_branch through to create_draft_pr."""
+    def test_ensure_pr_passes_base_branch_to_create(self, test_git_repo_with_commit):
+        """ensure_pr should pass base_branch through to create_draft_pr."""
         from fake_github_client import FakeGitHubClient
-        from i2code.implement.implement import ensure_draft_pr
+        from i2code.implement.git_repository import GitRepository
 
+        tmpdir, repo = test_git_repo_with_commit
         fake = FakeGitHubClient()
         fake.set_next_pr_number(42)
+        git_repo = GitRepository(repo, gh_client=fake)
+        git_repo.branch = "idea/test/01-setup"
 
-        ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1,
-                        base_branch="master", gh_client=fake)
+        git_repo.ensure_pr("/path/to/idea", "test", 1, base_branch="master")
 
         # Verify create_draft_pr was called with base_branch="master"
         assert len(fake._created_prs) == 1
         assert fake._created_prs[0]["base"] == "master"
 
-    def test_ensure_draft_pr_reuses_existing_pr(self):
-        """ensure_draft_pr should return existing PR number if one exists."""
+    def test_ensure_pr_reuses_existing_pr(self, test_git_repo_with_commit):
+        """ensure_pr should return existing PR number if one exists."""
         from fake_github_client import FakeGitHubClient
-        from i2code.implement.implement import ensure_draft_pr
+        from i2code.implement.git_repository import GitRepository
 
+        tmpdir, repo = test_git_repo_with_commit
         fake = FakeGitHubClient()
         fake.set_pr_list([{"number": 77, "headRefName": "idea/test/01-setup"}])
+        git_repo = GitRepository(repo, gh_client=fake)
+        git_repo.branch = "idea/test/01-setup"
 
-        result = ensure_draft_pr("idea/test/01-setup", "/path/to/idea", "test", 1,
-                                 base_branch="main", gh_client=fake)
+        result = git_repo.ensure_pr("/path/to/idea", "test", 1, base_branch="main")
 
         assert result == 77
         assert len(fake._created_prs) == 0
@@ -101,14 +108,7 @@ class TestDeferredPRCreation:
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
         from fake_github_client import FakeGitHubClient
-
-        # Track if ensure_draft_pr was called
-        ensure_draft_pr_called = False
-
-        def mock_ensure_draft_pr(*args, **kwargs):
-            nonlocal ensure_draft_pr_called
-            ensure_draft_pr_called = True
-            return 123
+        from unittest.mock import MagicMock
 
         # Mock all the setup functions to avoid real git/github operations
         monkeypatch.setattr("i2code.implement.implement.validate_idea_files_committed", lambda x, y: None)
@@ -135,7 +135,6 @@ class TestDeferredPRCreation:
         monkeypatch.setattr("i2code.implement.implement.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
 
         # Also patch the cli module's imported references
-        from unittest.mock import MagicMock
         mock_project = MagicMock()
         mock_project.name = "test-idea"
         mock_project.directory = str(tmp_path)
@@ -155,14 +154,18 @@ class TestDeferredPRCreation:
         ))
         monkeypatch.setattr("i2code.implement.cli.get_worktree_idea_directory", lambda **kwargs: str(tmp_path / "worktree" / "test-idea"))
         monkeypatch.setattr("i2code.implement.cli.GitHubClient", lambda: FakeGitHubClient())
-        monkeypatch.setattr("i2code.implement.cli.ensure_draft_pr", mock_ensure_draft_pr)
+
+        # Track if GitRepository.ensure_pr was called
+        mock_git_repo = MagicMock()
+        mock_git_repo.ensure_pr = MagicMock(return_value=123)
+        monkeypatch.setattr("i2code.implement.cli.GitRepository", lambda *a, **kw: mock_git_repo)
 
         # Run via Click test runner
         runner = CliRunner(catch_exceptions=False)
         _result = runner.invoke(implement_cmd, [str(tmp_path), "--setup-only"])
 
-        # Verify ensure_draft_pr was NOT called
-        assert not ensure_draft_pr_called, "ensure_draft_pr should not be called in --setup-only mode"
+        # Verify ensure_pr was NOT called on the GitRepository
+        mock_git_repo.ensure_pr.assert_not_called()
 
 
 @pytest.mark.unit

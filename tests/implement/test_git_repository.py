@@ -5,12 +5,14 @@ GitRepository correctly wraps GitPython Repo operations.
 """
 
 import os
+import subprocess
 import tempfile
 
 import pytest
 from git import Repo
 
 from i2code.implement.git_repository import GitRepository
+from fake_github_client import FakeGitHubClient
 
 
 @pytest.mark.unit
@@ -154,3 +156,276 @@ class TestWorkingTreeDir:
         git_repo = GitRepository(repo)
 
         assert git_repo.working_tree_dir == repo.working_tree_dir
+
+
+@pytest.mark.unit
+class TestBranchState:
+
+    def test_branch_is_none_by_default(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo)
+
+        assert git_repo.branch is None
+
+    def test_branch_tracks_value_set(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo)
+
+        git_repo.branch = "idea/test/01-setup"
+
+        assert git_repo.branch == "idea/test/01-setup"
+
+
+@pytest.mark.unit
+class TestPrNumberState:
+
+    def test_pr_number_is_none_by_default(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo)
+
+        assert git_repo.pr_number is None
+
+    def test_pr_number_tracks_value_set(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo)
+
+        git_repo.pr_number = 42
+
+        assert git_repo.pr_number == 42
+
+
+@pytest.mark.unit
+class TestPush:
+
+    def test_push_delegates_to_subprocess_with_tracked_branch(self, test_git_repo_with_commit, mocker):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo)
+        git_repo.branch = "idea/test/01-setup"
+
+        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
+        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+
+        result = git_repo.push()
+
+        assert result is True
+        mock_run.assert_called_once_with(
+            ["git", "push", "-u", "origin", "idea/test/01-setup"],
+            capture_output=True, text=True,
+        )
+
+    def test_push_returns_false_on_failure(self, test_git_repo_with_commit, mocker):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo)
+        git_repo.branch = "idea/test/01-setup"
+
+        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
+        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="error")
+
+        result = git_repo.push()
+
+        assert result is False
+
+
+@pytest.mark.unit
+class TestEnsurePr:
+
+    def test_reuses_existing_pr(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        gh = FakeGitHubClient()
+        gh.set_pr_list([{"number": 42, "headRefName": "idea/test/01-setup", "isDraft": True}])
+
+        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo.branch = "idea/test/01-setup"
+
+        result = git_repo.ensure_pr(
+            idea_directory="/fake/idea",
+            idea_name="test",
+            slice_number=1,
+            base_branch="main",
+        )
+
+        assert result == 42
+        assert git_repo.pr_number == 42
+
+    def test_creates_new_pr_when_none_exists(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        gh = FakeGitHubClient()
+        gh.set_next_pr_number(99)
+
+        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo.branch = "idea/test/01-setup"
+
+        result = git_repo.ensure_pr(
+            idea_directory="/fake/idea",
+            idea_name="test",
+            slice_number=1,
+            base_branch="main",
+        )
+
+        assert result == 99
+        assert git_repo.pr_number == 99
+
+    def test_returns_cached_pr_number_on_second_call(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        gh = FakeGitHubClient()
+        gh.set_next_pr_number(99)
+
+        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo.branch = "idea/test/01-setup"
+
+        git_repo.ensure_pr(
+            idea_directory="/fake/idea",
+            idea_name="test",
+            slice_number=1,
+            base_branch="main",
+        )
+        # Second call should return cached value without calling gh again
+        result = git_repo.ensure_pr(
+            idea_directory="/fake/idea",
+            idea_name="test",
+            slice_number=1,
+            base_branch="main",
+        )
+
+        assert result == 99
+        # Only one find_pr call (first time); second time pr_number is already set
+        find_calls = [c for c in gh.calls if c[0] == "find_pr"]
+        assert len(find_calls) == 1
+
+
+@pytest.mark.unit
+class TestWaitForCi:
+
+    def test_delegates_to_gh_client_with_tracked_branch_and_head(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        gh = FakeGitHubClient()
+
+        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo.branch = "idea/test/01-setup"
+
+        head_sha = git_repo.head_sha
+        gh.set_workflow_completion_result("idea/test/01-setup", head_sha, (True, None))
+
+        success, failing_run = git_repo.wait_for_ci()
+
+        assert success is True
+        assert failing_run is None
+        assert ("wait_for_workflow_completion", "idea/test/01-setup", head_sha) in gh.calls
+
+    def test_returns_failure_with_failing_run(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        gh = FakeGitHubClient()
+
+        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo.branch = "idea/test/01-setup"
+
+        head_sha = git_repo.head_sha
+        failing = {"name": "CI Build", "conclusion": "failure"}
+        gh.set_workflow_completion_result("idea/test/01-setup", head_sha, (False, failing))
+
+        success, failing_run = git_repo.wait_for_ci()
+
+        assert success is False
+        assert failing_run == failing
+
+
+@pytest.mark.unit
+class TestBranchHasBeenPushed:
+
+    def test_returns_false_when_branch_not_on_remote(self, test_git_repo_with_commit, mocker):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo)
+        git_repo.branch = "idea/test/01-setup"
+
+        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
+        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+
+        assert git_repo.branch_has_been_pushed() is False
+
+    def test_returns_true_when_branch_on_remote(self, test_git_repo_with_commit, mocker):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo)
+        git_repo.branch = "idea/test/01-setup"
+
+        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0,
+            stdout="abc123\trefs/heads/idea/test/01-setup",
+            stderr="",
+        )
+
+        assert git_repo.branch_has_been_pushed() is True
+
+
+@pytest.mark.unit
+class TestFixCiFailure:
+
+    def test_returns_true_when_no_failing_run(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        gh = FakeGitHubClient()
+
+        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo.branch = "idea/test/01-setup"
+
+        # No workflow runs configured = no failures
+        result = git_repo.fix_ci_failure(worktree_path=tmpdir)
+
+        assert result is True
+
+    def test_delegates_to_gh_client_for_failure_logs(self, test_git_repo_with_commit, mocker):
+        tmpdir, repo = test_git_repo_with_commit
+        gh = FakeGitHubClient()
+
+        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo.branch = "idea/test/01-setup"
+
+        head_sha = git_repo.head_sha
+        failing_run = {"databaseId": 123, "name": "CI Build", "conclusion": "failure"}
+        gh.set_workflow_runs("idea/test/01-setup", head_sha, [failing_run])
+        gh.set_workflow_failure_logs(123, "Build failed: compilation error")
+
+        # Mock claude invocation to do nothing (no commit made)
+        mocker.patch("i2code.implement.git_repository.run_claude_with_output_capture")
+
+        result = git_repo.fix_ci_failure(worktree_path=tmpdir, max_retries=1, interactive=False)
+
+        # Should fail since Claude made no commit
+        assert result is False
+        assert ("get_workflow_failure_logs", 123) in gh.calls
+
+    def test_uses_tracked_branch_for_push(self, test_git_repo_with_commit, mocker):
+        tmpdir, repo = test_git_repo_with_commit
+        gh = FakeGitHubClient()
+
+        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo.branch = "idea/test/01-setup"
+
+        head_sha = git_repo.head_sha
+        failing_run = {"databaseId": 123, "name": "CI Build", "conclusion": "failure"}
+        gh.set_workflow_runs("idea/test/01-setup", head_sha, [failing_run])
+        gh.set_workflow_failure_logs(123, "Build failed")
+
+        # Mock Claude to simulate a commit
+        def simulate_commit(*args, **kwargs):
+            new_file = os.path.join(tmpdir, "fix.txt")
+            with open(new_file, "w") as f:
+                f.write("fix")
+            repo.index.add(["fix.txt"])
+            repo.index.commit("Fix CI")
+            return mocker.MagicMock(stdout="<SUCCESS>")
+
+        mocker.patch(
+            "i2code.implement.git_repository.run_claude_with_output_capture",
+            side_effect=simulate_commit,
+        )
+        mock_push = mocker.patch.object(git_repo, "push", return_value=True)
+
+        def wait_side_effect(branch, sha, timeout_seconds=600):
+            return (True, None)
+
+        gh.wait_for_workflow_completion = wait_side_effect
+
+        result = git_repo.fix_ci_failure(worktree_path=tmpdir, max_retries=1, interactive=False)
+
+        assert result is True
+        mock_push.assert_called_once()

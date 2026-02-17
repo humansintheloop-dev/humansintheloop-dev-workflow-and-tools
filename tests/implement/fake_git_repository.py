@@ -20,6 +20,9 @@ class FakeGitRepository:
         self._branches = set()
         self._checked_out = None
         self._worktrees = {}
+        self._pushed = False
+        self.branch = None
+        self.pr_number = None
         self.calls = []
 
     @property
@@ -56,3 +59,29 @@ class FakeGitRepository:
 
     def set_worktree_path(self, idea_name, path):
         self._worktrees[idea_name] = path
+
+    def branch_has_been_pushed(self):
+        self.calls.append(("branch_has_been_pushed",))
+        return self._pushed
+
+    def set_pushed(self, pushed):
+        self._pushed = pushed
+
+    def push(self):
+        self.calls.append(("push",))
+        self._pushed = True
+        return True
+
+    def ensure_pr(self, idea_directory, idea_name, slice_number, base_branch):
+        self.calls.append(("ensure_pr", idea_directory, idea_name, slice_number, base_branch))
+        if self.pr_number is None:
+            self.pr_number = 100
+        return self.pr_number
+
+    def wait_for_ci(self, timeout_seconds=600):
+        self.calls.append(("wait_for_ci", timeout_seconds))
+        return (True, None)
+
+    def fix_ci_failure(self, worktree_path, max_retries=3, interactive=True, mock_claude=None):
+        self.calls.append(("fix_ci_failure", worktree_path))
+        return True

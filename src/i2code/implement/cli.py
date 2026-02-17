@@ -8,6 +8,7 @@ import click
 
 from git import Repo
 
+from i2code.implement.git_repository import GitRepository
 from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
@@ -22,11 +23,6 @@ from i2code.implement.implement import (
     get_next_task,
     is_task_completed,
     get_worktree_idea_directory,
-    ensure_draft_pr,
-    push_branch_to_remote,
-    branch_has_been_pushed,
-    get_failing_workflow_run,
-    fix_ci_failure,
     process_pr_feedback,
     build_claude_command,
     run_claude_with_output_capture,
@@ -158,6 +154,9 @@ def implement(opts: ImplementOpts, project: IdeaProject):
     )
     print(f"Slice branch: {slice_branch}")
 
+    # Create GitHubClient for PR operations
+    gh_client = GitHubClient()
+
     if opts.isolated:
         # Running inside isolarium VM - work directly in the repo
         work_dir = repo.working_tree_dir
@@ -167,7 +166,7 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         work_idea_dir = project.directory
         work_plan_file = project.plan_file
         repo.git.checkout(slice_branch)
-        work_repo = repo
+        git_repo = GitRepository(repo, gh_client=gh_client)
     else:
         # Normal mode - use a worktree
         worktree_path = ensure_worktree(repo, project.name, integration_branch)
@@ -182,6 +181,9 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         work_plan_file = os.path.join(work_idea_dir, f"{project.name}-plan.md")
         work_repo = Repo(worktree_path)
         work_repo.git.checkout(slice_branch)
+        git_repo = GitRepository(work_repo, gh_client=gh_client)
+
+    git_repo.branch = slice_branch
 
     # Skip task execution if --setup-only was provided
     # Note: PR creation is deferred until after first push (when there are commits)
@@ -189,33 +191,31 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         print("Setup complete. Exiting (--setup-only mode).")
         return
 
-    # Create GitHubClient for PR operations
-    gh_client = GitHubClient()
-
     # Check for existing PR (creation is deferred until after first push)
-    pr_number = gh_client.find_pr(slice_branch)
-    if pr_number:
-        print(f"Reusing existing PR #{pr_number}")
+    existing_pr = gh_client.find_pr(slice_branch)
+    if existing_pr:
+        git_repo.pr_number = existing_pr
+        print(f"Reusing existing PR #{existing_pr}")
 
     # Execute tasks one by one until all are complete
     while True:
         # Check for failing CI build on current HEAD (only if branch has been pushed)
-        head_sha = work_repo.head.commit.hexsha
-        if branch_has_been_pushed(slice_branch):
-            failing_run = get_failing_workflow_run(slice_branch, head_sha, gh_client=gh_client)
+        if git_repo.branch_has_been_pushed():
+            from i2code.implement.implement import get_failing_workflow_run
+            head_sha = git_repo.head_sha
+            failing_run = get_failing_workflow_run(
+                git_repo.branch, head_sha, gh_client=gh_client
+            )
 
             if failing_run:
                 workflow_name = failing_run.get("name", "unknown")
                 print(f"CI build failing for HEAD ({head_sha[:8]}): {workflow_name}")
                 print("Attempting to fix CI failure...")
-                if not fix_ci_failure(
-                    slice_branch,
-                    head_sha,
-                    work_dir,
+                if not git_repo.fix_ci_failure(
+                    worktree_path=work_dir,
                     max_retries=opts.ci_fix_retries,
                     interactive=not opts.non_interactive,
                     mock_claude=opts.mock_claude,
-                    gh_client=gh_client,
                 ):
                     print("Error: Could not fix CI failure after max retries", file=sys.stderr)
                     sys.exit(1)
@@ -223,14 +223,14 @@ def implement(opts: ImplementOpts, project: IdeaProject):
                 continue
 
         # Check for PR feedback (only after CI passes and PR exists)
-        if pr_number and branch_has_been_pushed(slice_branch):
-            pr_url = gh_client.get_pr_url(pr_number)
+        if git_repo.pr_number and git_repo.branch_has_been_pushed():
+            pr_url = gh_client.get_pr_url(git_repo.pr_number)
             had_feedback, made_changes = process_pr_feedback(
-                pr_number=pr_number,
+                pr_number=git_repo.pr_number,
                 pr_url=pr_url,
                 state=state,
                 worktree_path=work_dir,
-                slice_branch=slice_branch,
+                slice_branch=git_repo.branch,
                 interactive=not opts.non_interactive,
                 mock_claude=opts.mock_claude,
                 skip_ci_wait=opts.skip_ci_wait,
@@ -249,8 +249,8 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         next_task = get_next_task(work_plan_file)
         if next_task is None:
             print("All tasks completed!")
-            if pr_number:
-                pr_url = gh_client.get_pr_url(pr_number)
+            if git_repo.pr_number:
+                pr_url = gh_client.get_pr_url(git_repo.pr_number)
                 if pr_url:
                     print(f"PR: {pr_url}")
             break
@@ -259,7 +259,7 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         print(f"Executing task: {task_description}")
 
         # Get HEAD before Claude invocation
-        head_before = work_repo.head.commit.hexsha
+        head_before = git_repo.head_sha
 
         # Build and run Claude command (or mock script for testing)
         if opts.mock_claude:
@@ -281,7 +281,7 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         else:
             claude_result = run_claude_interactive(claude_cmd, cwd=work_dir)
 
-        head_after = work_repo.head.commit.hexsha
+        head_after = git_repo.head_sha
 
         if not check_claude_success(claude_result.returncode, head_before, head_after):
             print_task_failure_diagnostics(claude_result, head_before, head_after)
@@ -306,25 +306,24 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         print("Task completed successfully. Pushing changes...")
 
         # Push the commit to slice branch
-        if not push_branch_to_remote(slice_branch):
+        if not git_repo.push():
             print("Error: Could not push commit to slice branch", file=sys.stderr)
             sys.exit(1)
 
         # Create PR after first push if it doesn't exist yet
-        if pr_number is None:
+        if git_repo.pr_number is None:
             base_branch = gh_client.get_default_branch()
-            pr_number = ensure_draft_pr(
-                slice_branch, project.directory, project.name, state.slice_number,
+            git_repo.ensure_pr(
+                project.directory, project.name, state.slice_number,
                 base_branch=base_branch,
-                gh_client=gh_client,
             )
-            print(f"Created Draft PR #{pr_number}")
+            print(f"Created Draft PR #{git_repo.pr_number}")
 
         # Wait for CI to complete (unless --skip-ci-wait)
         if not opts.skip_ci_wait:
             print("Waiting for CI to complete...")
-            ci_success, failing_run = gh_client.wait_for_workflow_completion(
-                slice_branch, head_after, timeout_seconds=opts.ci_timeout
+            ci_success, failing_run = git_repo.wait_for_ci(
+                timeout_seconds=opts.ci_timeout
             )
 
             if not ci_success and failing_run:

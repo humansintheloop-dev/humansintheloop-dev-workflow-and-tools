@@ -313,50 +313,6 @@ def create_draft_pr(slice_branch: str, title: str, body: str, base_branch: str) 
     return _default_gh_client().create_draft_pr(slice_branch, title, body, base_branch)
 
 
-def ensure_draft_pr(
-    slice_branch: str,
-    idea_directory: str,
-    idea_name: str,
-    slice_number: int,
-    base_branch: str,
-    gh_client=None,
-) -> Optional[int]:
-    """Ensure a Draft PR exists for the slice branch.
-
-    Creates a new Draft PR if none exists, otherwise returns the existing PR number.
-
-    Args:
-        slice_branch: The slice branch name
-        idea_directory: Path to the idea directory
-        idea_name: Name of the idea
-        slice_number: Current slice number
-        base_branch: The base branch to merge into
-        gh_client: GitHubClient instance (uses standalone functions if None)
-
-    Returns:
-        PR number if exists or created, None if failed
-    """
-    if gh_client is None:
-        from i2code.implement.github_client import GitHubClient
-        gh_client = GitHubClient()
-
-    # Check for existing PR
-    existing_pr = gh_client.find_pr(slice_branch)
-    if existing_pr is not None:
-        print(f"Reusing existing PR #{existing_pr}")
-        return existing_pr
-
-    # Generate PR title and body
-    slice_suffix = slice_branch.split("/")[-1]  # e.g., "01-project-setup"
-    title = generate_pr_title(idea_name, slice_suffix)
-    body = generate_pr_body(idea_directory, idea_name, slice_number)
-
-    # Create new Draft PR
-    pr_number = gh_client.create_draft_pr(slice_branch, title, body, base_branch)
-    if pr_number:
-        print(f"Created Draft PR #{pr_number}")
-    return pr_number
-
 
 def push_branch_to_remote(branch_name: str) -> bool:
     """Push a branch to the remote origin.
@@ -825,23 +781,6 @@ def get_failing_workflow_run(branch: str, sha: str, gh_client=None) -> Optional[
 
     return None
 
-
-def branch_has_been_pushed(branch: str) -> bool:
-    """Check if the branch exists on the remote.
-
-    Args:
-        branch: The branch name to check
-
-    Returns:
-        True if the branch exists on origin, False otherwise
-    """
-    result = subprocess.run(
-        ["git", "ls-remote", "--heads", "origin", branch],
-        capture_output=True,
-        text=True
-    )
-
-    return result.returncode == 0 and branch in result.stdout
 
 
 def fix_ci_failure(

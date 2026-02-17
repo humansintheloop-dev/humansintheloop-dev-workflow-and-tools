@@ -352,13 +352,13 @@ def github_test_repo_with_simple_plan():
     """Create a GitHub repository with a simple 3-task plan for testing sequential execution."""
     repo_name = f"test-tmp-seq-exec-{uuid.uuid4().hex[:8]}"
 
-    repo_full_name, clone_url = create_github_repo(repo_name)
+    repo_full_name = create_github_repo(repo_name)
 
     try:
         tmpdir = tempfile.mkdtemp()
 
         # Clone
-        subprocess.run(["git", "clone", clone_url, tmpdir], capture_output=True, check=True)
+        subprocess.run(["gh", "repo", "clone", repo_full_name, tmpdir], capture_output=True, check=True)
 
         repo = Repo(tmpdir)
         repo.config_writer().set_value("user", "email", "test@test.com").release()

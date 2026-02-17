@@ -16,7 +16,7 @@ def create_github_repo(repo_name):
     """Create a new GitHub repository in the test organization.
 
     Returns:
-        Tuple of (repo_full_name, clone_url)
+        repo_full_name (e.g. "org/repo-name")
 
     Raises:
         RuntimeError: If repository creation fails
@@ -31,9 +31,7 @@ def create_github_repo(repo_name):
     if result.returncode != 0:
         raise RuntimeError(f"Failed to create GitHub repo: {result.stderr}")
 
-    clone_url = f"https://github.com/{repo_full_name}.git"
-
-    return repo_full_name, clone_url
+    return repo_full_name
 
 
 def delete_github_repo(repo_full_name):

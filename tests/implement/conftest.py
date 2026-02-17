@@ -15,6 +15,7 @@ from i2code.implement.idea_project import IdeaProject
 # fake_github_client unambiguously (avoids conftest module name collisions).
 sys.path.insert(0, os.path.dirname(__file__))
 
+from fake_claude_runner import FakeClaudeRunner  # noqa: E402, F401
 from fake_github_client import FakeGitHubClient  # noqa: E402, F401
 from fake_git_repository import FakeGitRepository  # noqa: E402, F401
 

@@ -1350,19 +1350,7 @@ def build_claude_command(
         return ["claude"] + extra + ["--verbose", "--output-format=stream-json", "-p", prompt]
 
 
-class ClaudeResult:
-    """Result of running Claude with output capture."""
-
-    def __init__(self, returncode: int, stdout: str, stderr: str,
-                 permission_denials: Optional[List[Dict[str, Any]]] = None,
-                 error_message: Optional[str] = None,
-                 last_messages: Optional[List[Dict[str, Any]]] = None):
-        self.returncode = returncode
-        self.stdout = stdout
-        self.stderr = stderr
-        self.permission_denials = permission_denials or []
-        self.error_message = error_message
-        self.last_messages = last_messages or []
+from i2code.implement.claude_runner import ClaudeResult  # noqa: E402
 
 
 def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
@@ -1627,6 +1615,7 @@ def run_trunk_loop(
     mock_claude: Optional[str] = None,
     extra_prompt: Optional[str] = None,
     git_repo=None,
+    claude_runner=None,
 ) -> None:
     """Execute plan tasks locally on the current branch (trunk mode)."""
     from i2code.implement.idea_project import IdeaProject
@@ -1662,7 +1651,12 @@ def run_trunk_loop(
                 extra_cli_args=extra_cli_args,
             )
 
-        if non_interactive:
+        if claude_runner is not None:
+            if non_interactive:
+                claude_result = claude_runner.run_with_capture(claude_cmd, cwd=git_repo.working_tree_dir)
+            else:
+                claude_result = claude_runner.run_interactive(claude_cmd, cwd=git_repo.working_tree_dir)
+        elif non_interactive:
             claude_result = run_claude_with_output_capture(claude_cmd, cwd=git_repo.working_tree_dir)
         else:
             claude_result = run_claude_interactive(claude_cmd, cwd=git_repo.working_tree_dir)

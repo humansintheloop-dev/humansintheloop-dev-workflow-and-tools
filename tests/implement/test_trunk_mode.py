@@ -6,10 +6,11 @@ from click.testing import CliRunner
 from unittest.mock import patch, MagicMock
 
 from i2code.implement.cli import implement_cmd
-from i2code.implement.implement import ClaudeResult
+from i2code.implement.claude_runner import ClaudeResult
 from i2code.plan_domain.numbered_task import NumberedTask, TaskNumber
 from i2code.plan_domain.task import Task
 
+from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
 
 
@@ -100,7 +101,7 @@ class TestTrunkModeIncompatibleFlags:
 
 @pytest.mark.unit
 class TestRunTrunkLoop:
-    """Unit tests for run_trunk_loop using FakeGitRepository."""
+    """Unit tests for run_trunk_loop using FakeGitRepository and FakeClaudeRunner."""
 
     @patch("i2code.implement.implement.get_next_task", return_value=None)
     def test_no_tasks_remaining_prints_all_completed(
@@ -123,28 +124,26 @@ class TestRunTrunkLoop:
 
     @patch("i2code.implement.implement.is_task_completed", return_value=True)
     @patch("i2code.implement.implement.check_claude_success", return_value=True)
-    @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "do task"])
     @patch("i2code.implement.implement.get_next_task")
     def test_invokes_claude_for_first_task(
         self, mock_get_next,
-        mock_build_cmd, mock_run_claude, mock_check, mock_is_completed,
+        mock_build_cmd, mock_check, mock_is_completed,
         capsys,
     ):
         from i2code.implement.implement import run_trunk_loop
 
         fake_repo = FakeGitRepository()
+        fake_runner = FakeClaudeRunner()
 
         task = make_numbered_task(1, 1, "Set up project")
-        # First call: task found; second call (after completion): no tasks
         mock_get_next.side_effect = [task, None]
-
-        mock_run_claude.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
 
         run_trunk_loop(
             idea_directory="/fake/repo/ideas/test-feature",
             idea_name="test-feature",
             git_repo=fake_repo,
+            claude_runner=fake_runner,
         )
 
         mock_get_next.assert_called()
@@ -156,23 +155,26 @@ class TestRunTrunkLoop:
             extra_prompt=None,
             extra_cli_args=None,
         )
-        mock_run_claude.assert_called_once()
+        assert len(fake_runner.calls) == 1
+        method, cmd, cwd = fake_runner.calls[0]
+        assert method == "run_interactive"
+        assert cmd == ["claude", "do task"]
 
     @patch("i2code.implement.implement.calculate_claude_permissions", return_value=["Bash(git commit:*)"])
-    @patch("i2code.implement.implement.run_claude_with_output_capture")
+    @patch("i2code.implement.implement.check_claude_success", return_value=False)
     @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "-p", "do task"])
     @patch("i2code.implement.implement.get_next_task")
     def test_exits_on_claude_failure(
         self, mock_get_next,
-        mock_build_cmd, mock_run_claude, mock_calc_perms,
+        mock_build_cmd, mock_check, mock_calc_perms,
     ):
         from i2code.implement.implement import run_trunk_loop
 
         fake_repo = FakeGitRepository()
+        fake_runner = FakeClaudeRunner()
+        fake_runner.set_result(ClaudeResult(returncode=1, stdout="<FAILURE>something went wrong</FAILURE>", stderr=""))
 
         mock_get_next.return_value = make_numbered_task(1, 1, "Set up")
-
-        mock_run_claude.return_value = ClaudeResult(returncode=1, stdout="<FAILURE>something went wrong</FAILURE>", stderr="")
 
         with pytest.raises(SystemExit) as exc_info:
             run_trunk_loop(
@@ -180,39 +182,40 @@ class TestRunTrunkLoop:
                 idea_name="test-feature",
                 non_interactive=True,
                 git_repo=fake_repo,
+                claude_runner=fake_runner,
             )
 
         assert exc_info.value.code == 1
         mock_get_next.assert_called_once()
+        assert len(fake_runner.calls) == 1
+        assert fake_runner.calls[0][0] == "run_with_capture"
 
     @patch("i2code.implement.implement.is_task_completed", return_value=True)
     @patch("i2code.implement.implement.check_claude_success", return_value=True)
-    @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "do task"])
     @patch("i2code.implement.implement.get_next_task")
     def test_loops_through_multiple_tasks(
         self, mock_get_next,
-        mock_build_cmd, mock_run_claude, mock_check, mock_is_completed,
+        mock_build_cmd, mock_check, mock_is_completed,
         capsys,
     ):
         from i2code.implement.implement import run_trunk_loop
 
         fake_repo = FakeGitRepository()
+        fake_runner = FakeClaudeRunner()
 
         task1 = make_numbered_task(1, 1, "Task 1")
         task2 = make_numbered_task(1, 2, "Task 2")
-        # Simulate: task1 → completed → task2 → completed → None
         mock_get_next.side_effect = [task1, task2, None]
-
-        mock_run_claude.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
 
         run_trunk_loop(
             idea_directory="/fake/repo/ideas/test-feature",
             idea_name="test-feature",
             git_repo=fake_repo,
+            claude_runner=fake_runner,
         )
 
-        assert mock_run_claude.call_count == 2
+        assert len(fake_runner.calls) == 2
         assert mock_get_next.call_count == 3
         assert mock_is_completed.call_count == 2
         captured = capsys.readouterr()
@@ -220,26 +223,25 @@ class TestRunTrunkLoop:
 
     @patch("i2code.implement.implement.is_task_completed", return_value=False)
     @patch("i2code.implement.implement.check_claude_success", return_value=True)
-    @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "do task"])
     @patch("i2code.implement.implement.get_next_task")
     def test_exits_when_task_not_marked_complete(
         self, mock_get_next,
-        mock_build_cmd, mock_run_claude, mock_check, mock_is_completed,
+        mock_build_cmd, mock_check, mock_is_completed,
     ):
         from i2code.implement.implement import run_trunk_loop
 
         fake_repo = FakeGitRepository()
+        fake_runner = FakeClaudeRunner()
 
         mock_get_next.return_value = make_numbered_task(1, 1, "Set up")
-
-        mock_run_claude.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
 
         with pytest.raises(SystemExit) as exc_info:
             run_trunk_loop(
                 idea_directory="/fake/repo/ideas/test-feature",
                 idea_name="test-feature",
                 git_repo=fake_repo,
+                claude_runner=fake_runner,
             )
 
         assert exc_info.value.code == 1
@@ -248,63 +250,62 @@ class TestRunTrunkLoop:
 
     @patch("i2code.implement.implement.is_task_completed", return_value=True)
     @patch("i2code.implement.implement.check_claude_success", return_value=True)
-    @patch("i2code.implement.implement.run_claude_interactive")
     @patch("i2code.implement.implement.build_claude_command")
     @patch("i2code.implement.implement.get_next_task")
     def test_uses_mock_claude_when_provided(
         self, mock_get_next,
-        mock_build_cmd, mock_run_claude, mock_check, mock_is_completed,
+        mock_build_cmd, mock_check, mock_is_completed,
         capsys,
     ):
         from i2code.implement.implement import run_trunk_loop
 
         fake_repo = FakeGitRepository()
+        fake_runner = FakeClaudeRunner()
 
         task = make_numbered_task(1, 1, "Set up")
         mock_get_next.side_effect = [task, None]
-
-        mock_run_claude.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
 
         run_trunk_loop(
             idea_directory="/fake/repo/ideas/test-feature",
             idea_name="test-feature",
             mock_claude="/path/to/mock-script",
             git_repo=fake_repo,
+            claude_runner=fake_runner,
         )
 
         mock_get_next.assert_called()
         mock_is_completed.assert_called_once()
-        # Should NOT call build_claude_command when mock_claude is provided
         mock_build_cmd.assert_not_called()
-        # Should invoke run_claude_interactive with [mock_script, task_description]
-        mock_run_claude.assert_called_once()
-        cmd_used = mock_run_claude.call_args[0][0]
-        assert cmd_used == ["/path/to/mock-script", task.print()]
+        assert len(fake_runner.calls) == 1
+        method, cmd, cwd = fake_runner.calls[0]
+        assert method == "run_interactive"
+        assert cmd == ["/path/to/mock-script", task.print()]
 
     @patch("i2code.implement.implement.is_task_completed", return_value=True)
     @patch("i2code.implement.implement.calculate_claude_permissions", return_value=["Bash(git commit:*)", "Write(/fake/repo/)"])
     @patch("i2code.implement.implement.check_claude_success", return_value=True)
-    @patch("i2code.implement.implement.run_claude_with_output_capture")
     @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "-p", "do task"])
     @patch("i2code.implement.implement.get_next_task")
     def test_non_interactive_passes_allowed_tools(
         self, mock_get_next,
-        mock_build_cmd, mock_run_claude, mock_check,
+        mock_build_cmd, mock_check,
         mock_calc_perms, mock_is_completed,
     ):
         from i2code.implement.implement import run_trunk_loop
 
         fake_repo = FakeGitRepository()
+        fake_runner = FakeClaudeRunner()
+        fake_runner.set_result(ClaudeResult(returncode=0, stdout="<SUCCESS>task implemented: abc123</SUCCESS>", stderr=""))
 
         task = make_numbered_task(1, 1, "Task 1")
         mock_get_next.side_effect = [task, None]
-        mock_run_claude.return_value = ClaudeResult(returncode=0, stdout="<SUCCESS>task implemented: abc123</SUCCESS>", stderr="")
 
         run_trunk_loop(
             idea_directory="/fake/repo/ideas/test-feature",
             idea_name="test-feature",
             non_interactive=True,
             git_repo=fake_repo,
+            claude_runner=fake_runner,
         )
 
         mock_get_next.assert_called()
@@ -317,3 +318,5 @@ class TestRunTrunkLoop:
             extra_prompt=None,
             extra_cli_args=["--allowedTools", "Bash(git commit:*),Write(/fake/repo/)"],
         )
+        assert len(fake_runner.calls) == 1
+        assert fake_runner.calls[0][0] == "run_with_capture"

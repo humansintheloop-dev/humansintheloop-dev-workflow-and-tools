@@ -190,20 +190,20 @@ Extract all Git operations into a class that tracks branch and PR state. Compose
 ## Steel Thread 4: Extract ClaudeRunner and CommandBuilder
 Extract Claude invocation into an injectable strategy and consolidate the 6 command-building functions.
 
-- [ ] **Task 4.1: Extract ClaudeRunner with strategy pattern**
+- [x] **Task 4.1: Extract ClaudeRunner with strategy pattern**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/ -v`
   - Observable: `ClaudeRunner` class exists in `claude_runner.py` with `run_interactive()` and `run_with_capture()` methods. `MockClaudeRunner` subclass wraps mock shell scripts. `FakeClaudeRunner` exists in test conftest. `ClaudeResult` moves into this module.
   - Evidence: Pre-commit checklist passes. `run_trunk_loop` accepts ClaudeRunner instead of `mock_claude` string.
   - Steps:
-    - [ ] Write `FakeClaudeRunner` in test conftest
-    - [ ] Write unit tests for ClaudeRunner
-    - [ ] Implement ClaudeRunner and MockClaudeRunner in `claude_runner.py`
-    - [ ] Move ClaudeResult into `claude_runner.py`
-    - [ ] Update `run_trunk_loop` to accept ClaudeRunner
-    - [ ] Migrate `test_trunk_mode.py` to use FakeClaudeRunner (remove `@patch("...run_claude_interactive")` etc.)
-    - [ ] Remove `run_claude_interactive`, `run_claude_with_output_capture` from `implement.py`
-    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+    - [x] Write `FakeClaudeRunner` in test conftest
+    - [x] Write unit tests for ClaudeRunner
+    - [x] Implement ClaudeRunner and MockClaudeRunner in `claude_runner.py`
+    - [x] Move ClaudeResult into `claude_runner.py`
+    - [x] Update `run_trunk_loop` to accept ClaudeRunner
+    - [x] Migrate `test_trunk_mode.py` to use FakeClaudeRunner (remove `@patch("...run_claude_interactive")` etc.)
+    - [x] Remove `run_claude_interactive`, `run_claude_with_output_capture` from `implement.py`
+    - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
 - [ ] **Task 4.2: Extract CommandBuilder**
   - TaskType: OUTCOME
@@ -366,3 +366,6 @@ Pre-commit checklist passes: ruff clean on changed files, CodeScene 9.51, 561 un
 
 ### 2026-02-18 08:15 - mark-task-complete
 GitRepository tracks _branch and _pr_number as state. push(), ensure_pr(), wait_for_ci(), fix_ci_failure() are methods that use tracked state and delegate to composed GitHubClient. Callers in cli.py no longer pass slice_branch and pr_number as arguments.
+
+### 2026-02-18 08:28 - mark-task-complete
+Implemented ClaudeRunner with strategy pattern, MockClaudeRunner, FakeClaudeRunner, moved ClaudeResult to claude_runner.py, updated run_trunk_loop to accept claude_runner parameter, migrated test_trunk_mode.py tests. Step 7 (removing old functions) deferred since other callers still depend on them.

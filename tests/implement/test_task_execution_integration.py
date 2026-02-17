@@ -149,6 +149,7 @@ class TestTaskDetectionAndExecution:
         assert "All tasks completed!" in result.stdout
 
         pr = self._assert_draft_pr_created()
+        self._assert_pr_is_open_and_not_complete(pr["number"])
 
         self._add_task_to_plan(after_task=3)
         result2 = self._run_implement()
@@ -201,6 +202,17 @@ class TestTaskDetectionAndExecution:
         assert pr["isDraft"] is True
         assert self.repo.idea_name in pr["title"]
         return pr
+
+    def _assert_pr_is_open_and_not_complete(self, pr_number):
+        from i2code.implement.implement import get_pr_state, is_pr_complete
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(self.repo.tmpdir)
+            state = get_pr_state(pr_number)
+        finally:
+            os.chdir(original_cwd)
+        assert state == "OPEN", f"Expected OPEN state, got {state}"
+        assert is_pr_complete(state) is False
 
     def _assert_pr_reused(self, original_pr_number):
         pr_list = self._get_open_prs()
@@ -556,38 +568,3 @@ class TestFeedbackDetectionIntegration:
             "No new feedback should exist after marking all as processed"
 
 
-@pytest.mark.integration_gh
-class TestPRCompletionIntegration:
-    """Test PR completion detection with real GitHub PRs."""
-
-    def test_get_pr_state_returns_valid_state(self, github_test_repo_with_pr_and_comments):
-        """Should return valid state for a real PR."""
-        from i2code.implement.implement import get_pr_state
-
-        pr_number = github_test_repo_with_pr_and_comments["pr_number"]
-        tmpdir = github_test_repo_with_pr_and_comments["tmpdir"]
-
-        original_cwd = os.getcwd()
-        try:
-            os.chdir(tmpdir)
-            state = get_pr_state(pr_number)
-        finally:
-            os.chdir(original_cwd)
-
-        assert state == "OPEN", f"Expected OPEN state, got {state}"
-
-    def test_is_pr_complete_returns_false_for_open_pr(self, github_test_repo_with_pr_and_comments):
-        """Should return False for an open PR."""
-        from i2code.implement.implement import get_pr_state, is_pr_complete
-
-        pr_number = github_test_repo_with_pr_and_comments["pr_number"]
-        tmpdir = github_test_repo_with_pr_and_comments["tmpdir"]
-
-        original_cwd = os.getcwd()
-        try:
-            os.chdir(tmpdir)
-            state = get_pr_state(pr_number)
-        finally:
-            os.chdir(original_cwd)
-
-        assert is_pr_complete(state) is False

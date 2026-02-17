@@ -980,19 +980,17 @@ class TestInterruptHandling:
 
     def test_cleanup_on_interrupt_saves_state(self, mocker):
         """Should save state when interrupted."""
+        from unittest.mock import MagicMock
         from i2code.implement.implement import cleanup_on_interrupt
 
-        # Mock save_state
-        mock_save = mocker.patch('i2code.implement.implement.save_state')
+        mock_state = MagicMock()
 
-        # Call cleanup with state info
         cleanup_on_interrupt(
-            idea_directory="/path/to/idea",
-            idea_name="my-feature",
-            state={"slice_number": 1}
+            state_file="/path/to/idea/my-feature-wt-state.json",
+            state=mock_state
         )
 
-        mock_save.assert_called_once()
+        mock_state.save.assert_called_once()
 
 
 @pytest.mark.unit

@@ -301,12 +301,14 @@ class TestTaskDetectionAndExecution:
             f"Expected 0 new feedback after marking all processed, got {len(new_feedback)}"
 
     def _assert_state_tracks_processed_comments(self, pr_number):
+        from i2code.implement.workflow_state import WorkflowState
         from i2code.implement.implement import (
-            init_or_load_state, save_state, fetch_pr_comments, get_new_feedback
+            fetch_pr_comments, get_new_feedback
         )
 
-        state = init_or_load_state(self.repo.idea_dir, self.repo.idea_name)
-        assert state["processed_comment_ids"] == [], \
+        state_file = os.path.join(self.repo.idea_dir, f"{self.repo.idea_name}-wt-state.json")
+        state = WorkflowState.load(state_file)
+        assert state.processed_comment_ids == [], \
             "New state should have empty processed_comment_ids"
 
         original_cwd = os.getcwd()
@@ -318,21 +320,19 @@ class TestTaskDetectionAndExecution:
 
         assert comments, "Expected comments on PR but found none"
 
-        new_feedback = get_new_feedback(comments, state["processed_comment_ids"])
+        new_feedback = get_new_feedback(comments, state.processed_comment_ids)
         assert len(new_feedback) == len(comments), \
             "All comments should be new initially"
 
-        for comment in new_feedback:
-            state["processed_comment_ids"].append(comment["id"])
+        state.mark_comments_processed([c["id"] for c in new_feedback])
+        state.save()
 
-        save_state(self.repo.idea_dir, self.repo.idea_name, state)
-
-        reloaded_state = init_or_load_state(self.repo.idea_dir, self.repo.idea_name)
-        assert len(reloaded_state["processed_comment_ids"]) == len(comments), \
+        reloaded_state = WorkflowState.load(state_file)
+        assert len(reloaded_state.processed_comment_ids) == len(comments), \
             "Processed comment IDs should be persisted"
 
         new_feedback_after = get_new_feedback(
-            comments, reloaded_state["processed_comment_ids"]
+            comments, reloaded_state.processed_comment_ids
         )
         assert len(new_feedback_after) == 0, \
             "No new feedback should exist after marking all as processed"

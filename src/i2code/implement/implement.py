@@ -20,62 +20,6 @@ from git import Repo
 from git.exc import InvalidGitRepositoryError
 
 
-def validate_idea_directory(idea_directory: str) -> str:
-    """Validate that the idea directory exists and return the idea name.
-
-    Args:
-        idea_directory: Path to the idea directory
-
-    Returns:
-        The idea name (last component of the path)
-
-    Raises:
-        SystemExit: If the directory does not exist
-    """
-    if not os.path.isdir(idea_directory):
-        print(f"Error: Directory not found: {idea_directory}", file=sys.stderr)
-        sys.exit(1)
-
-    idea_name = os.path.basename(os.path.normpath(idea_directory))
-    return idea_name
-
-
-def validate_idea_files(idea_directory: str, idea_name: str) -> None:
-    """Validate that all required idea files exist.
-
-    Required files:
-    - <idea-name>-idea.md or <idea-name>-idea.txt
-    - <idea-name>-discussion.md
-    - <idea-name>-spec.md
-    - <idea-name>-plan.md
-
-    Args:
-        idea_directory: Path to the idea directory
-        idea_name: Name of the idea (used for file naming)
-
-    Raises:
-        SystemExit: If any required files are missing
-    """
-    missing_files = []
-
-    # Check for idea file (can be .md or .txt)
-    idea_pattern = os.path.join(idea_directory, f"{idea_name}-idea.*")
-    idea_files = glob.glob(idea_pattern)
-    if not idea_files:
-        missing_files.append(f"{idea_name}-idea.md (or .txt)")
-
-    # Check for other required files
-    for suffix in ["discussion.md", "spec.md", "plan.md"]:
-        filepath = os.path.join(idea_directory, f"{idea_name}-{suffix}")
-        if not os.path.isfile(filepath):
-            missing_files.append(f"{idea_name}-{suffix}")
-
-    if missing_files:
-        print(f"Error: Missing required idea files in {idea_directory}:", file=sys.stderr)
-        for f in missing_files:
-            print(f"  - {f}", file=sys.stderr)
-        sys.exit(1)
-
 
 def validate_idea_files_committed(idea_directory: str, idea_name: str) -> None:
     """Validate that all idea files are committed to Git.
@@ -141,56 +85,6 @@ def validate_idea_files_committed(idea_directory: str, idea_name: str) -> None:
         sys.exit(1)
 
 
-def get_state_file_path(idea_directory: str, idea_name: str) -> str:
-    """Return the path to the state file for the given idea."""
-    return os.path.join(idea_directory, f"{idea_name}-wt-state.json")
-
-
-def init_or_load_state(idea_directory: str, idea_name: str) -> Dict[str, Any]:
-    """Initialize or load the state file.
-
-    If the state file doesn't exist, creates it with default values.
-    If it exists, loads and returns its contents.
-
-    Args:
-        idea_directory: Path to the idea directory
-        idea_name: Name of the idea
-
-    Returns:
-        Dictionary containing the state
-    """
-    state_file = get_state_file_path(idea_directory, idea_name)
-
-    if os.path.isfile(state_file):
-        with open(state_file, "r") as f:
-            return json.load(f)
-
-    # Default state for new file
-    default_state = {
-        "slice_number": 1,
-        "processed_comment_ids": [],
-        "processed_review_ids": [],
-        "processed_conversation_ids": []
-    }
-
-    # Write default state to file
-    with open(state_file, "w") as f:
-        json.dump(default_state, f, indent=2)
-
-    return default_state
-
-
-def save_state(idea_directory: str, idea_name: str, state: Dict[str, Any]) -> None:
-    """Save the state to the state file.
-
-    Args:
-        idea_directory: Path to the idea directory
-        idea_name: Name of the idea
-        state: State dictionary to save
-    """
-    state_file = get_state_file_path(idea_directory, idea_name)
-    with open(state_file, "w") as f:
-        json.dump(state, f, indent=2)
 
 
 def ensure_integration_branch(repo: Repo, idea_name: str, isolated: bool = False) -> str:
@@ -876,7 +770,7 @@ def determine_comment_type(comment_id: int, review_comments: List[Dict], convers
 def process_pr_feedback(
     pr_number: int,
     pr_url: str,
-    state: Dict[str, Any],
+    state,
     worktree_path: str,
     slice_branch: str,
     interactive: bool = True,
@@ -895,7 +789,7 @@ def process_pr_feedback(
     Args:
         pr_number: The PR number
         pr_url: The PR URL
-        state: Current state dictionary (will be modified with processed IDs)
+        state: WorkflowState instance (will be modified with processed IDs)
         worktree_path: Path to the worktree
         slice_branch: Branch name for pushing
         interactive: If True, run Claude interactively
@@ -917,13 +811,13 @@ def process_pr_feedback(
 
     # Filter to new/unprocessed
     new_review_comments = get_new_feedback(
-        review_comments, state.get("processed_comment_ids", [])
+        review_comments, state.processed_comment_ids
     )
     new_reviews = get_new_feedback(
-        reviews, state.get("processed_review_ids", [])
+        reviews, state.processed_review_ids
     )
     new_conversation = get_new_feedback(
-        conversation_comments, state.get("processed_conversation_ids", [])
+        conversation_comments, state.processed_conversation_ids
     )
 
     # Check if there's any new feedback
@@ -953,15 +847,9 @@ def process_pr_feedback(
     if not triage:
         print("Warning: Could not parse triage result, marking all as processed")
         # Mark all as processed to avoid infinite loop
-        state.setdefault("processed_comment_ids", []).extend(
-            [c["id"] for c in new_review_comments]
-        )
-        state.setdefault("processed_review_ids", []).extend(
-            [r["id"] for r in new_reviews]
-        )
-        state.setdefault("processed_conversation_ids", []).extend(
-            [c["id"] for c in new_conversation]
-        )
+        state.mark_comments_processed([c["id"] for c in new_review_comments])
+        state.mark_reviews_processed([r["id"] for r in new_reviews])
+        state.mark_conversations_processed([c["id"] for c in new_conversation])
         return (True, False)
 
     will_fix = triage.get("will_fix", [])
@@ -1075,15 +963,9 @@ def process_pr_feedback(
                 print("  CI passed!")
 
     # Mark all feedback as processed
-    state.setdefault("processed_comment_ids", []).extend(
-        [c["id"] for c in new_review_comments]
-    )
-    state.setdefault("processed_review_ids", []).extend(
-        [r["id"] for r in new_reviews]
-    )
-    state.setdefault("processed_conversation_ids", []).extend(
-        [c["id"] for c in new_conversation]
-    )
+    state.mark_comments_processed([c["id"] for c in new_review_comments])
+    state.mark_reviews_processed([r["id"] for r in new_reviews])
+    state.mark_conversations_processed([c["id"] for c in new_conversation])
 
     return (True, made_any_changes)
 
@@ -1657,8 +1539,7 @@ def generate_next_slice_branch(
 
 # Global state for interrupt handler
 _interrupt_state = {
-    "idea_directory": None,
-    "idea_name": None,
+    "state_file": None,
     "state": None
 }
 
@@ -1671,28 +1552,25 @@ def register_signal_handlers():
 def _handle_interrupt(signum, frame):
     """Internal handler for SIGINT signal."""
     print("\nInterrupted! Saving state...")
-    if _interrupt_state["idea_directory"] and _interrupt_state["state"]:
+    if _interrupt_state["state_file"] and _interrupt_state["state"]:
         cleanup_on_interrupt(
-            _interrupt_state["idea_directory"],
-            _interrupt_state["idea_name"],
+            _interrupt_state["state_file"],
             _interrupt_state["state"]
         )
     sys.exit(1)
 
 
 def cleanup_on_interrupt(
-    idea_directory: str,
-    idea_name: str,
-    state: Dict[str, Any]
+    state_file: str,
+    state
 ) -> None:
     """Clean up and save state when interrupted.
 
     Args:
-        idea_directory: Path to the idea directory
-        idea_name: Name of the idea
-        state: Current state to save
+        state_file: Path to the state file (unused, kept for backward compat)
+        state: WorkflowState instance to save
     """
-    save_state(idea_directory, idea_name, state)
+    state.save()
     print("State saved. You can resume by running the script again.")
 
 
@@ -2144,11 +2022,13 @@ def run_trunk_loop(
     extra_prompt: Optional[str] = None,
 ) -> None:
     """Execute plan tasks locally on the current branch (trunk mode)."""
-    repo = Repo(idea_directory, search_parent_directories=True)
-    plan_file = os.path.join(idea_directory, f"{idea_name}-plan.md")
+    from i2code.implement.idea_project import IdeaProject
+
+    project = IdeaProject(idea_directory)
+    repo = Repo(project.directory, search_parent_directories=True)
 
     while True:
-        next_task = get_next_task(plan_file)
+        next_task = get_next_task(project.plan_file)
         if next_task is None:
             print("All tasks completed!")
             return
@@ -2166,7 +2046,7 @@ def run_trunk_loop(
                 permissions = calculate_claude_permissions(repo.working_tree_dir)
                 extra_cli_args = ["--allowedTools", ",".join(permissions)]
             claude_cmd = build_claude_command(
-                idea_directory,
+                project.directory,
                 task_description,
                 interactive=not non_interactive,
                 extra_prompt=extra_prompt,
@@ -2184,7 +2064,7 @@ def run_trunk_loop(
             print_task_failure_diagnostics(claude_result, head_before, head_after)
             sys.exit(1)
 
-        if not is_task_completed(plan_file, next_task.number.thread, next_task.number.task):
+        if not is_task_completed(project.plan_file, next_task.number.thread, next_task.number.task):
             print("Error: Task was not marked complete in plan file.", file=sys.stderr)
             sys.exit(1)
 

@@ -18,18 +18,30 @@ def make_numbered_task(thread: int, task: int, title: str) -> NumberedTask:
     )
 
 
+def _make_mock_project(name="test-feature", directory="/tmp/fake-idea"):
+    """Create a MagicMock that behaves like an IdeaProject instance."""
+    mock_project = MagicMock()
+    mock_project.name = name
+    mock_project.directory = directory
+    mock_project.plan_file = f"{directory}/{name}-plan.md"
+    mock_project.state_file = f"{directory}/{name}-wt-state.json"
+    mock_project.validate.return_value = mock_project
+    mock_project.validate_files.return_value = None
+    return mock_project
+
+
 @pytest.mark.unit
 class TestTrunkModeAcceptance:
     """Acceptance test: --trunk with mock-claude executes tasks and prints completion."""
 
     @patch("i2code.implement.cli.run_trunk_loop")
     @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.IdeaProject")
     def test_trunk_mode_dispatches_to_run_trunk_loop(
-        self, mock_validate_dir, mock_validate_files, mock_validate_committed,
+        self, mock_idea_project_cls, mock_validate_committed,
         mock_run_trunk_loop
     ):
+        mock_idea_project_cls.return_value = _make_mock_project()
         runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk"])
 
@@ -55,12 +67,12 @@ class TestTrunkModeIncompatibleFlags:
         "--skip-ci-wait",
     ])
     @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.IdeaProject")
     def test_trunk_with_incompatible_flag_raises_usage_error(
-        self, mock_validate_dir, mock_validate_files, mock_validate_committed,
+        self, mock_idea_project_cls, mock_validate_committed,
         flag,
     ):
+        mock_idea_project_cls.return_value = _make_mock_project()
         runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk", flag])
 
@@ -72,12 +84,12 @@ class TestTrunkModeIncompatibleFlags:
         ("--ci-timeout", "900"),
     ])
     @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.IdeaProject")
     def test_trunk_with_non_default_ci_option_raises_usage_error(
-        self, mock_validate_dir, mock_validate_files, mock_validate_committed,
+        self, mock_idea_project_cls, mock_validate_committed,
         flag, value,
     ):
+        mock_idea_project_cls.return_value = _make_mock_project()
         runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk", flag, value])
 

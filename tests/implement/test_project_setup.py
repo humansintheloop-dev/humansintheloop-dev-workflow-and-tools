@@ -6,6 +6,18 @@ from unittest.mock import patch, MagicMock, PropertyMock
 from i2code.implement.implement import ClaudeResult
 
 
+def _make_mock_project(name="test-feature", directory="/tmp/fake-idea"):
+    """Create a MagicMock that behaves like an IdeaProject instance."""
+    mock_project = MagicMock()
+    mock_project.name = name
+    mock_project.directory = directory
+    mock_project.plan_file = f"{directory}/{name}-plan.md"
+    mock_project.state_file = f"{directory}/{name}-wt-state.json"
+    mock_project.validate.return_value = mock_project
+    mock_project.validate_files.return_value = None
+    return mock_project
+
+
 @pytest.mark.unit
 class TestBuildScaffoldingPrompt:
     """Test build_scaffolding_prompt() constructs correct Claude commands."""
@@ -498,15 +510,16 @@ class TestScaffoldCmd:
     """Test scaffold CLI command."""
 
     @patch("i2code.implement.cli.run_scaffolding")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.Repo")
     def test_scaffold_validates_and_invokes_run_scaffolding(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_files, mock_run_scaffolding
+        self, mock_repo_cls, mock_idea_project_cls, mock_run_scaffolding
     ):
         from click.testing import CliRunner
         from i2code.implement.cli import scaffold_cmd
 
+        mock_project = _make_mock_project()
+        mock_idea_project_cls.return_value = mock_project
         mock_repo = MagicMock()
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
@@ -515,8 +528,8 @@ class TestScaffoldCmd:
         result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea"])
 
         assert result.exit_code == 0
-        mock_validate_dir.assert_called_once_with("/tmp/fake-idea")
-        mock_validate_files.assert_called_once_with("/tmp/fake-idea", "test-feature")
+        mock_project.validate.assert_called_once()
+        mock_project.validate_files.assert_called_once()
         mock_run_scaffolding.assert_called_once_with(
             "/tmp/fake-idea",
             cwd="/tmp/fake-repo",
@@ -525,15 +538,15 @@ class TestScaffoldCmd:
         )
 
     @patch("i2code.implement.cli.run_scaffolding")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.Repo")
     def test_scaffold_non_interactive_forwards_flag(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_files, mock_run_scaffolding
+        self, mock_repo_cls, mock_idea_project_cls, mock_run_scaffolding
     ):
         from click.testing import CliRunner
         from i2code.implement.cli import scaffold_cmd
 
+        mock_idea_project_cls.return_value = _make_mock_project()
         mock_repo = MagicMock()
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
@@ -546,15 +559,15 @@ class TestScaffoldCmd:
         assert call_kwargs["interactive"] is False
 
     @patch("i2code.implement.cli.run_scaffolding")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.Repo")
     def test_scaffold_forwards_mock_claude(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_files, mock_run_scaffolding
+        self, mock_repo_cls, mock_idea_project_cls, mock_run_scaffolding
     ):
         from click.testing import CliRunner
         from i2code.implement.cli import scaffold_cmd
 
+        mock_idea_project_cls.return_value = _make_mock_project()
         mock_repo = MagicMock()
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
@@ -574,18 +587,18 @@ class TestCLIIsolateProjectSetup:
     @patch("i2code.implement.cli.subprocess")
     @patch("i2code.implement.cli.ensure_project_setup", return_value=True)
     @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
-    @patch("i2code.implement.cli.validate_idea_files")
     @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.Repo")
     def test_cli_isolate_calls_setup_before_delegation(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
-        mock_validate_files, mock_ensure_branch, mock_ensure_setup, mock_subprocess
+        self, mock_repo_cls, mock_idea_project_cls, mock_validate_committed,
+        mock_ensure_branch, mock_ensure_setup, mock_subprocess
     ):
         """--isolate should call ensure_project_setup before delegating to isolarium."""
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
+        mock_idea_project_cls.return_value = _make_mock_project()
         mock_repo = MagicMock()
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
@@ -602,18 +615,18 @@ class TestCLIIsolateProjectSetup:
     @patch("i2code.implement.cli.subprocess")
     @patch("i2code.implement.cli.ensure_project_setup", return_value=False)
     @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
-    @patch("i2code.implement.cli.validate_idea_files")
     @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.Repo")
     def test_cli_isolate_exits_on_setup_failure(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
-        mock_validate_files, mock_ensure_branch, mock_ensure_setup, mock_subprocess
+        self, mock_repo_cls, mock_idea_project_cls, mock_validate_committed,
+        mock_ensure_branch, mock_ensure_setup, mock_subprocess
     ):
         """--isolate should exit with error when ensure_project_setup fails."""
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
+        mock_idea_project_cls.return_value = _make_mock_project()
         mock_repo = MagicMock()
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
@@ -627,18 +640,18 @@ class TestCLIIsolateProjectSetup:
     @patch("i2code.implement.cli.subprocess")
     @patch("i2code.implement.cli.ensure_project_setup", return_value=True)
     @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
-    @patch("i2code.implement.cli.validate_idea_files")
     @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.Repo")
     def test_cli_isolate_forwards_parameters_to_setup(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
-        mock_validate_files, mock_ensure_branch, mock_ensure_setup, mock_subprocess
+        self, mock_repo_cls, mock_idea_project_cls, mock_validate_committed,
+        mock_ensure_branch, mock_ensure_setup, mock_subprocess
     ):
         """--isolate should forward all relevant parameters to ensure_project_setup."""
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
+        mock_idea_project_cls.return_value = _make_mock_project()
         mock_repo = MagicMock()
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
@@ -669,18 +682,18 @@ class TestCLIIsolateProjectSetup:
     @patch("i2code.implement.cli.subprocess")
     @patch("i2code.implement.cli.ensure_project_setup", return_value=True)
     @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
-    @patch("i2code.implement.cli.validate_idea_files")
     @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.Repo")
     def test_non_interactive_isolate_passes_interactive_false(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
-        mock_validate_files, mock_ensure_branch, mock_ensure_setup, mock_subprocess
+        self, mock_repo_cls, mock_idea_project_cls, mock_validate_committed,
+        mock_ensure_branch, mock_ensure_setup, mock_subprocess
     ):
         """--isolate --non-interactive should pass interactive=False to ensure_project_setup."""
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
+        mock_idea_project_cls.return_value = _make_mock_project()
         mock_repo = MagicMock()
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
@@ -695,18 +708,18 @@ class TestCLIIsolateProjectSetup:
     @patch("i2code.implement.cli.subprocess")
     @patch("i2code.implement.cli.ensure_project_setup", return_value=True)
     @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
-    @patch("i2code.implement.cli.validate_idea_files")
     @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
+    @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.Repo")
     def test_interactive_isolate_passes_interactive_true(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
-        mock_validate_files, mock_ensure_branch, mock_ensure_setup, mock_subprocess
+        self, mock_repo_cls, mock_idea_project_cls, mock_validate_committed,
+        mock_ensure_branch, mock_ensure_setup, mock_subprocess
     ):
         """--isolate without --non-interactive should pass interactive=True."""
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
+        mock_idea_project_cls.return_value = _make_mock_project()
         mock_repo = MagicMock()
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo

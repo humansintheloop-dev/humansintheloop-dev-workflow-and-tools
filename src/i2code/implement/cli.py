@@ -9,12 +9,10 @@ import click
 from git import Repo
 
 from i2code.implement.git_utils import get_default_branch
+from i2code.implement.idea_project import IdeaProject
+from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.implement import (
-    validate_idea_directory,
-    validate_idea_files,
     validate_idea_files_committed,
-    init_or_load_state,
-    save_state,
     ensure_integration_branch,
     ensure_project_setup,
     ensure_claude_permissions,
@@ -76,14 +74,12 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
                   ci_fix_retries, ci_timeout, isolate, isolated, trunk, dry_run,
                   ignore_uncommitted_idea_changes):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
-    # Validate idea directory exists
-    idea_name = validate_idea_directory(idea_directory)
-
-    # Validate required idea files exist
-    validate_idea_files(idea_directory, idea_name)
+    project = IdeaProject(idea_directory)
+    project.validate()
+    project.validate_files()
 
     if not isolated and not ignore_uncommitted_idea_changes:
-        validate_idea_files_committed(idea_directory, idea_name)
+        validate_idea_files_committed(project.directory, project.name)
 
     if dry_run:
         if trunk:
@@ -93,8 +89,8 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         else:
             mode = "worktree"
         print(f"Mode: {mode}")
-        print(f"Idea: {idea_name}")
-        print(f"Directory: {idea_directory}")
+        print(f"Idea: {project.name}")
+        print(f"Directory: {project.directory}")
         return
 
     # Trunk mode: execute tasks locally on current branch
@@ -120,8 +116,8 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
             )
 
         run_trunk_loop(
-            idea_directory=idea_directory,
-            idea_name=idea_name,
+            idea_directory=project.directory,
+            idea_name=project.name,
             non_interactive=non_interactive,
             mock_claude=mock_claude,
             extra_prompt=extra_prompt,
@@ -130,14 +126,14 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
 
     # Delegate to isolarium VM if --isolate is set
     if isolate:
-        repo = Repo(idea_directory, search_parent_directories=True)
+        repo = Repo(project.directory, search_parent_directories=True)
 
         # Run project scaffolding on host before delegating to VM
-        integration_branch = ensure_integration_branch(repo, idea_name)
+        integration_branch = ensure_integration_branch(repo, project.name)
         setup_ok = ensure_project_setup(
             repo=repo,
-            idea_directory=idea_directory,
-            idea_name=idea_name,
+            idea_directory=project.directory,
+            idea_name=project.name,
             integration_branch=integration_branch,
             interactive=not non_interactive,
             mock_claude=mock_claude,
@@ -149,8 +145,8 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
             print("Error: Project scaffolding setup failed", file=sys.stderr)
             sys.exit(1)
 
-        rel_idea_dir = os.path.relpath(idea_directory, repo.working_tree_dir)
-        isolarium_args = ["isolarium", "--name", f"i2code-{idea_name}", "run"]
+        rel_idea_dir = os.path.relpath(project.directory, repo.working_tree_dir)
+        isolarium_args = ["isolarium", "--name", f"i2code-{project.name}", "run"]
         if not non_interactive:
             isolarium_args.append("--interactive")
         cmd = isolarium_args + ["--", "i2code", "--with-sdkman", "implement", "--isolated", rel_idea_dir]
@@ -175,23 +171,22 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         sys.exit(result.returncode)
 
     # Initialize or load state
-    state = init_or_load_state(idea_directory, idea_name)
+    state = WorkflowState.load(project.state_file)
 
     # Get repo from idea directory
-    repo = Repo(idea_directory, search_parent_directories=True)
+    repo = Repo(project.directory, search_parent_directories=True)
 
     # Create or reuse integration branch
-    integration_branch = ensure_integration_branch(repo, idea_name, isolated=isolated)
+    integration_branch = ensure_integration_branch(repo, project.name, isolated=isolated)
     print(f"Integration branch: {integration_branch}")
 
     # Read plan file to get first task name for slice naming
-    original_plan_file = os.path.join(idea_directory, f"{idea_name}-plan.md")
-    next_task = get_next_task(original_plan_file)
+    next_task = get_next_task(project.plan_file)
     first_task_name = next_task.task.title if next_task else "implementation"
 
     # Create or reuse slice branch
     slice_branch = ensure_slice_branch(
-        repo, idea_name, state["slice_number"], first_task_name, integration_branch
+        repo, project.name, state.slice_number, first_task_name, integration_branch
     )
     print(f"Slice branch: {slice_branch}")
 
@@ -201,22 +196,22 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         repo.config_writer().set_value("user", "email", "test@test.com").release()
         repo.config_writer().set_value("user", "name", "Test User").release()
         ensure_claude_permissions(work_dir)
-        work_idea_dir = idea_directory
-        work_plan_file = original_plan_file
+        work_idea_dir = project.directory
+        work_plan_file = project.plan_file
         repo.git.checkout(slice_branch)
         work_repo = repo
     else:
         # Normal mode - use a worktree
-        worktree_path = ensure_worktree(repo, idea_name, integration_branch)
+        worktree_path = ensure_worktree(repo, project.name, integration_branch)
         print(f"Worktree: {worktree_path}")
         work_dir = worktree_path
         ensure_claude_permissions(work_dir)
         work_idea_dir = get_worktree_idea_directory(
             worktree_path=worktree_path,
-            main_repo_idea_dir=idea_directory,
+            main_repo_idea_dir=project.directory,
             main_repo_root=repo.working_tree_dir
         )
-        work_plan_file = os.path.join(work_idea_dir, f"{idea_name}-plan.md")
+        work_plan_file = os.path.join(work_idea_dir, f"{project.name}-plan.md")
         work_repo = Repo(worktree_path)
         work_repo.git.checkout(slice_branch)
 
@@ -272,7 +267,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
 
             if had_feedback:
                 # Save state after processing feedback
-                save_state(idea_directory, idea_name, state)
+                state.save()
 
                 # Loop back to check for more feedback or CI failures
                 continue
@@ -342,7 +337,7 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         if pr_number is None:
             base_branch = get_default_branch()
             pr_number = ensure_draft_pr(
-                slice_branch, idea_directory, idea_name, state["slice_number"],
+                slice_branch, project.directory, project.name, state.slice_number,
                 base_branch=base_branch,
             )
             print(f"Created Draft PR #{pr_number}")
@@ -369,10 +364,11 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
               help="Use mock script instead of Claude (for testing)")
 def scaffold_cmd(idea_directory, non_interactive, mock_claude):
     """Generate project scaffolding for an idea directory."""
-    idea_name = validate_idea_directory(idea_directory)
-    validate_idea_files(idea_directory, idea_name)
+    project = IdeaProject(idea_directory)
+    project.validate()
+    project.validate_files()
 
-    repo = Repo(idea_directory, search_parent_directories=True)
+    repo = Repo(project.directory, search_parent_directories=True)
 
     run_scaffolding(
         idea_directory,

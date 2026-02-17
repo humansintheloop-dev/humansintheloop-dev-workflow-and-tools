@@ -210,10 +210,7 @@ class TestDeferredPRCreation:
             return 123
 
         # Mock all the setup functions to avoid real git/github operations
-        monkeypatch.setattr("i2code.implement.implement.validate_idea_directory", lambda x: "test-idea")
-        monkeypatch.setattr("i2code.implement.implement.validate_idea_files", lambda x, y: None)
         monkeypatch.setattr("i2code.implement.implement.validate_idea_files_committed", lambda x, y: None)
-        monkeypatch.setattr("i2code.implement.implement.init_or_load_state", lambda x, y: {"slice_number": 1, "processed_comment_ids": [], "processed_review_ids": []})
 
         # Mock git operations
         class MockRepo:
@@ -254,10 +251,18 @@ class TestDeferredPRCreation:
         monkeypatch.setattr("i2code.implement.implement.ensure_draft_pr", mock_ensure_draft_pr)
 
         # Also patch the cli module's imported references
-        monkeypatch.setattr("i2code.implement.cli.validate_idea_directory", lambda x: "test-idea")
-        monkeypatch.setattr("i2code.implement.cli.validate_idea_files", lambda x, y: None)
+        from unittest.mock import MagicMock
+        mock_project = MagicMock()
+        mock_project.name = "test-idea"
+        mock_project.directory = str(tmp_path)
+        mock_project.plan_file = str(tmp_path / "test-idea-plan.md")
+        mock_project.validate.return_value = mock_project
+        mock_project.validate_files.return_value = None
+        monkeypatch.setattr("i2code.implement.cli.IdeaProject", lambda x: mock_project)
         monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda x, y: None)
-        monkeypatch.setattr("i2code.implement.cli.init_or_load_state", lambda x, y: {"slice_number": 1, "processed_comment_ids": [], "processed_review_ids": []})
+        from unittest.mock import MagicMock as _MagicMock
+        _mock_state = _MagicMock(slice_number=1, processed_comment_ids=[], processed_review_ids=[], processed_conversation_ids=[])
+        monkeypatch.setattr("i2code.implement.cli.WorkflowState.load", lambda x: _mock_state)
         monkeypatch.setattr("i2code.implement.cli.ensure_integration_branch", lambda r, n, isolated=False: "idea/test-idea/integration")
         monkeypatch.setattr("i2code.implement.cli.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
         monkeypatch.setattr("i2code.implement.cli.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
@@ -552,15 +557,14 @@ class TestDefaultStateIncludesConversationIds:
 
     def test_init_state_includes_processed_conversation_ids(self, tmp_path):
         """Default state should include processed_conversation_ids."""
-        from i2code.implement.implement import init_or_load_state
+        from i2code.implement.workflow_state import WorkflowState
 
         idea_dir = tmp_path / "test-idea"
         idea_dir.mkdir()
 
-        state = init_or_load_state(str(idea_dir), "test-idea")
+        state = WorkflowState.load(str(idea_dir / "test-idea-wt-state.json"))
 
-        assert "processed_conversation_ids" in state
-        assert state["processed_conversation_ids"] == []
+        assert state.processed_conversation_ids == []
 
 
 @pytest.mark.unit

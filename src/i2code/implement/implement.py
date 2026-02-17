@@ -410,68 +410,6 @@ def format_all_feedback(
     return "\n".join(sections)
 
 
-def build_triage_command(
-    feedback_content: str,
-    interactive: bool = True
-) -> List[str]:
-    """Build command to invoke Claude for triaging PR feedback.
-
-    Claude categorizes feedback into:
-    - will_fix: Groups of comments that can be addressed together
-    - needs_clarification: Comments requiring clarification with specific questions
-
-    Args:
-        feedback_content: Formatted feedback content
-        interactive: If True, run Claude interactively
-
-    Returns:
-        Command as a list suitable for subprocess
-    """
-    from i2code.templates.template_renderer import render_template
-
-    prompt = render_template(
-        "triage_feedback.j2",
-        package=__package__,
-        feedback_content=feedback_content,
-    )
-
-    if interactive:
-        return ["claude", prompt]
-    else:
-        return ["claude", "--verbose", "--output-format=stream-json", "-p", prompt]
-
-
-def build_fix_command(
-    pr_url: str,
-    feedback_content: str,
-    fix_description: str,
-    interactive: bool = True
-) -> List[str]:
-    """Build command to invoke Claude for fixing a group of comments.
-
-    Args:
-        pr_url: The PR URL
-        feedback_content: The specific feedback to address
-        fix_description: Description of what to fix
-        interactive: If True, run Claude interactively
-
-    Returns:
-        Command as a list suitable for subprocess
-    """
-    from i2code.templates.template_renderer import render_template
-
-    prompt = render_template(
-        "fix_feedback.j2",
-        package=__package__,
-        pr_url=pr_url,
-        feedback_content=feedback_content,
-        fix_description=fix_description,
-    )
-
-    if interactive:
-        return ["claude", prompt]
-    else:
-        return ["claude", "--verbose", "--output-format=stream-json", "-p", prompt]
 
 
 def parse_triage_result(claude_output: str) -> Optional[Dict[str, Any]]:
@@ -610,7 +548,8 @@ def process_pr_feedback(
     if mock_claude:
         triage_cmd = [mock_claude, f"triage-{pr_number}"]
     else:
-        triage_cmd = build_triage_command(feedback_content, interactive=False)
+        from i2code.implement.command_builder import CommandBuilder
+        triage_cmd = CommandBuilder().build_triage_command(feedback_content, interactive=False)
 
     triage_result = run_claude_with_output_capture(triage_cmd, cwd=worktree_path)
 
@@ -677,7 +616,8 @@ def process_pr_feedback(
         if mock_claude:
             fix_cmd = [mock_claude, f"fix-{pr_number}-{comment_ids[0]}"]
         else:
-            fix_cmd = build_fix_command(pr_url, group_content, description, interactive=interactive)
+            from i2code.implement.command_builder import CommandBuilder
+            fix_cmd = CommandBuilder().build_fix_command(pr_url, group_content, description, interactive=interactive)
 
         print("  Invoking Claude to fix...")
         if interactive:
@@ -842,7 +782,8 @@ def fix_ci_failure(
         if mock_claude:
             claude_cmd = [mock_claude, f"fix-ci-{run_id}"]
         else:
-            claude_cmd = build_ci_fix_command(
+            from i2code.implement.command_builder import CommandBuilder
+            claude_cmd = CommandBuilder().build_ci_fix_command(
                 run_id, workflow_name, failure_logs, interactive=interactive
             )
 
@@ -1258,35 +1199,10 @@ def ensure_project_setup(
     return ci_success
 
 
-def build_scaffolding_prompt(
-    idea_directory: str,
-    interactive: bool = True,
-    mock_claude: Optional[str] = None,
-) -> List[str]:
-    """Build the Claude command for project scaffolding.
-
-    Returns command as a list suitable for subprocess.
-    """
-    from i2code.templates.template_renderer import render_template
-
-    prompt = render_template(
-        "scaffolding.j2",
-        package=__package__,
-        idea_directory=idea_directory,
-    )
-
-    if mock_claude:
-        return [mock_claude, "setup"]
-
-    if interactive:
-        return ["claude", prompt]
-    else:
-        return ["claude", "--allowed-tools", "Write,Read,Edit,Bash(gradle --version),Bash(mkdir -p:*)", "--verbose", "--output-format=stream-json", "-p", prompt]
-
-
 def run_scaffolding(idea_directory: str, cwd: str, interactive: bool = True, mock_claude: Optional[str] = None):
     """Invoke Claude to generate project scaffolding."""
-    cmd = build_scaffolding_prompt(idea_directory, interactive=interactive, mock_claude=mock_claude)
+    from i2code.implement.command_builder import CommandBuilder
+    cmd = CommandBuilder().build_scaffolding_command(idea_directory, interactive=interactive, mock_claude=mock_claude)
     if interactive:
         result = run_claude_interactive(cmd, cwd=cwd)
     else:
@@ -1311,43 +1227,6 @@ def run_scaffolding(idea_directory: str, cwd: str, interactive: bool = True, moc
             if text:
                 print(f"  Result: {text}", file=sys.stderr)
     sys.exit(1)
-
-
-def build_claude_command(
-    idea_directory: str,
-    task_description: str,
-    interactive: bool = True,
-    extra_prompt: Optional[str] = None,
-    extra_cli_args: Optional[List[str]] = None,
-) -> List[str]:
-    """Build the command to invoke Claude Code for a task.
-
-    Args:
-        idea_directory: Path to the idea directory
-        task_description: The task to implement
-        interactive: If True, run Claude interactively; if False, use -p flag
-        extra_prompt: Optional extra text to append to the prompt
-
-    Returns:
-        Command as a list suitable for subprocess
-    """
-    from i2code.templates.template_renderer import render_template
-
-    prompt = render_template(
-        "task_execution.j2",
-        package=__package__,
-        idea_directory=idea_directory,
-        task_description=task_description,
-        extra_prompt=extra_prompt,
-        interactive=interactive,
-    )
-
-    extra = extra_cli_args or []
-
-    if interactive:
-        return ["claude"] + extra + [prompt]
-    else:
-        return ["claude"] + extra + ["--verbose", "--output-format=stream-json", "-p", prompt]
 
 
 from i2code.implement.claude_runner import ClaudeResult  # noqa: E402
@@ -1490,76 +1369,6 @@ def run_claude_interactive(cmd: List[str], cwd: str) -> ClaudeResult:
     )
 
 
-def build_feedback_command(
-    pr_url: str,
-    feedback_type: str,
-    feedback_content: str
-) -> List[str]:
-    """Build the command to invoke Claude Code for handling feedback.
-
-    Args:
-        pr_url: The PR URL
-        feedback_type: Type of feedback (review_comment, review, check_failure)
-        feedback_content: The feedback content to address
-
-    Returns:
-        Command as a list suitable for subprocess
-    """
-    from i2code.templates.template_renderer import render_template
-
-    prompt = render_template(
-        "address_feedback.j2",
-        package=__package__,
-        pr_url=pr_url,
-        feedback_type=feedback_type,
-        feedback_content=feedback_content,
-    )
-
-    return [
-        "claude",
-        "--print", "wt-handle-feedback.md",
-        "-p", prompt
-    ]
-
-
-def build_ci_fix_command(
-    run_id: int,
-    workflow_name: str,
-    failure_logs: str,
-    interactive: bool = True
-) -> List[str]:
-    """Build command to invoke Claude for fixing CI failures.
-
-    Args:
-        run_id: The workflow run database ID
-        workflow_name: Name of the failing workflow
-        failure_logs: The failure logs from the workflow
-        interactive: If True, run Claude interactively; if False, use -p flag
-
-    Returns:
-        Command as a list suitable for subprocess
-    """
-    # Truncate logs if too long (keep last 5000 chars)
-    max_log_length = 5000
-    if len(failure_logs) > max_log_length:
-        failure_logs = f"... (truncated)\n{failure_logs[-max_log_length:]}"
-
-    from i2code.templates.template_renderer import render_template
-
-    prompt = render_template(
-        "ci_fix.j2",
-        package=__package__,
-        run_id=run_id,
-        workflow_name=workflow_name,
-        failure_logs=failure_logs,
-    )
-
-    if interactive:
-        return ["claude", prompt]
-    else:
-        return ["claude", "--verbose", "--output-format=stream-json", "-p", prompt]
-
-
 def build_push_command(branch_name: str, force: bool = False) -> List[str]:
     """Build the git push command for the slice branch.
 
@@ -1639,11 +1448,12 @@ def run_trunk_loop(
         if mock_claude:
             claude_cmd = [mock_claude, task_description]
         else:
+            from i2code.implement.command_builder import CommandBuilder
             extra_cli_args = None
             if non_interactive:
                 permissions = calculate_claude_permissions(git_repo.working_tree_dir)
                 extra_cli_args = ["--allowedTools", ",".join(permissions)]
-            claude_cmd = build_claude_command(
+            claude_cmd = CommandBuilder().build_task_command(
                 project.directory,
                 task_description,
                 interactive=not non_interactive,

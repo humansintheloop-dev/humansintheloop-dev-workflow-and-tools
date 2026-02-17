@@ -124,7 +124,7 @@ class TestRunTrunkLoop:
 
     @patch("i2code.implement.implement.is_task_completed", return_value=True)
     @patch("i2code.implement.implement.check_claude_success", return_value=True)
-    @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "do task"])
+    @patch("i2code.implement.command_builder.CommandBuilder.build_task_command", return_value=["claude", "do task"])
     @patch("i2code.implement.implement.get_next_task")
     def test_invokes_claude_for_first_task(
         self, mock_get_next,
@@ -162,7 +162,7 @@ class TestRunTrunkLoop:
 
     @patch("i2code.implement.implement.calculate_claude_permissions", return_value=["Bash(git commit:*)"])
     @patch("i2code.implement.implement.check_claude_success", return_value=False)
-    @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "-p", "do task"])
+    @patch("i2code.implement.command_builder.CommandBuilder.build_task_command", return_value=["claude", "-p", "do task"])
     @patch("i2code.implement.implement.get_next_task")
     def test_exits_on_claude_failure(
         self, mock_get_next,
@@ -192,7 +192,7 @@ class TestRunTrunkLoop:
 
     @patch("i2code.implement.implement.is_task_completed", return_value=True)
     @patch("i2code.implement.implement.check_claude_success", return_value=True)
-    @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "do task"])
+    @patch("i2code.implement.command_builder.CommandBuilder.build_task_command", return_value=["claude", "do task"])
     @patch("i2code.implement.implement.get_next_task")
     def test_loops_through_multiple_tasks(
         self, mock_get_next,
@@ -223,7 +223,7 @@ class TestRunTrunkLoop:
 
     @patch("i2code.implement.implement.is_task_completed", return_value=False)
     @patch("i2code.implement.implement.check_claude_success", return_value=True)
-    @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "do task"])
+    @patch("i2code.implement.command_builder.CommandBuilder.build_task_command", return_value=["claude", "do task"])
     @patch("i2code.implement.implement.get_next_task")
     def test_exits_when_task_not_marked_complete(
         self, mock_get_next,
@@ -250,7 +250,7 @@ class TestRunTrunkLoop:
 
     @patch("i2code.implement.implement.is_task_completed", return_value=True)
     @patch("i2code.implement.implement.check_claude_success", return_value=True)
-    @patch("i2code.implement.implement.build_claude_command")
+    @patch("i2code.implement.command_builder.CommandBuilder.build_task_command")
     @patch("i2code.implement.implement.get_next_task")
     def test_uses_mock_claude_when_provided(
         self, mock_get_next,
@@ -284,7 +284,7 @@ class TestRunTrunkLoop:
     @patch("i2code.implement.implement.is_task_completed", return_value=True)
     @patch("i2code.implement.implement.calculate_claude_permissions", return_value=["Bash(git commit:*)", "Write(/fake/repo/)"])
     @patch("i2code.implement.implement.check_claude_success", return_value=True)
-    @patch("i2code.implement.implement.build_claude_command", return_value=["claude", "-p", "do task"])
+    @patch("i2code.implement.command_builder.CommandBuilder.build_task_command", return_value=["claude", "-p", "do task"])
     @patch("i2code.implement.implement.get_next_task")
     def test_non_interactive_passes_allowed_tools(
         self, mock_get_next,

@@ -205,17 +205,17 @@ Extract Claude invocation into an injectable strategy and consolidate the 6 comm
     - [x] Remove `run_claude_interactive`, `run_claude_with_output_capture` from `implement.py`
     - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
-- [ ] **Task 4.2: Extract CommandBuilder**
+- [x] **Task 4.2: Extract CommandBuilder**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/ -v`
   - Observable: `CommandBuilder` class exists in `command_builder.py`. Consolidates `build_claude_command`, `build_scaffolding_prompt`, `build_triage_command`, `build_fix_command`, `build_ci_fix_command`, `build_feedback_command` into methods with shared interactive/non-interactive logic.
   - Evidence: Pre-commit checklist passes. The `if interactive: ... else: ...` pattern exists in one place.
   - Steps:
-    - [ ] Write unit tests for CommandBuilder methods
-    - [ ] Implement CommandBuilder class
-    - [ ] Update ClaudeRunner and callers to use CommandBuilder
-    - [ ] Remove standalone build_* functions from `implement.py`
-    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+    - [x] Write unit tests for CommandBuilder methods
+    - [x] Implement CommandBuilder class
+    - [x] Update ClaudeRunner and callers to use CommandBuilder
+    - [x] Remove standalone build_* functions from `implement.py`
+    - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
 ---
 
@@ -369,3 +369,6 @@ GitRepository tracks _branch and _pr_number as state. push(), ensure_pr(), wait_
 
 ### 2026-02-18 08:28 - mark-task-complete
 Implemented ClaudeRunner with strategy pattern, MockClaudeRunner, FakeClaudeRunner, moved ClaudeResult to claude_runner.py, updated run_trunk_loop to accept claude_runner parameter, migrated test_trunk_mode.py tests. Step 7 (removing old functions) deferred since other callers still depend on them.
+
+### 2026-02-18 08:43 - mark-task-complete
+CommandBuilder extracted with _with_mode() helper. All 594 unit tests + 11 integration tests pass.

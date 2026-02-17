@@ -182,7 +182,7 @@ class TestGetDefaultBranchWiring:
     @patch("i2code.implement.cli.is_task_completed", return_value=True)
     @patch("i2code.implement.cli.check_claude_success", return_value=True)
     @patch("i2code.implement.cli.run_claude_with_output_capture")
-    @patch("i2code.implement.cli.build_claude_command", return_value=["echo", "mock"])
+    @patch("i2code.implement.command_builder.CommandBuilder.build_task_command", return_value=["echo", "mock"])
     @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.GitHubClient")
     @patch("i2code.implement.cli.get_worktree_idea_directory", return_value="/tmp/wt/idea")

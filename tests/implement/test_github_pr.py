@@ -238,9 +238,9 @@ class TestBuildTriageCommand:
 
     def test_build_triage_command_interactive(self):
         """Should build interactive Claude command for triage."""
-        from i2code.implement.implement import build_triage_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_triage_command(
+        cmd = CommandBuilder().build_triage_command(
             feedback_content="Please add tests",
             interactive=True
         )
@@ -253,9 +253,9 @@ class TestBuildTriageCommand:
 
     def test_build_triage_command_non_interactive(self):
         """Should build non-interactive Claude command with -p flag."""
-        from i2code.implement.implement import build_triage_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_triage_command(
+        cmd = CommandBuilder().build_triage_command(
             feedback_content="Fix the bug",
             interactive=False
         )
@@ -266,9 +266,9 @@ class TestBuildTriageCommand:
 
     def test_build_triage_command_requests_json_output(self):
         """Should request JSON output format."""
-        from i2code.implement.implement import build_triage_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_triage_command(
+        cmd = CommandBuilder().build_triage_command(
             feedback_content="Some feedback",
             interactive=True
         )
@@ -284,9 +284,9 @@ class TestBuildFixCommand:
 
     def test_build_fix_command_interactive(self):
         """Should build interactive Claude command for fixing."""
-        from i2code.implement.implement import build_fix_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_fix_command(
+        cmd = CommandBuilder().build_fix_command(
             pr_url="https://github.com/owner/repo/pull/123",
             feedback_content="Please add tests",
             fix_description="Add unit tests",
@@ -300,9 +300,9 @@ class TestBuildFixCommand:
 
     def test_build_fix_command_non_interactive(self):
         """Should build non-interactive Claude command with -p flag."""
-        from i2code.implement.implement import build_fix_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_fix_command(
+        cmd = CommandBuilder().build_fix_command(
             pr_url="https://github.com/owner/repo/pull/123",
             feedback_content="Fix the bug",
             fix_description="Fix null pointer",

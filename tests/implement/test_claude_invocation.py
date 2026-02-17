@@ -26,14 +26,15 @@ class TestWorktreeIdeaDirectory:
 
     def test_claude_prompt_uses_worktree_idea_directory(self, mocker):
         """Claude command prompt should reference worktree idea dir, not main repo."""
-        from i2code.implement.implement import build_claude_command, get_worktree_idea_directory
+        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.implement import get_worktree_idea_directory
 
         # Simulate the paths
         main_repo_root = "/home/user/my-repo"
         main_repo_idea_dir = "/home/user/my-repo/kafka-security-poc"
         worktree_path = "/tmp/my-repo-wt-kafka-security-poc"
 
-        # Get the worktree idea directory (what main() should pass to build_claude_command)
+        # Get the worktree idea directory (what main() should pass to build_task_command)
         worktree_idea_dir = get_worktree_idea_directory(
             worktree_path=worktree_path,
             main_repo_idea_dir=main_repo_idea_dir,
@@ -41,7 +42,7 @@ class TestWorktreeIdeaDirectory:
         )
 
         # Build command with worktree idea dir
-        cmd = build_claude_command(
+        cmd = CommandBuilder().build_task_command(
             idea_directory=worktree_idea_dir,
             task_description="Task 1.1: Create project"
         )
@@ -60,9 +61,9 @@ class TestClaudeCommandConstruction:
 
     def test_build_claude_command_basic(self):
         """Command should be ['claude', prompt] for interactive mode."""
-        from i2code.implement.implement import build_claude_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_claude_command(
+        cmd = CommandBuilder().build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file"
         )
@@ -72,9 +73,9 @@ class TestClaudeCommandConstruction:
 
     def test_build_claude_command_includes_idea_directory(self):
         """Command should reference the idea directory."""
-        from i2code.implement.implement import build_claude_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_claude_command(
+        cmd = CommandBuilder().build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file"
         )
@@ -85,9 +86,9 @@ class TestClaudeCommandConstruction:
 
     def test_build_claude_command_includes_task(self):
         """Command should include the current task description."""
-        from i2code.implement.implement import build_claude_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_claude_command(
+        cmd = CommandBuilder().build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file"
         )
@@ -97,9 +98,9 @@ class TestClaudeCommandConstruction:
 
     def test_build_claude_command_returns_list(self):
         """Command should be returned as a list for subprocess."""
-        from i2code.implement.implement import build_claude_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_claude_command(
+        cmd = CommandBuilder().build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file"
         )
@@ -114,9 +115,9 @@ class TestClaudeCommandConstruction:
         The -p/--print flag makes Claude non-interactive (print and exit).
         For interactive use, the prompt should be a positional argument.
         """
-        from i2code.implement.implement import build_claude_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_claude_command(
+        cmd = CommandBuilder().build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file"
         )
@@ -133,9 +134,9 @@ class TestClaudeCommandConstruction:
 
     def test_build_claude_command_non_interactive_includes_extra_cli_args(self):
         """Non-interactive command should include extra_cli_args before -p."""
-        from i2code.implement.implement import build_claude_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_claude_command(
+        cmd = CommandBuilder().build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file",
             interactive=False,
@@ -150,9 +151,9 @@ class TestClaudeCommandConstruction:
 
     def test_build_claude_command_interactive_includes_extra_cli_args(self):
         """Interactive command should include extra_cli_args."""
-        from i2code.implement.implement import build_claude_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_claude_command(
+        cmd = CommandBuilder().build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file",
             interactive=True,
@@ -441,9 +442,9 @@ class TestFeedbackHandling:
 
     def test_build_feedback_command_uses_feedback_template(self):
         """Should use wt-handle-feedback.md template."""
-        from i2code.implement.implement import build_feedback_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_feedback_command(
+        cmd = CommandBuilder().build_feedback_command(
             pr_url="https://github.com/owner/repo/pull/123",
             feedback_type="review_comment",
             feedback_content="Please fix the typo"
@@ -453,9 +454,9 @@ class TestFeedbackHandling:
 
     def test_build_feedback_command_includes_pr_url(self):
         """Should include PR URL in command."""
-        from i2code.implement.implement import build_feedback_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_feedback_command(
+        cmd = CommandBuilder().build_feedback_command(
             pr_url="https://github.com/owner/repo/pull/123",
             feedback_type="review_comment",
             feedback_content="Please fix the typo"
@@ -466,9 +467,9 @@ class TestFeedbackHandling:
 
     def test_build_feedback_command_includes_feedback_content(self):
         """Should include feedback content in command."""
-        from i2code.implement.implement import build_feedback_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_feedback_command(
+        cmd = CommandBuilder().build_feedback_command(
             pr_url="https://github.com/owner/repo/pull/123",
             feedback_type="review_comment",
             feedback_content="Please fix the typo"
@@ -937,11 +938,11 @@ class TestBuildCiFixCommand:
 
     def test_build_ci_fix_command_renders_ci_fix_template(self, mocker):
         """Should render prompt from ci_fix.j2 template."""
-        from i2code.implement.implement import build_ci_fix_command
+        from i2code.implement.command_builder import CommandBuilder
 
         mock_render = mocker.patch("i2code.templates.template_renderer.render_template", return_value="rendered prompt")
 
-        build_ci_fix_command(
+        CommandBuilder().build_ci_fix_command(
             run_id=12345,
             workflow_name="CI Build",
             failure_logs="Error: test failed",
@@ -958,9 +959,9 @@ class TestBuildCiFixCommand:
 
     def test_build_ci_fix_command_includes_variables_in_prompt(self):
         """Should include run_id, workflow_name, and failure_logs in prompt."""
-        from i2code.implement.implement import build_ci_fix_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_ci_fix_command(
+        cmd = CommandBuilder().build_ci_fix_command(
             run_id=12345,
             workflow_name="CI Build",
             failure_logs="Error: test failed",
@@ -974,10 +975,10 @@ class TestBuildCiFixCommand:
 
     def test_build_ci_fix_command_truncates_long_logs(self):
         """Should truncate logs longer than 5000 chars."""
-        from i2code.implement.implement import build_ci_fix_command
+        from i2code.implement.command_builder import CommandBuilder
 
         long_logs = "x" * 6000
-        cmd = build_ci_fix_command(
+        cmd = CommandBuilder().build_ci_fix_command(
             run_id=1,
             workflow_name="Build",
             failure_logs=long_logs,
@@ -989,9 +990,9 @@ class TestBuildCiFixCommand:
 
     def test_build_ci_fix_command_non_interactive(self):
         """Should build non-interactive Claude command with -p flag."""
-        from i2code.implement.implement import build_ci_fix_command
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_ci_fix_command(
+        cmd = CommandBuilder().build_ci_fix_command(
             run_id=1,
             workflow_name="Build",
             failure_logs="some error",

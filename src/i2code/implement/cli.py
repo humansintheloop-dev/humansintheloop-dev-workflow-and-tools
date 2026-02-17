@@ -13,6 +13,7 @@ from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.workflow_state import WorkflowState
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.implement import (
     validate_idea_files_committed,
     ensure_integration_branch,
@@ -24,7 +25,6 @@ from i2code.implement.implement import (
     is_task_completed,
     get_worktree_idea_directory,
     process_pr_feedback,
-    build_claude_command,
     run_claude_with_output_capture,
     run_claude_interactive,
     run_scaffolding,
@@ -266,11 +266,11 @@ def implement(opts: ImplementOpts, project: IdeaProject):
             claude_cmd = [opts.mock_claude, task_description]
             print(f"Using mock Claude: {opts.mock_claude}")
         else:
-            claude_cmd = build_claude_command(
+            claude_cmd = CommandBuilder().build_task_command(
                 work_idea_dir,
                 task_description,
                 interactive=not opts.non_interactive,
-                extra_prompt=opts.extra_prompt
+                extra_prompt=opts.extra_prompt,
             )
             print(f"Invoking Claude: {' '.join(claude_cmd)}")
 

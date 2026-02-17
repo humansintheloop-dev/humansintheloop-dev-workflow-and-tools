@@ -9,11 +9,11 @@ import shutil
 import subprocess
 import sys
 
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.implement import (
     generate_pr_title,
     generate_pr_body,
     get_failing_workflow_run,
-    build_ci_fix_command,
     run_claude_with_output_capture,
     run_claude_interactive,
 )
@@ -219,7 +219,7 @@ class GitRepository:
             if mock_claude:
                 claude_cmd = [mock_claude, f"fix-ci-{run_id}"]
             else:
-                claude_cmd = build_ci_fix_command(
+                claude_cmd = CommandBuilder().build_ci_fix_command(
                     run_id, workflow_name, failure_logs, interactive=interactive
                 )
 

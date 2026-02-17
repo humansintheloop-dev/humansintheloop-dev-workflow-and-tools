@@ -313,13 +313,17 @@ def implement_cmd(idea_directory, cleanup, mock_claude, setup_only,
         else:
             claude_result = run_claude_interactive(claude_cmd, cwd=work_dir)
 
-        # Get HEAD after Claude invocation
         head_after = work_repo.head.commit.hexsha
 
-        # Verify success: exit code 0, HEAD advanced
         if not check_claude_success(claude_result.returncode, head_before, head_after):
             print_task_failure_diagnostics(claude_result, head_before, head_after)
             sys.exit(1)
+
+        # In non-interactive mode, also check for outcome tags
+        if non_interactive:
+            if "<SUCCESS>" not in claude_result.stdout:
+                print_task_failure_diagnostics(claude_result, head_before, head_after)
+                sys.exit(1)
 
         if not is_task_completed(work_plan_file, next_task.number.thread, next_task.number.task):
             print("Error: Task was not marked complete in plan file.", file=sys.stderr)

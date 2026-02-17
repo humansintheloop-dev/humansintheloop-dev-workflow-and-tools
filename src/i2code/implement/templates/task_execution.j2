@@ -20,3 +20,9 @@ If all tasks are complete, stop and report success.
 
 IMPORTANT: if you don't have permission to perform an action, print an informative error message and exit
 {%- endif %}
+
+CRITICAL:
+
+Immediately, before exiting output one of the following messages
+- If successful: <SUCCESS>task implemented: COMMIT_SHA</SUCCESS>
+- If failed: <FAILURE>Explanation of failure - if permission include those required permissions</FAILURE>

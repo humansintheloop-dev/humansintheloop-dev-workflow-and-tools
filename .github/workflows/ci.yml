@@ -17,3 +17,17 @@ jobs:
 
       - name: Run tests
         run: ./test-scripts/test-end-to-end.sh
+
+  integration-gh:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Run integration_gh tests
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: uv run --python 3.12 python3 -m pytest tests/ -v -m integration_gh

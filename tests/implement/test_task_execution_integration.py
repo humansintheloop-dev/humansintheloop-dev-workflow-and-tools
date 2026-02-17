@@ -270,12 +270,12 @@ class TestTaskDetectionAndExecution:
             f"Failed to add review comment: {result.stderr}"
 
     def _assert_fetch_pr_comments(self, pr_number):
-        from i2code.implement.implement import fetch_pr_comments
+        from i2code.implement.github_client import GitHubClient
 
         original_cwd = os.getcwd()
         try:
             os.chdir(self.repo.tmpdir)
-            comments = fetch_pr_comments(pr_number)
+            comments = GitHubClient().fetch_pr_comments(pr_number)
         finally:
             os.chdir(original_cwd)
 
@@ -283,12 +283,13 @@ class TestTaskDetectionAndExecution:
             f"Expected at least 1 comment, got {len(comments)}"
 
     def _assert_new_feedback_filtering(self, pr_number):
-        from i2code.implement.implement import fetch_pr_comments, get_new_feedback
+        from i2code.implement.github_client import GitHubClient
+        from i2code.implement.implement import get_new_feedback
 
         original_cwd = os.getcwd()
         try:
             os.chdir(self.repo.tmpdir)
-            comments = fetch_pr_comments(pr_number)
+            comments = GitHubClient().fetch_pr_comments(pr_number)
         finally:
             os.chdir(original_cwd)
 
@@ -302,9 +303,8 @@ class TestTaskDetectionAndExecution:
 
     def _assert_state_tracks_processed_comments(self, pr_number):
         from i2code.implement.workflow_state import WorkflowState
-        from i2code.implement.implement import (
-            fetch_pr_comments, get_new_feedback
-        )
+        from i2code.implement.github_client import GitHubClient
+        from i2code.implement.implement import get_new_feedback
 
         state_file = os.path.join(self.repo.idea_dir, f"{self.repo.idea_name}-wt-state.json")
         state = WorkflowState.load(state_file)
@@ -314,7 +314,7 @@ class TestTaskDetectionAndExecution:
         original_cwd = os.getcwd()
         try:
             os.chdir(self.repo.tmpdir)
-            comments = fetch_pr_comments(pr_number)
+            comments = GitHubClient().fetch_pr_comments(pr_number)
         finally:
             os.chdir(original_cwd)
 

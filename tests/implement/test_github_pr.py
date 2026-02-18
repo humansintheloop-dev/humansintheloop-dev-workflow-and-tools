@@ -111,7 +111,7 @@ class TestDeferredPRCreation:
         from unittest.mock import MagicMock
 
         # Mock all the setup functions to avoid real git/github operations
-        monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda p: None)
+        monkeypatch.setattr("i2code.implement.implement_command.validate_idea_files_committed", lambda p: None)
 
         # Mock git operations
         class MockRepo:
@@ -141,10 +141,9 @@ class TestDeferredPRCreation:
         mock_wt_project.plan_file = str(tmp_path / "worktree" / "test-idea" / "test-idea-plan.md")
         mock_project.worktree_idea_project = MagicMock(return_value=mock_wt_project)
         monkeypatch.setattr("i2code.implement.cli.IdeaProject", lambda x: mock_project)
-        monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda p: None)
         _mock_state = MagicMock(slice_number=1, processed_comment_ids=[], processed_review_ids=[], processed_conversation_ids=[])
-        monkeypatch.setattr("i2code.implement.cli.WorkflowState.load", lambda x: _mock_state)
-        monkeypatch.setattr("i2code.implement.cli.get_next_task", lambda f: NumberedTask(
+        monkeypatch.setattr("i2code.implement.implement_command.WorkflowState.load", lambda x: _mock_state)
+        monkeypatch.setattr("i2code.implement.implement_command.get_next_task", lambda f: NumberedTask(
             number=TaskNumber(thread=1, task=1),
             task=Task(_lines=["- [ ] **Task 1.1: test-task**"]),
         ))
@@ -154,6 +153,7 @@ class TestDeferredPRCreation:
         mock_git_repo = MagicMock()
         mock_git_repo.ensure_pr = MagicMock(return_value=123)
         monkeypatch.setattr("i2code.implement.cli.GitRepository", lambda *a, **kw: mock_git_repo)
+        monkeypatch.setattr("i2code.implement.implement_command.ensure_claude_permissions", lambda x: None)
 
         # Run via Click test runner
         runner = CliRunner(catch_exceptions=False)

@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from i2code.implement.cli import implement
+from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.implement_opts import ImplementOpts
 
 
@@ -23,8 +23,10 @@ def _make_dry_run_opts(**overrides):
     return ImplementOpts(**defaults)
 
 
-def _mock_deps():
-    return MagicMock(), MagicMock(), MagicMock(), MagicMock()
+def _make_command(**opt_overrides):
+    opts = _make_dry_run_opts(**opt_overrides)
+    project = _make_mock_project()
+    return ImplementCommand(opts, project, MagicMock(), MagicMock(), MagicMock(), MagicMock())
 
 
 @pytest.mark.unit
@@ -32,26 +34,25 @@ class TestDryRun:
     """--dry-run prints what mode would be used and exits."""
 
     def test_dry_run_trunk_mode(self, capsys):
-        opts = _make_dry_run_opts(trunk=True)
-        implement(opts, _make_mock_project(), *_mock_deps())
+        cmd = _make_command(trunk=True)
+        cmd.execute()
 
         assert "trunk" in capsys.readouterr().out.lower()
 
     def test_dry_run_isolate_mode(self, capsys):
-        opts = _make_dry_run_opts(isolate=True)
-        implement(opts, _make_mock_project(), *_mock_deps())
+        cmd = _make_command(isolate=True)
+        cmd.execute()
 
         assert "isolate" in capsys.readouterr().out.lower()
 
     def test_dry_run_worktree_mode(self, capsys):
-        opts = _make_dry_run_opts()
-        implement(opts, _make_mock_project(), *_mock_deps())
+        cmd = _make_command()
+        cmd.execute()
 
         assert "worktree" in capsys.readouterr().out.lower()
 
-    @patch("i2code.implement.cli.implement_trunk_mode")
-    def test_dry_run_does_not_execute(self, mock_trunk_mode):
-        opts = _make_dry_run_opts(trunk=True)
-        implement(opts, _make_mock_project(), *_mock_deps())
-
-        mock_trunk_mode.assert_not_called()
+    def test_dry_run_does_not_execute(self):
+        cmd = _make_command(trunk=True)
+        with patch.object(cmd, '_trunk_mode') as mock_trunk:
+            cmd.execute()
+            mock_trunk.assert_not_called()

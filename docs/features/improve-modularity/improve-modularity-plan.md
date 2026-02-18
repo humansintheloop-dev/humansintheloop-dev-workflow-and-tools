@@ -269,20 +269,20 @@ Replace the 180-line `implement_cmd` with a thin dispatcher and three execution 
 ## Steel Thread 6: Introduce ImplementCommand class
 Extract the module-level `implement()` function and `implement_trunk_mode()`, `implement_isolate_mode()`, `implement_worktree_mode()` from `cli.py` into an `ImplementCommand` class in `implement_command.py`. `implement_cmd()` constructs dependencies (opts, project, repo, git_repo, claude_runner, gh_client), passes them to `ImplementCommand.__init__()`, and calls `ImplementCommand.execute()`. `cli.py` becomes a thin Click adapter.
 
-- [ ] **Task 6.1: Create `ImplementCommand` class and update `implement_cmd()`**
+- [x] **Task 6.1: Create `ImplementCommand` class and update `implement_cmd()`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `ImplementCommand` class in `implement_command.py`. Constructor: `(opts, project, repo, git_repo, claude_runner, gh_client)`. `ImplementCommand.execute()` contains the `implement()` body. `ImplementCommand._trunk_mode()`, `ImplementCommand._isolate_mode()`, `ImplementCommand._worktree_mode()` contain the former `implement_trunk_mode()`, `implement_isolate_mode()`, `implement_worktree_mode()` bodies. `implement_cmd()` in `cli.py` constructs dependencies, creates `ImplementCommand`, calls `ImplementCommand.execute()`. No module-level `implement()`, `implement_trunk_mode()`, `implement_isolate_mode()`, `implement_worktree_mode()` in `cli.py`.
   - Evidence: ``
   - Steps:
-    - [ ] Create `implement_command.py` with `ImplementCommand`, constructor takes `(opts, project, repo, git_repo, claude_runner, gh_client)`
-    - [ ] Move `implement()` body into `ImplementCommand.execute()`
-    - [ ] Move `implement_trunk_mode()` into `ImplementCommand._trunk_mode()`
-    - [ ] Move `implement_isolate_mode()` into `ImplementCommand._isolate_mode()`
-    - [ ] Move `implement_worktree_mode()` into `ImplementCommand._worktree_mode()`
-    - [ ] Update `implement_cmd()` to construct `ImplementCommand` and call `ImplementCommand.execute()`
-    - [ ] Delete `implement()`, `implement_trunk_mode()`, `implement_isolate_mode()`, `implement_worktree_mode()` from `cli.py`
-    - [ ] Run pre-commit checklist
+    - [x] Create `implement_command.py` with `ImplementCommand`, constructor takes `(opts, project, repo, git_repo, claude_runner, gh_client)`
+    - [x] Move `implement()` body into `ImplementCommand.execute()`
+    - [x] Move `implement_trunk_mode()` into `ImplementCommand._trunk_mode()`
+    - [x] Move `implement_isolate_mode()` into `ImplementCommand._isolate_mode()`
+    - [x] Move `implement_worktree_mode()` into `ImplementCommand._worktree_mode()`
+    - [x] Update `implement_cmd()` to construct `ImplementCommand` and call `ImplementCommand.execute()`
+    - [x] Delete `implement()`, `implement_trunk_mode()`, `implement_isolate_mode()`, `implement_worktree_mode()` from `cli.py`
+    - [x] Run pre-commit checklist
 - [ ] **Task 6.2: Update tests for `ImplementCommand`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
@@ -621,3 +621,6 @@ Extracted GithubActionsMonitor with wait_for_ci(), WorktreeMode delegates via ci
 
 ### 2026-02-18 13:17 - insert-thread-before
 ImplementCommand class provides a proper home for mode dispatch logic and constructor-injected dependencies, making cli.py a thin Click adapter
+
+### 2026-02-18 13:42 - mark-task-complete
+Created ImplementCommand class with execute(), _trunk_mode(), _isolate_mode(), _worktree_mode(). Updated implement_cmd() to use ImplementCommand. Removed module-level functions from cli.py. All 369 tests pass.

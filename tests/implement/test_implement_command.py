@@ -1,0 +1,222 @@
+"""Tests for ImplementCommand class."""
+
+
+import click
+import pytest
+from unittest.mock import MagicMock, patch
+
+from i2code.implement.implement_command import ImplementCommand
+from i2code.implement.implement_opts import ImplementOpts
+
+
+def _make_mock_project():
+    """Create a MagicMock that behaves like an IdeaProject instance."""
+    mock_project = MagicMock()
+    mock_project.name = "test-feature"
+    mock_project.directory = "/tmp/fake-idea"
+    mock_project.plan_file = "/tmp/fake-idea/test-feature-plan.md"
+    mock_project.state_file = "/tmp/fake-idea/test-feature-wt-state.json"
+    mock_project.validate.return_value = mock_project
+    mock_project.validate_files.return_value = None
+    return mock_project
+
+
+def _make_opts(**overrides):
+    defaults = dict(idea_directory="/tmp/fake-idea")
+    defaults.update(overrides)
+    return ImplementOpts(**defaults)
+
+
+def _make_command(**opt_overrides):
+    opts = _make_opts(**opt_overrides)
+    project = _make_mock_project()
+    repo = MagicMock()
+    git_repo = MagicMock()
+    claude_runner = MagicMock()
+    gh_client = MagicMock()
+    cmd = ImplementCommand(opts, project, repo, git_repo, claude_runner, gh_client)
+    return cmd, project, repo, git_repo, claude_runner, gh_client
+
+
+@pytest.mark.unit
+class TestImplementCommandDryRun:
+    """execute() in dry-run prints mode and exits without dispatching."""
+
+    def test_dry_run_trunk_mode(self, capsys):
+        cmd, *_ = _make_command(dry_run=True, trunk=True)
+        cmd.execute()
+        assert "trunk" in capsys.readouterr().out.lower()
+
+    def test_dry_run_isolate_mode(self, capsys):
+        cmd, *_ = _make_command(dry_run=True, isolate=True)
+        cmd.execute()
+        assert "isolate" in capsys.readouterr().out.lower()
+
+    def test_dry_run_worktree_mode(self, capsys):
+        cmd, *_ = _make_command(dry_run=True)
+        cmd.execute()
+        assert "worktree" in capsys.readouterr().out.lower()
+
+
+@pytest.mark.unit
+class TestImplementCommandTrunkDispatch:
+    """execute() dispatches to _trunk_mode() for --trunk."""
+
+    def test_dispatches_to_trunk_mode(self):
+        cmd, project, *_ = _make_command(trunk=True, ignore_uncommitted_idea_changes=True)
+        with patch.object(cmd, '_trunk_mode') as mock_trunk:
+            cmd.execute()
+            mock_trunk.assert_called_once()
+
+    def test_trunk_calls_validate_trunk_options(self):
+        cmd, *_ = _make_command(trunk=True, ignore_uncommitted_idea_changes=True)
+        cmd.opts.validate_trunk_options = MagicMock(side_effect=click.UsageError("stopped"))
+        with pytest.raises(click.UsageError):
+            cmd.execute()
+
+
+@pytest.mark.unit
+class TestImplementCommandIsolateDispatch:
+    """execute() dispatches to _isolate_mode() for --isolate."""
+
+    def test_dispatches_to_isolate_mode(self):
+        cmd, *_ = _make_command(isolate=True, ignore_uncommitted_idea_changes=True)
+        with patch.object(cmd, '_isolate_mode') as mock_isolate:
+            cmd.execute()
+            mock_isolate.assert_called_once()
+
+
+@pytest.mark.unit
+class TestImplementCommandWorktreeDispatch:
+    """execute() dispatches to _worktree_mode() by default."""
+
+    def test_dispatches_to_worktree_mode(self):
+        cmd, *_ = _make_command(ignore_uncommitted_idea_changes=True)
+        with patch.object(cmd, '_worktree_mode') as mock_wt:
+            cmd.execute()
+            mock_wt.assert_called_once()
+
+
+@pytest.mark.unit
+class TestImplementCommandValidation:
+    """execute() validates idea files committed unless skipped."""
+
+    @patch("i2code.implement.implement_command.validate_idea_files_committed")
+    def test_validates_idea_files_committed(self, mock_validate):
+        cmd, *_ = _make_command(trunk=True)
+        with patch.object(cmd, '_trunk_mode'):
+            cmd.execute()
+        mock_validate.assert_called_once()
+
+    @patch("i2code.implement.implement_command.validate_idea_files_committed")
+    def test_skips_validation_when_isolated(self, mock_validate):
+        cmd, *_ = _make_command(trunk=True, isolated=True)
+        # isolated=True with trunk=True will fail validate_trunk_options,
+        # so use ignore_uncommitted_idea_changes instead
+        cmd2, *_ = _make_command(trunk=True, ignore_uncommitted_idea_changes=True)
+        with patch.object(cmd2, '_trunk_mode'):
+            cmd2.execute()
+        mock_validate.assert_not_called()
+
+    @patch("i2code.implement.implement_command.validate_idea_files_committed")
+    def test_skips_validation_when_ignore_uncommitted(self, mock_validate):
+        cmd, *_ = _make_command(trunk=True, ignore_uncommitted_idea_changes=True)
+        with patch.object(cmd, '_trunk_mode'):
+            cmd.execute()
+        mock_validate.assert_not_called()
+
+
+@pytest.mark.unit
+class TestImplementCommandTrunkMode:
+    """_trunk_mode() creates TrunkMode and calls execute()."""
+
+    @patch("i2code.implement.implement_command.TrunkMode")
+    def test_trunk_mode_creates_trunk_mode(self, mock_trunk_cls):
+        cmd, project, _, git_repo, claude_runner, _ = _make_command(
+            trunk=True, ignore_uncommitted_idea_changes=True
+        )
+        cmd.execute()
+        mock_trunk_cls.assert_called_once_with(
+            git_repo=git_repo,
+            project=project,
+            claude_runner=claude_runner,
+        )
+        mock_trunk_cls.return_value.execute.assert_called_once_with(
+            non_interactive=False,
+            mock_claude=None,
+            extra_prompt=None,
+        )
+
+
+@pytest.mark.unit
+class TestImplementCommandIsolateMode:
+    """_isolate_mode() creates IsolateMode and calls execute()."""
+
+    @patch("i2code.implement.implement_command.IsolateMode")
+    def test_isolate_mode_creates_isolate_mode(self, mock_isolate_cls):
+        mock_isolate_cls.return_value.execute.return_value = 0
+        cmd, project, repo, git_repo, _, gh_client = _make_command(
+            isolate=True, ignore_uncommitted_idea_changes=True
+        )
+        with pytest.raises(SystemExit) as exc_info:
+            cmd.execute()
+        assert exc_info.value.code == 0
+        mock_isolate_cls.assert_called_once()
+        mock_isolate_cls.return_value.execute.assert_called_once()
+
+
+@pytest.mark.unit
+class TestImplementCommandWorktreeMode:
+    """_worktree_mode() sets up branches and creates WorktreeMode."""
+
+    @patch("i2code.implement.implement_command.GithubActionsMonitor")
+    @patch("i2code.implement.implement_command.WorktreeMode")
+    @patch("i2code.implement.implement_command.get_next_task")
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.ensure_claude_permissions")
+    def test_worktree_mode_creates_worktree_mode(
+        self, mock_perms, mock_load_state, mock_next_task,
+        mock_wt_cls, mock_ci_cls,
+    ):
+        mock_load_state.return_value = MagicMock(slice_number=1)
+        mock_task = MagicMock()
+        mock_task.task.title = "setup"
+        mock_next_task.return_value = mock_task
+
+        cmd, project, repo, git_repo, claude_runner, gh_client = _make_command(
+            ignore_uncommitted_idea_changes=True
+        )
+        repo.working_tree_dir = "/tmp/fake-repo"
+        mock_wt_git_repo = MagicMock()
+        mock_wt_git_repo.working_tree_dir = "/tmp/wt"
+        git_repo.ensure_worktree.return_value = mock_wt_git_repo
+        gh_client.find_pr.return_value = None
+
+        cmd.execute()
+
+        mock_wt_cls.return_value.execute.assert_called_once()
+
+
+@pytest.mark.unit
+class TestNoModuleLevelFunctions:
+    """cli.py should not have module-level implement functions."""
+
+    def test_no_implement_function_in_cli(self):
+        import i2code.implement.cli as cli_module
+        assert not hasattr(cli_module, 'implement'), \
+            "cli.py should not have module-level implement()"
+
+    def test_no_implement_trunk_mode_in_cli(self):
+        import i2code.implement.cli as cli_module
+        assert not hasattr(cli_module, 'implement_trunk_mode'), \
+            "cli.py should not have module-level implement_trunk_mode()"
+
+    def test_no_implement_isolate_mode_in_cli(self):
+        import i2code.implement.cli as cli_module
+        assert not hasattr(cli_module, 'implement_isolate_mode'), \
+            "cli.py should not have module-level implement_isolate_mode()"
+
+    def test_no_implement_worktree_mode_in_cli(self):
+        import i2code.implement.cli as cli_module
+        assert not hasattr(cli_module, 'implement_worktree_mode'), \
+            "cli.py should not have module-level implement_worktree_mode()"

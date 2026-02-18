@@ -79,9 +79,9 @@ def _make_numbered_task(title: str) -> NumberedTask:
 class TestIsolatedFlagPassthrough:
     """Test that --isolated flag is forwarded to git_repo.ensure_integration_branch()."""
 
-    @patch("i2code.implement.cli.get_next_task", return_value=_make_numbered_task("setup"))
-    @patch("i2code.implement.cli.WorkflowState.load")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.implement_command.get_next_task", return_value=_make_numbered_task("setup"))
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.Repo")
@@ -107,9 +107,9 @@ class TestIsolatedFlagPassthrough:
 
         mock_git_repo.ensure_integration_branch.assert_called_once_with("test-feature", isolated=True)
 
-    @patch("i2code.implement.cli.get_next_task", return_value=_make_numbered_task("setup"))
-    @patch("i2code.implement.cli.WorkflowState.load")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.implement_command.get_next_task", return_value=_make_numbered_task("setup"))
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.Repo")
@@ -143,7 +143,7 @@ class TestTrunkModeAcceptance:
     @patch("i2code.implement.trunk_mode.TrunkMode.execute")
     @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.Repo")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.implement_command.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     def test_trunk_mode_dispatches_to_trunk_mode_execute(
         self, mock_idea_project_cls, mock_validate_committed,
@@ -169,7 +169,7 @@ class TestTrunkModeIncompatibleFlags:
     """--trunk delegates validation to opts.validate_trunk_options()."""
 
     def test_trunk_calls_validate_trunk_options(self):
-        from i2code.implement.cli import implement
+        from i2code.implement.implement_command import ImplementCommand
         from i2code.implement.implement_opts import ImplementOpts
 
         opts = MagicMock(spec=ImplementOpts)
@@ -179,8 +179,9 @@ class TestTrunkModeIncompatibleFlags:
         opts.dry_run = False
         opts.validate_trunk_options.side_effect = click.UsageError("stopped")
 
+        cmd = ImplementCommand(opts, _make_mock_project(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
         with pytest.raises(click.UsageError):
-            implement(opts, _make_mock_project(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
+            cmd.execute()
 
         opts.validate_trunk_options.assert_called_once()
 
@@ -192,7 +193,7 @@ class TestIgnoreUncommittedIdeaChanges:
     @patch("i2code.implement.trunk_mode.TrunkMode.execute")
     @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.Repo")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.implement_command.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     def test_skips_committed_validation(
         self, mock_idea_project_cls, mock_validate_committed,
@@ -213,7 +214,7 @@ class TestIgnoreUncommittedIdeaChanges:
     @patch("i2code.implement.trunk_mode.TrunkMode.execute")
     @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.Repo")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.implement_command.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     def test_without_flag_calls_committed_validation(
         self, mock_idea_project_cls, mock_validate_committed,
@@ -237,10 +238,10 @@ class TestWorktreeModeAcceptance:
     @patch("i2code.implement.worktree_mode.WorktreeMode.execute")
     @patch("i2code.implement.cli.GitHubClient")
     @patch("i2code.implement.cli.GitRepository")
-    @patch("i2code.implement.cli.ensure_claude_permissions")
-    @patch("i2code.implement.cli.get_next_task", return_value=_make_numbered_task("setup"))
-    @patch("i2code.implement.cli.WorkflowState.load")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.implement_command.ensure_claude_permissions")
+    @patch("i2code.implement.implement_command.get_next_task", return_value=_make_numbered_task("setup"))
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.Repo")
     def test_default_path_dispatches_to_worktree_mode_execute(

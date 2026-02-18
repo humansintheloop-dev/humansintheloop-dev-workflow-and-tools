@@ -4,6 +4,7 @@ import sys
 
 from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
+from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import (
     validate_idea_files_committed,
@@ -146,6 +147,12 @@ class ImplementCommand:
             claude_runner=self.claude_runner,
         )
 
+        review_processor = PullRequestReviewProcessor(
+            opts=self.opts,
+            git_repo=self.git_repo,
+            state=state,
+        )
+
         worktree_mode = WorktreeMode(
             opts=self.opts,
             git_repo=self.git_repo,
@@ -155,5 +162,6 @@ class ImplementCommand:
             work_plan_file=work_plan_file,
             ci_monitor=ci_monitor,
             build_fixer=build_fixer,
+            review_processor=review_processor,
         )
         worktree_mode.execute()

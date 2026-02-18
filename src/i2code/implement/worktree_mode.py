@@ -10,7 +10,6 @@ from i2code.implement.git_setup import (
 from i2code.implement.implement import (
     check_claude_success,
     print_task_failure_diagnostics,
-    process_pr_feedback,
 )
 from i2code.implement.command_builder import CommandBuilder
 
@@ -27,10 +26,11 @@ class WorktreeMode:
         work_plan_file: Path to the plan file in the working directory.
         ci_monitor: GithubActionsMonitor for waiting on CI completion.
         build_fixer: GithubActionsBuildFixer for detecting and fixing CI failures.
+        review_processor: PullRequestReviewProcessor for handling PR feedback.
     """
 
     def __init__(self, opts, git_repo, project, state, claude_runner,
-                 work_plan_file, ci_monitor, build_fixer):
+                 work_plan_file, ci_monitor, build_fixer, review_processor):
         self._opts = opts
         self._git_repo = git_repo
         self._project = project
@@ -39,6 +39,7 @@ class WorktreeMode:
         self._work_plan_file = work_plan_file
         self._ci_monitor = ci_monitor
         self._build_fixer = build_fixer
+        self._review_processor = review_processor
 
     def execute(self):
         """Run the worktree task loop until all tasks are complete."""
@@ -61,28 +62,7 @@ class WorktreeMode:
 
         Returns True if feedback was found (caller should loop back).
         """
-        if not self._git_repo.pr_number or not self._git_repo.branch_has_been_pushed():
-            return False
-
-        pr_url = self._git_repo.gh_client.get_pr_url(self._git_repo.pr_number)
-        had_feedback, _made_changes = process_pr_feedback(
-            pr_number=self._git_repo.pr_number,
-            pr_url=pr_url,
-            state=self._state,
-            worktree_path=self._git_repo.working_tree_dir,
-            slice_branch=self._git_repo.branch,
-            interactive=not self._opts.non_interactive,
-            mock_claude=self._opts.mock_claude,
-            skip_ci_wait=self._opts.skip_ci_wait,
-            ci_timeout=self._opts.ci_timeout,
-            gh_client=self._git_repo.gh_client,
-        )
-
-        if had_feedback:
-            self._state.save()
-            return True
-
-        return False
+        return self._review_processor.process_feedback()
 
     def _execute_task(self, next_task):
         """Execute a single task: run Claude, push, create PR, wait for CI."""

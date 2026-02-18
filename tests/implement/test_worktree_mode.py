@@ -10,6 +10,7 @@ from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
+from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.worktree_mode import WorktreeMode
 
 from fake_claude_runner import FakeClaudeRunner
@@ -113,6 +114,12 @@ def _make_worktree_mode(
         claude_runner=fake_runner,
     )
 
+    review_processor = PullRequestReviewProcessor(
+        opts=opts,
+        git_repo=fake_repo,
+        state=fake_state,
+    )
+
     mode = WorktreeMode(
         opts=opts,
         git_repo=fake_repo,
@@ -122,6 +129,7 @@ def _make_worktree_mode(
         work_plan_file=plan_path,
         ci_monitor=ci_monitor,
         build_fixer=build_fixer,
+        review_processor=review_processor,
     )
     return mode, fake_repo, fake_runner, fake_gh, fake_state
 

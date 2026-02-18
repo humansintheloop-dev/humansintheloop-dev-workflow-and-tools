@@ -169,14 +169,14 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_includes_reviews(self):
         """Should format PR reviews with state and body."""
-        from i2code.implement.pr_helpers import format_all_feedback
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         reviews = [
             {"id": 1, "state": "CHANGES_REQUESTED", "body": "Please fix the tests",
              "user": {"login": "reviewer1"}}
         ]
 
-        result = format_all_feedback([], reviews, [])
+        result = PullRequestReviewProcessor._format_all_feedback([], reviews, [])
 
         assert "## PR Reviews" in result
         assert "CHANGES_REQUESTED" in result
@@ -185,14 +185,14 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_includes_review_comments(self):
         """Should format review comments with file path and line."""
-        from i2code.implement.pr_helpers import format_all_feedback
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         review_comments = [
             {"id": 2, "body": "This variable name is unclear",
              "path": "src/main.py", "line": 42, "user": {"login": "reviewer2"}}
         ]
 
-        result = format_all_feedback(review_comments, [], [])
+        result = PullRequestReviewProcessor._format_all_feedback(review_comments, [], [])
 
         assert "## Review Comments" in result
         assert "src/main.py:42" in result
@@ -200,13 +200,13 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_includes_conversation_comments(self):
         """Should format general PR comments."""
-        from i2code.implement.pr_helpers import format_all_feedback
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         conversation_comments = [
             {"id": 3, "body": "Great work overall!", "user": {"login": "lead"}}
         ]
 
-        result = format_all_feedback([], [], conversation_comments)
+        result = PullRequestReviewProcessor._format_all_feedback([], [], conversation_comments)
 
         assert "## General PR Comments" in result
         assert "Great work overall!" in result
@@ -214,13 +214,13 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_combines_all_types(self):
         """Should combine all feedback types into one formatted string."""
-        from i2code.implement.pr_helpers import format_all_feedback
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         reviews = [{"id": 1, "state": "APPROVED", "body": "LGTM", "user": {"login": "r1"}}]
         review_comments = [{"id": 2, "body": "Nitpick", "path": "a.py", "line": 1, "user": {"login": "r2"}}]
         conversation_comments = [{"id": 3, "body": "Thanks", "user": {"login": "r3"}}]
 
-        result = format_all_feedback(review_comments, reviews, conversation_comments)
+        result = PullRequestReviewProcessor._format_all_feedback(review_comments, reviews, conversation_comments)
 
         assert "## PR Reviews" in result
         assert "## Review Comments" in result
@@ -315,7 +315,7 @@ class TestGetNewFeedback:
 
     def test_get_new_feedback_filters_processed(self):
         """Should filter out already processed feedback."""
-        from i2code.implement.pr_helpers import get_new_feedback
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         all_feedback = [
             {"id": 1, "body": "Old comment"},
@@ -324,32 +324,32 @@ class TestGetNewFeedback:
         ]
         processed_ids = [1]
 
-        new_feedback = get_new_feedback(all_feedback, processed_ids)
+        new_feedback = PullRequestReviewProcessor._get_new_feedback(all_feedback, processed_ids)
 
         assert len(new_feedback) == 2
         assert all(f["id"] in [2, 3] for f in new_feedback)
 
     def test_get_new_feedback_returns_all_when_none_processed(self):
         """Should return all feedback when nothing processed yet."""
-        from i2code.implement.pr_helpers import get_new_feedback
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         all_feedback = [
             {"id": 1, "body": "Comment 1"},
             {"id": 2, "body": "Comment 2"}
         ]
 
-        new_feedback = get_new_feedback(all_feedback, [])
+        new_feedback = PullRequestReviewProcessor._get_new_feedback(all_feedback, [])
 
         assert len(new_feedback) == 2
 
     def test_get_new_feedback_returns_empty_when_all_processed(self):
         """Should return empty list when all feedback processed."""
-        from i2code.implement.pr_helpers import get_new_feedback
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         all_feedback = [{"id": 1, "body": "Comment"}]
         processed_ids = [1]
 
-        new_feedback = get_new_feedback(all_feedback, processed_ids)
+        new_feedback = PullRequestReviewProcessor._get_new_feedback(all_feedback, processed_ids)
 
         assert new_feedback == []
 
@@ -376,7 +376,8 @@ class TestParseTriageResult:
 
     def test_parse_triage_result_with_json_code_block(self):
         """Should parse JSON from markdown code block."""
-        from i2code.implement.pr_helpers import parse_triage_result
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
+        parse_triage_result = PullRequestReviewProcessor._parse_triage_result
 
         output = '''Here's the triage:
 ```json
@@ -394,7 +395,8 @@ class TestParseTriageResult:
 
     def test_parse_triage_result_with_plain_json(self):
         """Should parse plain JSON output."""
-        from i2code.implement.pr_helpers import parse_triage_result
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
+        parse_triage_result = PullRequestReviewProcessor._parse_triage_result
 
         output = '{"will_fix": [], "needs_clarification": [{"comment_id": 5, "question": "What?"}]}'
         result = parse_triage_result(output)
@@ -405,7 +407,8 @@ class TestParseTriageResult:
 
     def test_parse_triage_result_returns_none_on_invalid(self):
         """Should return None for invalid JSON."""
-        from i2code.implement.pr_helpers import parse_triage_result
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
+        parse_triage_result = PullRequestReviewProcessor._parse_triage_result
 
         result = parse_triage_result("This is not JSON at all")
 
@@ -418,7 +421,7 @@ class TestGetFeedbackByIds:
 
     def test_get_feedback_by_ids_returns_matching(self):
         """Should return only feedback with matching IDs."""
-        from i2code.implement.pr_helpers import get_feedback_by_ids
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         all_feedback = [
             {"id": 1, "body": "Comment 1"},
@@ -426,7 +429,7 @@ class TestGetFeedbackByIds:
             {"id": 3, "body": "Comment 3"}
         ]
 
-        result = get_feedback_by_ids(all_feedback, [1, 3])
+        result = PullRequestReviewProcessor._get_feedback_by_ids(all_feedback, [1, 3])
 
         assert len(result) == 2
         assert result[0]["id"] == 1
@@ -434,11 +437,11 @@ class TestGetFeedbackByIds:
 
     def test_get_feedback_by_ids_returns_empty_for_no_matches(self):
         """Should return empty list when no IDs match."""
-        from i2code.implement.pr_helpers import get_feedback_by_ids
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         all_feedback = [{"id": 1, "body": "Comment"}]
 
-        result = get_feedback_by_ids(all_feedback, [99])
+        result = PullRequestReviewProcessor._get_feedback_by_ids(all_feedback, [99])
 
         assert result == []
 
@@ -449,22 +452,22 @@ class TestDetermineCommentType:
 
     def test_determine_comment_type_review(self):
         """Should return 'review' for review comment IDs."""
-        from i2code.implement.pr_helpers import determine_comment_type
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         review_comments = [{"id": 100, "body": "Review comment"}]
         conversation_comments = [{"id": 200, "body": "General comment"}]
 
-        result = determine_comment_type(100, review_comments, conversation_comments)
+        result = PullRequestReviewProcessor._determine_comment_type(100, review_comments, conversation_comments)
 
         assert result == "review"
 
     def test_determine_comment_type_conversation(self):
         """Should return 'conversation' for non-review comment IDs."""
-        from i2code.implement.pr_helpers import determine_comment_type
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         review_comments = [{"id": 100, "body": "Review comment"}]
         conversation_comments = [{"id": 200, "body": "General comment"}]
 
-        result = determine_comment_type(200, review_comments, conversation_comments)
+        result = PullRequestReviewProcessor._determine_comment_type(200, review_comments, conversation_comments)
 
         assert result == "conversation"

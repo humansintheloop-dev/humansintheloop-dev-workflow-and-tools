@@ -423,15 +423,15 @@ Consolidate PR feedback processing into `PullRequestReviewProcessor`. Absorbs `W
     - [x] Remove `process_pr_feedback()` from `implement.py`
     - [x] Run pre-commit checklist
 
-- [ ] **Task 9.3: Move feedback helpers into PullRequestReviewProcessor**
+- [x] **Task 9.3: Move feedback helpers into PullRequestReviewProcessor**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `PullRequestReviewProcessor._get_new_feedback()`, `PullRequestReviewProcessor._format_all_feedback()`, `PullRequestReviewProcessor._parse_triage_result()`, `PullRequestReviewProcessor._get_feedback_by_ids()`, `PullRequestReviewProcessor._determine_comment_type()` exist as private methods. `get_new_feedback()`, `format_all_feedback()`, `parse_triage_result()`, `get_feedback_by_ids()`, `determine_comment_type()` removed from `pr_helpers.py`.
   - Steps:
-    - [ ] Move each helper from `pr_helpers.py` into `PullRequestReviewProcessor` as private method
-    - [ ] Update internal callers within `PullRequestReviewProcessor`
-    - [ ] Remove helpers from `pr_helpers.py`
-    - [ ] Run pre-commit checklist
+    - [x] Move each helper from `pr_helpers.py` into `PullRequestReviewProcessor` as private method
+    - [x] Update internal callers within `PullRequestReviewProcessor`
+    - [x] Remove helpers from `pr_helpers.py`
+    - [x] Run pre-commit checklist
 
 - [ ] **Task 9.4: Update callers and delete placeholder**
   - TaskType: OUTCOME
@@ -823,3 +823,18 @@ Code Health safeguard run: implement.py at 8.95, pull_request_review_processor.p
 
 ### 2026-02-18 15:43 - mark-task-complete
 Moved process_pr_feedback() into PullRequestReviewProcessor with claude_runner injection. Replaced push_branch_to_remote with git_repo.push(), GitRepo HEAD tracking with git_repo.head_sha, module-level Claude functions with claude_runner methods. 377 tests pass.
+
+### 2026-02-18 15:53 - mark-step-complete
+Moved get_new_feedback, format_all_feedback, parse_triage_result, get_feedback_by_ids, determine_comment_type into PullRequestReviewProcessor as @staticmethod private methods
+
+### 2026-02-18 15:53 - mark-step-complete
+Updated all internal callers within process_pr_feedback to use self._method() calls
+
+### 2026-02-18 15:53 - mark-step-complete
+Removed get_new_feedback, format_all_feedback, parse_triage_result, get_feedback_by_ids, determine_comment_type from pr_helpers.py
+
+### 2026-02-18 15:53 - mark-step-complete
+Ran ruff check, code health review, and all 365 unit tests pass
+
+### 2026-02-18 15:53 - mark-task-complete
+All 5 feedback helpers moved into PullRequestReviewProcessor as private static methods, removed from pr_helpers.py, all 365 tests pass

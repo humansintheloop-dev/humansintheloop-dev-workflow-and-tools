@@ -1,15 +1,11 @@
 """PullRequestReviewProcessor: processes PR review feedback."""
 
+import json
+import re
 import sys
+from typing import Any, Dict, List, Optional
 
 from i2code.implement.command_builder import CommandBuilder
-from i2code.implement.pr_helpers import (
-    determine_comment_type,
-    format_all_feedback,
-    get_feedback_by_ids,
-    get_new_feedback,
-    parse_triage_result,
-)
 
 
 class PullRequestReviewProcessor:
@@ -66,13 +62,13 @@ class PullRequestReviewProcessor:
         reviews = gh_client.fetch_pr_reviews(pr_number)
         conversation_comments = gh_client.fetch_pr_conversation_comments(pr_number)
 
-        new_review_comments = get_new_feedback(
+        new_review_comments = self._get_new_feedback(
             review_comments, self._state.processed_comment_ids,
         )
-        new_reviews = get_new_feedback(
+        new_reviews = self._get_new_feedback(
             reviews, self._state.processed_review_ids,
         )
-        new_conversation = get_new_feedback(
+        new_conversation = self._get_new_feedback(
             conversation_comments, self._state.processed_conversation_ids,
         )
 
@@ -84,7 +80,7 @@ class PullRequestReviewProcessor:
               f"{len(new_conversation)} general comment(s)")
 
         all_new_feedback = new_review_comments + new_reviews + new_conversation
-        feedback_content = format_all_feedback(
+        feedback_content = self._format_all_feedback(
             new_review_comments, new_reviews, new_conversation,
         )
 
@@ -96,7 +92,7 @@ class PullRequestReviewProcessor:
 
         triage_result = self._claude_runner.run_with_capture(triage_cmd, cwd=self._git_repo.working_tree_dir)
 
-        triage = parse_triage_result(triage_result.stdout)
+        triage = self._parse_triage_result(triage_result.stdout)
         if not triage:
             print("Warning: Could not parse triage result, marking all as processed")
             self._state.mark_comments_processed([c["id"] for c in new_review_comments])
@@ -114,7 +110,7 @@ class PullRequestReviewProcessor:
             comment_id = item.get("comment_id")
             question = item.get("question", "Could you please clarify?")
 
-            comment_type = determine_comment_type(
+            comment_type = self._determine_comment_type(
                 comment_id, new_review_comments, new_conversation,
             )
 
@@ -142,8 +138,8 @@ class PullRequestReviewProcessor:
             print(f"\nFixing: {description}")
             print(f"  Comments: {comment_ids}")
 
-            group_feedback = get_feedback_by_ids(all_new_feedback, comment_ids)
-            group_content = format_all_feedback(
+            group_feedback = self._get_feedback_by_ids(all_new_feedback, comment_ids)
+            group_content = self._format_all_feedback(
                 [f for f in group_feedback if f in new_review_comments],
                 [f for f in group_feedback if f in new_reviews],
                 [f for f in group_feedback if f in new_conversation],
@@ -178,7 +174,7 @@ class PullRequestReviewProcessor:
                 return (True, True)
 
             for comment_id in comment_ids:
-                comment_type = determine_comment_type(
+                comment_type = self._determine_comment_type(
                     comment_id, new_review_comments, new_conversation,
                 )
 
@@ -210,3 +206,86 @@ class PullRequestReviewProcessor:
         self._state.mark_conversations_processed([c["id"] for c in new_conversation])
 
         return (True, made_any_changes)
+
+    @staticmethod
+    def _get_new_feedback(
+        all_feedback: List[Dict[str, Any]], processed_ids: List[int],
+    ) -> List[Dict[str, Any]]:
+        """Filter feedback to only include items not yet processed."""
+        return [f for f in all_feedback if f.get("id") not in processed_ids]
+
+    @staticmethod
+    def _format_all_feedback(
+        review_comments: List[Dict[str, Any]],
+        reviews: List[Dict[str, Any]],
+        conversation_comments: List[Dict[str, Any]],
+    ) -> str:
+        """Format all feedback types into a single string for Claude."""
+        sections = []
+
+        if reviews:
+            sections.append("## PR Reviews\n")
+            for review in reviews:
+                state = review.get("state", "COMMENTED")
+                body = review.get("body", "").strip()
+                user = review.get("user", {}).get("login", "unknown")
+                review_id = review.get("id")
+                sections.append(f"### Review by {user} (ID: {review_id}, State: {state})")
+                if body:
+                    sections.append(f"{body}\n")
+                else:
+                    sections.append("(No body text)\n")
+
+        if review_comments:
+            sections.append("## Review Comments (on specific code lines)\n")
+            for comment in review_comments:
+                body = comment.get("body", "").strip()
+                user = comment.get("user", {}).get("login", "unknown")
+                path = comment.get("path", "unknown file")
+                line = comment.get("line") or comment.get("original_line", "?")
+                comment_id = comment.get("id")
+                sections.append(f"### Comment by {user} on {path}:{line} (ID: {comment_id})")
+                sections.append(f"{body}\n")
+
+        if conversation_comments:
+            sections.append("## General PR Comments\n")
+            for comment in conversation_comments:
+                body = comment.get("body", "").strip()
+                user = comment.get("user", {}).get("login", "unknown")
+                comment_id = comment.get("id")
+                sections.append(f"### Comment by {user} (ID: {comment_id})")
+                sections.append(f"{body}\n")
+
+        return "\n".join(sections)
+
+    @staticmethod
+    def _parse_triage_result(claude_output: str) -> Optional[Dict[str, Any]]:
+        """Parse the JSON triage result from Claude's output."""
+        json_match = re.search(r'```json\s*(.*?)\s*```', claude_output, re.DOTALL)
+        if json_match:
+            try:
+                return json.loads(json_match.group(1))
+            except json.JSONDecodeError:
+                pass
+        try:
+            return json.loads(claude_output.strip())
+        except json.JSONDecodeError:
+            pass
+        return None
+
+    @staticmethod
+    def _get_feedback_by_ids(
+        all_feedback: List[Dict[str, Any]], comment_ids: List[int],
+    ) -> List[Dict[str, Any]]:
+        """Get feedback items matching the given IDs."""
+        return [f for f in all_feedback if f.get("id") in comment_ids]
+
+    @staticmethod
+    def _determine_comment_type(
+        comment_id: int, review_comments: List[Dict], conversation_comments: List[Dict],
+    ) -> str:
+        """Determine whether a comment ID is a review comment or conversation comment."""
+        for c in review_comments:
+            if c.get("id") == comment_id:
+                return "review"
+        return "conversation"

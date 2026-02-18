@@ -284,7 +284,7 @@ class TestTaskDetectionAndExecution:
 
     def _assert_new_feedback_filtering(self, pr_number):
         from i2code.implement.github_client import GitHubClient
-        from i2code.implement.pr_helpers import get_new_feedback
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         original_cwd = os.getcwd()
         try:
@@ -296,7 +296,7 @@ class TestTaskDetectionAndExecution:
         assert comments, "Expected comments on PR but found none"
 
         processed_ids = [c["id"] for c in comments]
-        new_feedback = get_new_feedback(comments, processed_ids)
+        new_feedback = PullRequestReviewProcessor._get_new_feedback(comments, processed_ids)
 
         assert len(new_feedback) == 0, \
             f"Expected 0 new feedback after marking all processed, got {len(new_feedback)}"
@@ -304,7 +304,7 @@ class TestTaskDetectionAndExecution:
     def _assert_state_tracks_processed_comments(self, pr_number):
         from i2code.implement.workflow_state import WorkflowState
         from i2code.implement.github_client import GitHubClient
-        from i2code.implement.pr_helpers import get_new_feedback
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         state_file = os.path.join(self.repo.idea_dir, f"{self.repo.idea_name}-wt-state.json")
         state = WorkflowState.load(state_file)
@@ -320,7 +320,7 @@ class TestTaskDetectionAndExecution:
 
         assert comments, "Expected comments on PR but found none"
 
-        new_feedback = get_new_feedback(comments, state.processed_comment_ids)
+        new_feedback = PullRequestReviewProcessor._get_new_feedback(comments, state.processed_comment_ids)
         assert len(new_feedback) == len(comments), \
             "All comments should be new initially"
 
@@ -331,7 +331,7 @@ class TestTaskDetectionAndExecution:
         assert len(reloaded_state.processed_comment_ids) == len(comments), \
             "Processed comment IDs should be persisted"
 
-        new_feedback_after = get_new_feedback(
+        new_feedback_after = PullRequestReviewProcessor._get_new_feedback(
             comments, reloaded_state.processed_comment_ids
         )
         assert len(new_feedback_after) == 0, \

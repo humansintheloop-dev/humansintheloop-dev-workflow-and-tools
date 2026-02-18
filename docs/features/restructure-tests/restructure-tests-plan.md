@@ -45,15 +45,15 @@
 
 ## Steel Thread 1: Delete Pure Duplicates
 
-- [ ] **Task 1.1: Delete `test_dry_run.py`**
+- [x] **Task 1.1: Delete `test_dry_run.py`**
   - TaskType: code
   - Entrypoint: `tests/implement/test_dry_run.py`
   - Observable: File deleted, `test_implement_command.py` tests still pass
   - Evidence: `uv run --with pytest pytest tests/implement/test_implement_command.py -v`
   - Steps:
-    - [ ] Move `test_dry_run_does_not_execute` (unique — verifies mode method NOT called) to `TestImplementCommandDryRun` in `test_implement_command.py`
-    - [ ] Delete `test_dry_run.py` (remaining 3 tests are exact duplicates)
-    - [ ] Run tests
+    - [x] Move `test_dry_run_does_not_execute` (unique — verifies mode method NOT called) to `TestImplementCommandDryRun` in `test_implement_command.py`
+    - [x] Delete `test_dry_run.py` (remaining 3 tests are exact duplicates)
+    - [x] Run tests
 
 - [ ] **Task 1.2: Delete `test_state_management.py`**
   - TaskType: code
@@ -242,3 +242,9 @@ Integration test files (unchanged): `test_*_integration.py` (4 files)
 **Deleted:** `test_dry_run.py`, `test_state_management.py`, `test_github_pr.py`, `test_claude_invocation.py`, `test_git_infrastructure.py`, `test_idea_validation.py` (renamed)
 
 **Net change:** ~30 duplicate tests eliminated, ~50 tests moved to correct module files
+
+---
+
+## Change History
+### 2026-02-19 08:47 - mark-task-complete
+Moved test_dry_run_does_not_execute to TestImplementCommandDryRun, deleted test_dry_run.py, all 18 tests pass

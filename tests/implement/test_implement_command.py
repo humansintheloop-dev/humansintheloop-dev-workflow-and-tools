@@ -45,6 +45,12 @@ class TestImplementCommandDryRun:
         cmd.execute()
         assert "worktree" in capsys.readouterr().out.lower()
 
+    def test_dry_run_does_not_execute(self):
+        cmd, *_ = _make_command(dry_run=True, trunk=True)
+        with patch.object(cmd, '_trunk_mode') as mock_trunk:
+            cmd.execute()
+            mock_trunk.assert_not_called()
+
 
 @pytest.mark.unit
 class TestImplementCommandTrunkDispatch:

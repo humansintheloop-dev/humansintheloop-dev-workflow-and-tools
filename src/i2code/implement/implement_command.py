@@ -151,6 +151,7 @@ class ImplementCommand:
             opts=self.opts,
             git_repo=self.git_repo,
             state=state,
+            claude_runner=self.claude_runner,
         )
 
         worktree_mode = WorktreeMode(

@@ -8,7 +8,7 @@ description: Provides a pre-commit checklist and commit message formatting stand
 Before committing, complete these steps in order:
 
 1. Run `uvx ruff check --fix` to auto-fix lint issues. Resolve any unfixable errors.
-2. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it. If Code Health regresses, refactor before committing.
+2. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it. If Code Health regresses, refactor before committing. CodeScene may flag pre-existing Complex Method smells in files you modified. Fix these before committing (boy scout rule). If `pre_commit_code_health_safeguard` fails with "Not inside a supported VCS root" (common in git worktrees), use `code_health_review` on each modified source file instead. If Code Health regresses, refactor before committing.
 3. Run `git add` and `git commit` as separate tool calls (not chained with `&&`).
 
 # Commit Message Guidelines

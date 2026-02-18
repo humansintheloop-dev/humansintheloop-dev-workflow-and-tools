@@ -2,6 +2,8 @@
 
 Provides module-level run_claude_interactive() and run_claude_with_output_capture()
 functions, plus ClaudeRunner classes (Real/Mock) that delegate to them.
+Also includes result diagnostics: check_claude_success() and
+print_task_failure_diagnostics().
 """
 
 import json
@@ -137,6 +139,61 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
         error_message=error_message,
         last_messages=last_messages,
     )
+
+
+def check_claude_success(exit_code: int, head_before: str, head_after: str) -> bool:
+    """Check if Claude invocation was successful.
+
+    Success requires:
+    1. Exit code of 0
+    2. HEAD advanced (a commit was made)
+    """
+    return exit_code == 0 and head_before != head_after
+
+
+def _format_permission_denials(denials) -> None:
+    print(f"\nPermission denied for {len(denials)} action(s):", file=sys.stderr)
+    for denial in denials:
+        tool_name = denial.get('tool_name', 'Unknown')
+        tool_input = denial.get('tool_input', {})
+        cmd = tool_input.get('command', tool_input.get('description', 'N/A'))
+        print(f"  - {tool_name}: {cmd}", file=sys.stderr)
+    print("\nAdd missing permissions to .claude/settings.local.json", file=sys.stderr)
+
+
+def _format_message(msg) -> None:
+    msg_type = msg.get('type', 'unknown')
+    if msg_type == 'assistant':
+        for item in msg.get('message', {}).get('content', []):
+            if item.get('type') == 'text':
+                print(f"  [assistant] {item.get('text', '')[:200]}...", file=sys.stderr)
+    elif msg_type == 'result':
+        print(f"  [result] {msg.get('result', '')[:200]}...", file=sys.stderr)
+    else:
+        print(f"  [{msg_type}]", file=sys.stderr)
+
+
+def print_task_failure_diagnostics(
+    claude_result,
+    head_before: str,
+    head_after: str,
+) -> None:
+    """Print diagnostic information when a Claude task execution fails."""
+    print("\nError: Task execution failed.", file=sys.stderr)
+    print(f"  Exit code: {claude_result.returncode}", file=sys.stderr)
+    print(f"  HEAD before: {head_before}", file=sys.stderr)
+    print(f"  HEAD after: {head_after}", file=sys.stderr)
+
+    if claude_result.permission_denials:
+        _format_permission_denials(claude_result.permission_denials)
+
+    if claude_result.error_message:
+        print(f"\nClaude error: {claude_result.error_message}", file=sys.stderr)
+
+    if claude_result.last_messages:
+        print(f"\nLast {len(claude_result.last_messages)} messages from Claude:", file=sys.stderr)
+        for msg in claude_result.last_messages:
+            _format_message(msg)
 
 
 class RealClaudeRunner:

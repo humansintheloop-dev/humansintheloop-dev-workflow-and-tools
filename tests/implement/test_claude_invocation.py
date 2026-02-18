@@ -234,25 +234,25 @@ class TestClaudeInvocationResult:
 
     def test_check_claude_success_with_zero_exit(self):
         """Should return True for exit code 0."""
-        from i2code.implement.implement import check_claude_success
+        from i2code.implement.claude_runner import check_claude_success
 
         assert check_claude_success(exit_code=0, head_before="abc123", head_after="def456") is True
 
     def test_check_claude_success_fails_with_nonzero_exit(self):
         """Should return False for non-zero exit code."""
-        from i2code.implement.implement import check_claude_success
+        from i2code.implement.claude_runner import check_claude_success
 
         assert check_claude_success(exit_code=1, head_before="abc123", head_after="def456") is False
 
     def test_check_claude_success_fails_if_head_unchanged(self):
         """Should return False if HEAD didn't advance (no commit made)."""
-        from i2code.implement.implement import check_claude_success
+        from i2code.implement.claude_runner import check_claude_success
 
         assert check_claude_success(exit_code=0, head_before="abc123", head_after="abc123") is False
 
     def test_check_claude_success_requires_both_conditions(self):
         """Success requires exit code 0 AND HEAD advancement."""
-        from i2code.implement.implement import check_claude_success
+        from i2code.implement.claude_runner import check_claude_success
 
         # Exit 0 but no commit
         assert check_claude_success(exit_code=0, head_before="abc", head_after="abc") is False

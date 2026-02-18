@@ -5,7 +5,7 @@ import sys
 from i2code.implement.git_setup import (
     has_ci_workflow_files,
 )
-from i2code.implement.implement import (
+from i2code.implement.claude_runner import (
     check_claude_success,
     print_task_failure_diagnostics,
 )

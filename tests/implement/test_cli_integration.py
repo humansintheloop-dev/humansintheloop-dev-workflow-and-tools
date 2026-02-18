@@ -254,33 +254,27 @@ class TestIgnoreUncommittedIdeaChanges:
 
 
 @pytest.mark.unit
-class TestGetDefaultBranchWiring:
-    """Test that implement_cmd detects the default branch and passes it to GitRepository.ensure_pr()."""
+class TestWorktreeModeAcceptance:
+    """Acceptance test: default path dispatches to WorktreeMode.execute()."""
 
-    @patch("i2code.implement.cli.has_ci_workflow_files", return_value=True)
-    @patch("i2code.implement.cli.is_task_completed", return_value=True)
-    @patch("i2code.implement.cli.check_claude_success", return_value=True)
-    @patch("i2code.implement.cli.run_claude_with_output_capture")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_task_command", return_value=["echo", "mock"])
-    @patch("i2code.implement.cli.GitRepository")
+    @patch("i2code.implement.worktree_mode.WorktreeMode.execute")
     @patch("i2code.implement.cli.GitHubClient")
     @patch("i2code.implement.cli.get_worktree_idea_directory", return_value="/tmp/wt/idea")
     @patch("i2code.implement.cli.ensure_claude_permissions")
     @patch("i2code.implement.cli.ensure_worktree", return_value="/tmp/wt")
     @patch("i2code.implement.cli.ensure_slice_branch", return_value="idea/test/01-setup")
     @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test/integration")
+    @patch("i2code.implement.cli.get_next_task", return_value=_make_numbered_task("setup"))
     @patch("i2code.implement.cli.WorkflowState.load")
     @patch("i2code.implement.cli.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.Repo")
-    def test_passes_detected_branch_to_ensure_pr(
+    def test_default_path_dispatches_to_worktree_mode_execute(
         self, mock_repo_cls, mock_idea_project_cls,
         mock_validate_committed, mock_load_state,
-        mock_ensure_integration, mock_ensure_slice, mock_ensure_worktree,
-        mock_ensure_perms, mock_get_wt_idea, mock_gh_client_cls,
-        mock_git_repo_cls,
-        mock_build_cmd, mock_run_claude, mock_check_success,
-        mock_is_completed, mock_has_ci,
+        mock_first_task, mock_ensure_integration, mock_ensure_slice,
+        mock_ensure_worktree, mock_ensure_perms, mock_get_wt_idea,
+        mock_gh_client_cls, mock_execute,
     ):
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
@@ -291,31 +285,19 @@ class TestGetDefaultBranchWiring:
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
 
-        # Mock GitHubClient instance
         mock_gh = MagicMock()
         mock_gh.find_pr.return_value = None
-        mock_gh.get_default_branch.return_value = "master"
         mock_gh_client_cls.return_value = mock_gh
 
-        # Mock GitRepository instance
-        mock_git_repo = MagicMock()
-        mock_git_repo.pr_number = None
-        mock_git_repo.branch = None
-        mock_git_repo.branch_has_been_pushed.return_value = False
-        mock_git_repo.push.return_value = True
-        mock_git_repo.head_sha = "abc123"
-        mock_git_repo.ensure_pr.return_value = 42
-        mock_git_repo_cls.return_value = mock_git_repo
+        runner = CliRunner(catch_exceptions=False)
+        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--skip-ci-wait"])
 
-        # get_next_task is called: 1) before loop for slice naming, 2) in loop to execute, 3) in loop to check done
-        task = _make_numbered_task("setup")
-        with patch("i2code.implement.cli.get_next_task", side_effect=[task, task, None]):
-            mock_run_claude.return_value = MagicMock(returncode=0, stdout="<SUCCESS>task implemented: abc123</SUCCESS>", stderr="", permission_denials=[], error_message=None, last_messages=[])
-
-            runner = CliRunner(catch_exceptions=False)
-            _result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--non-interactive", "--skip-ci-wait"])
-
-        mock_gh.get_default_branch.assert_called_once()
-        mock_git_repo.ensure_pr.assert_called_once()
-        # base_branch should be "master" (from get_default_branch mock)
-        assert mock_git_repo.ensure_pr.call_args[1].get("base_branch") == "master"
+        assert result.exit_code == 0
+        mock_execute.assert_called_once_with(
+            non_interactive=False,
+            mock_claude=None,
+            extra_prompt=None,
+            skip_ci_wait=True,
+            ci_fix_retries=3,
+            ci_timeout=600,
+        )

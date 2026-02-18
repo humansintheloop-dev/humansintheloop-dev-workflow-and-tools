@@ -13,7 +13,6 @@ from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.workflow_state import WorkflowState
-from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.implement import (
     validate_idea_files_committed,
     ensure_integration_branch,
@@ -22,17 +21,11 @@ from i2code.implement.implement import (
     ensure_worktree,
     ensure_slice_branch,
     get_next_task,
-    is_task_completed,
     get_worktree_idea_directory,
-    process_pr_feedback,
-    run_claude_with_output_capture,
-    run_claude_interactive,
     run_scaffolding,
-    check_claude_success,
-    has_ci_workflow_files,
-    print_task_failure_diagnostics,
 )
 from i2code.implement.trunk_mode import TrunkMode
+from i2code.implement.worktree_mode import WorktreeMode
 
 
 def implement(opts: ImplementOpts, project: IdeaProject):
@@ -206,140 +199,25 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         git_repo.pr_number = existing_pr
         print(f"Reusing existing PR #{existing_pr}")
 
-    # Execute tasks one by one until all are complete
-    while True:
-        # Check for failing CI build on current HEAD (only if branch has been pushed)
-        if git_repo.branch_has_been_pushed():
-            from i2code.implement.implement import get_failing_workflow_run
-            head_sha = git_repo.head_sha
-            failing_run = get_failing_workflow_run(
-                git_repo.branch, head_sha, gh_client=gh_client
-            )
+    from i2code.implement.claude_runner import RealClaudeRunner
 
-            if failing_run:
-                workflow_name = failing_run.get("name", "unknown")
-                print(f"CI build failing for HEAD ({head_sha[:8]}): {workflow_name}")
-                print("Attempting to fix CI failure...")
-                if not git_repo.fix_ci_failure(
-                    worktree_path=work_dir,
-                    max_retries=opts.ci_fix_retries,
-                    interactive=not opts.non_interactive,
-                    mock_claude=opts.mock_claude,
-                ):
-                    print("Error: Could not fix CI failure after max retries", file=sys.stderr)
-                    sys.exit(1)
-                # After fixing CI, loop back to check for more failures
-                continue
-
-        # Check for PR feedback (only after CI passes and PR exists)
-        if git_repo.pr_number and git_repo.branch_has_been_pushed():
-            pr_url = gh_client.get_pr_url(git_repo.pr_number)
-            had_feedback, made_changes = process_pr_feedback(
-                pr_number=git_repo.pr_number,
-                pr_url=pr_url,
-                state=state,
-                worktree_path=work_dir,
-                slice_branch=git_repo.branch,
-                interactive=not opts.non_interactive,
-                mock_claude=opts.mock_claude,
-                skip_ci_wait=opts.skip_ci_wait,
-                ci_timeout=opts.ci_timeout,
-                gh_client=gh_client,
-            )
-
-            if had_feedback:
-                # Save state after processing feedback
-                state.save()
-
-                # Loop back to check for more feedback or CI failures
-                continue
-
-        # Get next uncompleted task from the plan
-        next_task = get_next_task(work_plan_file)
-        if next_task is None:
-            print("All tasks completed!")
-            if git_repo.pr_number:
-                pr_url = gh_client.get_pr_url(git_repo.pr_number)
-                if pr_url:
-                    print(f"PR: {pr_url}")
-            break
-
-        task_description = next_task.print()
-        print(f"Executing task: {task_description}")
-
-        # Get HEAD before Claude invocation
-        head_before = git_repo.head_sha
-
-        # Build and run Claude command (or mock script for testing)
-        if opts.mock_claude:
-            claude_cmd = [opts.mock_claude, task_description]
-            print(f"Using mock Claude: {opts.mock_claude}")
-        else:
-            claude_cmd = CommandBuilder().build_task_command(
-                work_idea_dir,
-                task_description,
-                interactive=not opts.non_interactive,
-                extra_prompt=opts.extra_prompt,
-            )
-            print(f"Invoking Claude: {' '.join(claude_cmd)}")
-
-        # Run Claude (or mock)
-        # In non-interactive mode, capture output; in interactive mode, use terminal directly
-        if opts.non_interactive:
-            claude_result = run_claude_with_output_capture(claude_cmd, cwd=work_dir)
-        else:
-            claude_result = run_claude_interactive(claude_cmd, cwd=work_dir)
-
-        head_after = git_repo.head_sha
-
-        if not check_claude_success(claude_result.returncode, head_before, head_after):
-            print_task_failure_diagnostics(claude_result, head_before, head_after)
-            sys.exit(1)
-
-        # In non-interactive mode, also check for outcome tags
-        if opts.non_interactive:
-            if "<SUCCESS>" not in claude_result.stdout:
-                print_task_failure_diagnostics(claude_result, head_before, head_after)
-                sys.exit(1)
-
-        if not is_task_completed(work_plan_file, next_task.number.thread, next_task.number.task):
-            print("Error: Task was not marked complete in plan file.", file=sys.stderr)
-            sys.exit(1)
-
-        # Verify CI workflow exists before pushing (required for CI checks)
-        if not has_ci_workflow_files(work_dir):
-            print("Error: No GitHub Actions workflow file found in .github/workflows/", file=sys.stderr)
-            print("Tasks must create a CI workflow (e.g., .github/workflows/ci.yml) before pushing.", file=sys.stderr)
-            sys.exit(1)
-
-        print("Task completed successfully. Pushing changes...")
-
-        # Push the commit to slice branch
-        if not git_repo.push():
-            print("Error: Could not push commit to slice branch", file=sys.stderr)
-            sys.exit(1)
-
-        # Create PR after first push if it doesn't exist yet
-        if git_repo.pr_number is None:
-            base_branch = gh_client.get_default_branch()
-            git_repo.ensure_pr(
-                project.directory, project.name, state.slice_number,
-                base_branch=base_branch,
-            )
-            print(f"Created Draft PR #{git_repo.pr_number}")
-
-        # Wait for CI to complete (unless --skip-ci-wait)
-        if not opts.skip_ci_wait:
-            print("Waiting for CI to complete...")
-            ci_success, failing_run = git_repo.wait_for_ci(
-                timeout_seconds=opts.ci_timeout
-            )
-
-            if not ci_success and failing_run:
-                workflow_name = failing_run.get("name", "unknown")
-                print(f"CI failed: {workflow_name}. Will fix on next iteration.")
-            elif ci_success:
-                print("CI passed!")
+    worktree_mode = WorktreeMode(
+        git_repo=git_repo,
+        project=project,
+        state=state,
+        claude_runner=RealClaudeRunner(),
+        gh_client=gh_client,
+        work_dir=work_dir,
+        work_plan_file=work_plan_file,
+    )
+    worktree_mode.execute(
+        non_interactive=opts.non_interactive,
+        mock_claude=opts.mock_claude,
+        extra_prompt=opts.extra_prompt,
+        skip_ci_wait=opts.skip_ci_wait,
+        ci_fix_retries=opts.ci_fix_retries,
+        ci_timeout=opts.ci_timeout,
+    )
 
 
 @click.command("implement")

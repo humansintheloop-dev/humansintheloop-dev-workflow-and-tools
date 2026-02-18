@@ -169,16 +169,12 @@ class TestImplementCommandIsolateMode:
 class TestImplementCommandWorktreeMode:
     """_worktree_mode() delegates to mode_factory.make_worktree_mode()."""
 
-    @patch("i2code.implement.implement_command.get_next_task")
     @patch("i2code.implement.implement_command.WorkflowState.load")
     @patch("i2code.implement.implement_command.ensure_claude_permissions")
     def test_worktree_mode_delegates_to_mode_factory(
-        self, mock_perms, mock_load_state, mock_next_task,
+        self, mock_perms, mock_load_state,
     ):
         mock_load_state.return_value = MagicMock(slice_number=1)
-        mock_task = MagicMock()
-        mock_task.task.title = "setup"
-        mock_next_task.return_value = mock_task
 
         cmd, project, repo, git_repo = _make_command(
             ignore_uncommitted_idea_changes=True

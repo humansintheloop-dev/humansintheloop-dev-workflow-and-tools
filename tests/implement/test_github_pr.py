@@ -142,11 +142,11 @@ class TestDeferredPRCreation:
         mock_project.worktree_idea_project = MagicMock(return_value=mock_wt_project)
         monkeypatch.setattr("i2code.implement.cli.IdeaProject", lambda x: mock_project)
         _mock_state = MagicMock(slice_number=1, processed_comment_ids=[], processed_review_ids=[], processed_conversation_ids=[])
-        monkeypatch.setattr("i2code.implement.implement_command.WorkflowState.load", lambda x: _mock_state)
-        monkeypatch.setattr("i2code.implement.implement_command.get_next_task", lambda f: NumberedTask(
+        mock_project.get_next_task.return_value = NumberedTask(
             number=TaskNumber(thread=1, task=1),
             task=Task(_lines=["- [ ] **Task 1.1: test-task**"]),
-        ))
+        )
+        monkeypatch.setattr("i2code.implement.implement_command.WorkflowState.load", lambda x: _mock_state)
         monkeypatch.setattr("i2code.implement.cli.GitHubClient", lambda: FakeGitHubClient())
 
         # Track if GitRepository.ensure_pr was called

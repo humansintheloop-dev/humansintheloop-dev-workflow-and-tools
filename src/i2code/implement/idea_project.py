@@ -4,6 +4,8 @@ import glob
 import os
 import sys
 
+from i2code.plan.plan_file_io import with_plan_file
+
 
 class IdeaProject:
     """Value object representing an idea project directory.
@@ -82,6 +84,14 @@ class IdeaProject:
         """Return an IdeaProject for the corresponding path within a worktree."""
         idea_relpath = os.path.relpath(self._directory, main_repo_root)
         return IdeaProject(os.path.join(worktree_path, idea_relpath))
+
+    def get_next_task(self):
+        with with_plan_file(self.plan_file) as plan:
+            return plan.get_next_task()
+
+    def is_task_completed(self, thread: int, task: int) -> bool:
+        with with_plan_file(self.plan_file) as plan:
+            return plan.is_task_completed(thread, task)
 
     def validate_files(self) -> None:
         """Validate that all required idea files exist.

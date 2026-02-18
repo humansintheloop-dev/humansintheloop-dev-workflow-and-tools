@@ -79,7 +79,6 @@ def _make_numbered_task(title: str) -> NumberedTask:
 class TestIsolatedFlagPassthrough:
     """Test that --isolated flag is forwarded to git_repo.ensure_integration_branch()."""
 
-    @patch("i2code.implement.implement_command.get_next_task", return_value=_make_numbered_task("setup"))
     @patch("i2code.implement.implement_command.WorkflowState.load")
     @patch("i2code.implement.implement_command.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
@@ -88,14 +87,16 @@ class TestIsolatedFlagPassthrough:
     def test_isolated_flag_passes_isolated_true(
         self, mock_repo_cls, mock_git_repo_cls, mock_idea_project_cls,
         mock_validate_committed,
-        mock_load_state, mock_first_task
+        mock_load_state,
     ):
         """When --isolated is set, ensure_integration_branch is called with isolated=True."""
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
         mock_load_state.return_value = MagicMock(slice_number=1)
-        mock_idea_project_cls.return_value = _make_mock_project()
+        mock_project = _make_mock_project()
+        mock_project.get_next_task.return_value = _make_numbered_task("setup")
+        mock_idea_project_cls.return_value = mock_project
         mock_repo = MagicMock()
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
@@ -107,7 +108,6 @@ class TestIsolatedFlagPassthrough:
 
         mock_git_repo.ensure_integration_branch.assert_called_once_with("test-feature", isolated=True)
 
-    @patch("i2code.implement.implement_command.get_next_task", return_value=_make_numbered_task("setup"))
     @patch("i2code.implement.implement_command.WorkflowState.load")
     @patch("i2code.implement.implement_command.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
@@ -116,14 +116,16 @@ class TestIsolatedFlagPassthrough:
     def test_non_isolated_passes_isolated_false(
         self, mock_repo_cls, mock_git_repo_cls, mock_idea_project_cls,
         mock_validate_committed,
-        mock_load_state, mock_first_task
+        mock_load_state,
     ):
         """When --isolated is not set, ensure_integration_branch is called with default isolated=False."""
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
         mock_load_state.return_value = MagicMock(slice_number=1)
-        mock_idea_project_cls.return_value = _make_mock_project()
+        mock_project = _make_mock_project()
+        mock_project.get_next_task.return_value = _make_numbered_task("setup")
+        mock_idea_project_cls.return_value = mock_project
         mock_repo = MagicMock()
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
@@ -239,7 +241,6 @@ class TestWorktreeModeAcceptance:
     @patch("i2code.implement.cli.GitHubClient")
     @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.implement_command.ensure_claude_permissions")
-    @patch("i2code.implement.implement_command.get_next_task", return_value=_make_numbered_task("setup"))
     @patch("i2code.implement.implement_command.WorkflowState.load")
     @patch("i2code.implement.implement_command.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
@@ -247,7 +248,6 @@ class TestWorktreeModeAcceptance:
     def test_default_path_dispatches_to_worktree_mode_execute(
         self, mock_repo_cls, mock_idea_project_cls,
         mock_validate_committed, mock_load_state,
-        mock_first_task,
         mock_ensure_perms, mock_git_repo_cls,
         mock_gh_client_cls, mock_execute,
     ):
@@ -256,6 +256,7 @@ class TestWorktreeModeAcceptance:
 
         mock_load_state.return_value = MagicMock(slice_number=1)
         mock_project = _make_mock_project(name="test", directory="/tmp/fake-idea")
+        mock_project.get_next_task.return_value = _make_numbered_task("setup")
         mock_wt_project = MagicMock()
         mock_wt_project.plan_file = "/tmp/wt/idea/test-plan.md"
         mock_project.worktree_idea_project.return_value = mock_wt_project

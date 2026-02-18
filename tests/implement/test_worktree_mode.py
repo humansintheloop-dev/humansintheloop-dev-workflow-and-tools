@@ -124,10 +124,9 @@ def _make_worktree_mode(
     mode = WorktreeMode(
         opts=opts,
         git_repo=fake_repo,
-        project=project,
         state=fake_state,
         claude_runner=fake_runner,
-        work_plan_file=plan_path,
+        work_project=project,
         ci_monitor=ci_monitor,
         build_fixer=build_fixer,
         review_processor=review_processor,

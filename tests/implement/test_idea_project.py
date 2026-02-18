@@ -5,6 +5,46 @@ import os
 import pytest
 
 from conftest import TempIdeaProject
+from i2code.implement.idea_project import IdeaProject
+
+
+PLAN_WITH_UNCOMPLETED_TASK = """\
+# Implementation Plan
+
+## Steel Thread 1: Setup
+
+- [ ] **Task 1.1: Create project structure**
+  - TaskType: code
+  - Entrypoint: `src/main.py`
+  - Observable: Project compiles
+  - Evidence: `pytest`
+  - Steps:
+    - [ ] Create directory layout
+"""
+
+PLAN_ALL_COMPLETED = """\
+# Implementation Plan
+
+## Steel Thread 1: Setup
+
+- [x] **Task 1.1: Create project structure**
+  - TaskType: code
+  - Entrypoint: `src/main.py`
+  - Observable: Project compiles
+  - Evidence: `pytest`
+  - Steps:
+    - [x] Create directory layout
+"""
+
+
+def _make_project_with_plan(tmp_path, plan_content):
+    """Create an IdeaProject whose plan_file contains the given content."""
+    idea_name = "test"
+    idea_dir = tmp_path / idea_name
+    idea_dir.mkdir()
+    plan_file = idea_dir / f"{idea_name}-plan.md"
+    plan_file.write_text(plan_content)
+    return IdeaProject(str(idea_dir))
 
 
 @pytest.mark.unit
@@ -111,3 +151,38 @@ class TestIdeaProjectValidateFiles:
                     f.write(f"# {suffix}")
 
             project.validate_files()  # Should not raise
+
+
+@pytest.mark.unit
+class TestGetNextTask:
+
+    def test_returns_numbered_task_for_first_uncompleted(self, tmp_path):
+        project = _make_project_with_plan(tmp_path, PLAN_WITH_UNCOMPLETED_TASK)
+
+        result = project.get_next_task()
+
+        assert result is not None
+        assert result.number.thread == 1
+        assert result.number.task == 1
+        assert result.task.title == "Create project structure"
+
+    def test_returns_none_when_all_complete(self, tmp_path):
+        project = _make_project_with_plan(tmp_path, PLAN_ALL_COMPLETED)
+
+        result = project.get_next_task()
+
+        assert result is None
+
+
+@pytest.mark.unit
+class TestIsTaskCompleted:
+
+    def test_completed_task_returns_true(self, tmp_path):
+        project = _make_project_with_plan(tmp_path, PLAN_ALL_COMPLETED)
+
+        assert project.is_task_completed(thread=1, task=1) is True
+
+    def test_uncompleted_task_returns_false(self, tmp_path):
+        project = _make_project_with_plan(tmp_path, PLAN_WITH_UNCOMPLETED_TASK)
+
+        assert project.is_task_completed(thread=1, task=1) is False

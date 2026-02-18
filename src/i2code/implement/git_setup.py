@@ -9,8 +9,6 @@ from git import Repo
 from git.exc import InvalidGitRepositoryError
 from typing import List
 
-from i2code.plan.plan_file_io import with_plan_file
-
 
 def validate_idea_files_committed(project) -> None:
     """Validate that all idea files are committed to Git."""
@@ -102,15 +100,6 @@ def sanitize_branch_name(name: str) -> str:
     result = re.sub(r'-+', '-', result)
     return result.strip('-')
 
-
-def get_next_task(plan_file: str):
-    with with_plan_file(plan_file) as plan:
-        return plan.get_next_task()
-
-
-def is_task_completed(plan_file: str, thread: int, task: int) -> bool:
-    with with_plan_file(plan_file) as plan:
-        return plan.is_task_completed(thread, task)
 
 
 def has_ci_workflow_files(repo_path: str) -> bool:

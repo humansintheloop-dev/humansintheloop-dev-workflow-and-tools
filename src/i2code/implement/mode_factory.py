@@ -32,7 +32,7 @@ class ModeFactory:
             subprocess_runner=RealSubprocessRunner(),
         )
 
-    def make_worktree_mode(self, git_repo, project, state, work_plan_file):
+    def make_worktree_mode(self, git_repo, state, work_project):
         ci_monitor = GithubActionsMonitor(
             gh_client=git_repo.gh_client,
             skip_ci_wait=self._opts.skip_ci_wait,
@@ -48,10 +48,9 @@ class ModeFactory:
         return WorktreeMode(
             opts=self._opts,
             git_repo=git_repo,
-            project=project,
             state=state,
             claude_runner=self._claude_runner,
-            work_plan_file=work_plan_file,
+            work_project=work_project,
             ci_monitor=ci_monitor,
             build_fixer=build_fixer,
             review_processor=review_processor,

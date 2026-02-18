@@ -3,8 +3,6 @@
 import sys
 
 from i2code.implement.git_setup import (
-    get_next_task,
-    is_task_completed,
     has_ci_workflow_files,
 )
 from i2code.implement.implement import (
@@ -20,23 +18,21 @@ class WorktreeMode:
     Args:
         opts: ImplementOpts with execution parameters.
         git_repo: GitRepository (or FakeGitRepository) for branch/push/PR/CI operations.
-        project: IdeaProject with directory, name, and plan_file.
         state: WorkflowState (or FakeWorkflowState) for tracking processed feedback.
         claude_runner: ClaudeRunner (or FakeClaudeRunner) for invoking Claude.
-        work_plan_file: Path to the plan file in the working directory.
+        work_project: IdeaProject for the working directory (may differ from project in worktree mode).
         ci_monitor: GithubActionsMonitor for waiting on CI completion.
         build_fixer: GithubActionsBuildFixer for detecting and fixing CI failures.
         review_processor: PullRequestReviewProcessor for handling PR feedback.
     """
 
-    def __init__(self, opts, git_repo, project, state, claude_runner,
-                 work_plan_file, ci_monitor, build_fixer, review_processor):
+    def __init__(self, opts, git_repo, state, claude_runner,
+                 work_project, ci_monitor, build_fixer, review_processor):
         self._opts = opts
         self._git_repo = git_repo
-        self._project = project
         self._state = state
         self._claude_runner = claude_runner
-        self._work_plan_file = work_plan_file
+        self._work_project = work_project
         self._ci_monitor = ci_monitor
         self._build_fixer = build_fixer
         self._review_processor = review_processor
@@ -50,7 +46,7 @@ class WorktreeMode:
             if self._review_processor.process_feedback():
                 continue
 
-            next_task = get_next_task(self._work_plan_file)
+            next_task = self._work_project.get_next_task()
             if next_task is None:
                 self._print_completion()
                 return
@@ -84,7 +80,7 @@ class WorktreeMode:
                 print_task_failure_diagnostics(claude_result, head_before, head_after)
                 sys.exit(1)
 
-        if not is_task_completed(self._work_plan_file, next_task.number.thread, next_task.number.task):
+        if not self._work_project.is_task_completed(next_task.number.thread, next_task.number.task):
             print("Error: Task was not marked complete in plan file.", file=sys.stderr)
             sys.exit(1)
 
@@ -103,7 +99,7 @@ class WorktreeMode:
 
         if self._git_repo.pr_number is None:
             self._git_repo.ensure_pr(
-                self._project.directory, self._project.name,
+                self._work_project.directory, self._work_project.name,
                 self._state.slice_number,
             )
             print(f"Created Draft PR #{self._git_repo.pr_number}")
@@ -121,7 +117,7 @@ class WorktreeMode:
             return [self._opts.mock_claude, task_description]
 
         return CommandBuilder().build_task_command(
-            self._project.directory,
+            self._work_project.directory,
             task_description,
             interactive=not self._opts.non_interactive,
             extra_prompt=self._opts.extra_prompt,

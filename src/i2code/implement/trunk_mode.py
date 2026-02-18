@@ -3,8 +3,6 @@
 import sys
 
 from i2code.implement.git_setup import (
-    get_next_task,
-    is_task_completed,
     calculate_claude_permissions,
 )
 from i2code.implement.command_builder import CommandBuilder
@@ -36,7 +34,7 @@ class TrunkMode:
     ):
         """Run the task loop until all tasks are complete."""
         while True:
-            next_task = get_next_task(self._project.plan_file)
+            next_task = self._project.get_next_task()
             if next_task is None:
                 print("All tasks completed!")
                 return
@@ -63,7 +61,7 @@ class TrunkMode:
                     print_task_failure_diagnostics(claude_result, head_before, head_after)
                     sys.exit(1)
 
-            if not is_task_completed(self._project.plan_file, next_task.number.thread, next_task.number.task):
+            if not self._project.is_task_completed(next_task.number.thread, next_task.number.task):
                 print("Error: Task was not marked complete in plan file.", file=sys.stderr)
                 sys.exit(1)
 

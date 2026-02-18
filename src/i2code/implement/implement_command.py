@@ -6,7 +6,6 @@ from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import (
     validate_idea_files_committed,
     ensure_claude_permissions,
-    get_next_task,
 )
 
 
@@ -89,7 +88,7 @@ class ImplementCommand:
         )
         print(f"Integration branch: {integration_branch}")
 
-        next_task = get_next_task(self.project.plan_file)
+        next_task = self.project.get_next_task()
         first_task_name = next_task.task.title if next_task else "implementation"
 
         slice_branch = self.git_repo.ensure_slice_branch(
@@ -101,7 +100,7 @@ class ImplementCommand:
             self.repo.config_writer().set_value("user", "email", "test@test.com").release()
             self.repo.config_writer().set_value("user", "name", "Test User").release()
             ensure_claude_permissions(self.git_repo.working_tree_dir)
-            work_plan_file = self.project.plan_file
+            work_project = self.project
             self.git_repo.checkout(slice_branch)
         else:
             self.git_repo = self.git_repo.ensure_worktree(self.project.name, integration_branch)
@@ -110,7 +109,6 @@ class ImplementCommand:
             work_project = self.project.worktree_idea_project(
                 self.git_repo.working_tree_dir, self.repo.working_tree_dir
             )
-            work_plan_file = work_project.plan_file
             self.git_repo.checkout(slice_branch)
 
         self.git_repo.branch = slice_branch
@@ -126,8 +124,7 @@ class ImplementCommand:
 
         worktree_mode = self.mode_factory.make_worktree_mode(
             git_repo=self.git_repo,
-            project=self.project,
             state=state,
-            work_plan_file=work_plan_file,
+            work_project=work_project,
         )
         worktree_mode.execute()

@@ -3,32 +3,16 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-echo "=== Running Unit Tests ==="
-
-echo ""
-echo "--- pytest unit tests ---"
-uv run --python 3.12 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m unit
+"$SCRIPT_DIR/test-unit.sh"
 
 echo ""
 echo "--- CLI smoke tests ---"
 "$SCRIPT_DIR/test-plan-cli-smoke.sh"
 
-echo ""
-echo "=== Running Integration Tests ==="
+"$SCRIPT_DIR/test-integration.sh"
 
-echo ""
-echo "--- pytest integration tests ---"
-uv run --python 3.12 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m integration
-
-echo ""
-echo "--- pytest integration_gh tests (requires gh auth) ---"
-if [[ -z "${CI:-}" ]]; then
-    uv run --python 3.12 python3 -m pytest "$PROJECT_ROOT/tests/" -v -m integration_gh
-else
-    echo "SKIPPED: integration_gh tests not run in CI (no GH_TOKEN)"
-fi
+"$SCRIPT_DIR/test-integration-gh.sh"
 
 echo ""
 "$SCRIPT_DIR/test-verify-all-tests-have-markers.sh"

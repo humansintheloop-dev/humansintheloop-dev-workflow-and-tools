@@ -47,7 +47,7 @@ class WorktreeMode:
             if self._build_fixer.check_and_fix_ci():
                 continue
 
-            if self._process_feedback():
+            if self._review_processor.process_feedback():
                 continue
 
             next_task = get_next_task(self._work_plan_file)
@@ -56,13 +56,6 @@ class WorktreeMode:
                 return
 
             self._execute_task(next_task)
-
-    def _process_feedback(self):
-        """Process PR feedback if any exists.
-
-        Returns True if feedback was found (caller should loop back).
-        """
-        return self._review_processor.process_feedback()
 
     def _execute_task(self, next_task):
         """Execute a single task: run Claude, push, create PR, wait for CI."""

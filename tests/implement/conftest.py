@@ -94,6 +94,61 @@ def TempIdeaProject(name):
         yield IdeaProject(idea_dir)
 
 
+def write_plan_file(plan_dir, idea_name, tasks):
+    """Write a plan file with the given tasks.
+
+    Args:
+        plan_dir: Directory to write the plan file in.
+        idea_name: Name of the idea.
+        tasks: List of (thread, task_num, title, completed) tuples.
+
+    Returns:
+        Path to the written plan file.
+    """
+    lines = [f"# Plan for {idea_name}\n\n"]
+    current_thread = None
+    for thread, task_num, title, completed in tasks:
+        if thread != current_thread:
+            lines.append(f"## Steel Thread {thread}: Thread {thread}\n\n")
+            current_thread = thread
+        checkbox = "[x]" if completed else "[ ]"
+        lines.append(
+            f"- {checkbox} **Task {thread}.{task_num}: {title}**\n"
+        )
+    plan_path = os.path.join(plan_dir, f"{idea_name}-plan.md")
+    with open(plan_path, "w") as f:
+        f.writelines(lines)
+    return plan_path
+
+
+def mark_task_complete(plan_path, thread, task_num, title):
+    """Return a callable that marks a task as complete in the plan file."""
+    def _mark():
+        with open(plan_path, "r") as f:
+            content = f.read()
+        old = f"- [ ] **Task {thread}.{task_num}: {title}**"
+        new = f"- [x] **Task {thread}.{task_num}: {title}**"
+        content = content.replace(old, new)
+        with open(plan_path, "w") as f:
+            f.write(content)
+    return _mark
+
+
+def advance_head(fake_repo, new_sha):
+    """Return a callable that advances the fake repo's HEAD."""
+    def _advance():
+        fake_repo.set_head_sha(new_sha)
+    return _advance
+
+
+def combined(*fns):
+    """Return a callable that calls all given functions in order."""
+    def _run():
+        for fn in fns:
+            fn()
+    return _run
+
+
 @pytest.fixture
 def test_git_repo():
     """Create a temporary git repository for testing."""

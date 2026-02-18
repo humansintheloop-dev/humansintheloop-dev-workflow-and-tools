@@ -9,63 +9,9 @@ from i2code.implement.claude_runner import ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.trunk_mode import TrunkMode
 
+from conftest import write_plan_file, mark_task_complete, advance_head, combined
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
-
-
-def _write_plan_file(plan_dir, idea_name, tasks):
-    """Write a plan file with the given tasks.
-
-    Args:
-        plan_dir: Directory to write the plan file in.
-        idea_name: Name of the idea.
-        tasks: List of (thread, task_num, title, completed) tuples.
-
-    Returns:
-        Path to the written plan file.
-    """
-    lines = [f"# Plan for {idea_name}\n\n"]
-    current_thread = None
-    for thread, task_num, title, completed in tasks:
-        if thread != current_thread:
-            lines.append(f"## Steel Thread {thread}: Thread {thread}\n\n")
-            current_thread = thread
-        checkbox = "[x]" if completed else "[ ]"
-        lines.append(
-            f"- {checkbox} **Task {thread}.{task_num}: {title}**\n"
-        )
-    plan_path = os.path.join(plan_dir, f"{idea_name}-plan.md")
-    with open(plan_path, "w") as f:
-        f.writelines(lines)
-    return plan_path
-
-
-def _mark_task_complete(plan_path, thread, task_num, title):
-    """Return a callable that marks a task as complete in the plan file."""
-    def _mark():
-        with open(plan_path, "r") as f:
-            content = f.read()
-        old = f"- [ ] **Task {thread}.{task_num}: {title}**"
-        new = f"- [x] **Task {thread}.{task_num}: {title}**"
-        content = content.replace(old, new)
-        with open(plan_path, "w") as f:
-            f.write(content)
-    return _mark
-
-
-def _advance_head(fake_repo, new_sha):
-    """Return a callable that advances the fake repo's HEAD."""
-    def _advance():
-        fake_repo.set_head_sha(new_sha)
-    return _advance
-
-
-def _combined(*fns):
-    """Return a callable that calls all given functions in order."""
-    def _run():
-        for fn in fns:
-            fn()
-    return _run
 
 
 @pytest.mark.unit
@@ -77,7 +23,7 @@ class TestTrunkModeExecute:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            _write_plan_file(idea_dir, idea_name, [
+            write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Already done", True),
             ])
 
@@ -101,7 +47,7 @@ class TestTrunkModeExecute:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up project", False),
             ])
 
@@ -111,9 +57,9 @@ class TestTrunkModeExecute:
 
             # Simulate: Claude advances HEAD and marks task complete
             fake_runner.set_side_effect(
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Set up project"),
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up project"),
                 )
             )
 
@@ -135,7 +81,7 @@ class TestTrunkModeExecute:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            _write_plan_file(idea_dir, idea_name, [
+            write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up", False),
             ])
 
@@ -163,7 +109,7 @@ class TestTrunkModeExecute:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Task 1", False),
                 (1, 2, "Task 2", False),
             ])
@@ -173,13 +119,13 @@ class TestTrunkModeExecute:
             fake_runner = FakeClaudeRunner()
 
             fake_runner.set_side_effects([
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Task 1"),
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Task 1"),
                 ),
-                _combined(
-                    _advance_head(fake_repo, "ccc"),
-                    _mark_task_complete(plan_path, 1, 2, "Task 2"),
+                combined(
+                    advance_head(fake_repo, "ccc"),
+                    mark_task_complete(plan_path, 1, 2, "Task 2"),
                 ),
             ])
 
@@ -199,7 +145,7 @@ class TestTrunkModeExecute:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            _write_plan_file(idea_dir, idea_name, [
+            write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up", False),
             ])
 
@@ -209,7 +155,7 @@ class TestTrunkModeExecute:
 
             # Advance HEAD (success) but do NOT mark task complete
             fake_runner.set_side_effect(
-                _advance_head(fake_repo, "bbb"),
+                advance_head(fake_repo, "bbb"),
             )
 
             mode = TrunkMode(
@@ -228,7 +174,7 @@ class TestTrunkModeExecute:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up", False),
             ])
 
@@ -237,9 +183,9 @@ class TestTrunkModeExecute:
             fake_runner = FakeClaudeRunner()
 
             fake_runner.set_side_effect(
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Set up"),
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up"),
                 )
             )
             fake_runner.set_result(ClaudeResult(
@@ -265,7 +211,7 @@ class TestTrunkModeExecute:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up", False),
             ])
 
@@ -274,9 +220,9 @@ class TestTrunkModeExecute:
             fake_runner = FakeClaudeRunner()
 
             fake_runner.set_side_effect(
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Set up"),
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up"),
                 )
             )
 

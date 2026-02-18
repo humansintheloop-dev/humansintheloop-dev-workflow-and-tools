@@ -13,65 +13,11 @@ from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.worktree_mode import WorktreeMode
 
+from conftest import write_plan_file, mark_task_complete, advance_head, combined
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
 from fake_github_client import FakeGitHubClient
 from fake_workflow_state import FakeWorkflowState
-
-
-def _write_plan_file(plan_dir, idea_name, tasks):
-    """Write a plan file with the given tasks.
-
-    Args:
-        plan_dir: Directory to write the plan file in.
-        idea_name: Name of the idea.
-        tasks: List of (thread, task_num, title, completed) tuples.
-
-    Returns:
-        Path to the written plan file.
-    """
-    lines = [f"# Plan for {idea_name}\n\n"]
-    current_thread = None
-    for thread, task_num, title, completed in tasks:
-        if thread != current_thread:
-            lines.append(f"## Steel Thread {thread}: Thread {thread}\n\n")
-            current_thread = thread
-        checkbox = "[x]" if completed else "[ ]"
-        lines.append(
-            f"- {checkbox} **Task {thread}.{task_num}: {title}**\n"
-        )
-    plan_path = os.path.join(plan_dir, f"{idea_name}-plan.md")
-    with open(plan_path, "w") as f:
-        f.writelines(lines)
-    return plan_path
-
-
-def _mark_task_complete(plan_path, thread, task_num, title):
-    """Return a callable that marks a task as complete in the plan file."""
-    def _mark():
-        with open(plan_path, "r") as f:
-            content = f.read()
-        old = f"- [ ] **Task {thread}.{task_num}: {title}**"
-        new = f"- [x] **Task {thread}.{task_num}: {title}**"
-        content = content.replace(old, new)
-        with open(plan_path, "w") as f:
-            f.write(content)
-    return _mark
-
-
-def _advance_head(fake_repo, new_sha):
-    """Return a callable that advances the fake repo's HEAD."""
-    def _advance():
-        fake_repo.set_head_sha(new_sha)
-    return _advance
-
-
-def _combined(*fns):
-    """Return a callable that calls all given functions in order."""
-    def _run():
-        for fn in fns:
-            fn()
-    return _run
 
 
 def _write_ci_workflow(work_dir):
@@ -143,7 +89,7 @@ class TestWorktreeModeAllComplete:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Already done", True),
             ])
 
@@ -161,7 +107,7 @@ class TestWorktreeModeAllComplete:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Already done", True),
             ])
 
@@ -189,7 +135,7 @@ class TestWorktreeModeTaskExecution:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up project", False),
             ])
             _write_ci_workflow(tmpdir)
@@ -198,9 +144,9 @@ class TestWorktreeModeTaskExecution:
             fake_runner = FakeClaudeRunner()
 
             fake_runner.set_side_effect(
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Set up project"),
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up project"),
                 )
             )
 
@@ -227,7 +173,7 @@ class TestWorktreeModeTaskExecution:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up project", False),
             ])
             _write_ci_workflow(tmpdir)
@@ -237,9 +183,9 @@ class TestWorktreeModeTaskExecution:
             fake_runner = FakeClaudeRunner()
 
             fake_runner.set_side_effect(
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Set up project"),
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up project"),
                 )
             )
 
@@ -258,7 +204,7 @@ class TestWorktreeModeTaskExecution:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up", False),
             ])
             _write_ci_workflow(tmpdir)
@@ -269,9 +215,9 @@ class TestWorktreeModeTaskExecution:
             fake_gh.set_default_branch("master")
 
             fake_runner.set_side_effect(
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Set up"),
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up"),
                 )
             )
 
@@ -296,7 +242,7 @@ class TestWorktreeModeFailures:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            _write_plan_file(idea_dir, idea_name, [
+            write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up", False),
             ])
 
@@ -306,7 +252,7 @@ class TestWorktreeModeFailures:
             ))
 
             mode, _, _, _, _ = _make_worktree_mode(
-                _write_plan_file(idea_dir, idea_name, [(1, 1, "Set up", False)]),
+                write_plan_file(idea_dir, idea_name, [(1, 1, "Set up", False)]),
                 idea_dir, tmpdir, fake_runner=fake_runner,
             )
 
@@ -320,7 +266,7 @@ class TestWorktreeModeFailures:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up", False),
             ])
 
@@ -328,7 +274,7 @@ class TestWorktreeModeFailures:
             fake_runner = FakeClaudeRunner()
             # Advance HEAD (success) but do NOT mark task complete
             fake_runner.set_side_effect(
-                _advance_head(fake_repo, "bbb"),
+                advance_head(fake_repo, "bbb"),
             )
 
             mode, _, _, _, _ = _make_worktree_mode(
@@ -346,7 +292,7 @@ class TestWorktreeModeFailures:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up", False),
             ])
             # Deliberately do NOT create .github/workflows/
@@ -354,9 +300,9 @@ class TestWorktreeModeFailures:
             fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
             fake_runner = FakeClaudeRunner()
             fake_runner.set_side_effect(
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Set up"),
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up"),
                 )
             )
 
@@ -375,7 +321,7 @@ class TestWorktreeModeFailures:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up", False),
             ])
             _write_ci_workflow(tmpdir)
@@ -384,9 +330,9 @@ class TestWorktreeModeFailures:
             fake_repo.push = lambda: (fake_repo.calls.append(("push",)) or False)  # push returns False
             fake_runner = FakeClaudeRunner()
             fake_runner.set_side_effect(
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Set up"),
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up"),
                 )
             )
 
@@ -410,7 +356,7 @@ class TestWorktreeModeNonInteractive:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up", False),
             ])
             _write_ci_workflow(tmpdir)
@@ -423,9 +369,9 @@ class TestWorktreeModeNonInteractive:
                 stderr="",
             ))
             fake_runner.set_side_effect(
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Set up"),
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up"),
                 )
             )
 
@@ -445,7 +391,7 @@ class TestWorktreeModeNonInteractive:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
             os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
+            plan_path = write_plan_file(idea_dir, idea_name, [
                 (1, 1, "Set up", False),
             ])
 
@@ -457,9 +403,9 @@ class TestWorktreeModeNonInteractive:
                 stderr="",
             ))
             fake_runner.set_side_effect(
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Set up"),
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up"),
                 )
             )
 

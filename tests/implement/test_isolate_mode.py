@@ -2,12 +2,12 @@
 
 import pytest
 
-from i2code.implement.idea_project import IdeaProject
 from i2code.implement.isolate_mode import IsolateMode
 from i2code.implement.project_setup import ProjectInitializer
 
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
+from fake_idea_project import FakeIdeaProject
 
 
 def _make_fake_project_initializer(setup_success=True):
@@ -54,9 +54,7 @@ class TestIsolateModeExecute:
     def test_calls_ensure_project_setup_then_runs_subprocess(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        project = IdeaProject.__new__(IdeaProject)
-        project._directory = "/tmp/fake-idea"
-        project._name = "test-feature"
+        project = FakeIdeaProject()
 
         mode = IsolateMode(
             git_repo=FakeGitRepository(),
@@ -73,9 +71,7 @@ class TestIsolateModeExecute:
     def test_exits_when_project_setup_fails(self):
         fake_initializer = _make_fake_project_initializer(setup_success=False)
         fake_subprocess = FakeSubprocessRunner()
-        project = IdeaProject.__new__(IdeaProject)
-        project._directory = "/tmp/fake-idea"
-        project._name = "test-feature"
+        project = FakeIdeaProject()
 
         mode = IsolateMode(
             git_repo=FakeGitRepository(),
@@ -93,9 +89,7 @@ class TestIsolateModeExecute:
     def test_forwards_options_to_isolarium_command(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        project = IdeaProject.__new__(IdeaProject)
-        project._directory = "/tmp/fake-idea"
-        project._name = "test-feature"
+        project = FakeIdeaProject()
 
         mode = IsolateMode(
             git_repo=FakeGitRepository(),
@@ -131,9 +125,7 @@ class TestIsolateModeExecute:
     def test_builds_isolarium_command_with_idea_name(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        project = IdeaProject.__new__(IdeaProject)
-        project._directory = "/home/user/project/docs/features/test-feature"
-        project._name = "test-feature"
+        project = FakeIdeaProject(directory="/home/user/project/docs/features/test-feature")
 
         mode = IsolateMode(
             git_repo=FakeGitRepository(working_tree_dir="/home/user/project"),
@@ -153,9 +145,7 @@ class TestIsolateModeExecute:
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
         fake_subprocess.set_returncode(42)
-        project = IdeaProject.__new__(IdeaProject)
-        project._directory = "/tmp/fake-idea"
-        project._name = "test-feature"
+        project = FakeIdeaProject()
 
         mode = IsolateMode(
             git_repo=FakeGitRepository(),
@@ -170,9 +160,7 @@ class TestIsolateModeExecute:
     def test_forwards_setup_parameters(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        project = IdeaProject.__new__(IdeaProject)
-        project._directory = "/tmp/fake-idea"
-        project._name = "test-feature"
+        project = FakeIdeaProject()
 
         mode = IsolateMode(
             git_repo=FakeGitRepository(),
@@ -200,9 +188,7 @@ class TestIsolateModeExecute:
     def test_interactive_mode_passes_interactive_flag_to_isolarium(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        project = IdeaProject.__new__(IdeaProject)
-        project._directory = "/tmp/fake-idea"
-        project._name = "test-feature"
+        project = FakeIdeaProject()
 
         mode = IsolateMode(
             git_repo=FakeGitRepository(),
@@ -219,9 +205,7 @@ class TestIsolateModeExecute:
     def test_non_interactive_omits_interactive_flag(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        project = IdeaProject.__new__(IdeaProject)
-        project._directory = "/tmp/fake-idea"
-        project._name = "test-feature"
+        project = FakeIdeaProject()
 
         mode = IsolateMode(
             git_repo=FakeGitRepository(),

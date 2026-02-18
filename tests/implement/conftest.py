@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from fake_claude_runner import FakeClaudeRunner  # noqa: E402, F401
 from fake_github_client import FakeGitHubClient  # noqa: E402, F401
 from fake_git_repository import FakeGitRepository  # noqa: E402, F401
+from fake_idea_project import FakeIdeaProject  # noqa: E402, F401
 
 # Command to invoke the implement CLI
 SCRIPT_CMD = ["i2code", "implement"]

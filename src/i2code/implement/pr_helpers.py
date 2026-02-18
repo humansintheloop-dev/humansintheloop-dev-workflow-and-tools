@@ -7,10 +7,10 @@ import sys
 from typing import Any, Dict, List, Optional
 
 from i2code.implement.git_setup import sanitize_branch_name
+from i2code.implement.github_client import GitHubClient
 
 
 def _default_gh_client():
-    from i2code.implement.github_client import GitHubClient
     return GitHubClient()
 
 

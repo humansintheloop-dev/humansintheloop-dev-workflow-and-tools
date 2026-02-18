@@ -2,6 +2,7 @@
 
 import json
 import subprocess
+import time
 from typing import Any, Dict, List, Optional
 
 
@@ -157,7 +158,6 @@ class GitHubClient:
     def wait_for_workflow_completion(
         self, branch: str, sha: str, timeout_seconds: int = 600
     ) -> tuple:
-        import time
         start_time = time.time()
         poll_interval = 10
 

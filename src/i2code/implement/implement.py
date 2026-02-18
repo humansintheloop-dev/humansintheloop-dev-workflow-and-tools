@@ -15,11 +15,14 @@ All other functions have been extracted to dedicated modules:
 import sys
 from typing import Optional
 
+from git import Repo as GitRepo
+
 from i2code.implement.claude_runner import (
     ClaudeResult,
     run_claude_interactive,
     run_claude_with_output_capture,
 )
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.pr_helpers import (
     _default_gh_client,
     determine_comment_type,
@@ -56,8 +59,6 @@ def process_pr_feedback(
         - had_feedback: True if there was new feedback to process
         - made_changes: True if Claude made code changes (commits)
     """
-    from git import Repo as GitRepo
-
     if gh_client is None:
         gh_client = _default_gh_client()
 
@@ -91,7 +92,6 @@ def process_pr_feedback(
     if mock_claude:
         triage_cmd = [mock_claude, f"triage-{pr_number}"]
     else:
-        from i2code.implement.command_builder import CommandBuilder
         triage_cmd = CommandBuilder().build_triage_command(feedback_content, interactive=False)
 
     triage_result = run_claude_with_output_capture(triage_cmd, cwd=worktree_path)
@@ -154,7 +154,6 @@ def process_pr_feedback(
         if mock_claude:
             fix_cmd = [mock_claude, f"fix-{pr_number}-{comment_ids[0]}"]
         else:
-            from i2code.implement.command_builder import CommandBuilder
             fix_cmd = CommandBuilder().build_fix_command(pr_url, group_content, description, interactive=interactive)
 
         print("  Invoking Claude to fix...")

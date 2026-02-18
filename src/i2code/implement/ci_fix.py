@@ -3,6 +3,11 @@
 import sys
 from typing import Optional
 
+from git import Repo as GitRepo
+
+from i2code.implement.claude_runner import run_claude_interactive, run_claude_with_output_capture
+from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.github_client import GitHubClient
 from i2code.implement.pr_helpers import get_failing_workflow_run, push_branch_to_remote
 
 
@@ -19,11 +24,7 @@ def fix_ci_failure(
 
     Returns True if CI passes, False if max retries exceeded.
     """
-    from git import Repo as GitRepo
-    from i2code.implement.claude_runner import run_claude_interactive, run_claude_with_output_capture
-
     if gh_client is None:
-        from i2code.implement.github_client import GitHubClient
         gh_client = GitHubClient()
 
     worktree_repo = GitRepo(worktree_path)
@@ -47,7 +48,6 @@ def fix_ci_failure(
         if mock_claude:
             claude_cmd = [mock_claude, f"fix-ci-{run_id}"]
         else:
-            from i2code.implement.command_builder import CommandBuilder
             claude_cmd = CommandBuilder().build_ci_fix_command(
                 run_id, workflow_name, failure_logs, interactive=interactive,
             )

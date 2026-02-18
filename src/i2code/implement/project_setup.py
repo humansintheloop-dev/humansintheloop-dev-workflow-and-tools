@@ -5,6 +5,10 @@ from typing import Optional
 
 from git import Repo
 
+from i2code.implement.ci_fix import fix_ci_failure
+from i2code.implement.claude_runner import run_claude_interactive, run_claude_with_output_capture
+from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.github_client import GitHubClient
 from i2code.implement.pr_helpers import push_branch_to_remote
 
 
@@ -25,7 +29,6 @@ def ensure_project_setup(
     Returns True if setup succeeded (CI passes), False otherwise.
     """
     if gh_client is None:
-        from i2code.implement.github_client import GitHubClient
         gh_client = GitHubClient()
 
     repo.git.checkout(integration_branch)
@@ -49,7 +52,6 @@ def ensure_project_setup(
     )
 
     if not ci_success and failing_run:
-        from i2code.implement.ci_fix import fix_ci_failure
         return fix_ci_failure(
             integration_branch,
             head_after,
@@ -68,9 +70,6 @@ def run_scaffolding(
     interactive: bool = True, mock_claude: Optional[str] = None,
 ):
     """Invoke Claude to generate project scaffolding."""
-    from i2code.implement.command_builder import CommandBuilder
-    from i2code.implement.claude_runner import run_claude_interactive, run_claude_with_output_capture
-
     cmd = CommandBuilder().build_scaffolding_command(
         idea_directory, interactive=interactive, mock_claude=mock_claude,
     )

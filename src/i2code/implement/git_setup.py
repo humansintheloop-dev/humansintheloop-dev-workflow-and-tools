@@ -11,6 +11,8 @@ from git import Repo
 from git.exc import InvalidGitRepositoryError
 from typing import List
 
+from i2code.plan.plan_file_io import with_plan_file
+
 
 def validate_idea_files_committed(idea_directory: str, idea_name: str) -> None:
     """Validate that all idea files are committed to Git."""
@@ -170,13 +172,11 @@ def get_worktree_idea_directory(
 
 
 def get_next_task(plan_file: str):
-    from i2code.plan.plan_file_io import with_plan_file
     with with_plan_file(plan_file) as plan:
         return plan.get_next_task()
 
 
 def is_task_completed(plan_file: str, thread: int, task: int) -> bool:
-    from i2code.plan.plan_file_io import with_plan_file
     with with_plan_file(plan_file) as plan:
         return plan.is_task_completed(thread, task)
 

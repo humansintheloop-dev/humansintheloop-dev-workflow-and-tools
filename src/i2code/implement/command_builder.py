@@ -7,6 +7,8 @@ exists in one place.
 
 from typing import List, Optional
 
+from i2code.templates.template_renderer import render_template
+
 
 class CommandBuilder:
     """Builds Claude CLI commands for all invocation types.
@@ -60,8 +62,6 @@ class CommandBuilder:
         Returns:
             Command list suitable for subprocess.
         """
-        from i2code.templates.template_renderer import render_template
-
         prompt = render_template(
             "task_execution.j2",
             package="i2code.implement",
@@ -91,8 +91,6 @@ class CommandBuilder:
         """
         if mock_claude:
             return [mock_claude, "setup"]
-
-        from i2code.templates.template_renderer import render_template
 
         prompt = render_template(
             "scaffolding.j2",
@@ -124,8 +122,6 @@ class CommandBuilder:
         Returns:
             Command list suitable for subprocess.
         """
-        from i2code.templates.template_renderer import render_template
-
         prompt = render_template(
             "triage_feedback.j2",
             package="i2code.implement",
@@ -152,8 +148,6 @@ class CommandBuilder:
         Returns:
             Command list suitable for subprocess.
         """
-        from i2code.templates.template_renderer import render_template
-
         prompt = render_template(
             "fix_feedback.j2",
             package="i2code.implement",
@@ -186,8 +180,6 @@ class CommandBuilder:
         if len(failure_logs) > max_log_length:
             failure_logs = f"... (truncated)\n{failure_logs[-max_log_length:]}"
 
-        from i2code.templates.template_renderer import render_template
-
         prompt = render_template(
             "ci_fix.j2",
             package="i2code.implement",
@@ -214,8 +206,6 @@ class CommandBuilder:
         Returns:
             Command list suitable for subprocess.
         """
-        from i2code.templates.template_renderer import render_template
-
         prompt = render_template(
             "address_feedback.j2",
             package="i2code.implement",

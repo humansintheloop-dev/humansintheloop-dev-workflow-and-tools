@@ -3,7 +3,7 @@
 import re
 from dataclasses import dataclass, field
 
-from i2code.plan_domain.numbered_task import NumberedTask
+from i2code.plan_domain.numbered_task import NumberedTask, TaskNumber
 from i2code.plan_domain.task import Task
 from i2code.plan_domain.thread import Thread
 
@@ -49,7 +49,6 @@ class Plan:
         return self.threads[thread - 1]
 
     def get_next_task(self) -> NumberedTask | None:
-        from i2code.plan_domain.numbered_task import TaskNumber
         for thread_num, thread in enumerate(self.threads, 1):
             for task_num, task in enumerate(thread.tasks, 1):
                 if not task.is_completed:

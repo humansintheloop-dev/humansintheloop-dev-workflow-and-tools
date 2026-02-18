@@ -98,8 +98,8 @@ class TestBuildScaffoldingPrompt:
 class TestRunScaffoldingFailure:
     """Test run_scaffolding() exits on Claude failure."""
 
-    @patch("i2code.implement.claude_runner.run_claude_with_output_capture")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_with_output_capture")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_non_zero_exit_code_exits(self, mock_build, mock_run):
         from i2code.implement.project_setup import run_scaffolding
 
@@ -111,8 +111,8 @@ class TestRunScaffoldingFailure:
 
         assert exc_info.value.code == 1
 
-    @patch("i2code.implement.claude_runner.run_claude_with_output_capture")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_with_output_capture")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_no_success_tag_exits(self, mock_build, mock_run):
         from i2code.implement.project_setup import run_scaffolding
 
@@ -124,8 +124,8 @@ class TestRunScaffoldingFailure:
 
         assert exc_info.value.code == 1
 
-    @patch("i2code.implement.claude_runner.run_claude_with_output_capture")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_with_output_capture")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_failure_prints_permission_denials(self, mock_build, mock_run, capsys):
         from i2code.implement.project_setup import run_scaffolding
 
@@ -141,8 +141,8 @@ class TestRunScaffoldingFailure:
         captured = capsys.readouterr()
         assert "Permission denied" in captured.err
 
-    @patch("i2code.implement.claude_runner.run_claude_with_output_capture")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_with_output_capture")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_failure_prints_last_messages(self, mock_build, mock_run, capsys):
         from i2code.implement.project_setup import run_scaffolding
 
@@ -162,8 +162,8 @@ class TestRunScaffoldingFailure:
         assert "I cannot write files" in captured.err
         assert "No permissions to complete task" in captured.err
 
-    @patch("i2code.implement.claude_runner.run_claude_with_output_capture")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_with_output_capture")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_success_tag_does_not_exit(self, mock_build, mock_run):
         from i2code.implement.project_setup import run_scaffolding
 
@@ -174,8 +174,8 @@ class TestRunScaffoldingFailure:
 
         run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
-    @patch("i2code.implement.claude_runner.run_claude_interactive")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_interactive")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_interactive_mode_does_not_check_stdout(self, mock_build, mock_run):
         """Interactive mode has empty stdout — should not exit."""
         from i2code.implement.project_setup import run_scaffolding
@@ -194,8 +194,8 @@ class TestEnsureProjectSetup:
         return ClaudeResult(returncode=returncode, stdout=stdout, stderr="")
 
     @patch("i2code.implement.project_setup.push_branch_to_remote")
-    @patch("i2code.implement.claude_runner.run_claude_interactive")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_interactive")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_ensure_project_setup_checks_out_integration_branch(
         self, mock_build_prompt, mock_run_claude, mock_push
     ):
@@ -223,8 +223,8 @@ class TestEnsureProjectSetup:
         mock_repo.git.checkout.assert_called_with("idea/test/integration")
 
     @patch("i2code.implement.project_setup.push_branch_to_remote")
-    @patch("i2code.implement.claude_runner.run_claude_interactive")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_interactive")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_ensure_project_setup_interactive_calls_run_claude_interactive(
         self, mock_build_prompt, mock_run_claude, mock_push
     ):
@@ -253,8 +253,8 @@ class TestEnsureProjectSetup:
         mock_run_claude.assert_called_once_with(["claude", "prompt"], cwd="/tmp/fake-repo")
 
     @patch("i2code.implement.project_setup.push_branch_to_remote")
-    @patch("i2code.implement.claude_runner.run_claude_with_output_capture")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_with_output_capture")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_ensure_project_setup_non_interactive_calls_output_capture(
         self, mock_build_prompt, mock_run_capture, mock_push
     ):
@@ -283,8 +283,8 @@ class TestEnsureProjectSetup:
         mock_run_capture.assert_called_once_with(["claude", "-p", "prompt"], cwd="/tmp/fake-repo")
 
     @patch("i2code.implement.project_setup.push_branch_to_remote")
-    @patch("i2code.implement.claude_runner.run_claude_interactive")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_interactive")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_ensure_project_setup_no_new_commits_skips_push_and_ci(
         self, mock_build_prompt, mock_run_claude, mock_push
     ):
@@ -314,8 +314,8 @@ class TestEnsureProjectSetup:
         mock_gh.wait_for_workflow_completion.assert_not_called()
 
     @patch("i2code.implement.project_setup.push_branch_to_remote")
-    @patch("i2code.implement.claude_runner.run_claude_interactive")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_interactive")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_ensure_project_setup_push_and_ci_when_commits_made(
         self, mock_build_prompt, mock_run_claude, mock_push
     ):
@@ -351,10 +351,10 @@ class TestEnsureProjectSetup:
             "idea/test/integration", "bbb222", timeout_seconds=300
         )
 
-    @patch("i2code.implement.ci_fix.fix_ci_failure")
+    @patch("i2code.implement.project_setup.fix_ci_failure")
     @patch("i2code.implement.project_setup.push_branch_to_remote")
-    @patch("i2code.implement.claude_runner.run_claude_with_output_capture")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_with_output_capture")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_ensure_project_setup_ci_failure_retry_success(
         self, mock_build_prompt, mock_run_capture, mock_push, mock_fix_ci
     ):
@@ -398,10 +398,10 @@ class TestEnsureProjectSetup:
             gh_client=mock_gh,
         )
 
-    @patch("i2code.implement.ci_fix.fix_ci_failure")
+    @patch("i2code.implement.project_setup.fix_ci_failure")
     @patch("i2code.implement.project_setup.push_branch_to_remote")
-    @patch("i2code.implement.claude_runner.run_claude_interactive")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_interactive")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_ensure_project_setup_ci_failure_retry_fails(
         self, mock_build_prompt, mock_run_claude, mock_push, mock_fix_ci
     ):
@@ -434,8 +434,8 @@ class TestEnsureProjectSetup:
         assert result is False
 
     @patch("i2code.implement.project_setup.push_branch_to_remote")
-    @patch("i2code.implement.claude_runner.run_claude_interactive")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_interactive")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_ensure_project_setup_skip_ci_wait_pushes_but_no_wait(
         self, mock_build_prompt, mock_run_claude, mock_push
     ):
@@ -473,8 +473,8 @@ class TestEnsureProjectSetup:
 class TestRunScaffolding:
     """Test run_scaffolding() delegates to correct runner."""
 
-    @patch("i2code.implement.claude_runner.run_claude_interactive")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_interactive")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_interactive_calls_run_claude_interactive(self, mock_build, mock_run):
         from i2code.implement.project_setup import run_scaffolding
 
@@ -486,8 +486,8 @@ class TestRunScaffolding:
         mock_build.assert_called_once_with("/tmp/idea", interactive=True, mock_claude=None)
         mock_run.assert_called_once_with(["claude", "prompt"], cwd="/tmp/repo")
 
-    @patch("i2code.implement.claude_runner.run_claude_with_output_capture")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_with_output_capture")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_non_interactive_calls_output_capture(self, mock_build, mock_run):
         from i2code.implement.project_setup import run_scaffolding
 
@@ -501,8 +501,8 @@ class TestRunScaffolding:
         mock_build.assert_called_once_with("/tmp/idea", interactive=False, mock_claude=None)
         mock_run.assert_called_once_with(["claude", "-p", "prompt"], cwd="/tmp/repo")
 
-    @patch("i2code.implement.claude_runner.run_claude_interactive")
-    @patch("i2code.implement.command_builder.CommandBuilder.build_scaffolding_command")
+    @patch("i2code.implement.project_setup.run_claude_interactive")
+    @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_forwards_mock_claude(self, mock_build, mock_run):
         from i2code.implement.project_setup import run_scaffolding
 

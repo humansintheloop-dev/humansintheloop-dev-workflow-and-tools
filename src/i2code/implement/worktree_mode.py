@@ -12,6 +12,7 @@ from i2code.implement.implement import (
     print_task_failure_diagnostics,
     process_pr_feedback,
 )
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.pr_helpers import get_failing_workflow_run
 
 
@@ -195,7 +196,6 @@ class WorktreeMode:
         if mock_claude:
             return [mock_claude, task_description]
 
-        from i2code.implement.command_builder import CommandBuilder
         return CommandBuilder().build_task_command(
             self._project.directory,
             task_description,

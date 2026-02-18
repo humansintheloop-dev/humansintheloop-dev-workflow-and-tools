@@ -21,6 +21,8 @@ from i2code.implement.git_setup import (
     get_next_task,
     get_worktree_idea_directory,
 )
+from i2code.implement.claude_runner import RealClaudeRunner
+from i2code.implement.isolate_mode import IsolateMode, RealProjectSetup, RealSubprocessRunner
 from i2code.implement.project_setup import run_scaffolding
 from i2code.implement.trunk_mode import TrunkMode
 from i2code.implement.worktree_mode import WorktreeMode
@@ -68,8 +70,6 @@ def implement(opts: ImplementOpts, project: IdeaProject):
                 f"--trunk cannot be combined with: {', '.join(incompatible)}"
             )
 
-        from i2code.implement.claude_runner import RealClaudeRunner
-
         repo = Repo(project.directory, search_parent_directories=True)
         git_repo = GitRepository(repo)
         claude_runner = RealClaudeRunner()
@@ -88,8 +88,6 @@ def implement(opts: ImplementOpts, project: IdeaProject):
 
     # Delegate to isolarium VM if --isolate is set
     if opts.isolate:
-        from i2code.implement.isolate_mode import IsolateMode, RealProjectSetup, RealSubprocessRunner
-
         repo = Repo(project.directory, search_parent_directories=True)
         isolate_mode = IsolateMode(
             repo=repo,
@@ -172,8 +170,6 @@ def implement(opts: ImplementOpts, project: IdeaProject):
     if existing_pr:
         git_repo.pr_number = existing_pr
         print(f"Reusing existing PR #{existing_pr}")
-
-    from i2code.implement.claude_runner import RealClaudeRunner
 
     worktree_mode = WorktreeMode(
         git_repo=git_repo,

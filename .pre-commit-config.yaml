@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: ruff-check
         name: Run ruff check --fix
-        entry: bash -c 'uvx ruff check --fix; true'
+        entry: uvx ruff check --fix
         language: system
         types: [python]
         pass_filenames: false

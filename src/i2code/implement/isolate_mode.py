@@ -4,6 +4,9 @@ import os
 import subprocess
 import sys
 
+from i2code.implement.git_setup import ensure_integration_branch
+from i2code.implement.project_setup import ensure_project_setup
+
 
 class IsolateMode:
     """Execution mode that runs project setup on the host then delegates to isolarium VM.
@@ -119,11 +122,9 @@ class RealProjectSetup:
     """Delegates to the real ensure_integration_branch and ensure_project_setup functions."""
 
     def ensure_integration_branch(self, repo, idea_name):
-        from i2code.implement.git_setup import ensure_integration_branch
         return ensure_integration_branch(repo, idea_name)
 
     def ensure_project_setup(self, **kwargs):
-        from i2code.implement.project_setup import ensure_project_setup
         return ensure_project_setup(**kwargs)
 
 

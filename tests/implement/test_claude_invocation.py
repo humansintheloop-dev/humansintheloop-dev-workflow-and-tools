@@ -940,7 +940,7 @@ class TestBuildCiFixCommand:
         """Should render prompt from ci_fix.j2 template."""
         from i2code.implement.command_builder import CommandBuilder
 
-        mock_render = mocker.patch("i2code.templates.template_renderer.render_template", return_value="rendered prompt")
+        mock_render = mocker.patch("i2code.implement.command_builder.render_template", return_value="rendered prompt")
 
         CommandBuilder().build_ci_fix_command(
             run_id=12345,

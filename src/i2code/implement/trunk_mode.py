@@ -7,6 +7,7 @@ from i2code.implement.git_setup import (
     is_task_completed,
     calculate_claude_permissions,
 )
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.implement import (
     check_claude_success,
     print_task_failure_diagnostics,
@@ -70,7 +71,6 @@ class TrunkMode:
         if mock_claude:
             return [mock_claude, task_description]
 
-        from i2code.implement.command_builder import CommandBuilder
         extra_cli_args = None
         if non_interactive:
             permissions = calculate_claude_permissions(self._git_repo.working_tree_dir)

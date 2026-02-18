@@ -101,7 +101,7 @@ class TestIsolatedFlagPassthrough:
         mock_repo_cls.return_value = mock_repo
 
         runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolated", "--setup-only"])
+        runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolated", "--setup-only"])
 
         mock_ensure_branch.assert_called_once_with(mock_repo, "test-feature", isolated=True)
 
@@ -128,7 +128,7 @@ class TestIsolatedFlagPassthrough:
         mock_repo_cls.return_value = mock_repo
 
         runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--setup-only"])
+        runner.invoke(implement_cmd, ["/tmp/fake-idea", "--setup-only"])
 
         mock_ensure_branch.assert_called_once_with(mock_repo, "test-feature", isolated=False)
 

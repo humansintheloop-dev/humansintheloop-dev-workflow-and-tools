@@ -310,6 +310,27 @@ class TestCommandBuilderCiFixCommand:
         prompt = cmd[1]
         assert "truncated" in prompt.lower()
 
+    def test_renders_ci_fix_template(self, mocker):
+        """Should render prompt from ci_fix.j2 template."""
+        from i2code.implement.command_builder import CommandBuilder
+
+        mock_render = mocker.patch("i2code.implement.command_builder.render_template", return_value="rendered prompt")
+
+        CommandBuilder().build_ci_fix_command(
+            run_id=12345,
+            workflow_name="CI Build",
+            failure_logs="Error: test failed",
+            interactive=True,
+        )
+
+        mock_render.assert_called_once_with(
+            "ci_fix.j2",
+            package="i2code.implement",
+            run_id=12345,
+            workflow_name="CI Build",
+            failure_logs="Error: test failed",
+        )
+
 
 @pytest.mark.unit
 class TestCommandBuilderFeedbackCommand:
@@ -355,3 +376,15 @@ class TestCommandBuilderFeedbackCommand:
 
         cmd_str = " ".join(cmd)
         assert "Please fix the typo" in cmd_str
+
+    def test_uses_feedback_template(self):
+        """Should use wt-handle-feedback.md template."""
+        from i2code.implement.command_builder import CommandBuilder
+
+        cmd = CommandBuilder().build_feedback_command(
+            pr_url="https://github.com/owner/repo/pull/123",
+            feedback_type="review_comment",
+            feedback_content="Please fix the typo",
+        )
+
+        assert "wt-handle-feedback.md" in " ".join(cmd)

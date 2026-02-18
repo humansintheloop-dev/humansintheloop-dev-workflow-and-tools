@@ -30,11 +30,10 @@ def _make_opts(**overrides):
 def _make_command(**opt_overrides):
     opts = _make_opts(**opt_overrides)
     project = _make_mock_project()
-    repo = MagicMock()
     git_repo = MagicMock()
     mode_factory = MagicMock()
-    cmd = ImplementCommand(opts, project, repo, git_repo, mode_factory)
-    return cmd, project, repo, git_repo
+    cmd = ImplementCommand(opts, project, git_repo, mode_factory)
+    return cmd, project, git_repo
 
 
 @pytest.mark.unit
@@ -130,7 +129,7 @@ class TestImplementCommandTrunkMode:
     """_trunk_mode() delegates to mode_factory.make_trunk_mode()."""
 
     def test_trunk_mode_delegates_to_mode_factory(self):
-        cmd, project, _, git_repo = _make_command(
+        cmd, project, git_repo = _make_command(
             trunk=True, ignore_uncommitted_idea_changes=True
         )
         cmd.execute()
@@ -150,7 +149,7 @@ class TestImplementCommandIsolateMode:
     """_isolate_mode() delegates to mode_factory.make_isolate_mode()."""
 
     def test_isolate_mode_delegates_to_mode_factory(self):
-        cmd, project, repo, git_repo = _make_command(
+        cmd, project, git_repo = _make_command(
             isolate=True, ignore_uncommitted_idea_changes=True
         )
         cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
@@ -158,7 +157,6 @@ class TestImplementCommandIsolateMode:
             cmd.execute()
         assert exc_info.value.code == 0
         cmd.mode_factory.make_isolate_mode.assert_called_once_with(
-            repo=repo,
             git_repo=git_repo,
             project=project,
         )
@@ -176,10 +174,10 @@ class TestImplementCommandWorktreeMode:
     ):
         mock_load_state.return_value = MagicMock(slice_number=1)
 
-        cmd, project, repo, git_repo = _make_command(
+        cmd, project, git_repo = _make_command(
             ignore_uncommitted_idea_changes=True
         )
-        repo.working_tree_dir = "/tmp/fake-repo"
+        git_repo.working_tree_dir = "/tmp/fake-repo"
         mock_wt_git_repo = MagicMock()
         mock_wt_git_repo.working_tree_dir = "/tmp/wt"
         git_repo.ensure_worktree.return_value = mock_wt_git_repo

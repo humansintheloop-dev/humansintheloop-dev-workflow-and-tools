@@ -47,13 +47,6 @@ class FakeSubprocessRunner:
         return self._returncode
 
 
-class FakeRepo:
-    """Minimal fake Repo for IsolateMode (only needs working_tree_dir)."""
-
-    def __init__(self, working_tree_dir="/fake/repo"):
-        self.working_tree_dir = working_tree_dir
-
-
 @pytest.mark.unit
 class TestIsolateModeExecute:
     """IsolateMode.execute() runs project setup then delegates to isolarium."""
@@ -61,16 +54,13 @@ class TestIsolateModeExecute:
     def test_calls_ensure_project_setup_then_runs_subprocess(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        fake_repo = FakeRepo()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
 
         mode = IsolateMode(
-            repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -83,16 +73,13 @@ class TestIsolateModeExecute:
     def test_exits_when_project_setup_fails(self):
         fake_initializer = _make_fake_project_initializer(setup_success=False)
         fake_subprocess = FakeSubprocessRunner()
-        fake_repo = FakeRepo()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
 
         mode = IsolateMode(
-            repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -106,16 +93,13 @@ class TestIsolateModeExecute:
     def test_forwards_options_to_isolarium_command(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        fake_repo = FakeRepo()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
 
         mode = IsolateMode(
-            repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -147,16 +131,13 @@ class TestIsolateModeExecute:
     def test_builds_isolarium_command_with_idea_name(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        fake_repo = FakeRepo(working_tree_dir="/home/user/project")
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/home/user/project/docs/features/test-feature"
         project._name = "test-feature"
 
         mode = IsolateMode(
-            repo=fake_repo,
-            git_repo=FakeGitRepository(),
+            git_repo=FakeGitRepository(working_tree_dir="/home/user/project"),
             project=project,
-
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -172,16 +153,13 @@ class TestIsolateModeExecute:
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
         fake_subprocess.set_returncode(42)
-        fake_repo = FakeRepo()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
 
         mode = IsolateMode(
-            repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -192,16 +170,13 @@ class TestIsolateModeExecute:
     def test_forwards_setup_parameters(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        fake_repo = FakeRepo()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
 
         mode = IsolateMode(
-            repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -225,16 +200,13 @@ class TestIsolateModeExecute:
     def test_interactive_mode_passes_interactive_flag_to_isolarium(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        fake_repo = FakeRepo()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
 
         mode = IsolateMode(
-            repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -247,16 +219,13 @@ class TestIsolateModeExecute:
     def test_non_interactive_omits_interactive_flag(self):
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
-        fake_repo = FakeRepo()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
 
         mode = IsolateMode(
-            repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )

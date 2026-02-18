@@ -23,9 +23,8 @@ class ModeFactory:
             claude_runner=self._claude_runner,
         )
 
-    def make_isolate_mode(self, repo, git_repo, project):
+    def make_isolate_mode(self, git_repo, project):
         return IsolateMode(
-            repo=repo,
             git_repo=git_repo,
             project=project,
             project_initializer=self._project_initializer,

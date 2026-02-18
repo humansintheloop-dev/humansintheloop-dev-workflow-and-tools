@@ -85,6 +85,9 @@ class FakeGitRepository:
         self._pushed = True
         return True
 
+    def set_user_config(self, name, email):
+        self.calls.append(("set_user_config", name, email))
+
     def ensure_pr(self, idea_directory, idea_name, slice_number):
         self.calls.append(("ensure_pr", idea_directory, idea_name, slice_number))
         if self.pr_number is None:

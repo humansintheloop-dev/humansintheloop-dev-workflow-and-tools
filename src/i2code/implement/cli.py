@@ -70,7 +70,7 @@ def implement_cmd(**kwargs):
         build_fixer_factory=build_fixer_factory,
         project_initializer=project_initializer,
     )
-    command = ImplementCommand(opts, project, repo, git_repo, mode_factory)
+    command = ImplementCommand(opts, project, git_repo, mode_factory)
     command.execute()
 
 

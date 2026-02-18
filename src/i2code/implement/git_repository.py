@@ -57,6 +57,11 @@ class GitRepository:
     def head_sha(self):
         return self._repo.head.commit.hexsha
 
+    def set_user_config(self, name, email):
+        """Set git user.name and user.email in the repo config."""
+        self._repo.config_writer().set_value("user", "email", email).release()
+        self._repo.config_writer().set_value("user", "name", name).release()
+
     def head_advanced_since(self, original_sha):
         """Return True if HEAD has moved past the given SHA."""
         return self._repo.head.commit.hexsha != original_sha

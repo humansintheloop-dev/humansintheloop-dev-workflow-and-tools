@@ -12,10 +12,9 @@ from i2code.implement.git_setup import (
 class ImplementCommand:
     """Orchestrates the implement workflow across trunk, isolate, and worktree modes."""
 
-    def __init__(self, opts, project, repo, git_repo, mode_factory):
+    def __init__(self, opts, project, git_repo, mode_factory):
         self.opts = opts
         self.project = project
-        self.repo = repo
         self.git_repo = git_repo
         self.mode_factory = mode_factory
 
@@ -63,7 +62,6 @@ class ImplementCommand:
     def _isolate_mode(self):
         """Delegate execution to an isolarium VM."""
         isolate_mode = self.mode_factory.make_isolate_mode(
-            repo=self.repo,
             git_repo=self.git_repo,
             project=self.project,
         )
@@ -97,17 +95,17 @@ class ImplementCommand:
         print(f"Slice branch: {slice_branch}")
 
         if self.opts.isolated:
-            self.repo.config_writer().set_value("user", "email", "test@test.com").release()
-            self.repo.config_writer().set_value("user", "name", "Test User").release()
+            self.git_repo.set_user_config("Test User", "test@test.com")
             ensure_claude_permissions(self.git_repo.working_tree_dir)
             work_project = self.project
             self.git_repo.checkout(slice_branch)
         else:
+            main_repo_dir = self.git_repo.working_tree_dir
             self.git_repo = self.git_repo.ensure_worktree(self.project.name, integration_branch)
             print(f"Worktree: {self.git_repo.working_tree_dir}")
             ensure_claude_permissions(self.git_repo.working_tree_dir)
             work_project = self.project.worktree_idea_project(
-                self.git_repo.working_tree_dir, self.repo.working_tree_dir
+                self.git_repo.working_tree_dir, main_repo_dir
             )
             self.git_repo.checkout(slice_branch)
 

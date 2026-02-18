@@ -144,19 +144,6 @@ def determine_comment_type(
     return "conversation"
 
 
-def get_failing_workflow_run(
-    branch: str, sha: str, gh_client=None,
-) -> Optional[Dict[str, Any]]:
-    """Get failing workflow run for the branch/SHA, if any."""
-    if gh_client is None:
-        gh_client = _default_gh_client()
-    runs = gh_client.get_workflow_runs_for_commit(branch, sha)
-    for run in runs:
-        if run.get("conclusion") == "failure":
-            return run
-    return None
-
-
 def mark_pr_ready(pr_number: int) -> bool:
     """Delegate to GitHubClient.mark_pr_ready()."""
     return _default_gh_client().mark_pr_ready(pr_number)

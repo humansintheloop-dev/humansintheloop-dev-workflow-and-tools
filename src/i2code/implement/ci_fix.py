@@ -8,7 +8,18 @@ from git import Repo as GitRepo
 from i2code.implement.claude_runner import run_claude_interactive, run_claude_with_output_capture
 from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.github_client import GitHubClient
-from i2code.implement.pr_helpers import get_failing_workflow_run, push_branch_to_remote
+from i2code.implement.pr_helpers import push_branch_to_remote
+
+
+def _get_failing_workflow_run(branch, sha, gh_client=None):
+    """Get failing workflow run for the branch/SHA, if any."""
+    if gh_client is None:
+        gh_client = GitHubClient()
+    runs = gh_client.get_workflow_runs_for_commit(branch, sha)
+    for run in runs:
+        if run.get("conclusion") == "failure":
+            return run
+    return None
 
 
 def fix_ci_failure(
@@ -33,7 +44,7 @@ def fix_ci_failure(
     for attempt in range(1, max_retries + 1):
         print(f"\nCI fix attempt {attempt}/{max_retries}")
 
-        failing_run = get_failing_workflow_run(slice_branch, current_sha, gh_client=gh_client)
+        failing_run = _get_failing_workflow_run(slice_branch, current_sha, gh_client=gh_client)
         if not failing_run:
             print("No failing workflow found - CI may have passed")
             return True

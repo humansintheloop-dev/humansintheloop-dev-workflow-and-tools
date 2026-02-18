@@ -1,9 +1,9 @@
 """GithubActionsBuildFixer: detects and fixes CI failures on current HEAD."""
 
 import sys
+from typing import Any, Dict, Optional
 
 from i2code.implement.command_builder import CommandBuilder
-from i2code.implement.pr_helpers import get_failing_workflow_run
 
 
 class GithubActionsBuildFixer:
@@ -20,6 +20,16 @@ class GithubActionsBuildFixer:
         self._git_repo = git_repo
         self._claude_runner = claude_runner
 
+    def _get_failing_workflow_run(
+        self, branch: str, sha: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Get failing workflow run for the branch/SHA, if any."""
+        runs = self._git_repo.gh_client.get_workflow_runs_for_commit(branch, sha)
+        for run in runs:
+            if run.get("conclusion") == "failure":
+                return run
+        return None
+
     def check_and_fix_ci(self):
         """Check for failing CI on current HEAD and attempt to fix it.
 
@@ -28,9 +38,8 @@ class GithubActionsBuildFixer:
         if not self._git_repo.branch_has_been_pushed():
             return False
 
-        failing_run = get_failing_workflow_run(
+        failing_run = self._get_failing_workflow_run(
             self._git_repo.branch, self._git_repo.head_sha,
-            gh_client=self._git_repo.gh_client,
         )
 
         if not failing_run:
@@ -58,9 +67,8 @@ class GithubActionsBuildFixer:
         for attempt in range(1, max_retries + 1):
             print(f"\nCI fix attempt {attempt}/{max_retries}")
 
-            failing_run = get_failing_workflow_run(
+            failing_run = self._get_failing_workflow_run(
                 self._git_repo.branch, current_sha,
-                gh_client=self._git_repo.gh_client,
             )
             if not failing_run:
                 print("No failing workflow found - CI may have passed")

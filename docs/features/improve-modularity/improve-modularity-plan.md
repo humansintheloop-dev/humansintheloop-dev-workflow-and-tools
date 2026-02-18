@@ -359,15 +359,15 @@ Consolidate CI failure detection and fixing into `GithubActionsBuildFixer`. Abso
     - [x] Delete `GitRepository.fix_ci_failure()` (callers updated in 8.4)
     - [x] Run pre-commit checklist
 
-- [ ] **Task 8.3: Move `get_failing_workflow_run()` into GithubActionsBuildFixer**
+- [x] **Task 8.3: Move `get_failing_workflow_run()` into GithubActionsBuildFixer**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `GithubActionsBuildFixer._get_failing_workflow_run()` exists as private method. `get_failing_workflow_run()` removed from `pr_helpers.py`.
   - Steps:
-    - [ ] Move `get_failing_workflow_run()` from `pr_helpers.py` into `GithubActionsBuildFixer._get_failing_workflow_run()`
-    - [ ] Update internal callers within `GithubActionsBuildFixer`
-    - [ ] Remove `get_failing_workflow_run()` from `pr_helpers.py`
-    - [ ] Run pre-commit checklist
+    - [x] Move `get_failing_workflow_run()` from `pr_helpers.py` into `GithubActionsBuildFixer._get_failing_workflow_run()`
+    - [x] Update internal callers within `GithubActionsBuildFixer`
+    - [x] Remove `get_failing_workflow_run()` from `pr_helpers.py`
+    - [x] Run pre-commit checklist
 
 - [ ] **Task 8.4: Update callers and delete placeholders**
   - TaskType: OUTCOME
@@ -696,3 +696,18 @@ Ran ruff check, code health review, and all tests pass
 
 ### 2026-02-18 14:46 - mark-task-complete
 Extracted GithubActionsBuildFixer from WorktreeMode._check_and_fix_ci()
+
+### 2026-02-18 15:07 - mark-step-complete
+Moved get_failing_workflow_run() into GithubActionsBuildFixer._get_failing_workflow_run()
+
+### 2026-02-18 15:07 - mark-step-complete
+Updated internal callers within GithubActionsBuildFixer to use self._get_failing_workflow_run()
+
+### 2026-02-18 15:07 - mark-step-complete
+Removed get_failing_workflow_run() from pr_helpers.py; inlined into ci_fix.py as private function
+
+### 2026-02-18 15:07 - mark-step-complete
+Pre-commit checklist passed: ruff clean, code health green for all files
+
+### 2026-02-18 15:07 - mark-task-complete
+get_failing_workflow_run() moved into GithubActionsBuildFixer._get_failing_workflow_run(), removed from pr_helpers.py, ci_fix.py updated with private copy

@@ -326,13 +326,13 @@ Extract `WorktreeMode._wait_for_ci()` into `GithubActionsMonitor`. Incremental m
     - [x] Delete `WorktreeMode._wait_for_ci()` placeholder
     - [x] Run pre-commit checklist
 
-- [ ] **Task 7.3: Migrate tests**
+- [x] **Task 7.3: Migrate tests**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `test_github_actions_monitor.py` exists with CI-wait tests.
   - Steps:
-    - [ ] Migrate CI-wait tests from `test_worktree_mode.py` into `test_github_actions_monitor.py`
-    - [ ] Run pre-commit checklist
+    - [x] Migrate CI-wait tests from `test_worktree_mode.py` into `test_github_actions_monitor.py`
+    - [x] Run pre-commit checklist
 
 ---
 
@@ -669,3 +669,12 @@ Pre-commit checklist passed: ruff clean, code health 9.68
 
 ### 2026-02-18 13:56 - mark-task-complete
 Inlined _wait_for_ci() into _execute_task() and deleted placeholder
+
+### 2026-02-18 14:01 - mark-step-complete
+Removed redundant test_skip_ci_wait_does_not_call_wait_for_ci from test_worktree_mode.py — already covered by test_wait_for_ci_skips_when_skip_ci_wait_is_true in test_github_actions_monitor.py
+
+### 2026-02-18 14:01 - mark-step-complete
+Ruff check passed, code health review shows no regression (8.81)
+
+### 2026-02-18 14:01 - mark-task-complete
+Migrated CI-wait tests: removed redundant skip test from test_worktree_mode.py, test_github_actions_monitor.py is the canonical location for all CI-wait unit tests

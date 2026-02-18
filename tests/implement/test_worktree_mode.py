@@ -206,37 +206,6 @@ class TestWorktreeModeTaskExecution:
             captured = capsys.readouterr()
             assert "All tasks completed!" in captured.out
 
-    def test_skip_ci_wait_does_not_call_wait_for_ci(self, capsys):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up project", False),
-            ])
-            _write_ci_workflow(tmpdir)
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_runner = FakeClaudeRunner()
-
-            fake_runner.set_side_effect(
-                _combined(
-                    _advance_head(fake_repo, "bbb"),
-                    _mark_task_complete(plan_path, 1, 1, "Set up project"),
-                )
-            )
-
-            mode, _, _, fake_gh, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_runner=fake_runner,
-                opts=ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True),
-            )
-            mode.execute()
-
-            # Push was called but wait_for_workflow_completion was NOT
-            assert ("push",) in fake_repo.calls
-            assert not any(c[0] == "wait_for_workflow_completion" for c in fake_gh.calls)
-
     def test_reuses_existing_pr(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_name = "test-feature"

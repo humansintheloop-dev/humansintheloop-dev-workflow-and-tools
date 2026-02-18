@@ -91,10 +91,6 @@ class FakeGitRepository:
             self.pr_number = 100
         return self.pr_number
 
-    def wait_for_ci(self, timeout_seconds=600):
-        self.calls.append(("wait_for_ci", timeout_seconds))
-        return (True, None)
-
     def fix_ci_failure(self, worktree_path, max_retries=3, interactive=True, mock_claude=None):
         self.calls.append(("fix_ci_failure", worktree_path))
         return True

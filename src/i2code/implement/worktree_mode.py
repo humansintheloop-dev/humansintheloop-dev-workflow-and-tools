@@ -167,7 +167,7 @@ class WorktreeMode:
 
     def _wait_for_ci(self):
         """Wait for CI completion if configured."""
-        self._ci_monitor.wait_for_ci()
+        self._ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)
 
     def _print_completion(self):
         """Print completion message with PR URL if available."""

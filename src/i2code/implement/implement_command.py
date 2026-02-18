@@ -134,7 +134,7 @@ class ImplementCommand:
             print(f"Reusing existing PR #{existing_pr}")
 
         ci_monitor = GithubActionsMonitor(
-            git_repo=self.git_repo,
+            gh_client=self.gh_client,
             skip_ci_wait=self.opts.skip_ci_wait,
             ci_timeout=self.opts.ci_timeout,
         )

@@ -298,7 +298,7 @@ Extract the module-level `implement()` function and `implement_trunk_mode()`, `i
 ## Steel Thread 7: Extract GithubActionsMonitor
 Extract `WorktreeMode._wait_for_ci()` into `GithubActionsMonitor`. Incremental move-method refactoring: move → delegate → update callers → delete placeholder → migrate tests.
 
-- [ ] **Task 7.1: Move `WorktreeMode._wait_for_ci()` into GithubActionsMonitor**
+- [x] **Task 7.1: Move `WorktreeMode._wait_for_ci()` into GithubActionsMonitor**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `GithubActionsMonitor` class in `github_actions_monitor.py` with `GithubActionsMonitor.wait_for_ci(branch, head_sha)`. Constructor: `(gh_client, skip_ci_wait, ci_timeout)`. WorktreeMode accepts `ci_monitor` via constructor, `WorktreeMode._wait_for_ci()` delegates to `self._ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)`. Constructed in `implement_cmd()`. No `GitRepository.wait_for_ci()`.
@@ -307,15 +307,15 @@ Extract `WorktreeMode._wait_for_ci()` into `GithubActionsMonitor`. Incremental m
     - [x] Add `ci_monitor` param to `WorktreeMode.__init__()`, replace `WorktreeMode._wait_for_ci()` body with delegate
     - [x] Construct `GithubActionsMonitor` in `implement_cmd()`, pass through to `WorktreeMode.__init__()`
     - [x] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
-    - [ ] Change `GithubActionsMonitor.__init__()` to take `gh_client` instead of `git_repo`
-    - [ ] Change `GithubActionsMonitor.wait_for_ci()` to take `(branch, head_sha)` as parameters, call `GitHubClient.wait_for_workflow_completion(branch, head_sha, timeout)` directly
-    - [ ] Update `WorktreeMode._wait_for_ci()` to pass `self._git_repo.branch, self._git_repo.head_sha` to `self._ci_monitor.wait_for_ci()`
-    - [ ] Update `implement_cmd()` to pass `gh_client` instead of `git_repo` when constructing `GithubActionsMonitor`
-    - [ ] Delete `GitRepository.wait_for_ci()` and `FakeGitRepository.wait_for_ci()`
-    - [ ] Update `test_github_actions_monitor.py` to pass `FakeGitHubClient` and `(branch, head_sha)` args
-    - [ ] Delete `test_git_repository.py` tests for `GitRepository.wait_for_ci()`
-    - [ ] Update `test_worktree_mode.py` assertions that check `fake_repo.calls` for `"wait_for_ci"`
-    - [ ] Run pre-commit checklist
+    - [x] Change `GithubActionsMonitor.__init__()` to take `gh_client` instead of `git_repo`
+    - [x] Change `GithubActionsMonitor.wait_for_ci()` to take `(branch, head_sha)` as parameters, call `GitHubClient.wait_for_workflow_completion(branch, head_sha, timeout)` directly
+    - [x] Update `WorktreeMode._wait_for_ci()` to pass `self._git_repo.branch, self._git_repo.head_sha` to `self._ci_monitor.wait_for_ci()`
+    - [x] Update `implement_cmd()` to pass `gh_client` instead of `git_repo` when constructing `GithubActionsMonitor`
+    - [x] Delete `GitRepository.wait_for_ci()` and `FakeGitRepository.wait_for_ci()`
+    - [x] Update `test_github_actions_monitor.py` to pass `FakeGitHubClient` and `(branch, head_sha)` args
+    - [x] Delete `test_git_repository.py` tests for `GitRepository.wait_for_ci()`
+    - [x] Update `test_worktree_mode.py` assertions that check `fake_repo.calls` for `"wait_for_ci"`
+    - [x] Run pre-commit checklist
 
 - [ ] **Task 7.2: Update callers and delete placeholder**
   - TaskType: OUTCOME
@@ -627,3 +627,33 @@ Created ImplementCommand class with execute(), _trunk_mode(), _isolate_mode(), _
 
 ### 2026-02-18 13:43 - mark-task-complete
 Already completed as part of task 6.1: test_dry_run.py uses ImplementCommand directly, test_cli_integration.py patches reference implement_command module.
+
+### 2026-02-18 13:48 - mark-step-complete
+Changed GithubActionsMonitor.__init__() to take gh_client instead of git_repo
+
+### 2026-02-18 13:48 - mark-step-complete
+Changed wait_for_ci() to take (branch, head_sha) and call GitHubClient.wait_for_workflow_completion() directly
+
+### 2026-02-18 13:48 - mark-step-complete
+Updated WorktreeMode._wait_for_ci() to pass self._git_repo.branch, self._git_repo.head_sha
+
+### 2026-02-18 13:48 - mark-step-complete
+Updated implement_cmd() to pass gh_client instead of git_repo when constructing GithubActionsMonitor
+
+### 2026-02-18 13:48 - mark-step-complete
+Deleted GitRepository.wait_for_ci() and FakeGitRepository.wait_for_ci()
+
+### 2026-02-18 13:48 - mark-step-complete
+Updated test_github_actions_monitor.py to use FakeGitHubClient and (branch, head_sha) args
+
+### 2026-02-18 13:48 - mark-step-complete
+Deleted test_git_repository.py tests for GitRepository.wait_for_ci()
+
+### 2026-02-18 13:49 - mark-step-complete
+Updated test_worktree_mode.py assertions to check fake_gh.calls for wait_for_workflow_completion
+
+### 2026-02-18 13:49 - mark-step-complete
+Pre-commit checklist: ruff passed, code health reviewed (no regressions)
+
+### 2026-02-18 13:50 - mark-task-complete
+GithubActionsMonitor redesigned to take gh_client instead of git_repo, wait_for_ci takes (branch, head_sha) params

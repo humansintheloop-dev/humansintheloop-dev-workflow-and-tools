@@ -212,16 +212,6 @@ class GitRepository:
         self._pr_number = pr_number
         return pr_number
 
-    def wait_for_ci(self, timeout_seconds=600):
-        """Wait for CI completion on the tracked branch and current HEAD.
-
-        Returns:
-            Tuple of (success, failing_run).
-        """
-        return self._gh_client.wait_for_workflow_completion(
-            self._branch, self.head_sha, timeout_seconds=timeout_seconds
-        )
-
     def fix_ci_failure(
         self,
         worktree_path,

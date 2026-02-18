@@ -291,42 +291,6 @@ class TestEnsurePr:
 
 
 @pytest.mark.unit
-class TestWaitForCi:
-
-    def test_delegates_to_gh_client_with_tracked_branch_and_head(self, test_git_repo_with_commit):
-        tmpdir, repo = test_git_repo_with_commit
-        gh = FakeGitHubClient()
-
-        git_repo = GitRepository(repo, gh_client=gh)
-        git_repo.branch = "idea/test/01-setup"
-
-        head_sha = git_repo.head_sha
-        gh.set_workflow_completion_result("idea/test/01-setup", head_sha, (True, None))
-
-        success, failing_run = git_repo.wait_for_ci()
-
-        assert success is True
-        assert failing_run is None
-        assert ("wait_for_workflow_completion", "idea/test/01-setup", head_sha) in gh.calls
-
-    def test_returns_failure_with_failing_run(self, test_git_repo_with_commit):
-        tmpdir, repo = test_git_repo_with_commit
-        gh = FakeGitHubClient()
-
-        git_repo = GitRepository(repo, gh_client=gh)
-        git_repo.branch = "idea/test/01-setup"
-
-        head_sha = git_repo.head_sha
-        failing = {"name": "CI Build", "conclusion": "failure"}
-        gh.set_workflow_completion_result("idea/test/01-setup", head_sha, (False, failing))
-
-        success, failing_run = git_repo.wait_for_ci()
-
-        assert success is False
-        assert failing_run == failing
-
-
-@pytest.mark.unit
 class TestBranchHasBeenPushed:
 
     def test_returns_false_when_branch_not_on_remote(self, test_git_repo_with_commit, mocker):

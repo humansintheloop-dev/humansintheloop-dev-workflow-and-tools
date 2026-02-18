@@ -101,7 +101,7 @@ def _make_worktree_mode(
         opts = ImplementOpts(idea_directory=idea_dir)
 
     ci_monitor = GithubActionsMonitor(
-        git_repo=fake_repo,
+        gh_client=fake_gh,
         skip_ci_wait=opts.skip_ci_wait,
         ci_timeout=opts.ci_timeout,
     )
@@ -200,8 +200,8 @@ class TestWorktreeModeTaskExecution:
             assert ("push",) in fake_repo.calls
             # PR was created
             assert any(c[0] == "ensure_pr" for c in fake_repo.calls)
-            # CI was waited on
-            assert any(c[0] == "wait_for_ci" for c in fake_repo.calls)
+            # CI was waited on (via GithubActionsMonitor → gh_client)
+            assert any(c[0] == "wait_for_workflow_completion" for c in fake_gh.calls)
 
             captured = capsys.readouterr()
             assert "All tasks completed!" in captured.out
@@ -226,16 +226,16 @@ class TestWorktreeModeTaskExecution:
                 )
             )
 
-            mode, _, _, _, _ = _make_worktree_mode(
+            mode, _, _, fake_gh, _ = _make_worktree_mode(
                 plan_path, idea_dir, tmpdir,
                 fake_repo=fake_repo, fake_runner=fake_runner,
                 opts=ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True),
             )
             mode.execute()
 
-            # Push was called but wait_for_ci was NOT
+            # Push was called but wait_for_workflow_completion was NOT
             assert ("push",) in fake_repo.calls
-            assert not any(c[0] == "wait_for_ci" for c in fake_repo.calls)
+            assert not any(c[0] == "wait_for_workflow_completion" for c in fake_gh.calls)
 
     def test_reuses_existing_pr(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -14,8 +14,9 @@ class FakeGitRepository:
         assert fake.head_sha == "abc123"
     """
 
-    def __init__(self, working_tree_dir="/fake/repo"):
+    def __init__(self, working_tree_dir="/fake/repo", gh_client=None):
         self._working_tree_dir = working_tree_dir
+        self._gh_client = gh_client
         self._head_sha = "aaa"
         self._branches = set()
         self._checked_out = None
@@ -24,6 +25,10 @@ class FakeGitRepository:
         self.branch = None
         self.pr_number = None
         self.calls = []
+
+    @property
+    def gh_client(self):
+        return self._gh_client
 
     @property
     def working_tree_dir(self):
@@ -80,8 +85,8 @@ class FakeGitRepository:
         self._pushed = True
         return True
 
-    def ensure_pr(self, idea_directory, idea_name, slice_number, base_branch):
-        self.calls.append(("ensure_pr", idea_directory, idea_name, slice_number, base_branch))
+    def ensure_pr(self, idea_directory, idea_name, slice_number):
+        self.calls.append(("ensure_pr", idea_directory, idea_name, slice_number))
         if self.pr_number is None:
             self.pr_number = 100
         return self.pr_number

@@ -242,7 +242,6 @@ class TestEnsurePr:
             idea_directory="/fake/idea",
             idea_name="test",
             slice_number=1,
-            base_branch="main",
         )
 
         assert result == 42
@@ -260,7 +259,6 @@ class TestEnsurePr:
             idea_directory="/fake/idea",
             idea_name="test",
             slice_number=1,
-            base_branch="main",
         )
 
         assert result == 99
@@ -278,14 +276,12 @@ class TestEnsurePr:
             idea_directory="/fake/idea",
             idea_name="test",
             slice_number=1,
-            base_branch="main",
         )
         # Second call should return cached value without calling gh again
         result = git_repo.ensure_pr(
             idea_directory="/fake/idea",
             idea_name="test",
             slice_number=1,
-            base_branch="main",
         )
 
         assert result == 99

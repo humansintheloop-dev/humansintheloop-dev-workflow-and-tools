@@ -136,7 +136,6 @@ def implement_worktree_mode(opts: ImplementOpts, project: IdeaProject, repo, git
         project=project,
         state=state,
         claude_runner=claude_runner,
-        gh_client=gh_client,
         work_plan_file=work_plan_file,
     )
     worktree_mode.execute()

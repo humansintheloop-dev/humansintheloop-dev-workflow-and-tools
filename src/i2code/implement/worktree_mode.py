@@ -25,18 +25,16 @@ class WorktreeMode:
         project: IdeaProject with directory, name, and plan_file.
         state: WorkflowState (or FakeWorkflowState) for tracking processed feedback.
         claude_runner: ClaudeRunner (or FakeClaudeRunner) for invoking Claude.
-        gh_client: GitHubClient (or FakeGitHubClient) for PR and CI operations.
         work_plan_file: Path to the plan file in the working directory.
     """
 
-    def __init__(self, opts, git_repo, project, state, claude_runner, gh_client,
+    def __init__(self, opts, git_repo, project, state, claude_runner,
                  work_plan_file):
         self._opts = opts
         self._git_repo = git_repo
         self._project = project
         self._state = state
         self._claude_runner = claude_runner
-        self._gh_client = gh_client
         self._work_plan_file = work_plan_file
 
     def execute(self):
@@ -65,7 +63,7 @@ class WorktreeMode:
 
         failing_run = get_failing_workflow_run(
             self._git_repo.branch, self._git_repo.head_sha,
-            gh_client=self._gh_client,
+            gh_client=self._git_repo.gh_client,
         )
 
         if not failing_run:
@@ -94,7 +92,7 @@ class WorktreeMode:
         if not self._git_repo.pr_number or not self._git_repo.branch_has_been_pushed():
             return False
 
-        pr_url = self._gh_client.get_pr_url(self._git_repo.pr_number)
+        pr_url = self._git_repo.gh_client.get_pr_url(self._git_repo.pr_number)
         had_feedback, _made_changes = process_pr_feedback(
             pr_number=self._git_repo.pr_number,
             pr_url=pr_url,
@@ -105,7 +103,7 @@ class WorktreeMode:
             mock_claude=self._opts.mock_claude,
             skip_ci_wait=self._opts.skip_ci_wait,
             ci_timeout=self._opts.ci_timeout,
-            gh_client=self._gh_client,
+            gh_client=self._git_repo.gh_client,
         )
 
         if had_feedback:
@@ -119,6 +117,12 @@ class WorktreeMode:
         task_description = next_task.print()
         print(f"Executing task: {task_description}")
 
+        self._run_claude_and_validate(next_task, task_description)
+        self._push_and_ensure_pr()
+        self._wait_for_ci()
+
+    def _run_claude_and_validate(self, next_task, task_description):
+        """Run Claude on the task and validate the result."""
         head_before = self._git_repo.head_sha
 
         claude_cmd = self._build_command(task_description)
@@ -144,6 +148,8 @@ class WorktreeMode:
             print("Tasks must create a CI workflow (e.g., .github/workflows/ci.yml) before pushing.", file=sys.stderr)
             sys.exit(1)
 
+    def _push_and_ensure_pr(self):
+        """Push changes and create a Draft PR if one doesn't exist."""
         print("Task completed successfully. Pushing changes...")
 
         if not self._git_repo.push():
@@ -151,13 +157,14 @@ class WorktreeMode:
             sys.exit(1)
 
         if self._git_repo.pr_number is None:
-            base_branch = self._gh_client.get_default_branch()
             self._git_repo.ensure_pr(
                 self._project.directory, self._project.name,
-                self._state.slice_number, base_branch=base_branch,
+                self._state.slice_number,
             )
             print(f"Created Draft PR #{self._git_repo.pr_number}")
 
+    def _wait_for_ci(self):
+        """Wait for CI completion if configured."""
         if not self._opts.skip_ci_wait:
             print("Waiting for CI to complete...")
             ci_success, failing_run = self._git_repo.wait_for_ci(
@@ -174,7 +181,7 @@ class WorktreeMode:
         """Print completion message with PR URL if available."""
         print("All tasks completed!")
         if self._git_repo.pr_number:
-            pr_url = self._gh_client.get_pr_url(self._git_repo.pr_number)
+            pr_url = self._git_repo.gh_client.get_pr_url(self._git_repo.pr_number)
             if pr_url:
                 print(f"PR: {pr_url}")
 

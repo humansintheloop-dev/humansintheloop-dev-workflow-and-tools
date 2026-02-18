@@ -63,24 +63,24 @@ class TestEnsurePrOnGitRepository:
         git_repo.branch = "idea/test/01-setup"
 
         with pytest.raises(RuntimeError):
-            git_repo.ensure_pr("/path/to/idea", "test", 1, base_branch="main")
+            git_repo.ensure_pr("/path/to/idea", "test", 1)
 
-    def test_ensure_pr_passes_base_branch_to_create(self, test_git_repo_with_commit):
-        """ensure_pr should pass base_branch through to create_draft_pr."""
+    def test_ensure_pr_uses_default_branch_from_gh_client(self, test_git_repo_with_commit):
+        """ensure_pr should fetch default branch from gh_client."""
         from fake_github_client import FakeGitHubClient
         from i2code.implement.git_repository import GitRepository
 
         tmpdir, repo = test_git_repo_with_commit
         fake = FakeGitHubClient()
         fake.set_next_pr_number(42)
+        fake.set_default_branch("develop")
         git_repo = GitRepository(repo, gh_client=fake)
         git_repo.branch = "idea/test/01-setup"
 
-        git_repo.ensure_pr("/path/to/idea", "test", 1, base_branch="master")
+        git_repo.ensure_pr("/path/to/idea", "test", 1)
 
-        # Verify create_draft_pr was called with base_branch="master"
         assert len(fake._created_prs) == 1
-        assert fake._created_prs[0]["base"] == "master"
+        assert fake._created_prs[0]["base"] == "develop"
 
     def test_ensure_pr_reuses_existing_pr(self, test_git_repo_with_commit):
         """ensure_pr should return existing PR number if one exists."""
@@ -93,7 +93,7 @@ class TestEnsurePrOnGitRepository:
         git_repo = GitRepository(repo, gh_client=fake)
         git_repo.branch = "idea/test/01-setup"
 
-        result = git_repo.ensure_pr("/path/to/idea", "test", 1, base_branch="main")
+        result = git_repo.ensure_pr("/path/to/idea", "test", 1)
 
         assert result == 77
         assert len(fake._created_prs) == 0

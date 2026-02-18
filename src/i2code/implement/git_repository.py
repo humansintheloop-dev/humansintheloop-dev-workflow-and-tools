@@ -48,6 +48,10 @@ class GitRepository:
         self._pr_number = value
 
     @property
+    def gh_client(self):
+        return self._gh_client
+
+    @property
     def working_tree_dir(self):
         return self._repo.working_tree_dir
 
@@ -181,7 +185,7 @@ class GitRepository:
             return False
         return True
 
-    def ensure_pr(self, idea_directory, idea_name, slice_number, base_branch):
+    def ensure_pr(self, idea_directory, idea_name, slice_number):
         """Ensure a Draft PR exists for the tracked branch.
 
         Creates a new Draft PR if none exists, otherwise returns the existing
@@ -198,6 +202,7 @@ class GitRepository:
             self._pr_number = existing
             return existing
 
+        base_branch = self._gh_client.get_default_branch()
         slice_suffix = self._branch.split("/")[-1]
         title = generate_pr_title(idea_name, slice_suffix)
         body = generate_pr_body(idea_directory, idea_name, slice_number)

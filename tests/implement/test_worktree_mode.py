@@ -86,14 +86,16 @@ def _make_worktree_mode(
 ):
     """Create a WorktreeMode with fakes wired up."""
     project = IdeaProject(idea_dir)
-    if fake_repo is None:
-        fake_repo = FakeGitRepository(working_tree_dir=work_dir)
     if fake_runner is None:
         fake_runner = FakeClaudeRunner()
     if fake_gh is None:
         fake_gh = FakeGitHubClient()
     if fake_state is None:
         fake_state = FakeWorkflowState()
+    if fake_repo is None:
+        fake_repo = FakeGitRepository(working_tree_dir=work_dir, gh_client=fake_gh)
+    elif fake_repo.gh_client is None:
+        fake_repo._gh_client = fake_gh
     if opts is None:
         opts = ImplementOpts(idea_directory=idea_dir)
 
@@ -103,7 +105,6 @@ def _make_worktree_mode(
         project=project,
         state=fake_state,
         claude_runner=fake_runner,
-        gh_client=fake_gh,
         work_plan_file=plan_path,
     )
     return mode, fake_repo, fake_runner, fake_gh, fake_state
@@ -288,11 +289,9 @@ class TestWorktreeModeTaskExecution:
             )
             mode.execute()
 
-            # ensure_pr was called with base_branch="master"
+            # ensure_pr was called
             ensure_pr_calls = [c for c in fake_repo.calls if c[0] == "ensure_pr"]
             assert len(ensure_pr_calls) == 1
-            # ensure_pr(idea_directory, idea_name, slice_number, base_branch)
-            assert ensure_pr_calls[0][4] == "master"
 
 
 @pytest.mark.unit

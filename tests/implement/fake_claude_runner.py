@@ -21,6 +21,7 @@ class FakeClaudeRunner:
     def __init__(self):
         self._results = []
         self._default_result = ClaudeResult(returncode=0, stdout="", stderr="")
+        self._side_effects = []
         self.calls = []
 
     def set_result(self, result):
@@ -31,7 +32,17 @@ class FakeClaudeRunner:
         """Set a sequence of results to return for successive calls."""
         self._results = list(results)
 
+    def set_side_effect(self, fn):
+        """Set a single side-effect callback for the next call."""
+        self._side_effects = [fn]
+
+    def set_side_effects(self, fns):
+        """Set side-effect callbacks for successive calls."""
+        self._side_effects = list(fns)
+
     def _next_result(self):
+        if self._side_effects:
+            self._side_effects.pop(0)()
         if self._results:
             return self._results.pop(0)
         return self._default_result

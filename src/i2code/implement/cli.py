@@ -30,9 +30,9 @@ from i2code.implement.implement import (
     run_scaffolding,
     check_claude_success,
     has_ci_workflow_files,
-    run_trunk_loop,
     print_task_failure_diagnostics,
 )
+from i2code.implement.trunk_mode import TrunkMode
 
 
 def implement(opts: ImplementOpts, project: IdeaProject):
@@ -77,9 +77,18 @@ def implement(opts: ImplementOpts, project: IdeaProject):
                 f"--trunk cannot be combined with: {', '.join(incompatible)}"
             )
 
-        run_trunk_loop(
-            idea_directory=project.directory,
-            idea_name=project.name,
+        from i2code.implement.claude_runner import RealClaudeRunner
+
+        repo = Repo(project.directory, search_parent_directories=True)
+        git_repo = GitRepository(repo)
+        claude_runner = RealClaudeRunner()
+
+        trunk_mode = TrunkMode(
+            git_repo=git_repo,
+            project=project,
+            claude_runner=claude_runner,
+        )
+        trunk_mode.execute(
             non_interactive=opts.non_interactive,
             mock_claude=opts.mock_claude,
             extra_prompt=opts.extra_prompt,

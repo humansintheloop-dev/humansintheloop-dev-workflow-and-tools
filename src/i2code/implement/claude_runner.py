@@ -23,6 +23,18 @@ class ClaudeResult:
         self.last_messages = last_messages or []
 
 
+class RealClaudeRunner:
+    """Delegates to the real run_claude_interactive / run_claude_with_output_capture."""
+
+    def run_interactive(self, cmd: List[str], cwd: str) -> ClaudeResult:
+        from i2code.implement.implement import run_claude_interactive
+        return run_claude_interactive(cmd, cwd=cwd)
+
+    def run_with_capture(self, cmd: List[str], cwd: str) -> ClaudeResult:
+        from i2code.implement.implement import run_claude_with_output_capture
+        return run_claude_with_output_capture(cmd, cwd=cwd)
+
+
 class MockClaudeRunner:
     """Wraps a mock shell script for integration testing.
 

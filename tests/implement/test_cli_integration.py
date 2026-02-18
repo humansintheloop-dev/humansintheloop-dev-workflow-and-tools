@@ -134,15 +134,92 @@ class TestIsolatedFlagPassthrough:
 
 
 @pytest.mark.unit
+class TestTrunkModeAcceptance:
+    """Acceptance test: --trunk dispatches to TrunkMode.execute()."""
+
+    @patch("i2code.implement.trunk_mode.TrunkMode.execute")
+    @patch("i2code.implement.cli.GitRepository")
+    @patch("i2code.implement.cli.Repo")
+    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.cli.IdeaProject")
+    def test_trunk_mode_dispatches_to_trunk_mode_execute(
+        self, mock_idea_project_cls, mock_validate_committed,
+        mock_repo_cls, mock_git_repo_cls, mock_execute,
+    ):
+        from click.testing import CliRunner
+        from i2code.implement.cli import implement_cmd
+
+        mock_idea_project_cls.return_value = _make_mock_project()
+        runner = CliRunner(catch_exceptions=False)
+        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk"])
+
+        assert result.exit_code == 0
+        mock_execute.assert_called_once_with(
+            non_interactive=False,
+            mock_claude=None,
+            extra_prompt=None,
+        )
+
+
+@pytest.mark.unit
+class TestTrunkModeIncompatibleFlags:
+    """--trunk is incompatible with flags that assume remote/CI/worktree infrastructure."""
+
+    @pytest.mark.parametrize("flag", [
+        "--cleanup",
+        "--setup-only",
+        "--isolate",
+        "--isolated",
+        "--skip-ci-wait",
+    ])
+    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.cli.IdeaProject")
+    def test_trunk_with_incompatible_flag_raises_usage_error(
+        self, mock_idea_project_cls, mock_validate_committed,
+        flag,
+    ):
+        from click.testing import CliRunner
+        from i2code.implement.cli import implement_cmd
+
+        mock_idea_project_cls.return_value = _make_mock_project()
+        runner = CliRunner(catch_exceptions=False)
+        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk", flag])
+
+        assert result.exit_code != 0
+        assert "cannot be combined" in result.output.lower() or "cannot be combined" in (result.exception and str(result.exception) or "").lower()
+
+    @pytest.mark.parametrize("flag,value", [
+        ("--ci-fix-retries", "5"),
+        ("--ci-timeout", "900"),
+    ])
+    @patch("i2code.implement.cli.validate_idea_files_committed")
+    @patch("i2code.implement.cli.IdeaProject")
+    def test_trunk_with_non_default_ci_option_raises_usage_error(
+        self, mock_idea_project_cls, mock_validate_committed,
+        flag, value,
+    ):
+        from click.testing import CliRunner
+        from i2code.implement.cli import implement_cmd
+
+        mock_idea_project_cls.return_value = _make_mock_project()
+        runner = CliRunner(catch_exceptions=False)
+        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk", flag, value])
+
+        assert result.exit_code != 0
+
+
+@pytest.mark.unit
 class TestIgnoreUncommittedIdeaChanges:
     """--ignore-uncommitted-idea-changes skips validate_idea_files_committed."""
 
-    @patch("i2code.implement.cli.run_trunk_loop")
+    @patch("i2code.implement.trunk_mode.TrunkMode.execute")
+    @patch("i2code.implement.cli.GitRepository")
+    @patch("i2code.implement.cli.Repo")
     @patch("i2code.implement.cli.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     def test_skips_committed_validation(
         self, mock_idea_project_cls, mock_validate_committed,
-        mock_run_trunk_loop,
+        mock_repo_cls, mock_git_repo_cls, mock_execute,
     ):
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
@@ -156,12 +233,14 @@ class TestIgnoreUncommittedIdeaChanges:
         assert result.exit_code == 0
         mock_validate_committed.assert_not_called()
 
-    @patch("i2code.implement.cli.run_trunk_loop")
+    @patch("i2code.implement.trunk_mode.TrunkMode.execute")
+    @patch("i2code.implement.cli.GitRepository")
+    @patch("i2code.implement.cli.Repo")
     @patch("i2code.implement.cli.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     def test_without_flag_calls_committed_validation(
         self, mock_idea_project_cls, mock_validate_committed,
-        mock_run_trunk_loop,
+        mock_repo_cls, mock_git_repo_cls, mock_execute,
     ):
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd

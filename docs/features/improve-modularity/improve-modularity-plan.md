@@ -222,18 +222,18 @@ Extract Claude invocation into an injectable strategy and consolidate the 6 comm
 ## Steel Thread 5: Extract Execution Modes and Slim implement_cmd
 Replace the 180-line `implement_cmd` with a thin dispatcher and three execution mode classes.
 
-- [ ] **Task 5.1: Extract TrunkMode**
+- [x] **Task 5.1: Extract TrunkMode**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/ -v`
   - Observable: `TrunkMode` class exists in `trunk_mode.py`. Accepts `GitRepository`, `IdeaProject`, `ClaudeRunner` as constructor arguments. `execute()` method contains the task loop. `implement_cmd` delegates to `TrunkMode` when `--trunk` is set.
   - Evidence: Pre-commit checklist passes. `test_trunk_mode.py` tests use zero `@patch` decorators.
   - Steps:
-    - [ ] Write tests for TrunkMode.execute() using fakes
-    - [ ] Implement TrunkMode class
-    - [ ] Update `implement_cmd` trunk branch to construct and call TrunkMode
-    - [ ] Remove `run_trunk_loop` from `implement.py`
-    - [ ] Migrate remaining `test_trunk_mode.py` tests from @patch to fakes
-    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+    - [x] Write tests for TrunkMode.execute() using fakes
+    - [x] Implement TrunkMode class
+    - [x] Update `implement_cmd` trunk branch to construct and call TrunkMode
+    - [x] Remove `run_trunk_loop` from `implement.py`
+    - [x] Migrate remaining `test_trunk_mode.py` tests from @patch to fakes
+    - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
 - [ ] **Task 5.2: Extract WorktreeMode**
   - TaskType: OUTCOME
@@ -372,3 +372,24 @@ Implemented ClaudeRunner with strategy pattern, MockClaudeRunner, FakeClaudeRunn
 
 ### 2026-02-18 08:43 - mark-task-complete
 CommandBuilder extracted with _with_mode() helper. All 594 unit tests + 11 integration tests pass.
+
+### 2026-02-18 09:00 - mark-step-complete
+7 TrunkMode.execute() tests written using fakes (FakeGitRepository, FakeClaudeRunner, temp plan files) — zero @patch decorators
+
+### 2026-02-18 09:00 - mark-step-complete
+TrunkMode class in trunk_mode.py with execute(), _build_command(), _run_claude() methods
+
+### 2026-02-18 09:00 - mark-step-complete
+implement_cmd trunk branch constructs GitRepository, RealClaudeRunner, TrunkMode and calls execute()
+
+### 2026-02-18 09:00 - mark-step-complete
+run_trunk_loop removed from implement.py, replaced by TrunkMode class
+
+### 2026-02-18 09:00 - mark-step-complete
+TestRunTrunkLoop removed, TestTrunkModeAcceptance/IncompatibleFlags moved to test_cli_integration.py. test_trunk_mode.py has zero @patch decorators.
+
+### 2026-02-18 09:00 - mark-step-complete
+Ruff clean on new files, CodeScene 9.84 for trunk_mode.py, 315 unit tests pass, end-to-end passes except pre-existing GH_TEST_ORG
+
+### 2026-02-18 09:00 - mark-task-complete
+TrunkMode class extracted to trunk_mode.py. Accepts GitRepository, IdeaProject, ClaudeRunner. execute() contains task loop. implement_cmd delegates to TrunkMode. test_trunk_mode.py has zero @patch decorators.

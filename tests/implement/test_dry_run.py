@@ -57,16 +57,16 @@ class TestDryRun:
         assert result.exit_code == 0
         assert "worktree" in result.output.lower()
 
-    @patch("i2code.implement.cli.run_trunk_loop")
+    @patch("i2code.implement.trunk_mode.TrunkMode.execute")
     @patch("i2code.implement.cli.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     def test_dry_run_does_not_execute(
         self, mock_idea_project_cls, mock_validate_committed,
-        mock_run_trunk_loop,
+        mock_execute,
     ):
         mock_idea_project_cls.return_value = _make_mock_project()
         runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk", "--dry-run"])
 
         assert result.exit_code == 0
-        mock_run_trunk_loop.assert_not_called()
+        mock_execute.assert_not_called()

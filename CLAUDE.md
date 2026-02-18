@@ -30,6 +30,12 @@ IMPORTANT: Always invoke the relevant skill before performing these actions:
 
 Before committing code changes, read and follow [CODE_SCENE.md](CODE_SCENE.md) for Code Health safeguard and refactoring instructions.
 
+## Referencing Code Locations
+
+- Use `path/to/file:line_number` when referencing a specific line (e.g., `src/i2code/plan/manager.py:42`).
+- Use `path/to/file` when referencing a file without a specific line.
+- Both formats enable click-to-navigate in the terminal.
+
 ## Code Style
 
 - Prefer intention-revealing method names over comments. If you find yourself writing a comment to explain what code does, extract it into a method whose name conveys the intent.

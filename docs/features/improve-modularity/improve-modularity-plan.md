@@ -70,6 +70,9 @@ These rules govern all code written during this refactoring:
 | `TrunkMode` | `i2code.implement` | `trunk_mode.py` | Execution mode: tasks on current branch, no Git infrastructure. |
 | `WorktreeMode` | `i2code.implement` | `worktree_mode.py` | Execution mode: worktree + PR + CI workflow. |
 | `IsolateMode` | `i2code.implement` | `isolate_mode.py` | Execution mode: delegates to isolarium VM. |
+| `GithubActionsMonitor` | `i2code.implement` | `github_actions_monitor.py` | Waits for CI completion after push. Injected into WorktreeMode. |
+| `GithubActionsBuildFixer` | `i2code.implement` | `github_actions_build_fixer.py` | Detects and fixes failing CI builds. Injected into WorktreeMode. |
+| `PullRequestReviewProcessor` | `i2code.implement` | `pull_request_review_processor.py` | Processes PR feedback (reviews, comments). Injected into WorktreeMode. |
 
 ### Pre-Commit Checklist
 
@@ -263,9 +266,158 @@ Replace the 180-line `implement_cmd` with a thin dispatcher and three execution 
 
 ---
 
+## Steel Thread 6: Extract GithubActionsMonitor
+Extract `_wait_for_ci()` from WorktreeMode into `GithubActionsMonitor`. Incremental move-method refactoring: move → delegate → update callers → delete placeholder → migrate tests.
+
+- [ ] **Task 6.1: Move `_wait_for_ci()` into GithubActionsMonitor**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `GithubActionsMonitor` class in `github_actions_monitor.py` with `wait_for_ci()`. Constructor: `(git_repo, skip_ci_wait, ci_timeout)`. WorktreeMode accepts `ci_monitor` via constructor, `_wait_for_ci()` delegates to `self._ci_monitor.wait_for_ci()`. Constructed in `implement_cmd()` in `cli.py`.
+  - Steps:
+    - [ ] Create `github_actions_monitor.py` with `GithubActionsMonitor`, move `_wait_for_ci()` body into `wait_for_ci()`
+    - [ ] Add `ci_monitor` param to WorktreeMode constructor, replace `_wait_for_ci()` body with delegate
+    - [ ] Construct `GithubActionsMonitor` in `implement_cmd()` in `cli.py`, pass through to WorktreeMode
+    - [ ] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
+    - [ ] Run pre-commit checklist
+
+- [ ] **Task 6.2: Update callers and delete placeholder**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `_execute_task()` calls `self._ci_monitor.wait_for_ci()` directly. No `_wait_for_ci()` on WorktreeMode.
+  - Steps:
+    - [ ] Update `_execute_task()` to call `self._ci_monitor.wait_for_ci()` directly
+    - [ ] Delete `_wait_for_ci()` placeholder from WorktreeMode
+    - [ ] Run pre-commit checklist
+
+- [ ] **Task 6.3: Migrate tests**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `test_github_actions_monitor.py` exists with CI-wait tests.
+  - Steps:
+    - [ ] Create `test_github_actions_monitor.py`, migrate CI-wait tests from `test_worktree_mode.py`
+    - [ ] Run pre-commit checklist
+
+---
+
+## Steel Thread 7: Extract GithubActionsBuildFixer
+Consolidate CI failure detection and fixing into `GithubActionsBuildFixer`. Absorbs `WorktreeMode._check_and_fix_ci()`, `GitRepository.fix_ci_failure()`, `ci_fix.fix_ci_failure()`, and `pr_helpers.get_failing_workflow_run()`.
+
+- [ ] **Task 7.1: Move `_check_and_fix_ci()` into GithubActionsBuildFixer**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `GithubActionsBuildFixer` class in `github_actions_build_fixer.py` with `check_and_fix_ci()`. WorktreeMode accepts `build_fixer` via constructor, `_check_and_fix_ci()` delegates to `self._build_fixer.check_and_fix_ci()`. Constructed in `implement_cmd()` in `cli.py`.
+  - Steps:
+    - [ ] Create `github_actions_build_fixer.py` with `GithubActionsBuildFixer`, move `_check_and_fix_ci()` body into `check_and_fix_ci()`
+    - [ ] Add `build_fixer` param to WorktreeMode constructor, replace `_check_and_fix_ci()` body with delegate
+    - [ ] Construct `GithubActionsBuildFixer` in `implement_cmd()` in `cli.py`, pass through to WorktreeMode
+    - [ ] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
+    - [ ] Run pre-commit checklist
+
+- [ ] **Task 7.2: Move `GitRepository.fix_ci_failure()` into GithubActionsBuildFixer**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `fix_ci_failure()` is a method on `GithubActionsBuildFixer`. `GitRepository.fix_ci_failure()` deleted (no delegate — GitRepository has no reference to the fixer). Callers updated in Task 7.4.
+  - Steps:
+    - [ ] Move `GitRepository.fix_ci_failure()` (lines 225-299) into `GithubActionsBuildFixer`
+    - [ ] Delete `GitRepository.fix_ci_failure()` (callers updated in 7.4)
+    - [ ] Run pre-commit checklist
+
+- [ ] **Task 7.3: Move `get_failing_workflow_run()` into GithubActionsBuildFixer**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `get_failing_workflow_run()` is a private method on `GithubActionsBuildFixer`. Removed from `pr_helpers.py`.
+  - Steps:
+    - [ ] Move `get_failing_workflow_run()` from `pr_helpers.py` into class as `_get_failing_workflow_run()`
+    - [ ] Update internal callers within `GithubActionsBuildFixer`
+    - [ ] Remove from `pr_helpers.py`
+    - [ ] Run pre-commit checklist
+
+- [ ] **Task 7.4: Update callers and delete placeholders**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `WorktreeMode.execute()` calls `self._build_fixer.check_and_fix_ci()` directly. No `_check_and_fix_ci()` on WorktreeMode. `ci_fix.py` deleted.
+  - Callers: `WorktreeMode.execute()`, `project_setup.ensure_project_setup()` (line 55)
+  - Cascade: `ensure_project_setup()` calls `ci_fix.fix_ci_failure()`. It's called from `IsolateMode` via `RealProjectSetup`. Options: (a) inject `GithubActionsBuildFixer` into `ensure_project_setup`/`RealProjectSetup`/`IsolateMode`, or (b) have `ensure_project_setup` construct one internally from its existing params. Option (b) avoids cascading into IsolateMode.
+  - Steps:
+    - [ ] Update `WorktreeMode.execute()` to call `self._build_fixer.check_and_fix_ci()` directly
+    - [ ] Delete `WorktreeMode._check_and_fix_ci()` placeholder
+    - [ ] Update `project_setup.ensure_project_setup()` to construct and use `GithubActionsBuildFixer` internally (avoids cascading into IsolateMode/RealProjectSetup)
+    - [ ] Delete `ci_fix.py`
+    - [ ] Run pre-commit checklist
+
+- [ ] **Task 7.5: Migrate tests**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `test_github_actions_build_fixer.py` exists with tests from `TestWorktreeModeCIFailure` and `test_git_repository.py`.
+  - Steps:
+    - [ ] Create `test_github_actions_build_fixer.py`, migrate tests from `TestWorktreeModeCIFailure` and `test_git_repository.py`
+    - [ ] Run pre-commit checklist
+
+---
+
+## Steel Thread 8: Extract PullRequestReviewProcessor
+Consolidate PR feedback processing into `PullRequestReviewProcessor`. Absorbs `WorktreeMode._process_feedback()`, `implement.process_pr_feedback()`, and feedback helpers from `pr_helpers.py` (`get_new_feedback`, `format_all_feedback`, `parse_triage_result`, `get_feedback_by_ids`, `determine_comment_type`).
+
+- [ ] **Task 8.1: Move `_process_feedback()` into PullRequestReviewProcessor**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `PullRequestReviewProcessor` class in `pull_request_review_processor.py` with `process_feedback()`. WorktreeMode accepts `review_processor` via constructor, `_process_feedback()` delegates to `self._review_processor.process_feedback()`. Constructed in `implement_cmd()` in `cli.py`.
+  - Steps:
+    - [ ] Create `pull_request_review_processor.py` with `PullRequestReviewProcessor`, move `_process_feedback()` body into `process_feedback()`
+    - [ ] Add `review_processor` param to WorktreeMode constructor, replace `_process_feedback()` body with delegate
+    - [ ] Construct `PullRequestReviewProcessor` in `implement_cmd()` in `cli.py`, pass through to WorktreeMode
+    - [ ] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
+    - [ ] Run pre-commit checklist
+
+- [ ] **Task 8.2: Move `process_pr_feedback()` into PullRequestReviewProcessor**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `process_pr_feedback()` is a method on `PullRequestReviewProcessor`. Removed from `implement.py`. Raw dependencies replaced with injected collaborators. `claude_runner` added to constructor.
+  - Dependency replacements:
+    - `push_branch_to_remote(slice_branch)` → `self._git_repo.push()`
+    - `GitRepo(worktree_path).head.commit.hexsha` → `self._git_repo.head_sha`
+    - `run_claude_interactive`/`run_claude_with_output_capture` → `self._claude_runner.run_interactive()`/`run_with_capture()`
+  - Steps:
+    - [ ] Add `claude_runner` to `PullRequestReviewProcessor` constructor
+    - [ ] Move `process_pr_feedback()` (implement.py lines 37-212) into class
+    - [ ] Replace `push_branch_to_remote(slice_branch)` with `self._git_repo.push()`
+    - [ ] Replace `GitRepo(worktree_path)` HEAD tracking with `self._git_repo.head_sha`
+    - [ ] Replace `run_claude_interactive`/`run_claude_with_output_capture` with `self._claude_runner`
+    - [ ] Remove `process_pr_feedback` from `implement.py`
+    - [ ] Run pre-commit checklist
+
+- [ ] **Task 8.3: Move feedback helpers into PullRequestReviewProcessor**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `get_new_feedback`, `format_all_feedback`, `parse_triage_result`, `get_feedback_by_ids`, `determine_comment_type` are private methods on `PullRequestReviewProcessor`. Removed from `pr_helpers.py`.
+  - Steps:
+    - [ ] Move each helper from `pr_helpers.py` into class as private method
+    - [ ] Update internal callers within `PullRequestReviewProcessor`
+    - [ ] Remove from `pr_helpers.py`
+    - [ ] Run pre-commit checklist
+
+- [ ] **Task 8.4: Update callers and delete placeholder**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `WorktreeMode.execute()` calls `self._review_processor.process_feedback()` directly. No `_process_feedback()` on WorktreeMode.
+  - Steps:
+    - [ ] Update `WorktreeMode.execute()` to call `self._review_processor.process_feedback()` directly
+    - [ ] Delete `WorktreeMode._process_feedback()`, remove `process_pr_feedback` import
+    - [ ] Run pre-commit checklist
+
+- [ ] **Task 8.5: Migrate tests**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `test_pull_request_review_processor.py` exists with tests from `TestWorktreeModeFeedback`.
+  - Steps:
+    - [ ] Create `test_pull_request_review_processor.py`, migrate tests from `TestWorktreeModeFeedback`
+    - [ ] Run pre-commit checklist
+
+---
+
 ## Summary
 
-This plan extracts 9 classes across 5 threads from the 2332-line procedural `implement.py`:
+This plan extracts 12 classes across 8 threads from the 2332-line procedural `implement.py`:
 
 | Thread | Extractions | Key Outcome |
 |--------|------------|-------------|
@@ -274,8 +426,11 @@ This plan extracts 9 classes across 5 threads from the 2332-line procedural `imp
 | 3 | GitRepository | Eliminate `slice_branch`/`pr_number` parameter threading, unify Git access |
 | 4 | ClaudeRunner, CommandBuilder | Eliminate mock_claude conditionals, consolidate 6 build_* functions |
 | 5 | TrunkMode, WorktreeMode, IsolateMode | Replace 180-line if/elif with polymorphism, achieve zero `@patch` in tests |
+| 6 | GithubActionsMonitor | Extract `_wait_for_ci()` from WorktreeMode |
+| 7 | GithubActionsBuildFixer | Consolidate CI fixing: `_check_and_fix_ci`, `fix_ci_failure`, `get_failing_workflow_run`, delete `ci_fix.py` |
+| 8 | PullRequestReviewProcessor | Consolidate PR feedback: `_process_feedback`, `process_pr_feedback`, feedback helpers from `pr_helpers.py` |
 
-Each thread is independently committable and leaves all tests passing. The order matters: Thread 1 creates value objects used everywhere, Thread 2-3 create the injectable infrastructure, Thread 4 handles Claude invocation, and Thread 5 wires it all together.
+Each thread is independently committable and leaves all tests passing. Threads 1-5 created the injectable infrastructure and execution modes. Threads 6-8 further decompose WorktreeMode into focused collaborators.
 
 ---
 

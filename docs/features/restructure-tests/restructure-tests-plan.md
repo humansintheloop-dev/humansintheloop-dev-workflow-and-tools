@@ -55,15 +55,15 @@
     - [x] Delete `test_dry_run.py` (remaining 3 tests are exact duplicates)
     - [x] Run tests
 
-- [ ] **Task 1.2: Delete `test_state_management.py`**
+- [x] **Task 1.2: Delete `test_state_management.py`**
   - TaskType: code
   - Entrypoint: `tests/implement/test_state_management.py`
   - Observable: File deleted, `test_workflow_state.py` tests still pass
   - Evidence: `uv run --with pytest pytest tests/implement/test_workflow_state.py -v`
   - Steps:
-    - [ ] Verify all 5 tests duplicate `test_workflow_state.py`
-    - [ ] Delete `test_state_management.py`
-    - [ ] Run tests
+    - [x] Verify all 5 tests duplicate `test_workflow_state.py`
+    - [x] Delete `test_state_management.py`
+    - [x] Run tests
 
 ## Steel Thread 2: Consolidate `test_command_builder.py` (Rank 1)
 
@@ -248,3 +248,15 @@ Integration test files (unchanged): `test_*_integration.py` (4 files)
 ## Change History
 ### 2026-02-19 08:47 - mark-task-complete
 Moved test_dry_run_does_not_execute to TestImplementCommandDryRun, deleted test_dry_run.py, all 18 tests pass
+
+### 2026-02-19 08:50 - mark-step-complete
+All 5 tests verified as duplicates of test_workflow_state.py
+
+### 2026-02-19 08:50 - mark-step-complete
+File deleted via git rm
+
+### 2026-02-19 08:50 - mark-step-complete
+All 11 tests in test_workflow_state.py pass
+
+### 2026-02-19 08:50 - mark-task-complete
+Deleted duplicate test_state_management.py; all 11 tests in test_workflow_state.py pass

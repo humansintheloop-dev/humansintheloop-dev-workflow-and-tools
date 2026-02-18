@@ -269,16 +269,16 @@ Replace the 180-line `implement_cmd` with a thin dispatcher and three execution 
 ## Steel Thread 6: Extract GithubActionsMonitor
 Extract `_wait_for_ci()` from WorktreeMode into `GithubActionsMonitor`. Incremental move-method refactoring: move → delegate → update callers → delete placeholder → migrate tests.
 
-- [ ] **Task 6.1: Move `_wait_for_ci()` into GithubActionsMonitor**
+- [x] **Task 6.1: Move `_wait_for_ci()` into GithubActionsMonitor**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `GithubActionsMonitor` class in `github_actions_monitor.py` with `wait_for_ci()`. Constructor: `(git_repo, skip_ci_wait, ci_timeout)`. WorktreeMode accepts `ci_monitor` via constructor, `_wait_for_ci()` delegates to `self._ci_monitor.wait_for_ci()`. Constructed in `implement_cmd()` in `cli.py`.
   - Steps:
-    - [ ] Create `github_actions_monitor.py` with `GithubActionsMonitor`, move `_wait_for_ci()` body into `wait_for_ci()`
-    - [ ] Add `ci_monitor` param to WorktreeMode constructor, replace `_wait_for_ci()` body with delegate
-    - [ ] Construct `GithubActionsMonitor` in `implement_cmd()` in `cli.py`, pass through to WorktreeMode
-    - [ ] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
-    - [ ] Run pre-commit checklist
+    - [x] Create `github_actions_monitor.py` with `GithubActionsMonitor`, move `_wait_for_ci()` body into `wait_for_ci()`
+    - [x] Add `ci_monitor` param to WorktreeMode constructor, replace `_wait_for_ci()` body with delegate
+    - [x] Construct `GithubActionsMonitor` in `implement_cmd()` in `cli.py`, pass through to WorktreeMode
+    - [x] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
+    - [x] Run pre-commit checklist
 
 - [ ] **Task 6.2: Update callers and delete placeholder**
   - TaskType: OUTCOME
@@ -578,3 +578,6 @@ implement() isolate path now delegates to IsolateMode (22 lines). implement_cmd 
 
 ### 2026-02-18 09:47 - mark-task-complete
 Extracted IsolateMode, slimmed implement.py from 1478 to 261 lines, extracted 6 new modules (git_setup, pr_helpers, branch_lifecycle, project_setup, ci_fix, claude_runner), updated all imports across 15+ files, 334 tests pass
+
+### 2026-02-18 12:53 - mark-task-complete
+Extracted GithubActionsMonitor with wait_for_ci(), WorktreeMode delegates via ci_monitor, constructed in cli.py

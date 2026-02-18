@@ -7,6 +7,7 @@ import click
 from git import Repo
 
 from i2code.implement.git_repository import GitRepository
+from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
@@ -130,6 +131,12 @@ def implement_worktree_mode(opts: ImplementOpts, project: IdeaProject, repo, git
         git_repo.pr_number = existing_pr
         print(f"Reusing existing PR #{existing_pr}")
 
+    ci_monitor = GithubActionsMonitor(
+        git_repo=git_repo,
+        skip_ci_wait=opts.skip_ci_wait,
+        ci_timeout=opts.ci_timeout,
+    )
+
     worktree_mode = WorktreeMode(
         opts=opts,
         git_repo=git_repo,
@@ -137,6 +144,7 @@ def implement_worktree_mode(opts: ImplementOpts, project: IdeaProject, repo, git
         state=state,
         claude_runner=claude_runner,
         work_plan_file=work_plan_file,
+        ci_monitor=ci_monitor,
     )
     worktree_mode.execute()
 

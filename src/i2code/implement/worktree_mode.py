@@ -26,16 +26,18 @@ class WorktreeMode:
         state: WorkflowState (or FakeWorkflowState) for tracking processed feedback.
         claude_runner: ClaudeRunner (or FakeClaudeRunner) for invoking Claude.
         work_plan_file: Path to the plan file in the working directory.
+        ci_monitor: GithubActionsMonitor for waiting on CI completion.
     """
 
     def __init__(self, opts, git_repo, project, state, claude_runner,
-                 work_plan_file):
+                 work_plan_file, ci_monitor):
         self._opts = opts
         self._git_repo = git_repo
         self._project = project
         self._state = state
         self._claude_runner = claude_runner
         self._work_plan_file = work_plan_file
+        self._ci_monitor = ci_monitor
 
     def execute(self):
         """Run the worktree task loop until all tasks are complete."""
@@ -165,17 +167,7 @@ class WorktreeMode:
 
     def _wait_for_ci(self):
         """Wait for CI completion if configured."""
-        if not self._opts.skip_ci_wait:
-            print("Waiting for CI to complete...")
-            ci_success, failing_run = self._git_repo.wait_for_ci(
-                timeout_seconds=self._opts.ci_timeout,
-            )
-
-            if not ci_success and failing_run:
-                workflow_name = failing_run.get("name", "unknown")
-                print(f"CI failed: {workflow_name}. Will fix on next iteration.")
-            elif ci_success:
-                print("CI passed!")
+        self._ci_monitor.wait_for_ci()
 
     def _print_completion(self):
         """Print completion message with PR URL if available."""

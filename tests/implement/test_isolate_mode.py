@@ -4,24 +4,33 @@ import pytest
 
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.isolate_mode import IsolateMode
+from i2code.implement.project_setup import ProjectInitializer
 
+from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
 from fake_github_client import FakeGitHubClient
 
 
-class FakeProjectSetup:
-    """Fake for project setup operations (ensure_project_setup)."""
+def _make_fake_project_initializer(setup_success=True):
+    """Build a ProjectInitializer with fakes and a controllable ensure_project_setup."""
+    from i2code.implement.command_builder import CommandBuilder
+    initializer = ProjectInitializer(
+        claude_runner=FakeClaudeRunner(),
+        command_builder=CommandBuilder(),
+        git_repo=FakeGitRepository(),
+        build_fixer=None,
+        push_fn=lambda branch: True,
+    )
+    # Monkey-patch ensure_project_setup to record calls and return canned result
+    initializer._setup_success = setup_success
+    initializer._setup_calls = []
 
-    def __init__(self):
-        self._setup_success = True
-        self.calls = []
+    def fake_ensure_project_setup(**kwargs):
+        initializer._setup_calls.append(("ensure_project_setup", kwargs))
+        return initializer._setup_success
 
-    def set_setup_success(self, success):
-        self._setup_success = success
-
-    def ensure_project_setup(self, **kwargs):
-        self.calls.append(("ensure_project_setup", kwargs))
-        return self._setup_success
+    initializer.ensure_project_setup = fake_ensure_project_setup
+    return initializer
 
 
 class FakeSubprocessRunner:
@@ -51,10 +60,9 @@ class TestIsolateModeExecute:
     """IsolateMode.execute() runs project setup then delegates to isolarium."""
 
     def test_calls_ensure_project_setup_then_runs_subprocess(self):
-        fake_setup = FakeProjectSetup()
+        fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
         fake_repo = FakeRepo()
-        fake_gh = FakeGitHubClient()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
@@ -63,22 +71,20 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=fake_gh,
-            project_setup=fake_setup,
+            gh_client=FakeGitHubClient(),
+            project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
         returncode = mode.execute()
 
-        assert any(c[0] == "ensure_project_setup" for c in fake_setup.calls)
+        assert any(c[0] == "ensure_project_setup" for c in fake_initializer._setup_calls)
         assert len(fake_subprocess.calls) == 1
         assert returncode == 0
 
     def test_exits_when_project_setup_fails(self):
-        fake_setup = FakeProjectSetup()
-        fake_setup.set_setup_success(False)
+        fake_initializer = _make_fake_project_initializer(setup_success=False)
         fake_subprocess = FakeSubprocessRunner()
         fake_repo = FakeRepo()
-        fake_gh = FakeGitHubClient()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
@@ -87,8 +93,8 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=fake_gh,
-            project_setup=fake_setup,
+            gh_client=FakeGitHubClient(),
+            project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
 
@@ -99,10 +105,9 @@ class TestIsolateModeExecute:
         assert len(fake_subprocess.calls) == 0
 
     def test_forwards_options_to_isolarium_command(self):
-        fake_setup = FakeProjectSetup()
+        fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
         fake_repo = FakeRepo()
-        fake_gh = FakeGitHubClient()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
@@ -111,8 +116,8 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=fake_gh,
-            project_setup=fake_setup,
+            gh_client=FakeGitHubClient(),
+            project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
         mode.execute(
@@ -141,10 +146,9 @@ class TestIsolateModeExecute:
         assert "900" in cmd
 
     def test_builds_isolarium_command_with_idea_name(self):
-        fake_setup = FakeProjectSetup()
+        fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
         fake_repo = FakeRepo(working_tree_dir="/home/user/project")
-        fake_gh = FakeGitHubClient()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/home/user/project/docs/features/test-feature"
         project._name = "test-feature"
@@ -153,8 +157,8 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=fake_gh,
-            project_setup=fake_setup,
+            gh_client=FakeGitHubClient(),
+            project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
         mode.execute()
@@ -166,11 +170,10 @@ class TestIsolateModeExecute:
         assert "--isolated" in cmd
 
     def test_returns_subprocess_returncode(self):
-        fake_setup = FakeProjectSetup()
+        fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
         fake_subprocess.set_returncode(42)
         fake_repo = FakeRepo()
-        fake_gh = FakeGitHubClient()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
@@ -179,8 +182,8 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=fake_gh,
-            project_setup=fake_setup,
+            gh_client=FakeGitHubClient(),
+            project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
         returncode = mode.execute()
@@ -188,10 +191,9 @@ class TestIsolateModeExecute:
         assert returncode == 42
 
     def test_forwards_setup_parameters(self):
-        fake_setup = FakeProjectSetup()
+        fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
         fake_repo = FakeRepo()
-        fake_gh = FakeGitHubClient()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
@@ -200,8 +202,8 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=fake_gh,
-            project_setup=fake_setup,
+            gh_client=FakeGitHubClient(),
+            project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
         mode.execute(
@@ -212,24 +214,19 @@ class TestIsolateModeExecute:
             skip_ci_wait=True,
         )
 
-        setup_calls = [c for c in fake_setup.calls if c[0] == "ensure_project_setup"]
+        setup_calls = [c for c in fake_initializer._setup_calls if c[0] == "ensure_project_setup"]
         assert len(setup_calls) == 1
         kwargs = setup_calls[0][1]
-        assert kwargs["repo"] == fake_repo
         assert kwargs["idea_directory"] == "/tmp/fake-idea"
-        assert kwargs["idea_name"] == "test-feature"
         assert kwargs["interactive"] is False
         assert kwargs["mock_claude"] == "/mock.sh"
-        assert kwargs["ci_fix_retries"] == 5
         assert kwargs["ci_timeout"] == 900
         assert kwargs["skip_ci_wait"] is True
-        assert kwargs["gh_client"] == fake_gh
 
     def test_interactive_mode_passes_interactive_flag_to_isolarium(self):
-        fake_setup = FakeProjectSetup()
+        fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
         fake_repo = FakeRepo()
-        fake_gh = FakeGitHubClient()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
@@ -238,8 +235,8 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=fake_gh,
-            project_setup=fake_setup,
+            gh_client=FakeGitHubClient(),
+            project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
         mode.execute(non_interactive=False)
@@ -249,10 +246,9 @@ class TestIsolateModeExecute:
         assert "--non-interactive" not in cmd
 
     def test_non_interactive_omits_interactive_flag(self):
-        fake_setup = FakeProjectSetup()
+        fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
         fake_repo = FakeRepo()
-        fake_gh = FakeGitHubClient()
         project = IdeaProject.__new__(IdeaProject)
         project._directory = "/tmp/fake-idea"
         project._name = "test-feature"
@@ -261,8 +257,8 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=fake_gh,
-            project_setup=fake_setup,
+            gh_client=FakeGitHubClient(),
+            project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
         mode.execute(non_interactive=True)

@@ -1,21 +1,11 @@
 """Tests for project scaffolding setup."""
 
+import os
+import tempfile
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from i2code.implement.claude_runner import ClaudeResult
-
-
-def _make_mock_project(name="test-feature", directory="/tmp/fake-idea"):
-    """Create a MagicMock that behaves like an IdeaProject instance."""
-    mock_project = MagicMock()
-    mock_project.name = name
-    mock_project.directory = directory
-    mock_project.plan_file = f"{directory}/{name}-plan.md"
-    mock_project.state_file = f"{directory}/{name}-wt-state.json"
-    mock_project.validate.return_value = mock_project
-    mock_project.validate_files.return_value = None
-    return mock_project
 
 
 @pytest.mark.unit
@@ -491,78 +481,106 @@ class TestEnsureProjectSetupMethod:
         assert result is False
 
 
+def _create_idea_dir_in_git_repo(tmpdir, idea_name="test-feature"):
+    """Create a temp git repo with a valid idea directory containing all required files."""
+    from git import Repo
+    repo = Repo.init(tmpdir)
+    repo.config_writer().set_value("user", "email", "test@test.com").release()
+    repo.config_writer().set_value("user", "name", "Test").release()
+
+    idea_dir = os.path.join(tmpdir, "docs", "features", idea_name)
+    os.makedirs(idea_dir)
+    for suffix in ["idea.md", "discussion.md", "spec.md", "plan.md"]:
+        with open(os.path.join(idea_dir, f"{idea_name}-{suffix}"), "w") as f:
+            f.write(f"# {suffix}\n")
+
+    repo.index.add([os.path.relpath(p, tmpdir) for p in _all_files(idea_dir)])
+    repo.index.commit("Add idea files")
+    return idea_dir
+
+
+def _all_files(directory):
+    """Return all file paths in directory."""
+    result = []
+    for root, _dirs, files in os.walk(directory):
+        for name in files:
+            result.append(os.path.join(root, name))
+    return result
+
+
+class FakeProjectInitializerForScaffold:
+    """Records run_scaffolding calls for testing scaffold_cmd."""
+
+    def __init__(self):
+        self.calls = []
+
+    def run_scaffolding(self, idea_directory, cwd, interactive=True, mock_claude=None):
+        self.calls.append({
+            "idea_directory": idea_directory,
+            "cwd": cwd,
+            "interactive": interactive,
+            "mock_claude": mock_claude,
+        })
+
+
 @pytest.mark.unit
 class TestScaffoldCmd:
-    """Test scaffold CLI command."""
+    """Test scaffold CLI command — no @patch."""
 
-    @patch("i2code.implement.cli.ProjectInitializer")
-    @patch("i2code.implement.cli.IdeaProject")
-    @patch("i2code.implement.cli.Repo")
-    def test_scaffold_validates_and_invokes_run_scaffolding(
-        self, mock_repo_cls, mock_idea_project_cls, mock_initializer_cls
-    ):
+    def test_scaffold_validates_and_invokes_run_scaffolding(self):
         from click.testing import CliRunner
         from i2code.implement.cli import scaffold_cmd
 
-        mock_project = _make_mock_project()
-        mock_idea_project_cls.return_value = mock_project
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-        mock_repo_cls.return_value = mock_repo
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = _create_idea_dir_in_git_repo(tmpdir)
+            fake_initializer = FakeProjectInitializerForScaffold()
 
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea"])
+            runner = CliRunner(catch_exceptions=False)
+            result = runner.invoke(
+                scaffold_cmd, [idea_dir],
+                obj={"project_initializer": fake_initializer},
+            )
 
-        assert result.exit_code == 0
-        mock_project.validate.assert_called_once()
-        mock_project.validate_files.assert_called_once()
-        mock_initializer_cls.return_value.run_scaffolding.assert_called_once_with(
-            "/tmp/fake-idea",
-            cwd="/tmp/fake-repo",
-            interactive=True,
-            mock_claude=None,
-        )
+            assert result.exit_code == 0
+            assert len(fake_initializer.calls) == 1
+            call = fake_initializer.calls[0]
+            assert call["idea_directory"] == idea_dir
+            assert call["cwd"] == tmpdir
+            assert call["interactive"] is True
+            assert call["mock_claude"] is None
 
-    @patch("i2code.implement.cli.ProjectInitializer")
-    @patch("i2code.implement.cli.IdeaProject")
-    @patch("i2code.implement.cli.Repo")
-    def test_scaffold_non_interactive_forwards_flag(
-        self, mock_repo_cls, mock_idea_project_cls, mock_initializer_cls
-    ):
+    def test_scaffold_non_interactive_forwards_flag(self):
         from click.testing import CliRunner
         from i2code.implement.cli import scaffold_cmd
 
-        mock_idea_project_cls.return_value = _make_mock_project()
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-        mock_repo_cls.return_value = mock_repo
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = _create_idea_dir_in_git_repo(tmpdir)
+            fake_initializer = FakeProjectInitializerForScaffold()
 
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea", "--non-interactive"])
+            runner = CliRunner(catch_exceptions=False)
+            result = runner.invoke(
+                scaffold_cmd, [idea_dir, "--non-interactive"],
+                obj={"project_initializer": fake_initializer},
+            )
 
-        assert result.exit_code == 0
-        call_kwargs = mock_initializer_cls.return_value.run_scaffolding.call_args[1]
-        assert call_kwargs["interactive"] is False
+            assert result.exit_code == 0
+            assert fake_initializer.calls[0]["interactive"] is False
 
-    @patch("i2code.implement.cli.ProjectInitializer")
-    @patch("i2code.implement.cli.IdeaProject")
-    @patch("i2code.implement.cli.Repo")
-    def test_scaffold_forwards_mock_claude(
-        self, mock_repo_cls, mock_idea_project_cls, mock_initializer_cls
-    ):
+    def test_scaffold_forwards_mock_claude(self):
         from click.testing import CliRunner
         from i2code.implement.cli import scaffold_cmd
 
-        mock_idea_project_cls.return_value = _make_mock_project()
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-        mock_repo_cls.return_value = mock_repo
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = _create_idea_dir_in_git_repo(tmpdir)
+            fake_initializer = FakeProjectInitializerForScaffold()
 
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea", "--mock-claude", "/mock.sh"])
+            runner = CliRunner(catch_exceptions=False)
+            result = runner.invoke(
+                scaffold_cmd, [idea_dir, "--mock-claude", "/mock.sh"],
+                obj={"project_initializer": fake_initializer},
+            )
 
-        assert result.exit_code == 0
-        call_kwargs = mock_initializer_cls.return_value.run_scaffolding.call_args[1]
-        assert call_kwargs["mock_claude"] == "/mock.sh"
+            assert result.exit_code == 0
+            assert fake_initializer.calls[0]["mock_claude"] == "/mock.sh"
 
 

@@ -491,20 +491,20 @@ Refactor the two free functions in `project_setup.py` (`run_scaffolding()`, `ens
     - [x] Remove free `ensure_project_setup()` function from `project_setup.py`
     - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
-- [ ] **Task 10.3: Update callers and delete `RealProjectSetup`**
+- [x] **Task 10.3: Update callers and delete `RealProjectSetup`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `ImplementCommand._isolate_mode()` constructs `ProjectInitializer(claude_runner, command_builder, git_repo, build_fixer, push_fn)` and passes to `IsolateMode`. `IsolateMode` accepts `ProjectInitializer` instead of `RealProjectSetup`. `RealProjectSetup` deleted from `isolate_mode.py`. `scaffold_cmd()` constructs `ProjectInitializer(claude_runner, command_builder)`.
   - Evidence: Pre-commit checklist passes. `test_isolate_mode.py` and `test_project_setup.py` CLI tests updated. No `@patch` in `test_project_setup.py`.
   - Steps:
-    - [ ] Update `ImplementCommand._isolate_mode()` to construct `ProjectInitializer` with all dependencies, pass to `IsolateMode`
-    - [ ] Update `IsolateMode.__init__()` type hint and usage from `RealProjectSetup` to `ProjectInitializer`
-    - [ ] Delete `RealProjectSetup` class from `isolate_mode.py`
-    - [ ] Update `scaffold_cmd()` to construct `ProjectInitializer` with `claude_runner` and `command_builder` only
-    - [ ] Migrate `TestScaffoldCmd` tests to use fakes — no `@patch`
-    - [ ] Update `test_isolate_mode.py` to pass `ProjectInitializer` (or fake) instead of `FakeProjectSetup`
-    - [ ] Remove `from i2code.implement.project_setup import ensure_project_setup` from `isolate_mode.py`
-    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+    - [x] Update `ImplementCommand._isolate_mode()` to construct `ProjectInitializer` with all dependencies, pass to `IsolateMode`
+    - [x] Update `IsolateMode.__init__()` type hint and usage from `RealProjectSetup` to `ProjectInitializer`
+    - [x] Delete `RealProjectSetup` class from `isolate_mode.py`
+    - [x] Update `scaffold_cmd()` to construct `ProjectInitializer` with `claude_runner` and `command_builder` only
+    - [x] Migrate `TestScaffoldCmd` tests to use fakes — no `@patch`
+    - [x] Update `test_isolate_mode.py` to pass `ProjectInitializer` (or fake) instead of `FakeProjectSetup`
+    - [x] Remove `from i2code.implement.project_setup import ensure_project_setup` from `isolate_mode.py`
+    - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
 ---
 
@@ -877,3 +877,6 @@ Ruff passes, CodeScene review shows no regressions, end-to-end tests pass (374 p
 
 ### 2026-02-18 16:27 - mark-task-complete
 Moved ensure_project_setup() into ProjectInitializer as a method with 7 fake-based tests. Removed free function, updated RealProjectSetup and integration tests.
+
+### 2026-02-18 16:37 - mark-task-complete
+Deleted RealProjectSetup, IsolateMode now accepts ProjectInitializer directly, ImplementCommand._isolate_mode() constructs it with all deps, scaffold_cmd uses click context for DI, TestScaffoldCmd migrated to fakes (no @patch)

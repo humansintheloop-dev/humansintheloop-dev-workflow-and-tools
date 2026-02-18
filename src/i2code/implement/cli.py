@@ -60,7 +60,8 @@ def implement_cmd(**kwargs):
               help="Run Claude in non-interactive mode (uses -p flag)")
 @click.option("--mock-claude", metavar="SCRIPT",
               help="Use mock script instead of Claude (for testing)")
-def scaffold_cmd(idea_directory, non_interactive, mock_claude):
+@click.pass_context
+def scaffold_cmd(ctx, idea_directory, non_interactive, mock_claude):
     """Generate project scaffolding for an idea directory."""
     project = IdeaProject(idea_directory)
     project.validate()
@@ -68,7 +69,7 @@ def scaffold_cmd(idea_directory, non_interactive, mock_claude):
 
     repo = Repo(project.directory, search_parent_directories=True)
 
-    initializer = ProjectInitializer(
+    initializer = (ctx.obj or {}).get("project_initializer") or ProjectInitializer(
         claude_runner=RealClaudeRunner(),
         command_builder=CommandBuilder(),
     )

@@ -2,8 +2,11 @@
 
 import sys
 
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
+from i2code.implement.pr_helpers import push_branch_to_remote
+from i2code.implement.project_setup import ProjectInitializer
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import (
@@ -11,7 +14,7 @@ from i2code.implement.git_setup import (
     ensure_claude_permissions,
     get_next_task,
 )
-from i2code.implement.isolate_mode import IsolateMode, RealProjectSetup, RealSubprocessRunner
+from i2code.implement.isolate_mode import IsolateMode, RealSubprocessRunner
 from i2code.implement.trunk_mode import TrunkMode
 from i2code.implement.worktree_mode import WorktreeMode
 
@@ -71,12 +74,24 @@ class ImplementCommand:
 
     def _isolate_mode(self):
         """Delegate execution to an isolarium VM."""
+        build_fixer = GithubActionsBuildFixer(
+            opts=self.opts,
+            git_repo=self.git_repo,
+            claude_runner=self.claude_runner,
+        )
+        project_initializer = ProjectInitializer(
+            claude_runner=self.claude_runner,
+            command_builder=CommandBuilder(),
+            git_repo=self.git_repo,
+            build_fixer=build_fixer,
+            push_fn=push_branch_to_remote,
+        )
         isolate_mode = IsolateMode(
             repo=self.repo,
             git_repo=self.git_repo,
             project=self.project,
             gh_client=self.gh_client,
-            project_setup=RealProjectSetup(),
+            project_initializer=project_initializer,
             subprocess_runner=RealSubprocessRunner(),
         )
         returncode = isolate_mode.execute(

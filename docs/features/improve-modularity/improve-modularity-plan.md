@@ -452,9 +452,65 @@ Consolidate PR feedback processing into `PullRequestReviewProcessor`. Absorbs `W
 
 ---
 
+## Steel Thread 10: Extract ProjectInitializer
+Refactor the two free functions in `project_setup.py` (`run_scaffolding()`, `ensure_project_setup()`) into a `ProjectInitializer` class with all dependencies injected. This eliminates `@patch` from `test_project_setup.py` and deletes the `RealProjectSetup` wrapper from `isolate_mode.py`.
+
+**Constructor dependencies (all injected):**
+- `claude_runner` (ClaudeRunner) — replaces direct `run_claude_interactive`/`run_claude_with_output_capture` calls
+- `command_builder` (CommandBuilder) — replaces inline `CommandBuilder()` construction
+- `git_repo` (GitRepository) — shared mutable reference; replaces internal `GitRepository(repo, gh_client)` construction in `ensure_project_setup()`
+- `build_fixer` (GithubActionsBuildFixer) — shares same `git_repo` reference
+- `push_fn` (callable) — replaces direct `push_branch_to_remote` import
+
+**Caller wiring:**
+- `ImplementCommand._isolate_mode()`: constructs `ProjectInitializer`, passes to `IsolateMode` (replacing `RealProjectSetup`)
+- `scaffold_cmd()`: constructs `ProjectInitializer` (with `git_repo`/`build_fixer`/`push_fn` as `None`), calls `run_scaffolding()`
+
+**Deletes:** `RealProjectSetup` from `isolate_mode.py`
+
+- [ ] **Task 10.1: Create `ProjectInitializer` class with `run_scaffolding()` method**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `ProjectInitializer` class exists in `project_setup.py` with constructor `(claude_runner, command_builder, git_repo=None, build_fixer=None, push_fn=None)`. `run_scaffolding()` is a method that uses injected `claude_runner` and `command_builder`. Tests for `run_scaffolding()` use `FakeClaudeRunner` — no `@patch`.
+  - Evidence: Pre-commit checklist passes. `TestRunScaffolding` and `TestRunScaffoldingFailure` use fakes.
+  - Steps:
+    - [ ] Write tests for `ProjectInitializer.run_scaffolding()` using `FakeClaudeRunner` and real `CommandBuilder` — no `@patch`
+    - [ ] Implement `ProjectInitializer` class with `run_scaffolding()` method
+    - [ ] Update `scaffold_cmd()` to construct `ProjectInitializer` and call `run_scaffolding()` method
+    - [ ] Remove free `run_scaffolding()` function from `project_setup.py`
+    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+
+- [ ] **Task 10.2: Move `ensure_project_setup()` into `ProjectInitializer`**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `ProjectInitializer.ensure_project_setup()` is a method that uses injected `git_repo`, `build_fixer`, and `push_fn`. Tests use fakes — no `@patch`. `ensure_project_setup()` sets `self._git_repo.branch = integration_branch` before calling `self._build_fixer.fix_ci_failure()` (shared mutable reference).
+  - Evidence: Pre-commit checklist passes. `TestEnsureProjectSetup` uses fakes.
+  - Steps:
+    - [ ] Write tests for `ProjectInitializer.ensure_project_setup()` using fakes (`FakeClaudeRunner`, `FakeGitRepository`, fake build_fixer, fake push_fn) — no `@patch`
+    - [ ] Move `ensure_project_setup()` into `ProjectInitializer` as a method, using injected dependencies
+    - [ ] Remove free `ensure_project_setup()` function from `project_setup.py`
+    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+
+- [ ] **Task 10.3: Update callers and delete `RealProjectSetup`**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `ImplementCommand._isolate_mode()` constructs `ProjectInitializer(claude_runner, command_builder, git_repo, build_fixer, push_fn)` and passes to `IsolateMode`. `IsolateMode` accepts `ProjectInitializer` instead of `RealProjectSetup`. `RealProjectSetup` deleted from `isolate_mode.py`. `scaffold_cmd()` constructs `ProjectInitializer(claude_runner, command_builder)`.
+  - Evidence: Pre-commit checklist passes. `test_isolate_mode.py` and `test_project_setup.py` CLI tests updated. No `@patch` in `test_project_setup.py`.
+  - Steps:
+    - [ ] Update `ImplementCommand._isolate_mode()` to construct `ProjectInitializer` with all dependencies, pass to `IsolateMode`
+    - [ ] Update `IsolateMode.__init__()` type hint and usage from `RealProjectSetup` to `ProjectInitializer`
+    - [ ] Delete `RealProjectSetup` class from `isolate_mode.py`
+    - [ ] Update `scaffold_cmd()` to construct `ProjectInitializer` with `claude_runner` and `command_builder` only
+    - [ ] Migrate `TestScaffoldCmd` tests to use fakes — no `@patch`
+    - [ ] Update `test_isolate_mode.py` to pass `ProjectInitializer` (or fake) instead of `FakeProjectSetup`
+    - [ ] Remove `from i2code.implement.project_setup import ensure_project_setup` from `isolate_mode.py`
+    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+
+---
+
 ## Summary
 
-This plan extracts 12 classes across 8 threads from the 2332-line procedural `implement.py`:
+This plan extracts 13 classes across 10 threads from the 2332-line procedural `implement.py`:
 
 | Thread | Extractions | Key Outcome |
 |--------|------------|-------------|
@@ -463,11 +519,13 @@ This plan extracts 12 classes across 8 threads from the 2332-line procedural `im
 | 3 | GitRepository | Eliminate `slice_branch`/`pr_number` parameter threading, unify Git access |
 | 4 | ClaudeRunner, CommandBuilder | Eliminate mock_claude conditionals, consolidate 6 build_* functions |
 | 5 | TrunkMode, WorktreeMode, IsolateMode | Replace 180-line if/elif with polymorphism, achieve zero `@patch` in tests |
-| 6 | GithubActionsMonitor | Extract `_wait_for_ci()` from WorktreeMode |
-| 7 | GithubActionsBuildFixer | Consolidate CI fixing: `_check_and_fix_ci`, `fix_ci_failure`, `get_failing_workflow_run`, delete `ci_fix.py` |
-| 8 | PullRequestReviewProcessor | Consolidate PR feedback: `_process_feedback`, `process_pr_feedback`, feedback helpers from `pr_helpers.py` |
+| 6 | ImplementCommand | Proper home for mode dispatch, constructor-injected dependencies, thin CLI adapter |
+| 7 | GithubActionsMonitor | Extract `_wait_for_ci()` from WorktreeMode |
+| 8 | GithubActionsBuildFixer | Consolidate CI fixing: `_check_and_fix_ci`, `fix_ci_failure`, `get_failing_workflow_run`, delete `ci_fix.py` |
+| 9 | PullRequestReviewProcessor | Consolidate PR feedback: `_process_feedback`, `process_pr_feedback`, feedback helpers from `pr_helpers.py` |
+| 10 | ProjectInitializer | Refactor `project_setup.py` free functions into injectable class, eliminate `@patch` from tests, delete `RealProjectSetup` |
 
-Each thread is independently committable and leaves all tests passing. Threads 1-5 created the injectable infrastructure and execution modes. Threads 6-8 further decompose WorktreeMode into focused collaborators.
+Each thread is independently committable and leaves all tests passing. Threads 1-5 created the injectable infrastructure and execution modes. Threads 6-10 further decompose into focused collaborators with full dependency injection.
 
 ---
 

@@ -339,16 +339,16 @@ Extract `WorktreeMode._wait_for_ci()` into `GithubActionsMonitor`. Incremental m
 ## Steel Thread 8: Extract GithubActionsBuildFixer
 Consolidate CI failure detection and fixing into `GithubActionsBuildFixer`. Absorbs `WorktreeMode._check_and_fix_ci()`, `GitRepository.fix_ci_failure()`, `ci_fix.fix_ci_failure()`, and `pr_helpers.get_failing_workflow_run()`.
 
-- [ ] **Task 8.1: Move `WorktreeMode._check_and_fix_ci()` into GithubActionsBuildFixer**
+- [x] **Task 8.1: Move `WorktreeMode._check_and_fix_ci()` into GithubActionsBuildFixer**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `GithubActionsBuildFixer` class in `github_actions_build_fixer.py` with `GithubActionsBuildFixer.check_and_fix_ci()`. WorktreeMode accepts `build_fixer` via constructor, `WorktreeMode._check_and_fix_ci()` delegates to `self._build_fixer.check_and_fix_ci()`. Constructed in `implement_cmd()`.
   - Steps:
-    - [ ] Create `github_actions_build_fixer.py` with `GithubActionsBuildFixer`, move `WorktreeMode._check_and_fix_ci()` body into `GithubActionsBuildFixer.check_and_fix_ci()`
-    - [ ] Add `build_fixer` param to `WorktreeMode.__init__()`, replace `WorktreeMode._check_and_fix_ci()` body with delegate
-    - [ ] Construct `GithubActionsBuildFixer` in `implement_cmd()`, pass through to `WorktreeMode.__init__()`
-    - [ ] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
-    - [ ] Run pre-commit checklist
+    - [x] Create `github_actions_build_fixer.py` with `GithubActionsBuildFixer`, move `WorktreeMode._check_and_fix_ci()` body into `GithubActionsBuildFixer.check_and_fix_ci()`
+    - [x] Add `build_fixer` param to `WorktreeMode.__init__()`, replace `WorktreeMode._check_and_fix_ci()` body with delegate
+    - [x] Construct `GithubActionsBuildFixer` in `implement_cmd()`, pass through to `WorktreeMode.__init__()`
+    - [x] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
+    - [x] Run pre-commit checklist
 
 - [ ] **Task 8.2: Move `GitRepository.fix_ci_failure()` into GithubActionsBuildFixer**
   - TaskType: OUTCOME
@@ -678,3 +678,21 @@ Ruff check passed, code health review shows no regression (8.81)
 
 ### 2026-02-18 14:01 - mark-task-complete
 Migrated CI-wait tests: removed redundant skip test from test_worktree_mode.py, test_github_actions_monitor.py is the canonical location for all CI-wait unit tests
+
+### 2026-02-18 14:46 - mark-step-complete
+Created github_actions_build_fixer.py with GithubActionsBuildFixer class
+
+### 2026-02-18 14:46 - mark-step-complete
+Added build_fixer param to WorktreeMode.__init__(), replaced body with delegate
+
+### 2026-02-18 14:46 - mark-step-complete
+Constructed GithubActionsBuildFixer in implement_cmd(), passed through to WorktreeMode
+
+### 2026-02-18 14:46 - mark-step-complete
+Updated _make_worktree_mode() helper in test_worktree_mode.py
+
+### 2026-02-18 14:46 - mark-step-complete
+Ran ruff check, code health review, and all tests pass
+
+### 2026-02-18 14:46 - mark-task-complete
+Extracted GithubActionsBuildFixer from WorktreeMode._check_and_fix_ci()

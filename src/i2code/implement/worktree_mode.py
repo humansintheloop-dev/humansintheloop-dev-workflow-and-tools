@@ -13,7 +13,6 @@ from i2code.implement.implement import (
     process_pr_feedback,
 )
 from i2code.implement.command_builder import CommandBuilder
-from i2code.implement.pr_helpers import get_failing_workflow_run
 
 
 class WorktreeMode:
@@ -27,10 +26,11 @@ class WorktreeMode:
         claude_runner: ClaudeRunner (or FakeClaudeRunner) for invoking Claude.
         work_plan_file: Path to the plan file in the working directory.
         ci_monitor: GithubActionsMonitor for waiting on CI completion.
+        build_fixer: GithubActionsBuildFixer for detecting and fixing CI failures.
     """
 
     def __init__(self, opts, git_repo, project, state, claude_runner,
-                 work_plan_file, ci_monitor):
+                 work_plan_file, ci_monitor, build_fixer):
         self._opts = opts
         self._git_repo = git_repo
         self._project = project
@@ -38,6 +38,7 @@ class WorktreeMode:
         self._claude_runner = claude_runner
         self._work_plan_file = work_plan_file
         self._ci_monitor = ci_monitor
+        self._build_fixer = build_fixer
 
     def execute(self):
         """Run the worktree task loop until all tasks are complete."""
@@ -60,31 +61,7 @@ class WorktreeMode:
 
         Returns True if a CI failure was found (caller should loop back).
         """
-        if not self._git_repo.branch_has_been_pushed():
-            return False
-
-        failing_run = get_failing_workflow_run(
-            self._git_repo.branch, self._git_repo.head_sha,
-            gh_client=self._git_repo.gh_client,
-        )
-
-        if not failing_run:
-            return False
-
-        workflow_name = failing_run.get("name", "unknown")
-        print(f"CI build failing for HEAD ({self._git_repo.head_sha[:8]}): {workflow_name}")
-        print("Attempting to fix CI failure...")
-
-        if not self._git_repo.fix_ci_failure(
-            worktree_path=self._git_repo.working_tree_dir,
-            max_retries=self._opts.ci_fix_retries,
-            interactive=not self._opts.non_interactive,
-            mock_claude=self._opts.mock_claude,
-        ):
-            print("Error: Could not fix CI failure after max retries", file=sys.stderr)
-            sys.exit(1)
-
-        return True
+        return self._build_fixer.check_and_fix_ci()
 
     def _process_feedback(self):
         """Process PR feedback if any exists.

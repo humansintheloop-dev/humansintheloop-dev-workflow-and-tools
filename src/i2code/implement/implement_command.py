@@ -2,6 +2,7 @@
 
 import sys
 
+from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import (
@@ -139,6 +140,11 @@ class ImplementCommand:
             ci_timeout=self.opts.ci_timeout,
         )
 
+        build_fixer = GithubActionsBuildFixer(
+            opts=self.opts,
+            git_repo=self.git_repo,
+        )
+
         worktree_mode = WorktreeMode(
             opts=self.opts,
             git_repo=self.git_repo,
@@ -147,5 +153,6 @@ class ImplementCommand:
             claude_runner=self.claude_runner,
             work_plan_file=work_plan_file,
             ci_monitor=ci_monitor,
+            build_fixer=build_fixer,
         )
         worktree_mode.execute()

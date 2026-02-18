@@ -6,6 +6,7 @@ import tempfile
 import pytest
 
 from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
@@ -106,6 +107,11 @@ def _make_worktree_mode(
         ci_timeout=opts.ci_timeout,
     )
 
+    build_fixer = GithubActionsBuildFixer(
+        opts=opts,
+        git_repo=fake_repo,
+    )
+
     mode = WorktreeMode(
         opts=opts,
         git_repo=fake_repo,
@@ -114,6 +120,7 @@ def _make_worktree_mode(
         claude_runner=fake_runner,
         work_plan_file=plan_path,
         ci_monitor=ci_monitor,
+        build_fixer=build_fixer,
     )
     return mode, fake_repo, fake_runner, fake_gh, fake_state
 

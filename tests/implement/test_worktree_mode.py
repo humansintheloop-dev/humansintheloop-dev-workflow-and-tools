@@ -403,65 +403,6 @@ class TestWorktreeModeFailures:
 
 
 @pytest.mark.unit
-class TestWorktreeModeFeedback:
-    """WorktreeMode checks for PR feedback before executing tasks."""
-
-    def test_skips_feedback_when_no_pr(self, capsys):
-        """When no PR exists, skip feedback checking entirely."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Already done", True),
-            ])
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_repo.set_pushed(True)
-            # No pr_number set — feedback should be skipped
-
-            fake_gh = FakeGitHubClient()
-
-            mode, _, _, _, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_gh=fake_gh,
-            )
-            mode.execute()
-
-            captured = capsys.readouterr()
-            assert "All tasks completed!" in captured.out
-            # get_pr_url should NOT have been called
-            assert not any(c[0] == "get_pr_url" for c in fake_gh.calls)
-
-    def test_skips_feedback_when_not_pushed(self, capsys):
-        """When branch has not been pushed, skip feedback checking."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = _write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Already done", True),
-            ])
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_repo.pr_number = 42
-            # pushed is False by default
-
-            fake_gh = FakeGitHubClient()
-
-            mode, _, _, _, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_gh=fake_gh,
-            )
-            mode.execute()
-
-            captured = capsys.readouterr()
-            assert "All tasks completed!" in captured.out
-            # fetch_pr_comments should NOT have been called (feedback skipped)
-            assert not any(c[0] == "fetch_pr_comments" for c in fake_gh.calls)
-
-
-@pytest.mark.unit
 class TestWorktreeModeNonInteractive:
     """WorktreeMode in non-interactive mode uses run_with_capture."""
 

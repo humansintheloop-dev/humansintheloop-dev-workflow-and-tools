@@ -480,16 +480,16 @@ Refactor the two free functions in `project_setup.py` (`run_scaffolding()`, `ens
     - [x] Remove free `run_scaffolding()` function from `project_setup.py`
     - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
-- [ ] **Task 10.2: Move `ensure_project_setup()` into `ProjectInitializer`**
+- [x] **Task 10.2: Move `ensure_project_setup()` into `ProjectInitializer`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `ProjectInitializer.ensure_project_setup()` is a method that uses injected `git_repo`, `build_fixer`, and `push_fn`. Tests use fakes — no `@patch`. `ensure_project_setup()` sets `self._git_repo.branch = integration_branch` before calling `self._build_fixer.fix_ci_failure()` (shared mutable reference).
   - Evidence: Pre-commit checklist passes. `TestEnsureProjectSetup` uses fakes.
   - Steps:
-    - [ ] Write tests for `ProjectInitializer.ensure_project_setup()` using fakes (`FakeClaudeRunner`, `FakeGitRepository`, fake build_fixer, fake push_fn) — no `@patch`
-    - [ ] Move `ensure_project_setup()` into `ProjectInitializer` as a method, using injected dependencies
-    - [ ] Remove free `ensure_project_setup()` function from `project_setup.py`
-    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+    - [x] Write tests for `ProjectInitializer.ensure_project_setup()` using fakes (`FakeClaudeRunner`, `FakeGitRepository`, fake build_fixer, fake push_fn) — no `@patch`
+    - [x] Move `ensure_project_setup()` into `ProjectInitializer` as a method, using injected dependencies
+    - [x] Remove free `ensure_project_setup()` function from `project_setup.py`
+    - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
 - [ ] **Task 10.3: Update callers and delete `RealProjectSetup`**
   - TaskType: OUTCOME
@@ -862,3 +862,18 @@ Migrated TestWorktreeModeFeedback tests: removed redundant tests from test_workt
 
 ### 2026-02-18 16:17 - mark-task-complete
 Extracted ProjectInitializer class with run_scaffolding() method. Tests use FakeClaudeRunner, no @patch. scaffold_cmd() and ensure_project_setup() updated to use ProjectInitializer. Free run_scaffolding() function removed.
+
+### 2026-02-18 16:26 - mark-step-complete
+Wrote 7 tests for ProjectInitializer.ensure_project_setup() using FakeClaudeRunner, FakeGitRepository, FakeGitHubClient, and inline FakeBuildFixer — no @patch
+
+### 2026-02-18 16:26 - mark-step-complete
+Implemented ensure_project_setup() method on ProjectInitializer using injected git_repo, build_fixer, and push_fn
+
+### 2026-02-18 16:26 - mark-step-complete
+Removed free ensure_project_setup() function; updated RealProjectSetup to construct ProjectInitializer with dependencies; updated integration tests
+
+### 2026-02-18 16:27 - mark-step-complete
+Ruff passes, CodeScene review shows no regressions, end-to-end tests pass (374 passed)
+
+### 2026-02-18 16:27 - mark-task-complete
+Moved ensure_project_setup() into ProjectInitializer as a method with 7 fake-based tests. Removed free function, updated RealProjectSetup and integration tests.

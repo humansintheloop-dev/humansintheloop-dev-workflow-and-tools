@@ -4,7 +4,14 @@ import os
 import subprocess
 import sys
 
-from i2code.implement.project_setup import ensure_project_setup
+from i2code.implement.claude_runner import RealClaudeRunner
+from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.git_repository import GitRepository
+from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
+from i2code.implement.github_client import GitHubClient
+from i2code.implement.implement_opts import ImplementOpts
+from i2code.implement.pr_helpers import push_branch_to_remote
+from i2code.implement.project_setup import ProjectInitializer
 
 
 class IsolateMode:
@@ -120,10 +127,38 @@ class IsolateMode:
 
 
 class RealProjectSetup:
-    """Delegates to the real ensure_project_setup function."""
+    """Delegates to ProjectInitializer.ensure_project_setup()."""
 
-    def ensure_project_setup(self, **kwargs):
-        return ensure_project_setup(**kwargs)
+    def ensure_project_setup(
+        self, repo, idea_directory, idea_name, integration_branch,
+        interactive=True, mock_claude=None, ci_fix_retries=3,
+        ci_timeout=600, skip_ci_wait=False, gh_client=None,
+    ):
+        if gh_client is None:
+            gh_client = GitHubClient()
+        git_repo = GitRepository(repo, gh_client)
+        opts = ImplementOpts(
+            idea_directory="",
+            non_interactive=not interactive,
+            mock_claude=mock_claude,
+            ci_fix_retries=ci_fix_retries,
+        )
+        build_fixer = GithubActionsBuildFixer(opts, git_repo, RealClaudeRunner())
+        initializer = ProjectInitializer(
+            claude_runner=RealClaudeRunner(),
+            command_builder=CommandBuilder(),
+            git_repo=git_repo,
+            build_fixer=build_fixer,
+            push_fn=push_branch_to_remote,
+        )
+        return initializer.ensure_project_setup(
+            idea_directory=idea_directory,
+            integration_branch=integration_branch,
+            interactive=interactive,
+            mock_claude=mock_claude,
+            skip_ci_wait=skip_ci_wait,
+            ci_timeout=ci_timeout,
+        )
 
 
 class RealSubprocessRunner:

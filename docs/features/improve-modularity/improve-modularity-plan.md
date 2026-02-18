@@ -283,15 +283,15 @@ Extract the module-level `implement()` function and `implement_trunk_mode()`, `i
     - [x] Update `implement_cmd()` to construct `ImplementCommand` and call `ImplementCommand.execute()`
     - [x] Delete `implement()`, `implement_trunk_mode()`, `implement_isolate_mode()`, `implement_worktree_mode()` from `cli.py`
     - [x] Run pre-commit checklist
-- [ ] **Task 6.2: Update tests for `ImplementCommand`**
+- [x] **Task 6.2: Update tests for `ImplementCommand`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `test_dry_run.py` uses `ImplementCommand` directly instead of `implement()`. `test_cli_integration.py` patches reference `i2code.implement.implement_command` instead of `i2code.implement.cli` where needed.
   - Evidence: ``
   - Steps:
-    - [ ] Update `test_dry_run.py` to construct and call `ImplementCommand` instead of `implement()`
-    - [ ] Update `test_cli_integration.py` patches to reference `i2code.implement.implement_command` instead of `i2code.implement.cli`
-    - [ ] Run pre-commit checklist
+    - [x] Update `test_dry_run.py` to construct and call `ImplementCommand` instead of `implement()`
+    - [x] Update `test_cli_integration.py` patches to reference `i2code.implement.implement_command` instead of `i2code.implement.cli`
+    - [x] Run pre-commit checklist
 
 ---
 
@@ -624,3 +624,6 @@ ImplementCommand class provides a proper home for mode dispatch logic and constr
 
 ### 2026-02-18 13:42 - mark-task-complete
 Created ImplementCommand class with execute(), _trunk_mode(), _isolate_mode(), _worktree_mode(). Updated implement_cmd() to use ImplementCommand. Removed module-level functions from cli.py. All 369 tests pass.
+
+### 2026-02-18 13:43 - mark-task-complete
+Already completed as part of task 6.1: test_dry_run.py uses ImplementCommand directly, test_cli_integration.py patches reference implement_command module.

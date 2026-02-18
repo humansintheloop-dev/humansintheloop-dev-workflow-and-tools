@@ -468,17 +468,17 @@ Refactor the two free functions in `project_setup.py` (`run_scaffolding()`, `ens
 
 **Deletes:** `RealProjectSetup` from `isolate_mode.py`
 
-- [ ] **Task 10.1: Create `ProjectInitializer` class with `run_scaffolding()` method**
+- [x] **Task 10.1: Create `ProjectInitializer` class with `run_scaffolding()` method**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `ProjectInitializer` class exists in `project_setup.py` with constructor `(claude_runner, command_builder, git_repo=None, build_fixer=None, push_fn=None)`. `run_scaffolding()` is a method that uses injected `claude_runner` and `command_builder`. Tests for `run_scaffolding()` use `FakeClaudeRunner` — no `@patch`.
   - Evidence: Pre-commit checklist passes. `TestRunScaffolding` and `TestRunScaffoldingFailure` use fakes.
   - Steps:
-    - [ ] Write tests for `ProjectInitializer.run_scaffolding()` using `FakeClaudeRunner` and real `CommandBuilder` — no `@patch`
-    - [ ] Implement `ProjectInitializer` class with `run_scaffolding()` method
-    - [ ] Update `scaffold_cmd()` to construct `ProjectInitializer` and call `run_scaffolding()` method
-    - [ ] Remove free `run_scaffolding()` function from `project_setup.py`
-    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+    - [x] Write tests for `ProjectInitializer.run_scaffolding()` using `FakeClaudeRunner` and real `CommandBuilder` — no `@patch`
+    - [x] Implement `ProjectInitializer` class with `run_scaffolding()` method
+    - [x] Update `scaffold_cmd()` to construct `ProjectInitializer` and call `run_scaffolding()` method
+    - [x] Remove free `run_scaffolding()` function from `project_setup.py`
+    - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
 - [ ] **Task 10.2: Move `ensure_project_setup()` into `ProjectInitializer`**
   - TaskType: OUTCOME
@@ -859,3 +859,6 @@ Pre-commit checklist passed: ruff clean, Code Health 9.09 (green), committed
 
 ### 2026-02-18 16:05 - mark-task-complete
 Migrated TestWorktreeModeFeedback tests: removed redundant tests from test_worktree_mode.py since TestPullRequestReviewProcessorSkipConditions already covers same skip conditions directly on the processor
+
+### 2026-02-18 16:17 - mark-task-complete
+Extracted ProjectInitializer class with run_scaffolding() method. Tests use FakeClaudeRunner, no @patch. scaffold_cmd() and ensure_project_setup() updated to use ProjectInitializer. Free run_scaffolding() function removed.

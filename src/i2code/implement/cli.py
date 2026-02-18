@@ -10,7 +10,8 @@ from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.claude_runner import RealClaudeRunner
-from i2code.implement.project_setup import run_scaffolding
+from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.project_setup import ProjectInitializer
 
 
 @click.command("implement")
@@ -67,7 +68,11 @@ def scaffold_cmd(idea_directory, non_interactive, mock_claude):
 
     repo = Repo(project.directory, search_parent_directories=True)
 
-    run_scaffolding(
+    initializer = ProjectInitializer(
+        claude_runner=RealClaudeRunner(),
+        command_builder=CommandBuilder(),
+    )
+    initializer.run_scaffolding(
         idea_directory,
         cwd=repo.working_tree_dir,
         interactive=not non_interactive,

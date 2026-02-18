@@ -121,7 +121,7 @@ class WorktreeMode:
 
         self._run_claude_and_validate(next_task, task_description)
         self._push_and_ensure_pr()
-        self._wait_for_ci()
+        self._ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)
 
     def _run_claude_and_validate(self, next_task, task_description):
         """Run Claude on the task and validate the result."""
@@ -164,10 +164,6 @@ class WorktreeMode:
                 self._state.slice_number,
             )
             print(f"Created Draft PR #{self._git_repo.pr_number}")
-
-    def _wait_for_ci(self):
-        """Wait for CI completion if configured."""
-        self._ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)
 
     def _print_completion(self):
         """Print completion message with PR URL if available."""

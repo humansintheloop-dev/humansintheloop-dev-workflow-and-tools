@@ -317,14 +317,14 @@ Extract `WorktreeMode._wait_for_ci()` into `GithubActionsMonitor`. Incremental m
     - [x] Update `test_worktree_mode.py` assertions that check `fake_repo.calls` for `"wait_for_ci"`
     - [x] Run pre-commit checklist
 
-- [ ] **Task 7.2: Update callers and delete placeholder**
+- [x] **Task 7.2: Update callers and delete placeholder**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `WorktreeMode._execute_task()` calls `self._ci_monitor.wait_for_ci()` directly. No `WorktreeMode._wait_for_ci()`.
   - Steps:
-    - [ ] Update `WorktreeMode._execute_task()` to call `self._ci_monitor.wait_for_ci()` directly
-    - [ ] Delete `WorktreeMode._wait_for_ci()` placeholder
-    - [ ] Run pre-commit checklist
+    - [x] Update `WorktreeMode._execute_task()` to call `self._ci_monitor.wait_for_ci()` directly
+    - [x] Delete `WorktreeMode._wait_for_ci()` placeholder
+    - [x] Run pre-commit checklist
 
 - [ ] **Task 7.3: Migrate tests**
   - TaskType: OUTCOME
@@ -657,3 +657,15 @@ Pre-commit checklist: ruff passed, code health reviewed (no regressions)
 
 ### 2026-02-18 13:50 - mark-task-complete
 GithubActionsMonitor redesigned to take gh_client instead of git_repo, wait_for_ci takes (branch, head_sha) params
+
+### 2026-02-18 13:56 - mark-step-complete
+Updated _execute_task() to call self._ci_monitor.wait_for_ci() directly
+
+### 2026-02-18 13:56 - mark-step-complete
+Deleted _wait_for_ci() placeholder method
+
+### 2026-02-18 13:56 - mark-step-complete
+Pre-commit checklist passed: ruff clean, code health 9.68
+
+### 2026-02-18 13:56 - mark-task-complete
+Inlined _wait_for_ci() into _execute_task() and deleted placeholder

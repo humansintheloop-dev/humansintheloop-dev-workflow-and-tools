@@ -110,6 +110,7 @@ def _make_worktree_mode(
     build_fixer = GithubActionsBuildFixer(
         opts=opts,
         git_repo=fake_repo,
+        claude_runner=fake_runner,
     )
 
     mode = WorktreeMode(
@@ -409,26 +410,23 @@ class TestWorktreeModeCIFailure:
             fake_repo.set_pushed(True)
             fake_repo.branch = "idea/test/01-setup"
             fake_gh = FakeGitHubClient()
-            # CI failing for sha "aaa"; fix_ci_failure advances HEAD to "bbb"
             fake_gh.set_workflow_runs(
                 "idea/test/01-setup", "aaa",
-                [{"name": "CI", "conclusion": "failure"}],
+                [{"databaseId": 42, "name": "CI", "conclusion": "failure"}],
             )
-            def fix_and_advance(**kwargs):
-                fake_repo.calls.append(("fix_ci_failure", kwargs.get("worktree_path")))
-                fake_repo.set_head_sha("bbb")
-                return True
+            fake_gh.set_workflow_failure_logs(42, "Build failed")
+            fake_gh.set_workflow_completion_result("idea/test/01-setup", "bbb", (True, None))
 
-            fake_repo.fix_ci_failure = fix_and_advance
+            fake_runner = FakeClaudeRunner()
+            fake_runner.set_side_effect(lambda: fake_repo.set_head_sha("bbb"))
 
             mode, _, _, _, _ = _make_worktree_mode(
                 plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_gh=fake_gh,
+                fake_repo=fake_repo, fake_gh=fake_gh, fake_runner=fake_runner,
+                opts=ImplementOpts(idea_directory=idea_dir, non_interactive=True),
             )
             mode.execute()
 
-            # fix_ci_failure was called
-            assert any(c[0] == "fix_ci_failure" for c in fake_repo.calls)
             captured = capsys.readouterr()
             assert "CI build failing" in captured.out
 
@@ -444,21 +442,20 @@ class TestWorktreeModeCIFailure:
             fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
             fake_repo.set_pushed(True)
             fake_repo.branch = "idea/test/01-setup"
-
-            def fix_fails(**kwargs):
-                fake_repo.calls.append(("fix_ci_failure",))
-                return False
-
-            fake_repo.fix_ci_failure = fix_fails
             fake_gh = FakeGitHubClient()
             fake_gh.set_workflow_runs(
                 "idea/test/01-setup", "aaa",
-                [{"name": "CI", "conclusion": "failure"}],
+                [{"databaseId": 42, "name": "CI", "conclusion": "failure"}],
             )
+            fake_gh.set_workflow_failure_logs(42, "Build failed")
+
+            fake_runner = FakeClaudeRunner()
+            # Claude makes no commits → head_sha stays "aaa" → fix_ci_failure returns False
 
             mode, _, _, _, _ = _make_worktree_mode(
                 plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_gh=fake_gh,
+                fake_repo=fake_repo, fake_gh=fake_gh, fake_runner=fake_runner,
+                opts=ImplementOpts(idea_directory=idea_dir, ci_fix_retries=1, non_interactive=True),
             )
 
             with pytest.raises(SystemExit) as exc_info:

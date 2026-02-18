@@ -11,10 +11,8 @@ import sys
 
 from git import Repo
 
-from i2code.implement.claude_runner import run_claude_interactive, run_claude_with_output_capture
-from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.git_setup import sanitize_branch_name
-from i2code.implement.pr_helpers import generate_pr_body, generate_pr_title, get_failing_workflow_run
+from i2code.implement.pr_helpers import generate_pr_body, generate_pr_title
 
 
 class GitRepository:
@@ -212,78 +210,3 @@ class GitRepository:
         self._pr_number = pr_number
         return pr_number
 
-    def fix_ci_failure(
-        self,
-        worktree_path,
-        max_retries=3,
-        interactive=True,
-        mock_claude=None,
-    ):
-        """Attempt to fix CI failure using tracked branch and HEAD.
-
-        Returns:
-            True if CI passes, False if max retries exceeded.
-        """
-        current_sha = self.head_sha
-
-        for attempt in range(1, max_retries + 1):
-            print(f"\nCI fix attempt {attempt}/{max_retries}")
-
-            failing_run = get_failing_workflow_run(
-                self._branch, current_sha, gh_client=self._gh_client
-            )
-            if not failing_run:
-                print("No failing workflow found - CI may have passed")
-                return True
-
-            run_id = failing_run.get("databaseId")
-            workflow_name = failing_run.get("name", "unknown")
-            print(f"  Workflow '{workflow_name}' failed (run {run_id})")
-
-            print("  Fetching failure logs...")
-            failure_logs = self._gh_client.get_workflow_failure_logs(run_id)
-
-            if mock_claude:
-                claude_cmd = [mock_claude, f"fix-ci-{run_id}"]
-            else:
-                claude_cmd = CommandBuilder().build_ci_fix_command(
-                    run_id, workflow_name, failure_logs, interactive=interactive
-                )
-
-            print("  Invoking Claude to fix CI failure...")
-            head_before = self.head_sha
-
-            if interactive:
-                run_claude_interactive(claude_cmd, cwd=worktree_path)
-            else:
-                run_claude_with_output_capture(claude_cmd, cwd=worktree_path)
-
-            head_after = self.head_sha
-
-            if head_before == head_after:
-                print("  Claude did not make any commits")
-                if attempt == max_retries:
-                    return False
-                continue
-
-            print("  Pushing fix...")
-            if not self.push():
-                print("  Error: Could not push fix", file=sys.stderr)
-                return False
-
-            current_sha = head_after
-
-            print("  Waiting for CI to complete...")
-            ci_success, new_failing_run = self._gh_client.wait_for_workflow_completion(
-                self._branch, current_sha
-            )
-
-            if ci_success:
-                print("  CI passed!")
-                return True
-
-            if new_failing_run:
-                print(f"  CI still failing: {new_failing_run.get('name', 'unknown')}")
-
-        print(f"Max retries ({max_retries}) exceeded")
-        return False

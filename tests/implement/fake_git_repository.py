@@ -91,6 +91,3 @@ class FakeGitRepository:
             self.pr_number = 100
         return self.pr_number
 
-    def fix_ci_failure(self, worktree_path, max_retries=3, interactive=True, mock_claude=None):
-        self.calls.append(("fix_ci_failure", worktree_path))
-        return True

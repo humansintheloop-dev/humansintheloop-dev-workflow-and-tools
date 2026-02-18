@@ -350,14 +350,14 @@ Consolidate CI failure detection and fixing into `GithubActionsBuildFixer`. Abso
     - [x] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
     - [x] Run pre-commit checklist
 
-- [ ] **Task 8.2: Move `GitRepository.fix_ci_failure()` into GithubActionsBuildFixer**
+- [x] **Task 8.2: Move `GitRepository.fix_ci_failure()` into GithubActionsBuildFixer**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `GithubActionsBuildFixer.fix_ci_failure()` exists. `GitRepository.fix_ci_failure()` deleted (no delegate — GitRepository has no reference to the fixer). Callers updated in Task 8.4.
   - Steps:
-    - [ ] Move `GitRepository.fix_ci_failure()` (lines 225-299) into `GithubActionsBuildFixer.fix_ci_failure()`
-    - [ ] Delete `GitRepository.fix_ci_failure()` (callers updated in 8.4)
-    - [ ] Run pre-commit checklist
+    - [x] Move `GitRepository.fix_ci_failure()` (lines 225-299) into `GithubActionsBuildFixer.fix_ci_failure()`
+    - [x] Delete `GitRepository.fix_ci_failure()` (callers updated in 8.4)
+    - [x] Run pre-commit checklist
 
 - [ ] **Task 8.3: Move `get_failing_workflow_run()` into GithubActionsBuildFixer**
   - TaskType: OUTCOME

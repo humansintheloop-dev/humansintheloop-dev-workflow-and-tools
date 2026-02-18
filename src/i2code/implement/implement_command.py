@@ -143,6 +143,7 @@ class ImplementCommand:
         build_fixer = GithubActionsBuildFixer(
             opts=self.opts,
             git_repo=self.git_repo,
+            claude_runner=self.claude_runner,
         )
 
         worktree_mode = WorktreeMode(

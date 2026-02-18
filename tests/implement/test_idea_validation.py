@@ -4,6 +4,8 @@ import os
 import tempfile
 import pytest
 
+from i2code.implement.idea_project import IdeaProject
+
 
 @pytest.mark.unit
 class TestIdeaFilesCommitValidation:
@@ -38,7 +40,7 @@ class TestIdeaFilesCommitValidation:
                 f.write("\nNew content")
 
             with pytest.raises(SystemExit) as exc_info:
-                validate_idea_files_committed(idea_dir, "my-feature")
+                validate_idea_files_committed(IdeaProject(idea_dir))
 
             assert exc_info.value.code != 0
             captured = capsys.readouterr()
@@ -63,7 +65,7 @@ class TestIdeaFilesCommitValidation:
                     f.write(f"# {suffix}")
 
             with pytest.raises(SystemExit) as exc_info:
-                validate_idea_files_committed(idea_dir, "my-feature")
+                validate_idea_files_committed(IdeaProject(idea_dir))
 
             assert exc_info.value.code != 0
 
@@ -92,4 +94,4 @@ class TestIdeaFilesCommitValidation:
             repo.index.commit("Initial")
 
             # Should not raise
-            validate_idea_files_committed(idea_dir, "my-feature")
+            validate_idea_files_committed(IdeaProject(idea_dir))

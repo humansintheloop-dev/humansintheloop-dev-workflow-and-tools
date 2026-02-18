@@ -247,7 +247,9 @@ class TestWorktree:
 
     def test_create_worktree_when_not_exists(self):
         """Should create worktree if it doesn't exist."""
-        from i2code.implement.git_setup import ensure_worktree, ensure_integration_branch
+        from i2code.implement.git_setup import ensure_integration_branch
+        from i2code.implement.git_repository import GitRepository
+        from fake_github_client import FakeGitHubClient
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo
@@ -268,15 +270,17 @@ class TestWorktree:
             integration_branch = ensure_integration_branch(repo, "my-feature")
 
             # Create worktree
-            worktree_path = ensure_worktree(repo, "my-feature", integration_branch)
+            wt_repo = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_worktree("my-feature", integration_branch)
 
             expected_path = os.path.join(tmpdir, "my-repo-wt-my-feature")
-            assert worktree_path == expected_path
-            assert os.path.isdir(worktree_path)
+            assert wt_repo.working_tree_dir == expected_path
+            assert os.path.isdir(wt_repo.working_tree_dir)
 
     def test_reuse_existing_worktree(self):
         """Should reuse worktree if it already exists."""
-        from i2code.implement.git_setup import ensure_worktree, ensure_integration_branch
+        from i2code.implement.git_setup import ensure_integration_branch
+        from i2code.implement.git_repository import GitRepository
+        from fake_github_client import FakeGitHubClient
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo
@@ -297,16 +301,18 @@ class TestWorktree:
             integration_branch = ensure_integration_branch(repo, "my-feature")
 
             # Create worktree first time
-            worktree_path1 = ensure_worktree(repo, "my-feature", integration_branch)
+            wt1 = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_worktree("my-feature", integration_branch)
 
             # Call again - should reuse, not error
-            worktree_path2 = ensure_worktree(repo, "my-feature", integration_branch)
+            wt2 = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_worktree("my-feature", integration_branch)
 
-            assert worktree_path1 == worktree_path2
+            assert wt1.working_tree_dir == wt2.working_tree_dir
 
     def test_worktree_naming_pattern(self):
         """Worktree path should follow ../<repo-name>-wt-<idea-name> pattern."""
-        from i2code.implement.git_setup import ensure_worktree, ensure_integration_branch
+        from i2code.implement.git_setup import ensure_integration_branch
+        from i2code.implement.git_repository import GitRepository
+        from fake_github_client import FakeGitHubClient
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo with specific name
@@ -327,14 +333,16 @@ class TestWorktree:
             integration_branch = ensure_integration_branch(repo, "wt-pr-based-development")
 
             # Create worktree
-            worktree_path = ensure_worktree(repo, "wt-pr-based-development", integration_branch)
+            wt_repo = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_worktree("wt-pr-based-development", integration_branch)
 
             expected_path = os.path.join(tmpdir, "genai-development-workflow-wt-wt-pr-based-development")
-            assert worktree_path == expected_path
+            assert wt_repo.working_tree_dir == expected_path
 
     def test_copies_settings_local_json_to_worktree(self):
         """Should copy .claude/settings.local.json to worktree if it exists."""
-        from i2code.implement.git_setup import ensure_worktree, ensure_integration_branch
+        from i2code.implement.git_setup import ensure_integration_branch
+        from i2code.implement.git_repository import GitRepository
+        from fake_github_client import FakeGitHubClient
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo
@@ -360,10 +368,10 @@ class TestWorktree:
 
             # Create integration branch and worktree
             integration_branch = ensure_integration_branch(repo, "my-feature")
-            worktree_path = ensure_worktree(repo, "my-feature", integration_branch)
+            wt_repo = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_worktree("my-feature", integration_branch)
 
             # Check that settings.local.json was copied to worktree
-            worktree_settings = os.path.join(worktree_path, ".claude", "settings.local.json")
+            worktree_settings = os.path.join(wt_repo.working_tree_dir, ".claude", "settings.local.json")
             assert os.path.isfile(worktree_settings), \
                 f"settings.local.json should be copied to worktree at {worktree_settings}"
 
@@ -374,7 +382,9 @@ class TestWorktree:
 
     def test_does_not_fail_if_settings_local_json_missing(self):
         """Should not fail if .claude/settings.local.json does not exist."""
-        from i2code.implement.git_setup import ensure_worktree, ensure_integration_branch
+        from i2code.implement.git_setup import ensure_integration_branch
+        from i2code.implement.git_repository import GitRepository
+        from fake_github_client import FakeGitHubClient
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo WITHOUT .claude/settings.local.json
@@ -393,10 +403,10 @@ class TestWorktree:
 
             # Create integration branch and worktree - should not fail
             integration_branch = ensure_integration_branch(repo, "my-feature")
-            worktree_path = ensure_worktree(repo, "my-feature", integration_branch)
+            wt_repo = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_worktree("my-feature", integration_branch)
 
             # Worktree should exist
-            assert os.path.isdir(worktree_path)
+            assert os.path.isdir(wt_repo.working_tree_dir)
 
 
 @pytest.mark.unit

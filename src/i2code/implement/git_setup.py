@@ -1,10 +1,8 @@
 """Git infrastructure setup: branch creation, worktree management, permissions."""
 
-import glob
 import json
 import os
 import re
-import shutil
 import sys
 
 from git import Repo
@@ -14,29 +12,19 @@ from typing import List
 from i2code.plan.plan_file_io import with_plan_file
 
 
-def validate_idea_files_committed(idea_directory: str, idea_name: str) -> None:
+def validate_idea_files_committed(project) -> None:
     """Validate that all idea files are committed to Git."""
     try:
-        repo = Repo(idea_directory, search_parent_directories=True)
+        repo = Repo(project.directory, search_parent_directories=True)
     except InvalidGitRepositoryError:
-        print(f"Error: {idea_directory} is not in a Git repository", file=sys.stderr)
+        print(f"Error: {project.directory} is not in a Git repository", file=sys.stderr)
         sys.exit(1)
 
     repo_root = repo.working_tree_dir
 
-    idea_files_patterns = [
-        f"{idea_name}-idea.*",
-        f"{idea_name}-discussion.md",
-        f"{idea_name}-spec.md",
-        f"{idea_name}-plan.md",
+    idea_files = [
+        os.path.relpath(f, repo_root) for f in project.find_idea_files()
     ]
-
-    idea_files = []
-    for pattern in idea_files_patterns:
-        matches = glob.glob(os.path.join(idea_directory, pattern))
-        for match in matches:
-            rel_path = os.path.relpath(match, repo_root)
-            idea_files.append(rel_path)
 
     uncommitted = []
     changed_files = [item.a_path for item in repo.index.diff(None)]
@@ -74,26 +62,6 @@ def ensure_integration_branch(repo: Repo, idea_name: str, isolated: bool = False
         else:
             repo.create_head(branch_name)
     return branch_name
-
-
-def ensure_worktree(repo: Repo, idea_name: str, branch_name: str) -> str:
-    """Ensure the worktree exists, creating it if necessary."""
-    repo_root = repo.working_tree_dir
-    repo_name = os.path.basename(repo_root)
-    parent_dir = os.path.dirname(repo_root)
-    worktree_path = os.path.join(parent_dir, f"{repo_name}-wt-{idea_name}")
-
-    if not os.path.isdir(worktree_path):
-        repo.git.worktree("add", worktree_path, branch_name)
-
-    source_settings = os.path.join(repo_root, ".claude", "settings.local.json")
-    if os.path.isfile(source_settings):
-        dest_claude_dir = os.path.join(worktree_path, ".claude")
-        os.makedirs(dest_claude_dir, exist_ok=True)
-        dest_settings = os.path.join(dest_claude_dir, "settings.local.json")
-        shutil.copy2(source_settings, dest_settings)
-
-    return worktree_path
 
 
 REQUIRED_PERMISSIONS = [
@@ -161,14 +129,6 @@ def ensure_slice_branch(
         integration_ref = repo.heads[integration_branch]
         repo.create_head(branch_name, integration_ref)
     return branch_name
-
-
-def get_worktree_idea_directory(
-    worktree_path: str, main_repo_idea_dir: str, main_repo_root: str,
-) -> str:
-    """Compute the idea directory path within the worktree."""
-    idea_relpath = os.path.relpath(main_repo_idea_dir, main_repo_root)
-    return os.path.join(worktree_path, idea_relpath)
 
 
 def get_next_task(plan_file: str):

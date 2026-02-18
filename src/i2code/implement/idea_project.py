@@ -46,6 +46,23 @@ class IdeaProject:
             sys.exit(1)
         return self
 
+    @property
+    def file_patterns(self) -> list[str]:
+        """Glob patterns for all idea files in this project."""
+        return [
+            f"{self._name}-idea.*",
+            f"{self._name}-discussion.md",
+            f"{self._name}-spec.md",
+            f"{self._name}-plan.md",
+        ]
+
+    def find_idea_files(self) -> list[str]:
+        """Return absolute paths of all idea files found in the directory."""
+        files = []
+        for pattern in self.file_patterns:
+            files.extend(glob.glob(os.path.join(self._directory, pattern)))
+        return files
+
     def find_missing_files(self) -> list[str]:
         """Return list of required idea files that are missing from the directory."""
         missing = []
@@ -60,6 +77,11 @@ class IdeaProject:
                 missing.append(f"{self._name}-{suffix}")
 
         return missing
+
+    def worktree_idea_project(self, worktree_path: str, main_repo_root: str) -> "IdeaProject":
+        """Return an IdeaProject for the corresponding path within a worktree."""
+        idea_relpath = os.path.relpath(self._directory, main_repo_root)
+        return IdeaProject(os.path.join(worktree_path, idea_relpath))
 
     def validate_files(self) -> None:
         """Validate that all required idea files exist.

@@ -5,6 +5,7 @@ These tests run the actual i2code implement command and verify its behavior.
 
 import subprocess
 
+import click
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -111,10 +112,11 @@ class TestIsolatedFlagPassthrough:
     @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
     @patch("i2code.implement.cli.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
+    @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.Repo")
     def test_non_isolated_passes_isolated_false(
-        self, mock_repo_cls, mock_idea_project_cls, mock_validate_committed,
-        mock_ensure_branch, mock_ensure_slice,
+        self, mock_repo_cls, mock_git_repo_cls, mock_idea_project_cls,
+        mock_validate_committed, mock_ensure_branch, mock_ensure_slice,
         mock_load_state, mock_first_task
     ):
         """When --isolated is not set, ensure_integration_branch is called with default isolated=False."""
@@ -163,49 +165,23 @@ class TestTrunkModeAcceptance:
 
 @pytest.mark.unit
 class TestTrunkModeIncompatibleFlags:
-    """--trunk is incompatible with flags that assume remote/CI/worktree infrastructure."""
+    """--trunk delegates validation to opts.validate_trunk_options()."""
 
-    @pytest.mark.parametrize("flag", [
-        "--cleanup",
-        "--setup-only",
-        "--isolate",
-        "--isolated",
-        "--skip-ci-wait",
-    ])
-    @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.IdeaProject")
-    def test_trunk_with_incompatible_flag_raises_usage_error(
-        self, mock_idea_project_cls, mock_validate_committed,
-        flag,
-    ):
-        from click.testing import CliRunner
-        from i2code.implement.cli import implement_cmd
+    def test_trunk_calls_validate_trunk_options(self):
+        from i2code.implement.cli import implement
+        from i2code.implement.implement_opts import ImplementOpts
 
-        mock_idea_project_cls.return_value = _make_mock_project()
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk", flag])
+        opts = MagicMock(spec=ImplementOpts)
+        opts.trunk = True
+        opts.isolated = False
+        opts.ignore_uncommitted_idea_changes = True
+        opts.dry_run = False
+        opts.validate_trunk_options.side_effect = click.UsageError("stopped")
 
-        assert result.exit_code != 0
-        assert "cannot be combined" in result.output.lower() or "cannot be combined" in (result.exception and str(result.exception) or "").lower()
+        with pytest.raises(click.UsageError):
+            implement(opts, _make_mock_project(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
 
-    @pytest.mark.parametrize("flag,value", [
-        ("--ci-fix-retries", "5"),
-        ("--ci-timeout", "900"),
-    ])
-    @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.IdeaProject")
-    def test_trunk_with_non_default_ci_option_raises_usage_error(
-        self, mock_idea_project_cls, mock_validate_committed,
-        flag, value,
-    ):
-        from click.testing import CliRunner
-        from i2code.implement.cli import implement_cmd
-
-        mock_idea_project_cls.return_value = _make_mock_project()
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk", flag, value])
-
-        assert result.exit_code != 0
+        opts.validate_trunk_options.assert_called_once()
 
 
 @pytest.mark.unit
@@ -259,9 +235,8 @@ class TestWorktreeModeAcceptance:
 
     @patch("i2code.implement.worktree_mode.WorktreeMode.execute")
     @patch("i2code.implement.cli.GitHubClient")
-    @patch("i2code.implement.cli.get_worktree_idea_directory", return_value="/tmp/wt/idea")
+    @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.ensure_claude_permissions")
-    @patch("i2code.implement.cli.ensure_worktree", return_value="/tmp/wt")
     @patch("i2code.implement.cli.ensure_slice_branch", return_value="idea/test/01-setup")
     @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test/integration")
     @patch("i2code.implement.cli.get_next_task", return_value=_make_numbered_task("setup"))
@@ -273,17 +248,26 @@ class TestWorktreeModeAcceptance:
         self, mock_repo_cls, mock_idea_project_cls,
         mock_validate_committed, mock_load_state,
         mock_first_task, mock_ensure_integration, mock_ensure_slice,
-        mock_ensure_worktree, mock_ensure_perms, mock_get_wt_idea,
+        mock_ensure_perms, mock_git_repo_cls,
         mock_gh_client_cls, mock_execute,
     ):
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
         mock_load_state.return_value = MagicMock(slice_number=1)
-        mock_idea_project_cls.return_value = _make_mock_project(name="test", directory="/tmp/fake-idea")
+        mock_project = _make_mock_project(name="test", directory="/tmp/fake-idea")
+        mock_wt_project = MagicMock()
+        mock_wt_project.plan_file = "/tmp/wt/idea/test-plan.md"
+        mock_project.worktree_idea_project.return_value = mock_wt_project
+        mock_idea_project_cls.return_value = mock_project
         mock_repo = MagicMock()
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
+
+        mock_git_repo = mock_git_repo_cls.return_value
+        mock_wt_git_repo = MagicMock()
+        mock_wt_git_repo.working_tree_dir = "/tmp/wt"
+        mock_git_repo.ensure_worktree.return_value = mock_wt_git_repo
 
         mock_gh = MagicMock()
         mock_gh.find_pr.return_value = None

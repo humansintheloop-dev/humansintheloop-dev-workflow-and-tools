@@ -111,7 +111,7 @@ class TestDeferredPRCreation:
         from unittest.mock import MagicMock
 
         # Mock all the setup functions to avoid real git/github operations
-        monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda x, y: None)
+        monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda p: None)
 
         # Mock git operations
         class MockRepo:
@@ -130,7 +130,6 @@ class TestDeferredPRCreation:
 
         monkeypatch.setattr("i2code.implement.cli.Repo", lambda *args, **kwargs: MockRepo())
         monkeypatch.setattr("i2code.implement.cli.ensure_integration_branch", lambda r, n: "idea/test-idea/integration")
-        monkeypatch.setattr("i2code.implement.cli.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
         monkeypatch.setattr("i2code.implement.cli.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
 
         # Also patch the cli module's imported references
@@ -140,18 +139,19 @@ class TestDeferredPRCreation:
         mock_project.plan_file = str(tmp_path / "test-idea-plan.md")
         mock_project.validate.return_value = mock_project
         mock_project.validate_files.return_value = None
+        mock_wt_project = MagicMock()
+        mock_wt_project.plan_file = str(tmp_path / "worktree" / "test-idea" / "test-idea-plan.md")
+        mock_project.worktree_idea_project = MagicMock(return_value=mock_wt_project)
         monkeypatch.setattr("i2code.implement.cli.IdeaProject", lambda x: mock_project)
-        monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda x, y: None)
+        monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda p: None)
         _mock_state = MagicMock(slice_number=1, processed_comment_ids=[], processed_review_ids=[], processed_conversation_ids=[])
         monkeypatch.setattr("i2code.implement.cli.WorkflowState.load", lambda x: _mock_state)
         monkeypatch.setattr("i2code.implement.cli.ensure_integration_branch", lambda r, n, isolated=False: "idea/test-idea/integration")
-        monkeypatch.setattr("i2code.implement.cli.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
         monkeypatch.setattr("i2code.implement.cli.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
         monkeypatch.setattr("i2code.implement.cli.get_next_task", lambda f: NumberedTask(
             number=TaskNumber(thread=1, task=1),
             task=Task(_lines=["- [ ] **Task 1.1: test-task**"]),
         ))
-        monkeypatch.setattr("i2code.implement.cli.get_worktree_idea_directory", lambda **kwargs: str(tmp_path / "worktree" / "test-idea"))
         monkeypatch.setattr("i2code.implement.cli.GitHubClient", lambda: FakeGitHubClient())
 
         # Track if GitRepository.ensure_pr was called

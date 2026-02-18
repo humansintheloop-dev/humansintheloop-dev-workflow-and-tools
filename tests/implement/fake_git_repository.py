@@ -55,7 +55,7 @@ class FakeGitRepository:
             idea_name,
             f"{self._working_tree_dir}-wt-{idea_name}",
         )
-        return worktree_path
+        return FakeGitRepository(working_tree_dir=worktree_path)
 
     def set_worktree_path(self, idea_name, path):
         self._worktrees[idea_name] = path

@@ -20,7 +20,7 @@ class TestHeadSha:
 
     def test_returns_current_head_commit_sha(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
 
         assert git_repo.head_sha == repo.head.commit.hexsha
 
@@ -30,14 +30,14 @@ class TestHeadAdvancedSince:
 
     def test_returns_false_when_head_unchanged(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
 
         original = git_repo.head_sha
         assert git_repo.head_advanced_since(original) is False
 
     def test_returns_true_after_new_commit(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
 
         original = git_repo.head_sha
 
@@ -56,7 +56,7 @@ class TestEnsureBranch:
 
     def test_creates_branch_from_head(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
 
         result = git_repo.ensure_branch("feature/new-branch")
 
@@ -66,7 +66,7 @@ class TestEnsureBranch:
     def test_reuses_existing_branch(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
         repo.create_head("feature/existing")
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
 
         result = git_repo.ensure_branch("feature/existing")
 
@@ -85,7 +85,7 @@ class TestEnsureBranch:
         repo.index.add(["extra.txt"])
         repo.index.commit("Integration commit")
 
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
         result = git_repo.ensure_branch("idea/test/01-setup", from_ref="idea/test/integration")
 
         assert result == "idea/test/01-setup"
@@ -101,7 +101,7 @@ class TestCheckout:
     def test_checks_out_branch(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
         repo.create_head("feature/checkout-test")
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
 
         git_repo.checkout("feature/checkout-test")
 
@@ -131,21 +131,22 @@ class TestEnsureWorktree:
     def test_creates_worktree(self):
         with tempfile.TemporaryDirectory() as parent:
             repo, parent_dir = _named_repo_with_branch(parent, "feature/wt-test")
-            git_repo = GitRepository(repo)
-            worktree_path = git_repo.ensure_worktree("test-idea", "feature/wt-test")
+            git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+            wt_repo = git_repo.ensure_worktree("test-idea", "feature/wt-test")
 
+            assert isinstance(wt_repo, GitRepository)
             expected = os.path.join(parent_dir, "my-repo-wt-test-idea")
-            assert worktree_path == expected
-            assert os.path.isdir(worktree_path)
+            assert wt_repo.working_tree_dir == expected
+            assert os.path.isdir(wt_repo.working_tree_dir)
 
     def test_reuses_existing_worktree(self):
         with tempfile.TemporaryDirectory() as parent:
             repo, _ = _named_repo_with_branch(parent, "feature/wt-reuse")
-            git_repo = GitRepository(repo)
-            path1 = git_repo.ensure_worktree("reuse-idea", "feature/wt-reuse")
-            path2 = git_repo.ensure_worktree("reuse-idea", "feature/wt-reuse")
+            git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+            wt1 = git_repo.ensure_worktree("reuse-idea", "feature/wt-reuse")
+            wt2 = git_repo.ensure_worktree("reuse-idea", "feature/wt-reuse")
 
-            assert path1 == path2
+            assert wt1.working_tree_dir == wt2.working_tree_dir
 
 
 @pytest.mark.unit
@@ -153,7 +154,7 @@ class TestWorkingTreeDir:
 
     def test_returns_repo_working_tree_dir(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
 
         assert git_repo.working_tree_dir == repo.working_tree_dir
 
@@ -163,13 +164,13 @@ class TestBranchState:
 
     def test_branch_is_none_by_default(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
 
         assert git_repo.branch is None
 
     def test_branch_tracks_value_set(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
 
         git_repo.branch = "idea/test/01-setup"
 
@@ -181,13 +182,13 @@ class TestPrNumberState:
 
     def test_pr_number_is_none_by_default(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
 
         assert git_repo.pr_number is None
 
     def test_pr_number_tracks_value_set(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
 
         git_repo.pr_number = 42
 
@@ -199,7 +200,7 @@ class TestPush:
 
     def test_push_delegates_to_subprocess_with_tracked_branch(self, test_git_repo_with_commit, mocker):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
         git_repo.branch = "idea/test/01-setup"
 
         mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
@@ -215,7 +216,7 @@ class TestPush:
 
     def test_push_returns_false_on_failure(self, test_git_repo_with_commit, mocker):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
         git_repo.branch = "idea/test/01-setup"
 
         mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
@@ -334,7 +335,7 @@ class TestBranchHasBeenPushed:
 
     def test_returns_false_when_branch_not_on_remote(self, test_git_repo_with_commit, mocker):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
         git_repo.branch = "idea/test/01-setup"
 
         mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
@@ -344,7 +345,7 @@ class TestBranchHasBeenPushed:
 
     def test_returns_true_when_branch_on_remote(self, test_git_repo_with_commit, mocker):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo)
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
         git_repo.branch = "idea/test/01-setup"
 
         mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")

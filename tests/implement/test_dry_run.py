@@ -1,10 +1,10 @@
 """Tests for --dry-run option of i2code implement."""
 
 import pytest
-from click.testing import CliRunner
 from unittest.mock import MagicMock, patch
 
-from i2code.implement.cli import implement_cmd
+from i2code.implement.cli import implement
+from i2code.implement.implement_opts import ImplementOpts
 
 
 def _make_mock_project():
@@ -17,56 +17,41 @@ def _make_mock_project():
     return mock_project
 
 
+def _make_dry_run_opts(**overrides):
+    defaults = dict(idea_directory="/tmp/fake-idea", dry_run=True)
+    defaults.update(overrides)
+    return ImplementOpts(**defaults)
+
+
+def _mock_deps():
+    return MagicMock(), MagicMock(), MagicMock(), MagicMock()
+
+
 @pytest.mark.unit
 class TestDryRun:
     """--dry-run prints what mode would be used and exits."""
 
-    @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.IdeaProject")
-    def test_dry_run_trunk_mode(
-        self, mock_idea_project_cls, mock_validate_committed,
-    ):
-        mock_idea_project_cls.return_value = _make_mock_project()
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk", "--dry-run"])
+    def test_dry_run_trunk_mode(self, capsys):
+        opts = _make_dry_run_opts(trunk=True)
+        implement(opts, _make_mock_project(), *_mock_deps())
 
-        assert result.exit_code == 0
-        assert "trunk" in result.output.lower()
+        assert "trunk" in capsys.readouterr().out.lower()
 
-    @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.IdeaProject")
-    def test_dry_run_isolate_mode(
-        self, mock_idea_project_cls, mock_validate_committed,
-    ):
-        mock_idea_project_cls.return_value = _make_mock_project()
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolate", "--dry-run"])
+    def test_dry_run_isolate_mode(self, capsys):
+        opts = _make_dry_run_opts(isolate=True)
+        implement(opts, _make_mock_project(), *_mock_deps())
 
-        assert result.exit_code == 0
-        assert "isolate" in result.output.lower()
+        assert "isolate" in capsys.readouterr().out.lower()
 
-    @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.IdeaProject")
-    def test_dry_run_worktree_mode(
-        self, mock_idea_project_cls, mock_validate_committed,
-    ):
-        mock_idea_project_cls.return_value = _make_mock_project()
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--dry-run"])
+    def test_dry_run_worktree_mode(self, capsys):
+        opts = _make_dry_run_opts()
+        implement(opts, _make_mock_project(), *_mock_deps())
 
-        assert result.exit_code == 0
-        assert "worktree" in result.output.lower()
+        assert "worktree" in capsys.readouterr().out.lower()
 
-    @patch("i2code.implement.trunk_mode.TrunkMode.execute")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.IdeaProject")
-    def test_dry_run_does_not_execute(
-        self, mock_idea_project_cls, mock_validate_committed,
-        mock_execute,
-    ):
-        mock_idea_project_cls.return_value = _make_mock_project()
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--trunk", "--dry-run"])
+    @patch("i2code.implement.cli.implement_trunk_mode")
+    def test_dry_run_does_not_execute(self, mock_trunk_mode):
+        opts = _make_dry_run_opts(trunk=True)
+        implement(opts, _make_mock_project(), *_mock_deps())
 
-        assert result.exit_code == 0
-        mock_execute.assert_not_called()
+        mock_trunk_mode.assert_not_called()

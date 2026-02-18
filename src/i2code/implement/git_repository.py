@@ -9,6 +9,8 @@ import shutil
 import subprocess
 import sys
 
+from git import Repo
+
 from i2code.implement.claude_runner import run_claude_interactive, run_claude_with_output_capture
 from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.pr_helpers import generate_pr_body, generate_pr_title, get_failing_workflow_run
@@ -19,10 +21,10 @@ class GitRepository:
 
     Args:
         repo: A GitPython Repo instance.
-        gh_client: Optional GitHubClient for PR and CI operations.
+        gh_client: GitHubClient for PR and CI operations.
     """
 
-    def __init__(self, repo, gh_client=None):
+    def __init__(self, repo, gh_client):
         self._repo = repo
         self._gh_client = gh_client
         self._branch = None
@@ -94,7 +96,7 @@ class GitRepository:
             branch_name: Branch to check out in the worktree.
 
         Returns:
-            Absolute path to the worktree directory.
+            A new GitRepository wrapping the worktree's Repo.
         """
         repo_root = self._repo.working_tree_dir
         repo_name = os.path.basename(repo_root)
@@ -113,7 +115,7 @@ class GitRepository:
             dest_settings = os.path.join(dest_claude_dir, "settings.local.json")
             shutil.copy2(source_settings, dest_settings)
 
-        return worktree_path
+        return GitRepository(Repo(worktree_path), gh_client=self._gh_client)
 
     def branch_has_been_pushed(self):
         """Check if the tracked branch exists on the remote.

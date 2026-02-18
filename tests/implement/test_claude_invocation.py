@@ -8,38 +8,30 @@ import pytest
 class TestWorktreeIdeaDirectory:
     """Test that Claude is invoked with worktree idea directory, not main repo."""
 
-    def test_get_worktree_idea_directory(self):
-        """Should compute the idea directory path within the worktree."""
-        from i2code.implement.git_setup import get_worktree_idea_directory
+    def test_worktree_idea_project(self):
+        """Should return an IdeaProject for the path within the worktree."""
+        from i2code.implement.idea_project import IdeaProject
 
-        worktree_path = "/tmp/my-repo-wt-my-feature"
-        main_repo_idea_dir = "/home/user/my-repo/docs/ideas/my-feature"
-        main_repo_root = "/home/user/my-repo"
+        project = IdeaProject("/home/user/my-repo/docs/ideas/my-feature")
 
-        result = get_worktree_idea_directory(
-            worktree_path=worktree_path,
-            main_repo_idea_dir=main_repo_idea_dir,
-            main_repo_root=main_repo_root
+        result = project.worktree_idea_project(
+            "/tmp/my-repo-wt-my-feature",
+            "/home/user/my-repo",
         )
 
-        assert result == "/tmp/my-repo-wt-my-feature/docs/ideas/my-feature"
+        assert isinstance(result, IdeaProject)
+        assert result.directory == "/tmp/my-repo-wt-my-feature/docs/ideas/my-feature"
 
     def test_claude_prompt_uses_worktree_idea_directory(self, mocker):
         """Claude command prompt should reference worktree idea dir, not main repo."""
         from i2code.implement.command_builder import CommandBuilder
-        from i2code.implement.git_setup import get_worktree_idea_directory
+        from i2code.implement.idea_project import IdeaProject
 
-        # Simulate the paths
         main_repo_root = "/home/user/my-repo"
-        main_repo_idea_dir = "/home/user/my-repo/kafka-security-poc"
         worktree_path = "/tmp/my-repo-wt-kafka-security-poc"
 
-        # Get the worktree idea directory (what main() should pass to build_task_command)
-        worktree_idea_dir = get_worktree_idea_directory(
-            worktree_path=worktree_path,
-            main_repo_idea_dir=main_repo_idea_dir,
-            main_repo_root=main_repo_root
-        )
+        project = IdeaProject("/home/user/my-repo/kafka-security-poc")
+        worktree_idea_dir = project.worktree_idea_project(worktree_path, main_repo_root).directory
 
         # Build command with worktree idea dir
         cmd = CommandBuilder().build_task_command(

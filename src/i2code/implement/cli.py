@@ -1,6 +1,5 @@
 """Click command for the implement workflow."""
 
-import os
 import sys
 
 import click
@@ -16,10 +15,8 @@ from i2code.implement.git_setup import (
     validate_idea_files_committed,
     ensure_integration_branch,
     ensure_claude_permissions,
-    ensure_worktree,
     ensure_slice_branch,
     get_next_task,
-    get_worktree_idea_directory,
 )
 from i2code.implement.claude_runner import RealClaudeRunner
 from i2code.implement.isolate_mode import IsolateMode, RealProjectSetup, RealSubprocessRunner
@@ -28,13 +25,10 @@ from i2code.implement.trunk_mode import TrunkMode
 from i2code.implement.worktree_mode import WorktreeMode
 
 
-def implement(opts: ImplementOpts, project: IdeaProject):
+def implement(opts: ImplementOpts, project: IdeaProject, repo, git_repo, claude_runner, gh_client):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
     project.validate()
     project.validate_files()
-
-    if not opts.isolated and not opts.ignore_uncommitted_idea_changes:
-        validate_idea_files_committed(project.directory, project.name)
 
     if opts.dry_run:
         if opts.trunk:
@@ -48,124 +42,91 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         print(f"Directory: {project.directory}")
         return
 
-    # Trunk mode: execute tasks locally on current branch
+    if not opts.isolated and not opts.ignore_uncommitted_idea_changes:
+        validate_idea_files_committed(project)
+
     if opts.trunk:
-        incompatible = []
-        if opts.cleanup:
-            incompatible.append("--cleanup")
-        if opts.setup_only:
-            incompatible.append("--setup-only")
-        if opts.isolate:
-            incompatible.append("--isolate")
-        if opts.isolated:
-            incompatible.append("--isolated")
-        if opts.skip_ci_wait:
-            incompatible.append("--skip-ci-wait")
-        if opts.ci_fix_retries != 3:
-            incompatible.append("--ci-fix-retries")
-        if opts.ci_timeout != 600:
-            incompatible.append("--ci-timeout")
-        if incompatible:
-            raise click.UsageError(
-                f"--trunk cannot be combined with: {', '.join(incompatible)}"
-            )
+        implement_trunk_mode(opts, project, git_repo, claude_runner, gh_client)
+    elif opts.isolate:
+        implement_isolate_mode(opts, project, repo, git_repo, claude_runner, gh_client)
+    else:
+        implement_worktree_mode(opts, project, repo, git_repo, claude_runner, gh_client)
 
-        repo = Repo(project.directory, search_parent_directories=True)
-        git_repo = GitRepository(repo)
-        claude_runner = RealClaudeRunner()
 
-        trunk_mode = TrunkMode(
-            git_repo=git_repo,
-            project=project,
-            claude_runner=claude_runner,
-        )
-        trunk_mode.execute(
-            non_interactive=opts.non_interactive,
-            mock_claude=opts.mock_claude,
-            extra_prompt=opts.extra_prompt,
-        )
-        return
+def implement_trunk_mode(opts: ImplementOpts, project: IdeaProject, git_repo, claude_runner, gh_client):
+    """Execute tasks locally on the current branch."""
+    opts.validate_trunk_options()
 
-    # Delegate to isolarium VM if --isolate is set
-    if opts.isolate:
-        repo = Repo(project.directory, search_parent_directories=True)
-        isolate_mode = IsolateMode(
-            repo=repo,
-            project=project,
-            gh_client=GitHubClient(),
-            project_setup=RealProjectSetup(),
-            subprocess_runner=RealSubprocessRunner(),
-        )
-        returncode = isolate_mode.execute(
-            non_interactive=opts.non_interactive,
-            mock_claude=opts.mock_claude,
-            cleanup=opts.cleanup,
-            setup_only=opts.setup_only,
-            extra_prompt=opts.extra_prompt,
-            skip_ci_wait=opts.skip_ci_wait,
-            ci_fix_retries=opts.ci_fix_retries,
-            ci_timeout=opts.ci_timeout,
-        )
-        sys.exit(returncode)
+    trunk_mode = TrunkMode(
+        git_repo=git_repo,
+        project=project,
+        claude_runner=claude_runner,
+    )
+    trunk_mode.execute(
+        non_interactive=opts.non_interactive,
+        mock_claude=opts.mock_claude,
+        extra_prompt=opts.extra_prompt,
+    )
 
-    # Initialize or load state
+
+def implement_isolate_mode(opts: ImplementOpts, project: IdeaProject, repo, git_repo, claude_runner, gh_client):
+    """Delegate execution to an isolarium VM."""
+    isolate_mode = IsolateMode(
+        repo=repo,
+        project=project,
+        gh_client=gh_client,
+        project_setup=RealProjectSetup(),
+        subprocess_runner=RealSubprocessRunner(),
+    )
+    returncode = isolate_mode.execute(
+        non_interactive=opts.non_interactive,
+        mock_claude=opts.mock_claude,
+        cleanup=opts.cleanup,
+        setup_only=opts.setup_only,
+        extra_prompt=opts.extra_prompt,
+        skip_ci_wait=opts.skip_ci_wait,
+        ci_fix_retries=opts.ci_fix_retries,
+        ci_timeout=opts.ci_timeout,
+    )
+    sys.exit(returncode)
+
+
+def implement_worktree_mode(opts: ImplementOpts, project: IdeaProject, repo, git_repo, claude_runner, gh_client):
+    """Execute tasks using worktree + PR + CI loop."""
     state = WorkflowState.load(project.state_file)
 
-    # Get repo from idea directory
-    repo = Repo(project.directory, search_parent_directories=True)
-
-    # Create or reuse integration branch
     integration_branch = ensure_integration_branch(repo, project.name, isolated=opts.isolated)
     print(f"Integration branch: {integration_branch}")
 
-    # Read plan file to get first task name for slice naming
     next_task = get_next_task(project.plan_file)
     first_task_name = next_task.task.title if next_task else "implementation"
 
-    # Create or reuse slice branch
     slice_branch = ensure_slice_branch(
         repo, project.name, state.slice_number, first_task_name, integration_branch
     )
     print(f"Slice branch: {slice_branch}")
 
-    # Create GitHubClient for PR operations
-    gh_client = GitHubClient()
-
     if opts.isolated:
-        # Running inside isolarium VM - work directly in the repo
-        work_dir = repo.working_tree_dir
         repo.config_writer().set_value("user", "email", "test@test.com").release()
         repo.config_writer().set_value("user", "name", "Test User").release()
-        ensure_claude_permissions(work_dir)
-        work_idea_dir = project.directory
-        work_plan_file = project.plan_file
-        repo.git.checkout(slice_branch)
         git_repo = GitRepository(repo, gh_client=gh_client)
+        ensure_claude_permissions(git_repo.working_tree_dir)
+        work_plan_file = project.plan_file
+        git_repo.checkout(slice_branch)
     else:
-        # Normal mode - use a worktree
-        worktree_path = ensure_worktree(repo, project.name, integration_branch)
-        print(f"Worktree: {worktree_path}")
-        work_dir = worktree_path
-        ensure_claude_permissions(work_dir)
-        work_idea_dir = get_worktree_idea_directory(
-            worktree_path=worktree_path,
-            main_repo_idea_dir=project.directory,
-            main_repo_root=repo.working_tree_dir
-        )
-        work_plan_file = os.path.join(work_idea_dir, f"{project.name}-plan.md")
-        work_repo = Repo(worktree_path)
-        work_repo.git.checkout(slice_branch)
-        git_repo = GitRepository(work_repo, gh_client=gh_client)
+        git_repo = git_repo.ensure_worktree(project.name, integration_branch)
+        print(f"Worktree: {git_repo.working_tree_dir}")
+        ensure_claude_permissions(git_repo.working_tree_dir)
+        work_project = project.worktree_idea_project(git_repo.working_tree_dir, repo.working_tree_dir)
+        work_plan_file = work_project.plan_file
+        git_repo.checkout(slice_branch)
 
     git_repo.branch = slice_branch
 
-    # Skip task execution if --setup-only was provided
-    # Note: PR creation is deferred until after first push (when there are commits)
     if opts.setup_only:
         print("Setup complete. Exiting (--setup-only mode).")
         return
 
-    # Check for existing PR (creation is deferred until after first push)
     existing_pr = gh_client.find_pr(slice_branch)
     if existing_pr:
         git_repo.pr_number = existing_pr
@@ -175,9 +136,9 @@ def implement(opts: ImplementOpts, project: IdeaProject):
         git_repo=git_repo,
         project=project,
         state=state,
-        claude_runner=RealClaudeRunner(),
+        claude_runner=claude_runner,
         gh_client=gh_client,
-        work_dir=work_dir,
+        work_dir=git_repo.working_tree_dir,
         work_plan_file=work_plan_file,
     )
     worktree_mode.execute(
@@ -222,7 +183,11 @@ def implement_cmd(**kwargs):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
     opts = ImplementOpts(**kwargs)
     project = IdeaProject(opts.idea_directory)
-    implement(opts, project)
+    repo = Repo(project.directory, search_parent_directories=True)
+    gh_client = GitHubClient()
+    git_repo = GitRepository(repo, gh_client=gh_client)
+    claude_runner = RealClaudeRunner()
+    implement(opts, project, repo, git_repo, claude_runner, gh_client)
 
 
 @click.command("scaffold")

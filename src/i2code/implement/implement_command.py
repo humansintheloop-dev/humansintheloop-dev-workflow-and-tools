@@ -2,33 +2,23 @@
 
 import sys
 
-from i2code.implement.command_builder import CommandBuilder
-from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
-from i2code.implement.github_actions_monitor import GithubActionsMonitor
-from i2code.implement.pr_helpers import push_branch_to_remote
-from i2code.implement.project_setup import ProjectInitializer
-from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import (
     validate_idea_files_committed,
     ensure_claude_permissions,
     get_next_task,
 )
-from i2code.implement.isolate_mode import IsolateMode, RealSubprocessRunner
-from i2code.implement.trunk_mode import TrunkMode
-from i2code.implement.worktree_mode import WorktreeMode
 
 
 class ImplementCommand:
     """Orchestrates the implement workflow across trunk, isolate, and worktree modes."""
 
-    def __init__(self, opts, project, repo, git_repo, claude_runner, gh_client):
+    def __init__(self, opts, project, repo, git_repo, mode_factory):
         self.opts = opts
         self.project = project
         self.repo = repo
         self.git_repo = git_repo
-        self.claude_runner = claude_runner
-        self.gh_client = gh_client
+        self.mode_factory = mode_factory
 
     def execute(self):
         """Implement a development plan using Git worktrees and GitHub Draft PRs."""
@@ -61,10 +51,9 @@ class ImplementCommand:
         """Execute tasks locally on the current branch."""
         self.opts.validate_trunk_options()
 
-        trunk_mode = TrunkMode(
+        trunk_mode = self.mode_factory.make_trunk_mode(
             git_repo=self.git_repo,
             project=self.project,
-            claude_runner=self.claude_runner,
         )
         trunk_mode.execute(
             non_interactive=self.opts.non_interactive,
@@ -74,25 +63,10 @@ class ImplementCommand:
 
     def _isolate_mode(self):
         """Delegate execution to an isolarium VM."""
-        build_fixer = GithubActionsBuildFixer(
-            opts=self.opts,
-            git_repo=self.git_repo,
-            claude_runner=self.claude_runner,
-        )
-        project_initializer = ProjectInitializer(
-            claude_runner=self.claude_runner,
-            command_builder=CommandBuilder(),
-            git_repo=self.git_repo,
-            build_fixer=build_fixer,
-            push_fn=push_branch_to_remote,
-        )
-        isolate_mode = IsolateMode(
+        isolate_mode = self.mode_factory.make_isolate_mode(
             repo=self.repo,
             git_repo=self.git_repo,
             project=self.project,
-            gh_client=self.gh_client,
-            project_initializer=project_initializer,
-            subprocess_runner=RealSubprocessRunner(),
         )
         returncode = isolate_mode.execute(
             non_interactive=self.opts.non_interactive,
@@ -145,39 +119,15 @@ class ImplementCommand:
             print("Setup complete. Exiting (--setup-only mode).")
             return
 
-        existing_pr = self.gh_client.find_pr(slice_branch)
+        existing_pr = self.git_repo.gh_client.find_pr(slice_branch)
         if existing_pr:
             self.git_repo.pr_number = existing_pr
             print(f"Reusing existing PR #{existing_pr}")
 
-        ci_monitor = GithubActionsMonitor(
-            gh_client=self.gh_client,
-            skip_ci_wait=self.opts.skip_ci_wait,
-            ci_timeout=self.opts.ci_timeout,
-        )
-
-        build_fixer = GithubActionsBuildFixer(
-            opts=self.opts,
-            git_repo=self.git_repo,
-            claude_runner=self.claude_runner,
-        )
-
-        review_processor = PullRequestReviewProcessor(
-            opts=self.opts,
-            git_repo=self.git_repo,
-            state=state,
-            claude_runner=self.claude_runner,
-        )
-
-        worktree_mode = WorktreeMode(
-            opts=self.opts,
+        worktree_mode = self.mode_factory.make_worktree_mode(
             git_repo=self.git_repo,
             project=self.project,
             state=state,
-            claude_runner=self.claude_runner,
             work_plan_file=work_plan_file,
-            ci_monitor=ci_monitor,
-            build_fixer=build_fixer,
-            review_processor=review_processor,
         )
         worktree_mode.execute()

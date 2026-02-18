@@ -179,7 +179,7 @@ class TestTrunkModeIncompatibleFlags:
         opts.dry_run = False
         opts.validate_trunk_options.side_effect = click.UsageError("stopped")
 
-        cmd = ImplementCommand(opts, _make_mock_project(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
+        cmd = ImplementCommand(opts, _make_mock_project(), MagicMock(), MagicMock(), MagicMock())
         with pytest.raises(click.UsageError):
             cmd.execute()
 

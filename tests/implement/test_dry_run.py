@@ -26,7 +26,7 @@ def _make_dry_run_opts(**overrides):
 def _make_command(**opt_overrides):
     opts = _make_dry_run_opts(**opt_overrides)
     project = _make_mock_project()
-    return ImplementCommand(opts, project, MagicMock(), MagicMock(), MagicMock(), MagicMock())
+    return ImplementCommand(opts, project, MagicMock(), MagicMock(), MagicMock())
 
 
 @pytest.mark.unit

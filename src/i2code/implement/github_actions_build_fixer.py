@@ -6,6 +6,21 @@ from typing import Any, Dict, Optional
 from i2code.implement.command_builder import CommandBuilder
 
 
+class GithubActionsBuildFixerFactory:
+    """Creates GithubActionsBuildFixer instances with a specific git_repo."""
+
+    def __init__(self, opts, claude_runner=None):
+        self._opts = opts
+        self._claude_runner = claude_runner
+
+    def create(self, git_repo):
+        return GithubActionsBuildFixer(
+            opts=self._opts,
+            git_repo=git_repo,
+            claude_runner=self._claude_runner,
+        )
+
+
 class GithubActionsBuildFixer:
     """Checks for failing CI on the current HEAD and attempts to fix it.
 

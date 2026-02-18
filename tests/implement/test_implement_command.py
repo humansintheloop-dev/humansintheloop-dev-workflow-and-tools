@@ -32,10 +32,9 @@ def _make_command(**opt_overrides):
     project = _make_mock_project()
     repo = MagicMock()
     git_repo = MagicMock()
-    claude_runner = MagicMock()
-    gh_client = MagicMock()
-    cmd = ImplementCommand(opts, project, repo, git_repo, claude_runner, gh_client)
-    return cmd, project, repo, git_repo, claude_runner, gh_client
+    mode_factory = MagicMock()
+    cmd = ImplementCommand(opts, project, repo, git_repo, mode_factory)
+    return cmd, project, repo, git_repo
 
 
 @pytest.mark.unit
@@ -128,20 +127,18 @@ class TestImplementCommandValidation:
 
 @pytest.mark.unit
 class TestImplementCommandTrunkMode:
-    """_trunk_mode() creates TrunkMode and calls execute()."""
+    """_trunk_mode() delegates to mode_factory.make_trunk_mode()."""
 
-    @patch("i2code.implement.implement_command.TrunkMode")
-    def test_trunk_mode_creates_trunk_mode(self, mock_trunk_cls):
-        cmd, project, _, git_repo, claude_runner, _ = _make_command(
+    def test_trunk_mode_delegates_to_mode_factory(self):
+        cmd, project, _, git_repo = _make_command(
             trunk=True, ignore_uncommitted_idea_changes=True
         )
         cmd.execute()
-        mock_trunk_cls.assert_called_once_with(
+        cmd.mode_factory.make_trunk_mode.assert_called_once_with(
             git_repo=git_repo,
             project=project,
-            claude_runner=claude_runner,
         )
-        mock_trunk_cls.return_value.execute.assert_called_once_with(
+        cmd.mode_factory.make_trunk_mode.return_value.execute.assert_called_once_with(
             non_interactive=False,
             mock_claude=None,
             extra_prompt=None,
@@ -150,51 +147,52 @@ class TestImplementCommandTrunkMode:
 
 @pytest.mark.unit
 class TestImplementCommandIsolateMode:
-    """_isolate_mode() creates IsolateMode and calls execute()."""
+    """_isolate_mode() delegates to mode_factory.make_isolate_mode()."""
 
-    @patch("i2code.implement.implement_command.IsolateMode")
-    def test_isolate_mode_creates_isolate_mode(self, mock_isolate_cls):
-        mock_isolate_cls.return_value.execute.return_value = 0
-        cmd, project, repo, git_repo, _, gh_client = _make_command(
+    def test_isolate_mode_delegates_to_mode_factory(self):
+        cmd, project, repo, git_repo = _make_command(
             isolate=True, ignore_uncommitted_idea_changes=True
         )
+        cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
         with pytest.raises(SystemExit) as exc_info:
             cmd.execute()
         assert exc_info.value.code == 0
-        mock_isolate_cls.assert_called_once()
-        mock_isolate_cls.return_value.execute.assert_called_once()
+        cmd.mode_factory.make_isolate_mode.assert_called_once_with(
+            repo=repo,
+            git_repo=git_repo,
+            project=project,
+        )
+        cmd.mode_factory.make_isolate_mode.return_value.execute.assert_called_once()
 
 
 @pytest.mark.unit
 class TestImplementCommandWorktreeMode:
-    """_worktree_mode() sets up branches and creates WorktreeMode."""
+    """_worktree_mode() delegates to mode_factory.make_worktree_mode()."""
 
-    @patch("i2code.implement.implement_command.GithubActionsMonitor")
-    @patch("i2code.implement.implement_command.WorktreeMode")
     @patch("i2code.implement.implement_command.get_next_task")
     @patch("i2code.implement.implement_command.WorkflowState.load")
     @patch("i2code.implement.implement_command.ensure_claude_permissions")
-    def test_worktree_mode_creates_worktree_mode(
+    def test_worktree_mode_delegates_to_mode_factory(
         self, mock_perms, mock_load_state, mock_next_task,
-        mock_wt_cls, mock_ci_cls,
     ):
         mock_load_state.return_value = MagicMock(slice_number=1)
         mock_task = MagicMock()
         mock_task.task.title = "setup"
         mock_next_task.return_value = mock_task
 
-        cmd, project, repo, git_repo, claude_runner, gh_client = _make_command(
+        cmd, project, repo, git_repo = _make_command(
             ignore_uncommitted_idea_changes=True
         )
         repo.working_tree_dir = "/tmp/fake-repo"
         mock_wt_git_repo = MagicMock()
         mock_wt_git_repo.working_tree_dir = "/tmp/wt"
         git_repo.ensure_worktree.return_value = mock_wt_git_repo
-        gh_client.find_pr.return_value = None
+        git_repo.gh_client.find_pr.return_value = None
 
         cmd.execute()
 
-        mock_wt_cls.return_value.execute.assert_called_once()
+        cmd.mode_factory.make_worktree_mode.assert_called_once()
+        cmd.mode_factory.make_worktree_mode.return_value.execute.assert_called_once()
 
 
 @pytest.mark.unit

@@ -12,16 +12,14 @@ class IsolateMode:
         repo: Git repository (for working_tree_dir).
         git_repo: GitRepository for branch operations.
         project: IdeaProject with directory and name.
-        gh_client: GitHubClient (or FakeGitHubClient) for PR/CI operations.
         project_initializer: ProjectInitializer providing ensure_project_setup().
         subprocess_runner: Object providing run(cmd) -> returncode.
     """
 
-    def __init__(self, repo, git_repo, project, gh_client, project_initializer, subprocess_runner):
+    def __init__(self, repo, git_repo, project, project_initializer, subprocess_runner):
         self._repo = repo
         self._git_repo = git_repo
         self._project = project
-        self._gh_client = gh_client
         self._project_initializer = project_initializer
         self._subprocess_runner = subprocess_runner
 

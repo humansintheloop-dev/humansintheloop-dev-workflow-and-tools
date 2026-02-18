@@ -5,12 +5,15 @@ import click
 from git import Repo
 
 from i2code.implement.git_repository import GitRepository
+from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixerFactory
 from i2code.implement.github_client import GitHubClient
+from i2code.implement.mode_factory import ModeFactory
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.claude_runner import RealClaudeRunner
 from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.pr_helpers import push_branch_to_remote
 from i2code.implement.project_setup import ProjectInitializer
 
 
@@ -50,7 +53,24 @@ def implement_cmd(**kwargs):
     gh_client = GitHubClient()
     git_repo = GitRepository(repo, gh_client=gh_client)
     claude_runner = RealClaudeRunner()
-    command = ImplementCommand(opts, project, repo, git_repo, claude_runner, gh_client)
+    build_fixer_factory = GithubActionsBuildFixerFactory(
+        opts=opts,
+        claude_runner=claude_runner,
+    )
+    project_initializer = ProjectInitializer(
+        claude_runner=claude_runner,
+        command_builder=CommandBuilder(),
+        git_repo=git_repo,
+        build_fixer=build_fixer_factory.create(git_repo),
+        push_fn=push_branch_to_remote,
+    )
+    mode_factory = ModeFactory(
+        opts=opts,
+        claude_runner=claude_runner,
+        build_fixer_factory=build_fixer_factory,
+        project_initializer=project_initializer,
+    )
+    command = ImplementCommand(opts, project, repo, git_repo, mode_factory)
     command.execute()
 
 

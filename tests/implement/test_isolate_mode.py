@@ -8,7 +8,6 @@ from i2code.implement.project_setup import ProjectInitializer
 
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
-from fake_github_client import FakeGitHubClient
 
 
 def _make_fake_project_initializer(setup_success=True):
@@ -71,7 +70,7 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=FakeGitHubClient(),
+
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -93,7 +92,7 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=FakeGitHubClient(),
+
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -116,7 +115,7 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=FakeGitHubClient(),
+
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -157,7 +156,7 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=FakeGitHubClient(),
+
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -182,7 +181,7 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=FakeGitHubClient(),
+
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -202,7 +201,7 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=FakeGitHubClient(),
+
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -235,7 +234,7 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=FakeGitHubClient(),
+
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
@@ -257,7 +256,7 @@ class TestIsolateModeExecute:
             repo=fake_repo,
             git_repo=FakeGitRepository(),
             project=project,
-            gh_client=FakeGitHubClient(),
+
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )

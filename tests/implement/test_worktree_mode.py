@@ -7,6 +7,7 @@ import pytest
 
 from i2code.implement.claude_runner import ClaudeResult
 from i2code.implement.idea_project import IdeaProject
+from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.worktree_mode import WorktreeMode
 
 from fake_claude_runner import FakeClaudeRunner
@@ -81,6 +82,7 @@ def _write_ci_workflow(work_dir):
 def _make_worktree_mode(
     plan_path, idea_dir, work_dir,
     fake_repo=None, fake_runner=None, fake_gh=None, fake_state=None,
+    opts=None,
 ):
     """Create a WorktreeMode with fakes wired up."""
     project = IdeaProject(idea_dir)
@@ -92,14 +94,16 @@ def _make_worktree_mode(
         fake_gh = FakeGitHubClient()
     if fake_state is None:
         fake_state = FakeWorkflowState()
+    if opts is None:
+        opts = ImplementOpts(idea_directory=idea_dir)
 
     mode = WorktreeMode(
+        opts=opts,
         git_repo=fake_repo,
         project=project,
         state=fake_state,
         claude_runner=fake_runner,
         gh_client=fake_gh,
-        work_dir=work_dir,
         work_plan_file=plan_path,
     )
     return mode, fake_repo, fake_runner, fake_gh, fake_state
@@ -216,8 +220,9 @@ class TestWorktreeModeTaskExecution:
             mode, _, _, _, _ = _make_worktree_mode(
                 plan_path, idea_dir, tmpdir,
                 fake_repo=fake_repo, fake_runner=fake_runner,
+                opts=ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True),
             )
-            mode.execute(skip_ci_wait=True)
+            mode.execute()
 
             # Push was called but wait_for_ci was NOT
             assert ("push",) in fake_repo.calls
@@ -247,8 +252,9 @@ class TestWorktreeModeTaskExecution:
             mode, _, _, _, _ = _make_worktree_mode(
                 plan_path, idea_dir, tmpdir,
                 fake_repo=fake_repo, fake_runner=fake_runner,
+                opts=ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True),
             )
-            mode.execute(skip_ci_wait=True)
+            mode.execute()
 
             # ensure_pr should NOT have been called since PR already exists
             assert not any(c[0] == "ensure_pr" for c in fake_repo.calls)
@@ -278,8 +284,9 @@ class TestWorktreeModeTaskExecution:
             mode, _, _, _, _ = _make_worktree_mode(
                 plan_path, idea_dir, tmpdir,
                 fake_repo=fake_repo, fake_runner=fake_runner, fake_gh=fake_gh,
+                opts=ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True),
             )
-            mode.execute(skip_ci_wait=True)
+            mode.execute()
 
             # ensure_pr was called with base_branch="master"
             ensure_pr_calls = [c for c in fake_repo.calls if c[0] == "ensure_pr"]
@@ -567,8 +574,9 @@ class TestWorktreeModeNonInteractive:
             mode, _, _, _, _ = _make_worktree_mode(
                 plan_path, idea_dir, tmpdir,
                 fake_repo=fake_repo, fake_runner=fake_runner,
+                opts=ImplementOpts(idea_directory=idea_dir, non_interactive=True, mock_claude="/mock", skip_ci_wait=True),
             )
-            mode.execute(non_interactive=True, mock_claude="/mock", skip_ci_wait=True)
+            mode.execute()
 
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
@@ -600,9 +608,10 @@ class TestWorktreeModeNonInteractive:
             mode, _, _, _, _ = _make_worktree_mode(
                 plan_path, idea_dir, tmpdir,
                 fake_repo=fake_repo, fake_runner=fake_runner,
+                opts=ImplementOpts(idea_directory=idea_dir, non_interactive=True, mock_claude="/mock"),
             )
 
             with pytest.raises(SystemExit) as exc_info:
-                mode.execute(non_interactive=True, mock_claude="/mock")
+                mode.execute()
 
             assert exc_info.value.code == 1

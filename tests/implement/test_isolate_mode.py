@@ -5,26 +5,19 @@ import pytest
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.isolate_mode import IsolateMode
 
+from fake_git_repository import FakeGitRepository
 from fake_github_client import FakeGitHubClient
 
 
 class FakeProjectSetup:
-    """Fake for project setup operations (ensure_integration_branch + ensure_project_setup)."""
+    """Fake for project setup operations (ensure_project_setup)."""
 
     def __init__(self):
-        self._integration_branch = "idea/test-feature/integration"
         self._setup_success = True
         self.calls = []
 
-    def set_integration_branch(self, branch):
-        self._integration_branch = branch
-
     def set_setup_success(self, success):
         self._setup_success = success
-
-    def ensure_integration_branch(self, repo, idea_name):
-        self.calls.append(("ensure_integration_branch", idea_name))
-        return self._integration_branch
 
     def ensure_project_setup(self, **kwargs):
         self.calls.append(("ensure_project_setup", kwargs))
@@ -68,6 +61,7 @@ class TestIsolateModeExecute:
 
         mode = IsolateMode(
             repo=fake_repo,
+            git_repo=FakeGitRepository(),
             project=project,
             gh_client=fake_gh,
             project_setup=fake_setup,
@@ -75,7 +69,6 @@ class TestIsolateModeExecute:
         )
         returncode = mode.execute()
 
-        assert ("ensure_integration_branch", "test-feature") in fake_setup.calls
         assert any(c[0] == "ensure_project_setup" for c in fake_setup.calls)
         assert len(fake_subprocess.calls) == 1
         assert returncode == 0
@@ -92,6 +85,7 @@ class TestIsolateModeExecute:
 
         mode = IsolateMode(
             repo=fake_repo,
+            git_repo=FakeGitRepository(),
             project=project,
             gh_client=fake_gh,
             project_setup=fake_setup,
@@ -115,6 +109,7 @@ class TestIsolateModeExecute:
 
         mode = IsolateMode(
             repo=fake_repo,
+            git_repo=FakeGitRepository(),
             project=project,
             gh_client=fake_gh,
             project_setup=fake_setup,
@@ -156,6 +151,7 @@ class TestIsolateModeExecute:
 
         mode = IsolateMode(
             repo=fake_repo,
+            git_repo=FakeGitRepository(),
             project=project,
             gh_client=fake_gh,
             project_setup=fake_setup,
@@ -181,6 +177,7 @@ class TestIsolateModeExecute:
 
         mode = IsolateMode(
             repo=fake_repo,
+            git_repo=FakeGitRepository(),
             project=project,
             gh_client=fake_gh,
             project_setup=fake_setup,
@@ -201,6 +198,7 @@ class TestIsolateModeExecute:
 
         mode = IsolateMode(
             repo=fake_repo,
+            git_repo=FakeGitRepository(),
             project=project,
             gh_client=fake_gh,
             project_setup=fake_setup,
@@ -238,6 +236,7 @@ class TestIsolateModeExecute:
 
         mode = IsolateMode(
             repo=fake_repo,
+            git_repo=FakeGitRepository(),
             project=project,
             gh_client=fake_gh,
             project_setup=fake_setup,
@@ -260,6 +259,7 @@ class TestIsolateModeExecute:
 
         mode = IsolateMode(
             repo=fake_repo,
+            git_repo=FakeGitRepository(),
             project=project,
             gh_client=fake_gh,
             project_setup=fake_setup,

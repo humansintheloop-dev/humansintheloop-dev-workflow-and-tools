@@ -8,7 +8,9 @@ import pytest
 from git import Repo
 
 from i2code.implement.project_setup import ensure_project_setup
-from i2code.implement.git_setup import ensure_integration_branch
+from i2code.implement.git_repository import GitRepository
+
+from fake_github_client import FakeGitHubClient
 
 
 def create_mock_claude_script(path):
@@ -70,7 +72,7 @@ class TestEnsureProjectSetupWithMockClaude:
             mock_script = os.path.join(tmpdir, "mock-claude.sh")
             create_mock_claude_script(mock_script)
 
-            integration_branch = ensure_integration_branch(repo, "test-idea")
+            integration_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_integration_branch("test-idea")
 
             result = ensure_project_setup(
                 repo=repo,
@@ -99,7 +101,7 @@ class TestEnsureProjectSetupWithMockClaude:
             mock_script = os.path.join(tmpdir, "mock-claude.sh")
             create_mock_claude_script(mock_script)
 
-            integration_branch = ensure_integration_branch(repo, "test-idea")
+            integration_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_integration_branch("test-idea")
 
             # First run — creates scaffolding
             result1 = ensure_project_setup(

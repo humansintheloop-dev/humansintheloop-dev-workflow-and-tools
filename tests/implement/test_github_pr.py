@@ -129,8 +129,6 @@ class TestDeferredPRCreation:
                     pass
 
         monkeypatch.setattr("i2code.implement.cli.Repo", lambda *args, **kwargs: MockRepo())
-        monkeypatch.setattr("i2code.implement.cli.ensure_integration_branch", lambda r, n: "idea/test-idea/integration")
-        monkeypatch.setattr("i2code.implement.cli.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
 
         # Also patch the cli module's imported references
         mock_project = MagicMock()
@@ -146,8 +144,6 @@ class TestDeferredPRCreation:
         monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda p: None)
         _mock_state = MagicMock(slice_number=1, processed_comment_ids=[], processed_review_ids=[], processed_conversation_ids=[])
         monkeypatch.setattr("i2code.implement.cli.WorkflowState.load", lambda x: _mock_state)
-        monkeypatch.setattr("i2code.implement.cli.ensure_integration_branch", lambda r, n, isolated=False: "idea/test-idea/integration")
-        monkeypatch.setattr("i2code.implement.cli.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
         monkeypatch.setattr("i2code.implement.cli.get_next_task", lambda f: NumberedTask(
             number=TaskNumber(thread=1, task=1),
             task=Task(_lines=["- [ ] **Task 1.1: test-task**"]),

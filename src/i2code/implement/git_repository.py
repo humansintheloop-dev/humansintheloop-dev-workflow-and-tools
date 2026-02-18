@@ -13,6 +13,7 @@ from git import Repo
 
 from i2code.implement.claude_runner import run_claude_interactive, run_claude_with_output_capture
 from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.git_setup import sanitize_branch_name
 from i2code.implement.pr_helpers import generate_pr_body, generate_pr_title, get_failing_workflow_run
 
 
@@ -58,6 +59,11 @@ class GitRepository:
         """Return True if HEAD has moved past the given SHA."""
         return self._repo.head.commit.hexsha != original_sha
 
+    @staticmethod
+    def sanitize_branch_name(name: str) -> str:
+        """Sanitize a string for use in a Git branch name."""
+        return sanitize_branch_name(name)
+
     def ensure_branch(self, branch_name, from_ref=None, remote=False):
         """Ensure a branch exists, creating it if necessary.
 
@@ -83,6 +89,35 @@ class GitRepository:
             else:
                 self._repo.create_head(branch_name)
         return branch_name
+
+    def ensure_integration_branch(self, idea_name, isolated=False):
+        """Ensure the integration branch exists for the given idea.
+
+        Args:
+            idea_name: Name of the idea.
+            isolated: When True, try tracking remote branch first.
+
+        Returns:
+            The integration branch name.
+        """
+        branch_name = f"idea/{idea_name}/integration"
+        return self.ensure_branch(branch_name, remote=isolated)
+
+    def ensure_slice_branch(self, idea_name, slice_number, slice_name, integration_branch):
+        """Ensure the slice branch exists for the given idea.
+
+        Args:
+            idea_name: Name of the idea.
+            slice_number: Slice number for branch naming.
+            slice_name: Human-readable slice name (will be sanitized).
+            integration_branch: Branch to create from.
+
+        Returns:
+            The slice branch name.
+        """
+        sanitized_name = self.sanitize_branch_name(slice_name)
+        branch_name = f"idea/{idea_name}/{slice_number:02d}-{sanitized_name}"
+        return self.ensure_branch(branch_name, from_ref=integration_branch)
 
     def checkout(self, branch_name):
         """Check out the named branch."""

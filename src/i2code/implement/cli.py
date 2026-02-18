@@ -13,9 +13,7 @@ from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import (
     validate_idea_files_committed,
-    ensure_integration_branch,
     ensure_claude_permissions,
-    ensure_slice_branch,
     get_next_task,
 )
 from i2code.implement.claude_runner import RealClaudeRunner
@@ -73,6 +71,7 @@ def implement_isolate_mode(opts: ImplementOpts, project: IdeaProject, repo, git_
     """Delegate execution to an isolarium VM."""
     isolate_mode = IsolateMode(
         repo=repo,
+        git_repo=git_repo,
         project=project,
         gh_client=gh_client,
         project_setup=RealProjectSetup(),
@@ -95,21 +94,20 @@ def implement_worktree_mode(opts: ImplementOpts, project: IdeaProject, repo, git
     """Execute tasks using worktree + PR + CI loop."""
     state = WorkflowState.load(project.state_file)
 
-    integration_branch = ensure_integration_branch(repo, project.name, isolated=opts.isolated)
+    integration_branch = git_repo.ensure_integration_branch(project.name, isolated=opts.isolated)
     print(f"Integration branch: {integration_branch}")
 
     next_task = get_next_task(project.plan_file)
     first_task_name = next_task.task.title if next_task else "implementation"
 
-    slice_branch = ensure_slice_branch(
-        repo, project.name, state.slice_number, first_task_name, integration_branch
+    slice_branch = git_repo.ensure_slice_branch(
+        project.name, state.slice_number, first_task_name, integration_branch
     )
     print(f"Slice branch: {slice_branch}")
 
     if opts.isolated:
         repo.config_writer().set_value("user", "email", "test@test.com").release()
         repo.config_writer().set_value("user", "name", "Test User").release()
-        git_repo = GitRepository(repo, gh_client=gh_client)
         ensure_claude_permissions(git_repo.working_tree_dir)
         work_plan_file = project.plan_file
         git_repo.checkout(slice_branch)
@@ -133,22 +131,15 @@ def implement_worktree_mode(opts: ImplementOpts, project: IdeaProject, repo, git
         print(f"Reusing existing PR #{existing_pr}")
 
     worktree_mode = WorktreeMode(
+        opts=opts,
         git_repo=git_repo,
         project=project,
         state=state,
         claude_runner=claude_runner,
         gh_client=gh_client,
-        work_dir=git_repo.working_tree_dir,
         work_plan_file=work_plan_file,
     )
-    worktree_mode.execute(
-        non_interactive=opts.non_interactive,
-        mock_claude=opts.mock_claude,
-        extra_prompt=opts.extra_prompt,
-        skip_ci_wait=opts.skip_ci_wait,
-        ci_fix_retries=opts.ci_fix_retries,
-        ci_timeout=opts.ci_timeout,
-    )
+    worktree_mode.execute()
 
 
 @click.command("implement")

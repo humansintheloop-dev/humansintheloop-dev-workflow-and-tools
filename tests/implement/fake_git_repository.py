@@ -45,6 +45,14 @@ class FakeGitRepository:
         self._branches.add(branch_name)
         return branch_name
 
+    def ensure_integration_branch(self, idea_name, isolated=False):
+        branch_name = f"idea/{idea_name}/integration"
+        return self.ensure_branch(branch_name, remote=isolated)
+
+    def ensure_slice_branch(self, idea_name, slice_number, slice_name, integration_branch):
+        branch_name = f"idea/{idea_name}/{slice_number:02d}-{slice_name}"
+        return self.ensure_branch(branch_name, from_ref=integration_branch)
+
     def checkout(self, branch_name):
         self.calls.append(("checkout", branch_name))
         self._checked_out = branch_name

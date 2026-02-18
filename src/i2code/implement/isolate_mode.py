@@ -4,7 +4,6 @@ import os
 import subprocess
 import sys
 
-from i2code.implement.git_setup import ensure_integration_branch
 from i2code.implement.project_setup import ensure_project_setup
 
 
@@ -12,15 +11,17 @@ class IsolateMode:
     """Execution mode that runs project setup on the host then delegates to isolarium VM.
 
     Args:
-        repo: Git repository (for working_tree_dir).
+        repo: Git repository (for working_tree_dir and ensure_project_setup).
+        git_repo: GitRepository for branch operations.
         project: IdeaProject with directory and name.
         gh_client: GitHubClient (or FakeGitHubClient) for PR/CI operations.
-        project_setup: Object providing ensure_integration_branch() and ensure_project_setup().
+        project_setup: Object providing ensure_project_setup().
         subprocess_runner: Object providing run(cmd) -> returncode.
     """
 
-    def __init__(self, repo, project, gh_client, project_setup, subprocess_runner):
+    def __init__(self, repo, git_repo, project, gh_client, project_setup, subprocess_runner):
         self._repo = repo
+        self._git_repo = git_repo
         self._project = project
         self._gh_client = gh_client
         self._project_setup = project_setup
@@ -42,8 +43,8 @@ class IsolateMode:
         Returns:
             The subprocess return code from isolarium.
         """
-        integration_branch = self._project_setup.ensure_integration_branch(
-            self._repo, self._project.name,
+        integration_branch = self._git_repo.ensure_integration_branch(
+            self._project.name,
         )
 
         setup_ok = self._project_setup.ensure_project_setup(
@@ -119,10 +120,7 @@ class IsolateMode:
 
 
 class RealProjectSetup:
-    """Delegates to the real ensure_integration_branch and ensure_project_setup functions."""
-
-    def ensure_integration_branch(self, repo, idea_name):
-        return ensure_integration_branch(repo, idea_name)
+    """Delegates to the real ensure_project_setup function."""
 
     def ensure_project_setup(self, **kwargs):
         return ensure_project_setup(**kwargs)

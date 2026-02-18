@@ -48,21 +48,6 @@ def validate_idea_files_committed(project) -> None:
         sys.exit(1)
 
 
-def ensure_integration_branch(repo: Repo, idea_name: str, isolated: bool = False) -> str:
-    """Ensure the integration branch exists, creating it if necessary."""
-    branch_name = f"idea/{idea_name}/integration"
-    existing_branches = [b.name for b in repo.branches]
-    if branch_name not in existing_branches:
-        if isolated:
-            try:
-                remote_ref = repo.remotes.origin.refs[branch_name]
-                repo.create_head(branch_name, remote_ref)
-            except (IndexError, AttributeError):
-                repo.create_head(branch_name)
-        else:
-            repo.create_head(branch_name)
-    return branch_name
-
 
 REQUIRED_PERMISSIONS = [
     "Bash(git commit:*)",
@@ -108,27 +93,14 @@ def ensure_claude_permissions(repo_root: str) -> None:
         f.write("\n")
 
 
+
+
 def sanitize_branch_name(name: str) -> str:
     """Sanitize a string for use in a Git branch name."""
     result = name.lower()
     result = re.sub(r'[^a-z0-9]+', '-', result)
     result = re.sub(r'-+', '-', result)
-    result = result.strip('-')
-    return result
-
-
-def ensure_slice_branch(
-    repo: Repo, idea_name: str, slice_number: int,
-    slice_name: str, integration_branch: str,
-) -> str:
-    """Ensure the slice branch exists, creating it if necessary."""
-    sanitized_name = sanitize_branch_name(slice_name)
-    branch_name = f"idea/{idea_name}/{slice_number:02d}-{sanitized_name}"
-    existing_branches = [b.name for b in repo.branches]
-    if branch_name not in existing_branches:
-        integration_ref = repo.heads[integration_branch]
-        repo.create_head(branch_name, integration_ref)
-    return branch_name
+    return result.strip('-')
 
 
 def get_next_task(plan_file: str):

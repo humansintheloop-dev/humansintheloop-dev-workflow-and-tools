@@ -77,18 +77,17 @@ def _make_numbered_task(title: str) -> NumberedTask:
 
 @pytest.mark.unit
 class TestIsolatedFlagPassthrough:
-    """Test that --isolated flag is forwarded to ensure_integration_branch()."""
+    """Test that --isolated flag is forwarded to git_repo.ensure_integration_branch()."""
 
     @patch("i2code.implement.cli.get_next_task", return_value=_make_numbered_task("setup"))
     @patch("i2code.implement.cli.WorkflowState.load")
-    @patch("i2code.implement.cli.ensure_slice_branch", return_value="idea/test-feature/01-setup")
-    @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
     @patch("i2code.implement.cli.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
+    @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.Repo")
     def test_isolated_flag_passes_isolated_true(
-        self, mock_repo_cls, mock_idea_project_cls, mock_validate_committed,
-        mock_ensure_branch, mock_ensure_slice,
+        self, mock_repo_cls, mock_git_repo_cls, mock_idea_project_cls,
+        mock_validate_committed,
         mock_load_state, mock_first_task
     ):
         """When --isolated is set, ensure_integration_branch is called with isolated=True."""
@@ -101,22 +100,22 @@ class TestIsolatedFlagPassthrough:
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
 
+        mock_git_repo = mock_git_repo_cls.return_value
+
         runner = CliRunner(catch_exceptions=False)
         runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolated", "--setup-only"])
 
-        mock_ensure_branch.assert_called_once_with(mock_repo, "test-feature", isolated=True)
+        mock_git_repo.ensure_integration_branch.assert_called_once_with("test-feature", isolated=True)
 
     @patch("i2code.implement.cli.get_next_task", return_value=_make_numbered_task("setup"))
     @patch("i2code.implement.cli.WorkflowState.load")
-    @patch("i2code.implement.cli.ensure_slice_branch", return_value="idea/test-feature/01-setup")
-    @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
     @patch("i2code.implement.cli.validate_idea_files_committed")
     @patch("i2code.implement.cli.IdeaProject")
     @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.Repo")
     def test_non_isolated_passes_isolated_false(
         self, mock_repo_cls, mock_git_repo_cls, mock_idea_project_cls,
-        mock_validate_committed, mock_ensure_branch, mock_ensure_slice,
+        mock_validate_committed,
         mock_load_state, mock_first_task
     ):
         """When --isolated is not set, ensure_integration_branch is called with default isolated=False."""
@@ -129,10 +128,12 @@ class TestIsolatedFlagPassthrough:
         mock_repo.working_tree_dir = "/tmp/fake-repo"
         mock_repo_cls.return_value = mock_repo
 
+        mock_git_repo = mock_git_repo_cls.return_value
+
         runner = CliRunner(catch_exceptions=False)
         runner.invoke(implement_cmd, ["/tmp/fake-idea", "--setup-only"])
 
-        mock_ensure_branch.assert_called_once_with(mock_repo, "test-feature", isolated=False)
+        mock_git_repo.ensure_integration_branch.assert_called_once_with("test-feature", isolated=False)
 
 
 @pytest.mark.unit
@@ -237,8 +238,6 @@ class TestWorktreeModeAcceptance:
     @patch("i2code.implement.cli.GitHubClient")
     @patch("i2code.implement.cli.GitRepository")
     @patch("i2code.implement.cli.ensure_claude_permissions")
-    @patch("i2code.implement.cli.ensure_slice_branch", return_value="idea/test/01-setup")
-    @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test/integration")
     @patch("i2code.implement.cli.get_next_task", return_value=_make_numbered_task("setup"))
     @patch("i2code.implement.cli.WorkflowState.load")
     @patch("i2code.implement.cli.validate_idea_files_committed")
@@ -247,7 +246,7 @@ class TestWorktreeModeAcceptance:
     def test_default_path_dispatches_to_worktree_mode_execute(
         self, mock_repo_cls, mock_idea_project_cls,
         mock_validate_committed, mock_load_state,
-        mock_first_task, mock_ensure_integration, mock_ensure_slice,
+        mock_first_task,
         mock_ensure_perms, mock_git_repo_cls,
         mock_gh_client_cls, mock_execute,
     ):
@@ -277,11 +276,4 @@ class TestWorktreeModeAcceptance:
         result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--skip-ci-wait"])
 
         assert result.exit_code == 0
-        mock_execute.assert_called_once_with(
-            non_interactive=False,
-            mock_claude=None,
-            extra_prompt=None,
-            skip_ci_wait=True,
-            ci_fix_retries=3,
-            ci_timeout=600,
-        )
+        mock_execute.assert_called_once_with()

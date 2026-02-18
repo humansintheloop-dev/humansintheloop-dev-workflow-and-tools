@@ -219,7 +219,7 @@ class TestTaskDetectionAndExecution:
         return pr
 
     def _assert_pr_is_open_and_not_complete(self, pr_number):
-        from i2code.implement.implement import get_pr_state, is_pr_complete
+        from i2code.implement.pr_helpers import get_pr_state, is_pr_complete
         original_cwd = os.getcwd()
         try:
             os.chdir(self.repo.tmpdir)
@@ -270,12 +270,12 @@ class TestTaskDetectionAndExecution:
             f"Failed to add review comment: {result.stderr}"
 
     def _assert_fetch_pr_comments(self, pr_number):
-        from i2code.implement.implement import fetch_pr_comments
+        from i2code.implement.github_client import GitHubClient
 
         original_cwd = os.getcwd()
         try:
             os.chdir(self.repo.tmpdir)
-            comments = fetch_pr_comments(pr_number)
+            comments = GitHubClient().fetch_pr_comments(pr_number)
         finally:
             os.chdir(original_cwd)
 
@@ -283,56 +283,56 @@ class TestTaskDetectionAndExecution:
             f"Expected at least 1 comment, got {len(comments)}"
 
     def _assert_new_feedback_filtering(self, pr_number):
-        from i2code.implement.implement import fetch_pr_comments, get_new_feedback
+        from i2code.implement.github_client import GitHubClient
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
         original_cwd = os.getcwd()
         try:
             os.chdir(self.repo.tmpdir)
-            comments = fetch_pr_comments(pr_number)
+            comments = GitHubClient().fetch_pr_comments(pr_number)
         finally:
             os.chdir(original_cwd)
 
         assert comments, "Expected comments on PR but found none"
 
         processed_ids = [c["id"] for c in comments]
-        new_feedback = get_new_feedback(comments, processed_ids)
+        new_feedback = PullRequestReviewProcessor._get_new_feedback(comments, processed_ids)
 
         assert len(new_feedback) == 0, \
             f"Expected 0 new feedback after marking all processed, got {len(new_feedback)}"
 
     def _assert_state_tracks_processed_comments(self, pr_number):
-        from i2code.implement.implement import (
-            init_or_load_state, save_state, fetch_pr_comments, get_new_feedback
-        )
+        from i2code.implement.workflow_state import WorkflowState
+        from i2code.implement.github_client import GitHubClient
+        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 
-        state = init_or_load_state(self.repo.idea_dir, self.repo.idea_name)
-        assert state["processed_comment_ids"] == [], \
+        state_file = os.path.join(self.repo.idea_dir, f"{self.repo.idea_name}-wt-state.json")
+        state = WorkflowState.load(state_file)
+        assert state.processed_comment_ids == [], \
             "New state should have empty processed_comment_ids"
 
         original_cwd = os.getcwd()
         try:
             os.chdir(self.repo.tmpdir)
-            comments = fetch_pr_comments(pr_number)
+            comments = GitHubClient().fetch_pr_comments(pr_number)
         finally:
             os.chdir(original_cwd)
 
         assert comments, "Expected comments on PR but found none"
 
-        new_feedback = get_new_feedback(comments, state["processed_comment_ids"])
+        new_feedback = PullRequestReviewProcessor._get_new_feedback(comments, state.processed_comment_ids)
         assert len(new_feedback) == len(comments), \
             "All comments should be new initially"
 
-        for comment in new_feedback:
-            state["processed_comment_ids"].append(comment["id"])
+        state.mark_comments_processed([c["id"] for c in new_feedback])
+        state.save()
 
-        save_state(self.repo.idea_dir, self.repo.idea_name, state)
-
-        reloaded_state = init_or_load_state(self.repo.idea_dir, self.repo.idea_name)
-        assert len(reloaded_state["processed_comment_ids"]) == len(comments), \
+        reloaded_state = WorkflowState.load(state_file)
+        assert len(reloaded_state.processed_comment_ids) == len(comments), \
             "Processed comment IDs should be persisted"
 
-        new_feedback_after = get_new_feedback(
-            comments, reloaded_state["processed_comment_ids"]
+        new_feedback_after = PullRequestReviewProcessor._get_new_feedback(
+            comments, reloaded_state.processed_comment_ids
         )
         assert len(new_feedback_after) == 0, \
             "No new feedback should exist after marking all as processed"

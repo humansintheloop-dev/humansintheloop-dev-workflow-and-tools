@@ -7,7 +7,13 @@ import tempfile
 import pytest
 from git import Repo
 
-from i2code.implement.implement import ensure_project_setup, ensure_integration_branch
+from i2code.implement.claude_runner import RealClaudeRunner
+from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.git_repository import GitRepository
+from i2code.implement.pr_helpers import push_branch_to_remote
+from i2code.implement.project_setup import ProjectInitializer
+
+from fake_github_client import FakeGitHubClient
 
 
 def create_mock_claude_script(path):
@@ -69,12 +75,17 @@ class TestEnsureProjectSetupWithMockClaude:
             mock_script = os.path.join(tmpdir, "mock-claude.sh")
             create_mock_claude_script(mock_script)
 
-            integration_branch = ensure_integration_branch(repo, "test-idea")
+            integration_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_integration_branch("test-idea")
 
-            result = ensure_project_setup(
-                repo=repo,
+            git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+            initializer = ProjectInitializer(
+                claude_runner=RealClaudeRunner(),
+                command_builder=CommandBuilder(),
+                git_repo=git_repo,
+                push_fn=push_branch_to_remote,
+            )
+            result = initializer.ensure_project_setup(
                 idea_directory=idea_dir,
-                idea_name="test-idea",
                 integration_branch=integration_branch,
                 mock_claude=mock_script,
                 skip_ci_wait=True,
@@ -98,13 +109,19 @@ class TestEnsureProjectSetupWithMockClaude:
             mock_script = os.path.join(tmpdir, "mock-claude.sh")
             create_mock_claude_script(mock_script)
 
-            integration_branch = ensure_integration_branch(repo, "test-idea")
+            integration_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_integration_branch("test-idea")
+
+            git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+            initializer = ProjectInitializer(
+                claude_runner=RealClaudeRunner(),
+                command_builder=CommandBuilder(),
+                git_repo=git_repo,
+                push_fn=push_branch_to_remote,
+            )
 
             # First run — creates scaffolding
-            result1 = ensure_project_setup(
-                repo=repo,
+            result1 = initializer.ensure_project_setup(
                 idea_directory=idea_dir,
-                idea_name="test-idea",
                 integration_branch=integration_branch,
                 mock_claude=mock_script,
                 skip_ci_wait=True,
@@ -115,10 +132,8 @@ class TestEnsureProjectSetupWithMockClaude:
             commit_count_after_first = int(repo.git.rev_list("--count", "HEAD"))
 
             # Second run — should be a no-op (no new commits)
-            result2 = ensure_project_setup(
-                repo=repo,
+            result2 = initializer.ensure_project_setup(
                 idea_directory=idea_dir,
-                idea_name="test-idea",
                 integration_branch=integration_branch,
                 mock_claude=mock_script,
                 skip_ci_wait=True,

@@ -35,7 +35,7 @@ class TestWithPlanFileUpdate:
         plan_file.write_text(PLAN_TEXT)
         os.utime(plan_file, (0, 0))
 
-        with with_plan_file_update(str(plan_file)) as domain_plan:
+        with with_plan_file_update(str(plan_file)) as _domain_plan:
             pass  # no mutation
 
         assert os.path.getmtime(plan_file) == 0

@@ -14,5 +14,11 @@ dev = ["pytest", "pytest-mock", "pytest-subtests"]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "PLC0415"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLC0415"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/i2code"]

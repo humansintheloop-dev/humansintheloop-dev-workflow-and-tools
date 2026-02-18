@@ -8,6 +8,8 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$ROOT_DIR"
 
 unset GIT_INDEX_FILE
+unset GIT_DIR
+unset GIT_WORK_TREE
 
 echo NOT running integratino_gh tests
 

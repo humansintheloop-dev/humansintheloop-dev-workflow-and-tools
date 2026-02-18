@@ -77,8 +77,6 @@ class TestFixNumberingCli:
         )
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(correctly_numbered)
-        mtime_before = plan_file.stat().st_mtime
-
         runner = CliRunner(catch_exceptions=False)
         result = runner.invoke(fix_numbering_cmd, [str(plan_file)])
 

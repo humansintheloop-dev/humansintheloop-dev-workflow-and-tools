@@ -1,9 +1,11 @@
 """Tests for project scaffolding setup."""
 
-import pytest
-from unittest.mock import patch, MagicMock, PropertyMock
+import os
+import tempfile
 
-from i2code.implement.implement import ClaudeResult
+import pytest
+
+from i2code.implement.claude_runner import ClaudeResult
 
 
 @pytest.mark.unit
@@ -12,9 +14,9 @@ class TestBuildScaffoldingPrompt:
 
     def test_interactive_mode_returns_claude_with_prompt(self):
         """Interactive mode should return ['claude', <prompt>]."""
-        from i2code.implement.implement import build_scaffolding_prompt
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_scaffolding_prompt("/tmp/docs/features/my-service", interactive=True)
+        cmd = CommandBuilder().build_scaffolding_command("/tmp/docs/features/my-service", interactive=True)
 
         assert cmd[0] == "claude"
         assert len(cmd) == 2
@@ -23,9 +25,9 @@ class TestBuildScaffoldingPrompt:
 
     def test_non_interactive_mode_returns_claude_with_p_flag(self):
         """Non-interactive mode should return ['claude', '--verbose', '--output-format=stream-json', '-p', <prompt>]."""
-        from i2code.implement.implement import build_scaffolding_prompt
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_scaffolding_prompt("/tmp/docs/features/my-service", interactive=False)
+        cmd = CommandBuilder().build_scaffolding_command("/tmp/docs/features/my-service", interactive=False)
 
         assert cmd[0] == "claude"
         assert "--verbose" in cmd
@@ -38,9 +40,9 @@ class TestBuildScaffoldingPrompt:
 
     def test_prompt_references_idea_files(self):
         """Prompt should reference the idea directory files."""
-        from i2code.implement.implement import build_scaffolding_prompt
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_scaffolding_prompt("/tmp/docs/features/my-service", interactive=True)
+        cmd = CommandBuilder().build_scaffolding_command("/tmp/docs/features/my-service", interactive=True)
         prompt = cmd[1]
 
         assert "/tmp/docs/features/my-service" in prompt
@@ -49,9 +51,9 @@ class TestBuildScaffoldingPrompt:
 
     def test_prompt_describes_scaffolding_goals(self):
         """Prompt should describe desired scaffolding outcome without prescribing versions."""
-        from i2code.implement.implement import build_scaffolding_prompt
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_scaffolding_prompt("/tmp/docs/features/my-service", interactive=True)
+        cmd = CommandBuilder().build_scaffolding_command("/tmp/docs/features/my-service", interactive=True)
         prompt = cmd[1]
 
         # Should mention key scaffolding concepts
@@ -61,9 +63,9 @@ class TestBuildScaffoldingPrompt:
 
     def test_mock_claude_returns_mock_script_command(self):
         """When mock_claude is provided, should return [mock_script, 'setup']."""
-        from i2code.implement.implement import build_scaffolding_prompt
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_scaffolding_prompt(
+        cmd = CommandBuilder().build_scaffolding_command(
             "/tmp/docs/features/my-service",
             mock_claude="/path/to/mock-claude.sh"
         )
@@ -72,9 +74,9 @@ class TestBuildScaffoldingPrompt:
 
     def test_mock_claude_none_returns_normal_command(self):
         """When mock_claude is None, should return normal Claude command."""
-        from i2code.implement.implement import build_scaffolding_prompt
+        from i2code.implement.command_builder import CommandBuilder
 
-        cmd = build_scaffolding_prompt(
+        cmd = CommandBuilder().build_scaffolding_command(
             "/tmp/docs/features/my-service",
             mock_claude=None
         )
@@ -84,636 +86,501 @@ class TestBuildScaffoldingPrompt:
 
 @pytest.mark.unit
 class TestRunScaffoldingFailure:
-    """Test run_scaffolding() exits on Claude failure."""
+    """Test ProjectInitializer.run_scaffolding() exits on Claude failure."""
 
-    @patch("i2code.implement.implement.run_claude_with_output_capture")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_non_zero_exit_code_exits(self, mock_build, mock_run):
-        from i2code.implement.implement import run_scaffolding
+    def _make_initializer(self, fake):
+        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.project_setup import ProjectInitializer
+        return ProjectInitializer(claude_runner=fake, command_builder=CommandBuilder())
 
-        mock_build.return_value = ["claude", "-p", "prompt"]
-        mock_run.return_value = ClaudeResult(returncode=1, stdout="", stderr="", error_message="Something broke")
+    def test_non_zero_exit_code_exits(self):
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+
+        fake = FakeClaudeRunner()
+        fake.set_result(ClaudeResult(returncode=1, stdout="", stderr="", error_message="Something broke"))
+        initializer = self._make_initializer(fake)
 
         with pytest.raises(SystemExit) as exc_info:
-            run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+            initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
         assert exc_info.value.code == 1
 
-    @patch("i2code.implement.implement.run_claude_with_output_capture")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_no_success_tag_exits(self, mock_build, mock_run):
-        from i2code.implement.implement import run_scaffolding
+    def test_no_success_tag_exits(self):
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
 
-        mock_build.return_value = ["claude", "-p", "prompt"]
-        mock_run.return_value = ClaudeResult(returncode=0, stdout="no tag here", stderr="")
+        fake = FakeClaudeRunner()
+        fake.set_result(ClaudeResult(returncode=0, stdout="no tag here", stderr=""))
+        initializer = self._make_initializer(fake)
 
         with pytest.raises(SystemExit) as exc_info:
-            run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+            initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
         assert exc_info.value.code == 1
 
-    @patch("i2code.implement.implement.run_claude_with_output_capture")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_failure_prints_permission_denials(self, mock_build, mock_run, capsys):
-        from i2code.implement.implement import run_scaffolding
+    def test_failure_prints_permission_denials(self, capsys):
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
 
-        mock_build.return_value = ["claude", "-p", "prompt"]
-        mock_run.return_value = ClaudeResult(
+        fake = FakeClaudeRunner()
+        fake.set_result(ClaudeResult(
             returncode=0, stdout="<FAILURE>no perms</FAILURE>", stderr="",
             permission_denials=[{"tool_name": "Bash", "tool_input": {"command": "git commit"}}],
-        )
+        ))
+        initializer = self._make_initializer(fake)
 
         with pytest.raises(SystemExit):
-            run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+            initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
         captured = capsys.readouterr()
         assert "Permission denied" in captured.err
 
-    @patch("i2code.implement.implement.run_claude_with_output_capture")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_failure_prints_last_messages(self, mock_build, mock_run, capsys):
-        from i2code.implement.implement import run_scaffolding
+    def test_failure_prints_last_messages(self, capsys):
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
 
-        mock_build.return_value = ["claude", "-p", "prompt"]
-        mock_run.return_value = ClaudeResult(
+        fake = FakeClaudeRunner()
+        fake.set_result(ClaudeResult(
             returncode=1, stdout="", stderr="",
             last_messages=[
                 {"type": "assistant", "message": {"content": [{"type": "text", "text": "I cannot write files"}]}},
                 {"type": "result", "result": "No permissions to complete task"},
             ],
-        )
+        ))
+        initializer = self._make_initializer(fake)
 
         with pytest.raises(SystemExit):
-            run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+            initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
         captured = capsys.readouterr()
         assert "I cannot write files" in captured.err
         assert "No permissions to complete task" in captured.err
 
-    @patch("i2code.implement.implement.run_claude_with_output_capture")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_success_tag_does_not_exit(self, mock_build, mock_run):
-        from i2code.implement.implement import run_scaffolding
+    def test_success_tag_does_not_exit(self):
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
 
-        mock_build.return_value = ["claude", "-p", "prompt"]
-        mock_run.return_value = ClaudeResult(
+        fake = FakeClaudeRunner()
+        fake.set_result(ClaudeResult(
             returncode=0, stdout="...<SUCCESS>Scaffold created</SUCCESS>...", stderr=""
-        )
+        ))
+        initializer = self._make_initializer(fake)
 
-        run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+        initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
-    @patch("i2code.implement.implement.run_claude_interactive")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_interactive_mode_does_not_check_stdout(self, mock_build, mock_run):
+    def test_interactive_mode_does_not_check_stdout(self):
         """Interactive mode has empty stdout — should not exit."""
-        from i2code.implement.implement import run_scaffolding
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
 
-        mock_build.return_value = ["claude", "prompt"]
-        mock_run.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
+        fake = FakeClaudeRunner()
+        initializer = self._make_initializer(fake)
 
-        run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=True)
+        initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=True)
 
 
 @pytest.mark.unit
-class TestEnsureProjectSetup:
-    """Test ensure_project_setup() orchestration."""
+class TestRunScaffolding:
+    """Test ProjectInitializer.run_scaffolding() delegates to correct runner."""
 
-    def _make_claude_result(self, returncode=0, stdout="<SUCCESS>Scaffold created</SUCCESS>"):
-        return ClaudeResult(returncode=returncode, stdout=stdout, stderr="")
+    def test_interactive_calls_run_interactive(self):
+        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.project_setup import ProjectInitializer
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
 
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
-    @patch("i2code.implement.implement.push_branch_to_remote")
-    @patch("i2code.implement.implement.run_claude_interactive")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_ensure_project_setup_checks_out_integration_branch(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait
-    ):
-        """Should checkout integration branch before invoking Claude."""
-        from i2code.implement.implement import ensure_project_setup
+        fake = FakeClaudeRunner()
+        initializer = ProjectInitializer(claude_runner=fake, command_builder=CommandBuilder())
 
-        mock_repo = MagicMock()
-        mock_commit = MagicMock()
-        mock_commit.hexsha = "abc123"
-        mock_repo.head.commit = mock_commit
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
+        initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=True)
 
-        mock_build_prompt.return_value = ["claude", "prompt"]
-        mock_run_claude.return_value = self._make_claude_result()
+        assert len(fake.calls) == 1
+        method, cmd, cwd = fake.calls[0]
+        assert method == "run_interactive"
+        assert cmd[0] == "claude"
+        assert cwd == "/tmp/repo"
 
-        ensure_project_setup(
-            repo=mock_repo,
-            idea_directory="/tmp/idea",
-            idea_name="test",
-            integration_branch="idea/test/integration",
+    def test_non_interactive_calls_run_with_capture(self):
+        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.project_setup import ProjectInitializer
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+
+        fake = FakeClaudeRunner()
+        fake.set_result(ClaudeResult(
+            returncode=0, stdout="<SUCCESS>Scaffold created</SUCCESS>", stderr=""
+        ))
+        initializer = ProjectInitializer(claude_runner=fake, command_builder=CommandBuilder())
+
+        initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+
+        assert len(fake.calls) == 1
+        method, cmd, cwd = fake.calls[0]
+        assert method == "run_with_capture"
+        assert cmd[0] == "claude"
+        assert "-p" in cmd
+        assert cwd == "/tmp/repo"
+
+    def test_forwards_mock_claude(self):
+        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.project_setup import ProjectInitializer
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+
+        fake = FakeClaudeRunner()
+        initializer = ProjectInitializer(claude_runner=fake, command_builder=CommandBuilder())
+
+        initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", mock_claude="/mock.sh")
+
+        assert len(fake.calls) == 1
+        method, cmd, cwd = fake.calls[0]
+        assert method == "run_interactive"
+        assert cmd == ["/mock.sh", "setup"]
+
+
+@pytest.mark.unit
+class TestEnsureProjectSetupMethod:
+    """Test ProjectInitializer.ensure_project_setup() with fakes — no @patch."""
+
+    def _make_initializer(self, fake_runner=None, git_repo=None, build_fixer=None, push_fn=None):
+        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.project_setup import ProjectInitializer
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+
+        return ProjectInitializer(
+            claude_runner=fake_runner or FakeClaudeRunner(),
+            command_builder=CommandBuilder(),
+            git_repo=git_repo,
+            build_fixer=build_fixer,
+            push_fn=push_fn,
         )
 
-        mock_repo.git.checkout.assert_called_with("idea/test/integration")
+    def test_no_new_commits_returns_true_without_pushing(self):
+        """When scaffolding makes no commits, should return True without pushing."""
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+        from tests.implement.fake_git_repository import FakeGitRepository
 
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
-    @patch("i2code.implement.implement.push_branch_to_remote")
-    @patch("i2code.implement.implement.run_claude_interactive")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_ensure_project_setup_interactive_calls_run_claude_interactive(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait
-    ):
-        """Interactive mode should use run_claude_interactive."""
-        from i2code.implement.implement import ensure_project_setup
+        fake_runner = FakeClaudeRunner()
+        fake_git = FakeGitRepository(working_tree_dir="/fake/repo")
+        fake_git.set_head_sha("abc123")
+        pushed = []
 
-        mock_repo = MagicMock()
-        mock_commit = MagicMock()
-        mock_commit.hexsha = "abc123"
-        mock_repo.head.commit = mock_commit
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-
-        mock_build_prompt.return_value = ["claude", "prompt"]
-        mock_run_claude.return_value = self._make_claude_result()
-
-        ensure_project_setup(
-            repo=mock_repo,
-            idea_directory="/tmp/idea",
-            idea_name="test",
-            integration_branch="idea/test/integration",
-            interactive=True,
+        initializer = self._make_initializer(
+            fake_runner=fake_runner,
+            git_repo=fake_git,
+            push_fn=lambda branch: pushed.append(branch) or True,
         )
 
-        mock_run_claude.assert_called_once_with(["claude", "prompt"], cwd="/tmp/fake-repo")
-
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
-    @patch("i2code.implement.implement.push_branch_to_remote")
-    @patch("i2code.implement.implement.run_claude_with_output_capture")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_ensure_project_setup_non_interactive_calls_output_capture(
-        self, mock_build_prompt, mock_run_capture, mock_push, mock_wait
-    ):
-        """Non-interactive mode should use run_claude_with_output_capture."""
-        from i2code.implement.implement import ensure_project_setup
-
-        mock_repo = MagicMock()
-        mock_commit = MagicMock()
-        mock_commit.hexsha = "abc123"
-        mock_repo.head.commit = mock_commit
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-
-        mock_build_prompt.return_value = ["claude", "-p", "prompt"]
-        mock_run_capture.return_value = self._make_claude_result()
-
-        ensure_project_setup(
-            repo=mock_repo,
+        result = initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            idea_name="test",
-            integration_branch="idea/test/integration",
-            interactive=False,
-        )
-
-        mock_run_capture.assert_called_once_with(["claude", "-p", "prompt"], cwd="/tmp/fake-repo")
-
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
-    @patch("i2code.implement.implement.push_branch_to_remote")
-    @patch("i2code.implement.implement.run_claude_interactive")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_ensure_project_setup_no_new_commits_skips_push_and_ci(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait
-    ):
-        """When Claude makes no commits, should skip push and CI, return True."""
-        from i2code.implement.implement import ensure_project_setup
-
-        mock_repo = MagicMock()
-        mock_commit = MagicMock()
-        mock_commit.hexsha = "abc123"
-        # HEAD stays the same before and after Claude
-        mock_repo.head.commit = mock_commit
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-
-        mock_build_prompt.return_value = ["claude", "prompt"]
-        mock_run_claude.return_value = self._make_claude_result()
-
-        result = ensure_project_setup(
-            repo=mock_repo,
-            idea_directory="/tmp/idea",
-            idea_name="test",
             integration_branch="idea/test/integration",
         )
 
         assert result is True
-        mock_push.assert_not_called()
-        mock_wait.assert_not_called()
+        assert pushed == []
 
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
-    @patch("i2code.implement.implement.push_branch_to_remote")
-    @patch("i2code.implement.implement.run_claude_interactive")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_ensure_project_setup_push_and_ci_when_commits_made(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait
-    ):
-        """When Claude makes commits, should push and wait for CI."""
-        from i2code.implement.implement import ensure_project_setup
+    def test_commits_made_pushes_and_waits_for_ci(self):
+        """When scaffolding makes commits, should push and wait for CI."""
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+        from tests.implement.fake_git_repository import FakeGitRepository
+        from tests.implement.fake_github_client import FakeGitHubClient
 
-        mock_repo = MagicMock()
-        # HEAD advances after Claude invocation
-        commit_before = MagicMock()
-        commit_before.hexsha = "aaa111"
-        commit_after = MagicMock()
-        commit_after.hexsha = "bbb222"
-        type(mock_repo.head).commit = PropertyMock(side_effect=[commit_before, commit_after])
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
+        fake_gh = FakeGitHubClient()
+        fake_runner = FakeClaudeRunner()
+        fake_git = FakeGitRepository(working_tree_dir="/fake/repo", gh_client=fake_gh)
+        fake_git.set_head_sha("aaa111")
+        pushed = []
 
-        mock_build_prompt.return_value = ["claude", "prompt"]
-        mock_run_claude.return_value = self._make_claude_result()
-        mock_push.return_value = True
-        mock_wait.return_value = (True, None)  # CI passes
+        def scaffolding_side_effect():
+            fake_git.set_head_sha("bbb222")
 
-        result = ensure_project_setup(
-            repo=mock_repo,
+        fake_runner.set_side_effect(scaffolding_side_effect)
+        fake_gh.set_workflow_completion_result("idea/test/integration", "bbb222", (True, None))
+
+        initializer = self._make_initializer(
+            fake_runner=fake_runner,
+            git_repo=fake_git,
+            push_fn=lambda branch: pushed.append(branch) or True,
+        )
+
+        result = initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            idea_name="test",
             integration_branch="idea/test/integration",
             ci_timeout=300,
         )
 
         assert result is True
-        mock_push.assert_called_once_with("idea/test/integration")
-        mock_wait.assert_called_once_with("idea/test/integration", "bbb222", timeout_seconds=300)
+        assert pushed == ["idea/test/integration"]
+        assert ("wait_for_workflow_completion", "idea/test/integration", "bbb222") in fake_gh.calls
 
-    @patch("i2code.implement.implement.fix_ci_failure")
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
-    @patch("i2code.implement.implement.push_branch_to_remote")
-    @patch("i2code.implement.implement.run_claude_with_output_capture")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_ensure_project_setup_ci_failure_retry_success(
-        self, mock_build_prompt, mock_run_capture, mock_push, mock_wait, mock_fix_ci
-    ):
-        """When CI fails, should invoke fix_ci_failure and return its result."""
-        from i2code.implement.implement import ensure_project_setup
+    def test_skip_ci_wait_pushes_but_does_not_wait(self):
+        """When skip_ci_wait=True, should push but not wait for CI."""
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+        from tests.implement.fake_git_repository import FakeGitRepository
+        from tests.implement.fake_github_client import FakeGitHubClient
 
-        mock_repo = MagicMock()
-        commit_before = MagicMock()
-        commit_before.hexsha = "aaa111"
-        commit_after = MagicMock()
-        commit_after.hexsha = "bbb222"
-        type(mock_repo.head).commit = PropertyMock(side_effect=[commit_before, commit_after])
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
+        fake_gh = FakeGitHubClient()
+        fake_runner = FakeClaudeRunner()
+        fake_git = FakeGitRepository(working_tree_dir="/fake/repo", gh_client=fake_gh)
+        fake_git.set_head_sha("aaa111")
+        pushed = []
 
-        mock_build_prompt.return_value = ["claude", "-p", "prompt"]
-        mock_run_capture.return_value = self._make_claude_result()
-        mock_push.return_value = True
-        mock_wait.return_value = (False, {"name": "CI", "id": 123})  # CI fails
-        mock_fix_ci.return_value = True  # fix succeeds
+        def scaffolding_side_effect():
+            fake_git.set_head_sha("bbb222")
 
-        result = ensure_project_setup(
-            repo=mock_repo,
+        fake_runner.set_side_effect(scaffolding_side_effect)
+
+        initializer = self._make_initializer(
+            fake_runner=fake_runner,
+            git_repo=fake_git,
+            push_fn=lambda branch: pushed.append(branch) or True,
+        )
+
+        result = initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            idea_name="test",
             integration_branch="idea/test/integration",
-            interactive=False,
-            mock_claude="/mock.sh",
-            ci_fix_retries=5,
+            skip_ci_wait=True,
         )
 
         assert result is True
-        mock_fix_ci.assert_called_once_with(
-            "idea/test/integration",
-            "bbb222",
-            "/tmp/fake-repo",
-            max_retries=5,
-            interactive=False,
-            mock_claude="/mock.sh",
+        assert pushed == ["idea/test/integration"]
+        assert not any(call[0] == "wait_for_workflow_completion" for call in fake_gh.calls)
+
+    def test_ci_failure_sets_branch_and_calls_build_fixer(self):
+        """When CI fails, should set git_repo.branch and call build_fixer.fix_ci_failure()."""
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+        from tests.implement.fake_git_repository import FakeGitRepository
+        from tests.implement.fake_github_client import FakeGitHubClient
+
+        fake_gh = FakeGitHubClient()
+        fake_runner = FakeClaudeRunner()
+        fake_git = FakeGitRepository(working_tree_dir="/fake/repo", gh_client=fake_gh)
+        fake_git.set_head_sha("aaa111")
+
+        def scaffolding_side_effect():
+            fake_git.set_head_sha("bbb222")
+
+        fake_runner.set_side_effect(scaffolding_side_effect)
+        fake_gh.set_workflow_completion_result(
+            "idea/test/integration", "bbb222", (False, {"name": "CI", "id": 123})
         )
 
-    @patch("i2code.implement.implement.fix_ci_failure")
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
-    @patch("i2code.implement.implement.push_branch_to_remote")
-    @patch("i2code.implement.implement.run_claude_interactive")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_ensure_project_setup_ci_failure_retry_fails(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait, mock_fix_ci
-    ):
-        """When CI fails and fix_ci_failure also fails, should return False."""
-        from i2code.implement.implement import ensure_project_setup
+        class FakeBuildFixer:
+            def __init__(self):
+                self.calls = []
+                self.result = True
 
-        mock_repo = MagicMock()
-        commit_before = MagicMock()
-        commit_before.hexsha = "aaa111"
-        commit_after = MagicMock()
-        commit_after.hexsha = "bbb222"
-        type(mock_repo.head).commit = PropertyMock(side_effect=[commit_before, commit_after])
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
+            def fix_ci_failure(self):
+                self.calls.append("fix_ci_failure")
+                return self.result
 
-        mock_build_prompt.return_value = ["claude", "prompt"]
-        mock_run_claude.return_value = self._make_claude_result()
-        mock_push.return_value = True
-        mock_wait.return_value = (False, {"name": "CI", "id": 123})
-        mock_fix_ci.return_value = False  # fix fails
+        fake_fixer = FakeBuildFixer()
 
-        result = ensure_project_setup(
-            repo=mock_repo,
+        initializer = self._make_initializer(
+            fake_runner=fake_runner,
+            git_repo=fake_git,
+            build_fixer=fake_fixer,
+            push_fn=lambda branch: True,
+        )
+
+        result = initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            idea_name="test",
+            integration_branch="idea/test/integration",
+        )
+
+        assert result is True
+        assert fake_fixer.calls == ["fix_ci_failure"]
+        assert fake_git.branch == "idea/test/integration"
+
+    def test_ci_failure_fix_fails_returns_false(self):
+        """When CI fails and fix_ci_failure returns False, should return False."""
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+        from tests.implement.fake_git_repository import FakeGitRepository
+        from tests.implement.fake_github_client import FakeGitHubClient
+
+        fake_gh = FakeGitHubClient()
+        fake_runner = FakeClaudeRunner()
+        fake_git = FakeGitRepository(working_tree_dir="/fake/repo", gh_client=fake_gh)
+        fake_git.set_head_sha("aaa111")
+
+        def scaffolding_side_effect():
+            fake_git.set_head_sha("bbb222")
+
+        fake_runner.set_side_effect(scaffolding_side_effect)
+        fake_gh.set_workflow_completion_result(
+            "idea/test/integration", "bbb222", (False, {"name": "CI", "id": 123})
+        )
+
+        class FakeBuildFixer:
+            def __init__(self):
+                self.result = False
+
+            def fix_ci_failure(self):
+                return self.result
+
+        fake_fixer = FakeBuildFixer()
+
+        initializer = self._make_initializer(
+            fake_runner=fake_runner,
+            git_repo=fake_git,
+            build_fixer=fake_fixer,
+            push_fn=lambda branch: True,
+        )
+
+        result = initializer.ensure_project_setup(
+            idea_directory="/tmp/idea",
             integration_branch="idea/test/integration",
         )
 
         assert result is False
 
-    @patch("i2code.implement.implement.wait_for_workflow_completion")
-    @patch("i2code.implement.implement.push_branch_to_remote")
-    @patch("i2code.implement.implement.run_claude_interactive")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_ensure_project_setup_skip_ci_wait_pushes_but_no_wait(
-        self, mock_build_prompt, mock_run_claude, mock_push, mock_wait
-    ):
-        """When skip_ci_wait=True and commits made, should push but not wait for CI."""
-        from i2code.implement.implement import ensure_project_setup
+    def test_checkouts_integration_branch(self):
+        """Should checkout the integration branch before scaffolding."""
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+        from tests.implement.fake_git_repository import FakeGitRepository
 
-        mock_repo = MagicMock()
-        commit_before = MagicMock()
-        commit_before.hexsha = "aaa111"
-        commit_after = MagicMock()
-        commit_after.hexsha = "bbb222"
-        type(mock_repo.head).commit = PropertyMock(side_effect=[commit_before, commit_after])
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
+        fake_runner = FakeClaudeRunner()
+        fake_git = FakeGitRepository(working_tree_dir="/fake/repo")
+        fake_git.set_head_sha("abc123")
 
-        mock_build_prompt.return_value = ["claude", "prompt"]
-        mock_run_claude.return_value = self._make_claude_result()
-        mock_push.return_value = True
+        initializer = self._make_initializer(
+            fake_runner=fake_runner,
+            git_repo=fake_git,
+            push_fn=lambda branch: True,
+        )
 
-        result = ensure_project_setup(
-            repo=mock_repo,
+        initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            idea_name="test",
             integration_branch="idea/test/integration",
-            skip_ci_wait=True,
         )
 
-        assert result is True
-        mock_push.assert_called_once_with("idea/test/integration")
-        mock_wait.assert_not_called()
+        assert ("checkout", "idea/test/integration") in fake_git.calls
 
+    def test_ci_failure_no_failing_run_returns_false(self):
+        """When CI reports failure but no failing run, should return False."""
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+        from tests.implement.fake_git_repository import FakeGitRepository
+        from tests.implement.fake_github_client import FakeGitHubClient
 
-@pytest.mark.unit
-class TestRunScaffolding:
-    """Test run_scaffolding() delegates to correct runner."""
+        fake_gh = FakeGitHubClient()
+        fake_runner = FakeClaudeRunner()
+        fake_git = FakeGitRepository(working_tree_dir="/fake/repo", gh_client=fake_gh)
+        fake_git.set_head_sha("aaa111")
 
-    @patch("i2code.implement.implement.run_claude_interactive")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_interactive_calls_run_claude_interactive(self, mock_build, mock_run):
-        from i2code.implement.implement import run_scaffolding
+        def scaffolding_side_effect():
+            fake_git.set_head_sha("bbb222")
 
-        mock_build.return_value = ["claude", "prompt"]
-        mock_run.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
-
-        run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=True)
-
-        mock_build.assert_called_once_with("/tmp/idea", interactive=True, mock_claude=None)
-        mock_run.assert_called_once_with(["claude", "prompt"], cwd="/tmp/repo")
-
-    @patch("i2code.implement.implement.run_claude_with_output_capture")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_non_interactive_calls_output_capture(self, mock_build, mock_run):
-        from i2code.implement.implement import run_scaffolding
-
-        mock_build.return_value = ["claude", "-p", "prompt"]
-        mock_run.return_value = ClaudeResult(
-            returncode=0, stdout="<SUCCESS>Scaffold created</SUCCESS>", stderr=""
+        fake_runner.set_side_effect(scaffolding_side_effect)
+        fake_gh.set_workflow_completion_result(
+            "idea/test/integration", "bbb222", (False, None)
         )
 
-        run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+        initializer = self._make_initializer(
+            fake_runner=fake_runner,
+            git_repo=fake_git,
+            push_fn=lambda branch: True,
+        )
 
-        mock_build.assert_called_once_with("/tmp/idea", interactive=False, mock_claude=None)
-        mock_run.assert_called_once_with(["claude", "-p", "prompt"], cwd="/tmp/repo")
+        result = initializer.ensure_project_setup(
+            idea_directory="/tmp/idea",
+            integration_branch="idea/test/integration",
+        )
 
-    @patch("i2code.implement.implement.run_claude_interactive")
-    @patch("i2code.implement.implement.build_scaffolding_prompt")
-    def test_forwards_mock_claude(self, mock_build, mock_run):
-        from i2code.implement.implement import run_scaffolding
+        assert result is False
 
-        mock_build.return_value = ["/mock.sh", "setup"]
-        mock_run.return_value = ClaudeResult(returncode=0, stdout="", stderr="")
 
-        run_scaffolding("/tmp/idea", cwd="/tmp/repo", mock_claude="/mock.sh")
+def _create_idea_dir_in_git_repo(tmpdir, idea_name="test-feature"):
+    """Create a temp git repo with a valid idea directory containing all required files."""
+    from git import Repo
+    repo = Repo.init(tmpdir)
+    repo.config_writer().set_value("user", "email", "test@test.com").release()
+    repo.config_writer().set_value("user", "name", "Test").release()
 
-        mock_build.assert_called_once_with("/tmp/idea", interactive=True, mock_claude="/mock.sh")
+    idea_dir = os.path.join(tmpdir, "docs", "features", idea_name)
+    os.makedirs(idea_dir)
+    for suffix in ["idea.md", "discussion.md", "spec.md", "plan.md"]:
+        with open(os.path.join(idea_dir, f"{idea_name}-{suffix}"), "w") as f:
+            f.write(f"# {suffix}\n")
+
+    repo.index.add([os.path.relpath(p, tmpdir) for p in _all_files(idea_dir)])
+    repo.index.commit("Add idea files")
+    return idea_dir
+
+
+def _all_files(directory):
+    """Return all file paths in directory."""
+    result = []
+    for root, _dirs, files in os.walk(directory):
+        for name in files:
+            result.append(os.path.join(root, name))
+    return result
+
+
+class FakeProjectInitializerForScaffold:
+    """Records run_scaffolding calls for testing scaffold_cmd."""
+
+    def __init__(self):
+        self.calls = []
+
+    def run_scaffolding(self, idea_directory, cwd, interactive=True, mock_claude=None):
+        self.calls.append({
+            "idea_directory": idea_directory,
+            "cwd": cwd,
+            "interactive": interactive,
+            "mock_claude": mock_claude,
+        })
 
 
 @pytest.mark.unit
 class TestScaffoldCmd:
-    """Test scaffold CLI command."""
+    """Test scaffold CLI command — no @patch."""
 
-    @patch("i2code.implement.cli.run_scaffolding")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
-    @patch("i2code.implement.cli.Repo")
-    def test_scaffold_validates_and_invokes_run_scaffolding(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_files, mock_run_scaffolding
-    ):
+    def test_scaffold_validates_and_invokes_run_scaffolding(self):
         from click.testing import CliRunner
         from i2code.implement.cli import scaffold_cmd
 
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-        mock_repo_cls.return_value = mock_repo
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = _create_idea_dir_in_git_repo(tmpdir)
+            fake_initializer = FakeProjectInitializerForScaffold()
 
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea"])
+            runner = CliRunner(catch_exceptions=False)
+            result = runner.invoke(
+                scaffold_cmd, [idea_dir],
+                obj={"project_initializer": fake_initializer},
+            )
 
-        assert result.exit_code == 0
-        mock_validate_dir.assert_called_once_with("/tmp/fake-idea")
-        mock_validate_files.assert_called_once_with("/tmp/fake-idea", "test-feature")
-        mock_run_scaffolding.assert_called_once_with(
-            "/tmp/fake-idea",
-            cwd="/tmp/fake-repo",
-            interactive=True,
-            mock_claude=None,
-        )
+            assert result.exit_code == 0
+            assert len(fake_initializer.calls) == 1
+            call = fake_initializer.calls[0]
+            assert call["idea_directory"] == idea_dir
+            assert call["cwd"] == tmpdir
+            assert call["interactive"] is True
+            assert call["mock_claude"] is None
 
-    @patch("i2code.implement.cli.run_scaffolding")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
-    @patch("i2code.implement.cli.Repo")
-    def test_scaffold_non_interactive_forwards_flag(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_files, mock_run_scaffolding
-    ):
+    def test_scaffold_non_interactive_forwards_flag(self):
         from click.testing import CliRunner
         from i2code.implement.cli import scaffold_cmd
 
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-        mock_repo_cls.return_value = mock_repo
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = _create_idea_dir_in_git_repo(tmpdir)
+            fake_initializer = FakeProjectInitializerForScaffold()
 
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea", "--non-interactive"])
+            runner = CliRunner(catch_exceptions=False)
+            result = runner.invoke(
+                scaffold_cmd, [idea_dir, "--non-interactive"],
+                obj={"project_initializer": fake_initializer},
+            )
 
-        assert result.exit_code == 0
-        call_kwargs = mock_run_scaffolding.call_args[1]
-        assert call_kwargs["interactive"] is False
+            assert result.exit_code == 0
+            assert fake_initializer.calls[0]["interactive"] is False
 
-    @patch("i2code.implement.cli.run_scaffolding")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
-    @patch("i2code.implement.cli.Repo")
-    def test_scaffold_forwards_mock_claude(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_files, mock_run_scaffolding
-    ):
+    def test_scaffold_forwards_mock_claude(self):
         from click.testing import CliRunner
         from i2code.implement.cli import scaffold_cmd
 
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-        mock_repo_cls.return_value = mock_repo
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = _create_idea_dir_in_git_repo(tmpdir)
+            fake_initializer = FakeProjectInitializerForScaffold()
 
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(scaffold_cmd, ["/tmp/fake-idea", "--mock-claude", "/mock.sh"])
+            runner = CliRunner(catch_exceptions=False)
+            result = runner.invoke(
+                scaffold_cmd, [idea_dir, "--mock-claude", "/mock.sh"],
+                obj={"project_initializer": fake_initializer},
+            )
 
-        assert result.exit_code == 0
-        call_kwargs = mock_run_scaffolding.call_args[1]
-        assert call_kwargs["mock_claude"] == "/mock.sh"
+            assert result.exit_code == 0
+            assert fake_initializer.calls[0]["mock_claude"] == "/mock.sh"
 
 
-@pytest.mark.unit
-class TestCLIIsolateProjectSetup:
-    """Test --isolate CLI path calls ensure_project_setup before delegating."""
-
-    @patch("i2code.implement.cli.subprocess")
-    @patch("i2code.implement.cli.ensure_project_setup", return_value=True)
-    @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
-    @patch("i2code.implement.cli.Repo")
-    def test_cli_isolate_calls_setup_before_delegation(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
-        mock_validate_files, mock_ensure_branch, mock_ensure_setup, mock_subprocess
-    ):
-        """--isolate should call ensure_project_setup before delegating to isolarium."""
-        from click.testing import CliRunner
-        from i2code.implement.cli import implement_cmd
-
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-        mock_repo_cls.return_value = mock_repo
-        mock_subprocess.run.return_value = MagicMock(returncode=0)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolate"])
-
-        mock_ensure_branch.assert_called_once()
-        mock_ensure_setup.assert_called_once()
-        # Isolarium should have been delegated to (subprocess.run called)
-        mock_subprocess.run.assert_called_once()
-
-    @patch("i2code.implement.cli.subprocess")
-    @patch("i2code.implement.cli.ensure_project_setup", return_value=False)
-    @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
-    @patch("i2code.implement.cli.Repo")
-    def test_cli_isolate_exits_on_setup_failure(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
-        mock_validate_files, mock_ensure_branch, mock_ensure_setup, mock_subprocess
-    ):
-        """--isolate should exit with error when ensure_project_setup fails."""
-        from click.testing import CliRunner
-        from i2code.implement.cli import implement_cmd
-
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-        mock_repo_cls.return_value = mock_repo
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolate"])
-
-        assert result.exit_code != 0
-        mock_subprocess.run.assert_not_called()
-
-    @patch("i2code.implement.cli.subprocess")
-    @patch("i2code.implement.cli.ensure_project_setup", return_value=True)
-    @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
-    @patch("i2code.implement.cli.Repo")
-    def test_cli_isolate_forwards_parameters_to_setup(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
-        mock_validate_files, mock_ensure_branch, mock_ensure_setup, mock_subprocess
-    ):
-        """--isolate should forward all relevant parameters to ensure_project_setup."""
-        from click.testing import CliRunner
-        from i2code.implement.cli import implement_cmd
-
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-        mock_repo_cls.return_value = mock_repo
-        mock_subprocess.run.return_value = MagicMock(returncode=0)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, [
-            "/tmp/fake-idea", "--isolate",
-            "--non-interactive",
-            "--mock-claude", "/mock.sh",
-            "--ci-fix-retries", "5",
-            "--ci-timeout", "900",
-            "--skip-ci-wait",
-        ])
-
-        mock_ensure_setup.assert_called_once_with(
-            repo=mock_repo,
-            idea_directory="/tmp/fake-idea",
-            idea_name="test-feature",
-            integration_branch="idea/test-feature/integration",
-            interactive=False,
-            mock_claude="/mock.sh",
-            ci_fix_retries=5,
-            ci_timeout=900,
-            skip_ci_wait=True,
-        )
-
-    @patch("i2code.implement.cli.subprocess")
-    @patch("i2code.implement.cli.ensure_project_setup", return_value=True)
-    @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
-    @patch("i2code.implement.cli.Repo")
-    def test_non_interactive_isolate_passes_interactive_false(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
-        mock_validate_files, mock_ensure_branch, mock_ensure_setup, mock_subprocess
-    ):
-        """--isolate --non-interactive should pass interactive=False to ensure_project_setup."""
-        from click.testing import CliRunner
-        from i2code.implement.cli import implement_cmd
-
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-        mock_repo_cls.return_value = mock_repo
-        mock_subprocess.run.return_value = MagicMock(returncode=0)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolate", "--non-interactive"])
-
-        call_kwargs = mock_ensure_setup.call_args[1]
-        assert call_kwargs["interactive"] is False
-
-    @patch("i2code.implement.cli.subprocess")
-    @patch("i2code.implement.cli.ensure_project_setup", return_value=True)
-    @patch("i2code.implement.cli.ensure_integration_branch", return_value="idea/test-feature/integration")
-    @patch("i2code.implement.cli.validate_idea_files")
-    @patch("i2code.implement.cli.validate_idea_files_committed")
-    @patch("i2code.implement.cli.validate_idea_directory", return_value="test-feature")
-    @patch("i2code.implement.cli.Repo")
-    def test_interactive_isolate_passes_interactive_true(
-        self, mock_repo_cls, mock_validate_dir, mock_validate_committed,
-        mock_validate_files, mock_ensure_branch, mock_ensure_setup, mock_subprocess
-    ):
-        """--isolate without --non-interactive should pass interactive=True."""
-        from click.testing import CliRunner
-        from i2code.implement.cli import implement_cmd
-
-        mock_repo = MagicMock()
-        mock_repo.working_tree_dir = "/tmp/fake-repo"
-        mock_repo_cls.return_value = mock_repo
-        mock_subprocess.run.return_value = MagicMock(returncode=0)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(implement_cmd, ["/tmp/fake-idea", "--isolate"])
-
-        call_kwargs = mock_ensure_setup.call_args[1]
-        assert call_kwargs["interactive"] is True

@@ -266,17 +266,46 @@ Replace the 180-line `implement_cmd` with a thin dispatcher and three execution 
 
 ---
 
-## Steel Thread 6: Extract GithubActionsMonitor
-Extract `WorktreeMode._wait_for_ci()` into `GithubActionsMonitor`. Incremental move-method refactoring: move → delegate → update callers → delete placeholder → migrate tests.
+## Steel Thread 6: Introduce ImplementCommand class
+Extract the module-level `implement()` function and `implement_trunk_mode()`, `implement_isolate_mode()`, `implement_worktree_mode()` from `cli.py` into an `ImplementCommand` class in `implement_command.py`. `implement_cmd()` constructs dependencies (opts, project, repo, git_repo, claude_runner, gh_client), passes them to `ImplementCommand.__init__()`, and calls `ImplementCommand.execute()`. `cli.py` becomes a thin Click adapter.
 
-- [ ] **Task 6.1: Move `WorktreeMode._wait_for_ci()` into GithubActionsMonitor**
+- [ ] **Task 6.1: Create `ImplementCommand` class and update `implement_cmd()`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
-  - Observable: `GithubActionsMonitor` class in `github_actions_monitor.py` with `GithubActionsMonitor.wait_for_ci()`. Constructor: `(git_repo, skip_ci_wait, ci_timeout)`. WorktreeMode accepts `ci_monitor` via constructor, `WorktreeMode._wait_for_ci()` delegates to `self._ci_monitor.wait_for_ci()`. Constructed in `implement_cmd()` in `cli.py`. No `GitRepository.wait_for_ci()`.
+  - Observable: `ImplementCommand` class in `implement_command.py`. Constructor: `(opts, project, repo, git_repo, claude_runner, gh_client)`. `ImplementCommand.execute()` contains the `implement()` body. `ImplementCommand._trunk_mode()`, `ImplementCommand._isolate_mode()`, `ImplementCommand._worktree_mode()` contain the former `implement_trunk_mode()`, `implement_isolate_mode()`, `implement_worktree_mode()` bodies. `implement_cmd()` in `cli.py` constructs dependencies, creates `ImplementCommand`, calls `ImplementCommand.execute()`. No module-level `implement()`, `implement_trunk_mode()`, `implement_isolate_mode()`, `implement_worktree_mode()` in `cli.py`.
+  - Evidence: ``
+  - Steps:
+    - [ ] Create `implement_command.py` with `ImplementCommand`, constructor takes `(opts, project, repo, git_repo, claude_runner, gh_client)`
+    - [ ] Move `implement()` body into `ImplementCommand.execute()`
+    - [ ] Move `implement_trunk_mode()` into `ImplementCommand._trunk_mode()`
+    - [ ] Move `implement_isolate_mode()` into `ImplementCommand._isolate_mode()`
+    - [ ] Move `implement_worktree_mode()` into `ImplementCommand._worktree_mode()`
+    - [ ] Update `implement_cmd()` to construct `ImplementCommand` and call `ImplementCommand.execute()`
+    - [ ] Delete `implement()`, `implement_trunk_mode()`, `implement_isolate_mode()`, `implement_worktree_mode()` from `cli.py`
+    - [ ] Run pre-commit checklist
+- [ ] **Task 6.2: Update tests for `ImplementCommand`**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `test_dry_run.py` uses `ImplementCommand` directly instead of `implement()`. `test_cli_integration.py` patches reference `i2code.implement.implement_command` instead of `i2code.implement.cli` where needed.
+  - Evidence: ``
+  - Steps:
+    - [ ] Update `test_dry_run.py` to construct and call `ImplementCommand` instead of `implement()`
+    - [ ] Update `test_cli_integration.py` patches to reference `i2code.implement.implement_command` instead of `i2code.implement.cli`
+    - [ ] Run pre-commit checklist
+
+---
+
+## Steel Thread 7: Extract GithubActionsMonitor
+Extract `WorktreeMode._wait_for_ci()` into `GithubActionsMonitor`. Incremental move-method refactoring: move → delegate → update callers → delete placeholder → migrate tests.
+
+- [ ] **Task 7.1: Move `WorktreeMode._wait_for_ci()` into GithubActionsMonitor**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
+  - Observable: `GithubActionsMonitor` class in `github_actions_monitor.py` with `GithubActionsMonitor.wait_for_ci()`. Constructor: `(git_repo, skip_ci_wait, ci_timeout)`. WorktreeMode accepts `ci_monitor` via constructor, `WorktreeMode._wait_for_ci()` delegates to `self._ci_monitor.wait_for_ci()`. Constructed in `implement_cmd()`. No `GitRepository.wait_for_ci()`.
   - Steps:
     - [x] Create `github_actions_monitor.py` with `GithubActionsMonitor`, move `WorktreeMode._wait_for_ci()` body into `GithubActionsMonitor.wait_for_ci()`
     - [x] Add `ci_monitor` param to `WorktreeMode.__init__()`, replace `WorktreeMode._wait_for_ci()` body with delegate
-    - [x] Construct `GithubActionsMonitor` in `implement_cmd()` in `cli.py`, pass through to `WorktreeMode.__init__()`
+    - [x] Construct `GithubActionsMonitor` in `implement_cmd()`, pass through to `WorktreeMode.__init__()`
     - [x] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
     - [ ] Inline `GitRepository.wait_for_ci()` into `GithubActionsMonitor.wait_for_ci()` — call `GitHubClient.wait_for_workflow_completion(branch, head_sha, timeout)` directly
     - [ ] Delete `GitRepository.wait_for_ci()` and `FakeGitRepository.wait_for_ci()`
@@ -285,7 +314,7 @@ Extract `WorktreeMode._wait_for_ci()` into `GithubActionsMonitor`. Incremental m
     - [ ] Update `test_worktree_mode.py` assertions that check `fake_repo.calls` for `"wait_for_ci"`
     - [ ] Run pre-commit checklist
 
-- [ ] **Task 6.2: Update callers and delete placeholder**
+- [ ] **Task 7.2: Update callers and delete placeholder**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `WorktreeMode._execute_task()` calls `self._ci_monitor.wait_for_ci()` directly. No `WorktreeMode._wait_for_ci()`.
@@ -294,7 +323,7 @@ Extract `WorktreeMode._wait_for_ci()` into `GithubActionsMonitor`. Incremental m
     - [ ] Delete `WorktreeMode._wait_for_ci()` placeholder
     - [ ] Run pre-commit checklist
 
-- [ ] **Task 6.3: Migrate tests**
+- [ ] **Task 7.3: Migrate tests**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `test_github_actions_monitor.py` exists with CI-wait tests.
@@ -304,30 +333,30 @@ Extract `WorktreeMode._wait_for_ci()` into `GithubActionsMonitor`. Incremental m
 
 ---
 
-## Steel Thread 7: Extract GithubActionsBuildFixer
+## Steel Thread 8: Extract GithubActionsBuildFixer
 Consolidate CI failure detection and fixing into `GithubActionsBuildFixer`. Absorbs `WorktreeMode._check_and_fix_ci()`, `GitRepository.fix_ci_failure()`, `ci_fix.fix_ci_failure()`, and `pr_helpers.get_failing_workflow_run()`.
 
-- [ ] **Task 7.1: Move `WorktreeMode._check_and_fix_ci()` into GithubActionsBuildFixer**
+- [ ] **Task 8.1: Move `WorktreeMode._check_and_fix_ci()` into GithubActionsBuildFixer**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
-  - Observable: `GithubActionsBuildFixer` class in `github_actions_build_fixer.py` with `GithubActionsBuildFixer.check_and_fix_ci()`. WorktreeMode accepts `build_fixer` via constructor, `WorktreeMode._check_and_fix_ci()` delegates to `self._build_fixer.check_and_fix_ci()`. Constructed in `implement_cmd()` in `cli.py`.
+  - Observable: `GithubActionsBuildFixer` class in `github_actions_build_fixer.py` with `GithubActionsBuildFixer.check_and_fix_ci()`. WorktreeMode accepts `build_fixer` via constructor, `WorktreeMode._check_and_fix_ci()` delegates to `self._build_fixer.check_and_fix_ci()`. Constructed in `implement_cmd()`.
   - Steps:
     - [ ] Create `github_actions_build_fixer.py` with `GithubActionsBuildFixer`, move `WorktreeMode._check_and_fix_ci()` body into `GithubActionsBuildFixer.check_and_fix_ci()`
     - [ ] Add `build_fixer` param to `WorktreeMode.__init__()`, replace `WorktreeMode._check_and_fix_ci()` body with delegate
-    - [ ] Construct `GithubActionsBuildFixer` in `implement_cmd()` in `cli.py`, pass through to `WorktreeMode.__init__()`
+    - [ ] Construct `GithubActionsBuildFixer` in `implement_cmd()`, pass through to `WorktreeMode.__init__()`
     - [ ] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
     - [ ] Run pre-commit checklist
 
-- [ ] **Task 7.2: Move `GitRepository.fix_ci_failure()` into GithubActionsBuildFixer**
+- [ ] **Task 8.2: Move `GitRepository.fix_ci_failure()` into GithubActionsBuildFixer**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
-  - Observable: `GithubActionsBuildFixer.fix_ci_failure()` exists. `GitRepository.fix_ci_failure()` deleted (no delegate — GitRepository has no reference to the fixer). Callers updated in Task 7.4.
+  - Observable: `GithubActionsBuildFixer.fix_ci_failure()` exists. `GitRepository.fix_ci_failure()` deleted (no delegate — GitRepository has no reference to the fixer). Callers updated in Task 8.4.
   - Steps:
     - [ ] Move `GitRepository.fix_ci_failure()` (lines 225-299) into `GithubActionsBuildFixer.fix_ci_failure()`
-    - [ ] Delete `GitRepository.fix_ci_failure()` (callers updated in 7.4)
+    - [ ] Delete `GitRepository.fix_ci_failure()` (callers updated in 8.4)
     - [ ] Run pre-commit checklist
 
-- [ ] **Task 7.3: Move `get_failing_workflow_run()` into GithubActionsBuildFixer**
+- [ ] **Task 8.3: Move `get_failing_workflow_run()` into GithubActionsBuildFixer**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `GithubActionsBuildFixer._get_failing_workflow_run()` exists as private method. `get_failing_workflow_run()` removed from `pr_helpers.py`.
@@ -337,7 +366,7 @@ Consolidate CI failure detection and fixing into `GithubActionsBuildFixer`. Abso
     - [ ] Remove `get_failing_workflow_run()` from `pr_helpers.py`
     - [ ] Run pre-commit checklist
 
-- [ ] **Task 7.4: Update callers and delete placeholders**
+- [ ] **Task 8.4: Update callers and delete placeholders**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `WorktreeMode.execute()` calls `self._build_fixer.check_and_fix_ci()` directly. No `WorktreeMode._check_and_fix_ci()`. `ci_fix.py` deleted.
@@ -350,7 +379,7 @@ Consolidate CI failure detection and fixing into `GithubActionsBuildFixer`. Abso
     - [ ] Delete `ci_fix.py`
     - [ ] Run pre-commit checklist
 
-- [ ] **Task 7.5: Migrate tests**
+- [ ] **Task 8.5: Migrate tests**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `test_github_actions_build_fixer.py` exists with tests from `TestWorktreeModeCIFailure` and `test_git_repository.py`.
@@ -360,21 +389,21 @@ Consolidate CI failure detection and fixing into `GithubActionsBuildFixer`. Abso
 
 ---
 
-## Steel Thread 8: Extract PullRequestReviewProcessor
+## Steel Thread 9: Extract PullRequestReviewProcessor
 Consolidate PR feedback processing into `PullRequestReviewProcessor`. Absorbs `WorktreeMode._process_feedback()`, `implement.process_pr_feedback()`, and feedback helpers from `pr_helpers.py` (`get_new_feedback()`, `format_all_feedback()`, `parse_triage_result()`, `get_feedback_by_ids()`, `determine_comment_type()`).
 
-- [ ] **Task 8.1: Move `WorktreeMode._process_feedback()` into PullRequestReviewProcessor**
+- [ ] **Task 9.1: Move `WorktreeMode._process_feedback()` into PullRequestReviewProcessor**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
-  - Observable: `PullRequestReviewProcessor` class in `pull_request_review_processor.py` with `PullRequestReviewProcessor.process_feedback()`. WorktreeMode accepts `review_processor` via constructor, `WorktreeMode._process_feedback()` delegates to `self._review_processor.process_feedback()`. Constructed in `implement_cmd()` in `cli.py`.
+  - Observable: `PullRequestReviewProcessor` class in `pull_request_review_processor.py` with `PullRequestReviewProcessor.process_feedback()`. WorktreeMode accepts `review_processor` via constructor, `WorktreeMode._process_feedback()` delegates to `self._review_processor.process_feedback()`. Constructed in `implement_cmd()`.
   - Steps:
     - [ ] Create `pull_request_review_processor.py` with `PullRequestReviewProcessor`, move `WorktreeMode._process_feedback()` body into `PullRequestReviewProcessor.process_feedback()`
     - [ ] Add `review_processor` param to `WorktreeMode.__init__()`, replace `WorktreeMode._process_feedback()` body with delegate
-    - [ ] Construct `PullRequestReviewProcessor` in `implement_cmd()` in `cli.py`, pass through to `WorktreeMode.__init__()`
+    - [ ] Construct `PullRequestReviewProcessor` in `implement_cmd()`, pass through to `WorktreeMode.__init__()`
     - [ ] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
     - [ ] Run pre-commit checklist
 
-- [ ] **Task 8.2: Move `process_pr_feedback()` into PullRequestReviewProcessor**
+- [ ] **Task 9.2: Move `process_pr_feedback()` into PullRequestReviewProcessor**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `PullRequestReviewProcessor.process_pr_feedback()` exists. `process_pr_feedback()` removed from `implement.py`. Raw dependencies replaced with injected collaborators. `claude_runner` added to constructor.
@@ -391,7 +420,7 @@ Consolidate PR feedback processing into `PullRequestReviewProcessor`. Absorbs `W
     - [ ] Remove `process_pr_feedback()` from `implement.py`
     - [ ] Run pre-commit checklist
 
-- [ ] **Task 8.3: Move feedback helpers into PullRequestReviewProcessor**
+- [ ] **Task 9.3: Move feedback helpers into PullRequestReviewProcessor**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `PullRequestReviewProcessor._get_new_feedback()`, `PullRequestReviewProcessor._format_all_feedback()`, `PullRequestReviewProcessor._parse_triage_result()`, `PullRequestReviewProcessor._get_feedback_by_ids()`, `PullRequestReviewProcessor._determine_comment_type()` exist as private methods. `get_new_feedback()`, `format_all_feedback()`, `parse_triage_result()`, `get_feedback_by_ids()`, `determine_comment_type()` removed from `pr_helpers.py`.
@@ -401,7 +430,7 @@ Consolidate PR feedback processing into `PullRequestReviewProcessor`. Absorbs `W
     - [ ] Remove helpers from `pr_helpers.py`
     - [ ] Run pre-commit checklist
 
-- [ ] **Task 8.4: Update callers and delete placeholder**
+- [ ] **Task 9.4: Update callers and delete placeholder**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `WorktreeMode.execute()` calls `self._review_processor.process_feedback()` directly. No `WorktreeMode._process_feedback()`.
@@ -410,7 +439,7 @@ Consolidate PR feedback processing into `PullRequestReviewProcessor`. Absorbs `W
     - [ ] Delete `WorktreeMode._process_feedback()`, remove `process_pr_feedback` import
     - [ ] Run pre-commit checklist
 
-- [ ] **Task 8.5: Migrate tests**
+- [ ] **Task 9.5: Migrate tests**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `test_pull_request_review_processor.py` exists with tests from `TestWorktreeModeFeedback`.
@@ -586,3 +615,6 @@ Extracted IsolateMode, slimmed implement.py from 1478 to 261 lines, extracted 6 
 
 ### 2026-02-18 12:53 - mark-task-complete
 Extracted GithubActionsMonitor with wait_for_ci(), WorktreeMode delegates via ci_monitor, constructed in cli.py
+
+### 2026-02-18 13:17 - insert-thread-before
+ImplementCommand class provides a proper home for mode dispatch logic and constructor-injected dependencies, making cli.py a thin Click adapter

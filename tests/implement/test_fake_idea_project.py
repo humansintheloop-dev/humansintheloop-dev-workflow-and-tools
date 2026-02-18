@@ -69,3 +69,7 @@ class TestFakeIdeaProjectMethods:
         custom_wt = FakeIdeaProject(name="wt-feat", directory="/wt/idea")
         project.set_worktree_project(custom_wt)
         assert project.worktree_idea_project("/wt", "/repo") is custom_wt
+
+    def test_get_next_task_returns_none_by_default(self):
+        project = FakeIdeaProject()
+        assert project.get_next_task() is None

@@ -58,3 +58,6 @@ class FakeIdeaProject:
 
     def set_worktree_project(self, project):
         self._worktree_project = project
+
+    def get_next_task(self):
+        return None

@@ -8,17 +8,7 @@ from unittest.mock import MagicMock, patch
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.implement_opts import ImplementOpts
 
-
-def _make_mock_project():
-    """Create a MagicMock that behaves like an IdeaProject instance."""
-    mock_project = MagicMock()
-    mock_project.name = "test-feature"
-    mock_project.directory = "/tmp/fake-idea"
-    mock_project.plan_file = "/tmp/fake-idea/test-feature-plan.md"
-    mock_project.state_file = "/tmp/fake-idea/test-feature-wt-state.json"
-    mock_project.validate.return_value = mock_project
-    mock_project.validate_files.return_value = None
-    return mock_project
+from fake_idea_project import FakeIdeaProject
 
 
 def _make_opts(**overrides):
@@ -29,7 +19,7 @@ def _make_opts(**overrides):
 
 def _make_command(**opt_overrides):
     opts = _make_opts(**opt_overrides)
-    project = _make_mock_project()
+    project = FakeIdeaProject()
     git_repo = MagicMock()
     mode_factory = MagicMock()
     cmd = ImplementCommand(opts, project, git_repo, mode_factory)

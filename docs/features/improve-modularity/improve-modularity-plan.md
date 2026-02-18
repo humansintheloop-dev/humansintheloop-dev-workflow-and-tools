@@ -369,18 +369,18 @@ Consolidate CI failure detection and fixing into `GithubActionsBuildFixer`. Abso
     - [x] Remove `get_failing_workflow_run()` from `pr_helpers.py`
     - [x] Run pre-commit checklist
 
-- [ ] **Task 8.4: Update callers and delete placeholders**
+- [x] **Task 8.4: Update callers and delete placeholders**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `WorktreeMode.execute()` calls `self._build_fixer.check_and_fix_ci()` directly. No `WorktreeMode._check_and_fix_ci()`. `ci_fix.py` deleted.
   - Callers: `WorktreeMode.execute()`, `project_setup.ensure_project_setup()` (line 55)
   - Cascade: `ensure_project_setup()` calls `ci_fix.fix_ci_failure()`. It's called from `IsolateMode` via `RealProjectSetup`. Options: (a) inject `GithubActionsBuildFixer` into `ensure_project_setup()`/`RealProjectSetup`/`IsolateMode`, or (b) have `ensure_project_setup()` construct one internally from its existing params. Option (b) avoids cascading into IsolateMode.
   - Steps:
-    - [ ] Update `WorktreeMode.execute()` to call `self._build_fixer.check_and_fix_ci()` directly
-    - [ ] Delete `WorktreeMode._check_and_fix_ci()` placeholder
-    - [ ] Update `ensure_project_setup()` to construct and use `GithubActionsBuildFixer` internally (avoids cascading into `IsolateMode`/`RealProjectSetup`)
-    - [ ] Delete `ci_fix.py`
-    - [ ] Run pre-commit checklist
+    - [x] Update `WorktreeMode.execute()` to call `self._build_fixer.check_and_fix_ci()` directly
+    - [x] Delete `WorktreeMode._check_and_fix_ci()` placeholder
+    - [x] Update `ensure_project_setup()` to construct and use `GithubActionsBuildFixer` internally (avoids cascading into `IsolateMode`/`RealProjectSetup`)
+    - [x] Delete `ci_fix.py`
+    - [x] Run pre-commit checklist
 
 - [ ] **Task 8.5: Migrate tests**
   - TaskType: OUTCOME
@@ -711,3 +711,6 @@ Pre-commit checklist passed: ruff clean, code health green for all files
 
 ### 2026-02-18 15:07 - mark-task-complete
 get_failing_workflow_run() moved into GithubActionsBuildFixer._get_failing_workflow_run(), removed from pr_helpers.py, ci_fix.py updated with private copy
+
+### 2026-02-18 15:15 - mark-task-complete
+Updated WorktreeMode.execute() to call self._build_fixer.check_and_fix_ci() directly, deleted _check_and_fix_ci() placeholder, updated ensure_project_setup() to construct GithubActionsBuildFixer internally, deleted ci_fix.py

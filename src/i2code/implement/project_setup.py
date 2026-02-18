@@ -5,10 +5,12 @@ from typing import Optional
 
 from git import Repo
 
-from i2code.implement.ci_fix import fix_ci_failure
-from i2code.implement.claude_runner import run_claude_interactive, run_claude_with_output_capture
+from i2code.implement.claude_runner import RealClaudeRunner, run_claude_interactive, run_claude_with_output_capture
 from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.git_repository import GitRepository
+from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.github_client import GitHubClient
+from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.pr_helpers import push_branch_to_remote
 
 
@@ -52,15 +54,16 @@ def ensure_project_setup(
     )
 
     if not ci_success and failing_run:
-        return fix_ci_failure(
-            integration_branch,
-            head_after,
-            repo.working_tree_dir,
-            max_retries=ci_fix_retries,
-            interactive=interactive,
+        git_repo = GitRepository(repo, gh_client)
+        git_repo.branch = integration_branch
+        opts = ImplementOpts(
+            idea_directory="",
+            non_interactive=not interactive,
             mock_claude=mock_claude,
-            gh_client=gh_client,
+            ci_fix_retries=ci_fix_retries,
         )
+        build_fixer = GithubActionsBuildFixer(opts, git_repo, RealClaudeRunner())
+        return build_fixer.fix_ci_failure()
 
     return ci_success
 

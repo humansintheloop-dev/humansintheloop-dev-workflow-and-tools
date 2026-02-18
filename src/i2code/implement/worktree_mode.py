@@ -43,7 +43,7 @@ class WorktreeMode:
     def execute(self):
         """Run the worktree task loop until all tasks are complete."""
         while True:
-            if self._check_and_fix_ci():
+            if self._build_fixer.check_and_fix_ci():
                 continue
 
             if self._process_feedback():
@@ -55,13 +55,6 @@ class WorktreeMode:
                 return
 
             self._execute_task(next_task)
-
-    def _check_and_fix_ci(self):
-        """Check for failing CI on current HEAD and attempt to fix it.
-
-        Returns True if a CI failure was found (caller should loop back).
-        """
-        return self._build_fixer.check_and_fix_ci()
 
     def _process_feedback(self):
         """Process PR feedback if any exists.

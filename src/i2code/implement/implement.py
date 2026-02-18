@@ -8,7 +8,7 @@ All other functions have been extracted to dedicated modules:
 - pr_helpers: PR title/body, feedback helpers, push commands
 - branch_lifecycle: rebase, cleanup, interrupt handling
 - project_setup: scaffolding and integration branch setup
-- ci_fix: CI failure detection and auto-fix
+- github_actions_build_fixer: CI failure detection and auto-fix
 - claude_runner: Claude invocation (interactive and captured)
 """
 

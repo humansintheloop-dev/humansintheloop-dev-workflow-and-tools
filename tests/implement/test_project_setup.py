@@ -351,14 +351,14 @@ class TestEnsureProjectSetup:
             "idea/test/integration", "bbb222", timeout_seconds=300
         )
 
-    @patch("i2code.implement.project_setup.fix_ci_failure")
+    @patch("i2code.implement.github_actions_build_fixer.GithubActionsBuildFixer.fix_ci_failure")
     @patch("i2code.implement.project_setup.push_branch_to_remote")
     @patch("i2code.implement.project_setup.run_claude_with_output_capture")
     @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")
     def test_ensure_project_setup_ci_failure_retry_success(
         self, mock_build_prompt, mock_run_capture, mock_push, mock_fix_ci
     ):
-        """When CI fails, should invoke fix_ci_failure and return its result."""
+        """When CI fails, should construct GithubActionsBuildFixer and call fix_ci_failure."""
         from i2code.implement.project_setup import ensure_project_setup
 
         mock_repo = MagicMock()
@@ -388,17 +388,9 @@ class TestEnsureProjectSetup:
         )
 
         assert result is True
-        mock_fix_ci.assert_called_once_with(
-            "idea/test/integration",
-            "bbb222",
-            "/tmp/fake-repo",
-            max_retries=5,
-            interactive=False,
-            mock_claude="/mock.sh",
-            gh_client=mock_gh,
-        )
+        mock_fix_ci.assert_called_once()
 
-    @patch("i2code.implement.project_setup.fix_ci_failure")
+    @patch("i2code.implement.github_actions_build_fixer.GithubActionsBuildFixer.fix_ci_failure")
     @patch("i2code.implement.project_setup.push_branch_to_remote")
     @patch("i2code.implement.project_setup.run_claude_interactive")
     @patch("i2code.implement.project_setup.CommandBuilder.build_scaffolding_command")

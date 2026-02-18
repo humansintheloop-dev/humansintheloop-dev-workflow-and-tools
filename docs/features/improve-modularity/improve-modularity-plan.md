@@ -382,13 +382,13 @@ Consolidate CI failure detection and fixing into `GithubActionsBuildFixer`. Abso
     - [x] Delete `ci_fix.py`
     - [x] Run pre-commit checklist
 
-- [ ] **Task 8.5: Migrate tests**
+- [x] **Task 8.5: Migrate tests**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
   - Observable: `test_github_actions_build_fixer.py` exists with tests from `TestWorktreeModeCIFailure` and `test_git_repository.py`.
   - Steps:
-    - [ ] Migrate tests from `TestWorktreeModeCIFailure` and `test_git_repository.py` into `test_github_actions_build_fixer.py`
-    - [ ] Run pre-commit checklist
+    - [x] Migrate tests from `TestWorktreeModeCIFailure` and `test_git_repository.py` into `test_github_actions_build_fixer.py`
+    - [x] Run pre-commit checklist
 
 ---
 
@@ -714,3 +714,12 @@ get_failing_workflow_run() moved into GithubActionsBuildFixer._get_failing_workf
 
 ### 2026-02-18 15:15 - mark-task-complete
 Updated WorktreeMode.execute() to call self._build_fixer.check_and_fix_ci() directly, deleted _check_and_fix_ci() placeholder, updated ensure_project_setup() to construct GithubActionsBuildFixer internally, deleted ci_fix.py
+
+### 2026-02-18 15:24 - mark-step-complete
+Removed TestWorktreeModeCIFailure from test_worktree_mode.py; CI tests already exist in test_github_actions_build_fixer.py (migrated from test_git_repository.py in commit 3eebe39 and from TestWorktreeModeCIFailure via direct tests in check_and_fix_ci)
+
+### 2026-02-18 15:24 - mark-step-complete
+Ran ruff check, code health review, all tests pass (369 passed)
+
+### 2026-02-18 15:24 - mark-task-complete
+Removed redundant TestWorktreeModeCIFailure from test_worktree_mode.py; tests already migrated to test_github_actions_build_fixer.py

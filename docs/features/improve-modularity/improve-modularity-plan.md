@@ -301,15 +301,18 @@ Extract `WorktreeMode._wait_for_ci()` into `GithubActionsMonitor`. Incremental m
 - [ ] **Task 7.1: Move `WorktreeMode._wait_for_ci()` into GithubActionsMonitor**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/ -v`
-  - Observable: `GithubActionsMonitor` class in `github_actions_monitor.py` with `GithubActionsMonitor.wait_for_ci()`. Constructor: `(git_repo, skip_ci_wait, ci_timeout)`. WorktreeMode accepts `ci_monitor` via constructor, `WorktreeMode._wait_for_ci()` delegates to `self._ci_monitor.wait_for_ci()`. Constructed in `implement_cmd()`. No `GitRepository.wait_for_ci()`.
+  - Observable: `GithubActionsMonitor` class in `github_actions_monitor.py` with `GithubActionsMonitor.wait_for_ci(branch, head_sha)`. Constructor: `(gh_client, skip_ci_wait, ci_timeout)`. WorktreeMode accepts `ci_monitor` via constructor, `WorktreeMode._wait_for_ci()` delegates to `self._ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)`. Constructed in `implement_cmd()`. No `GitRepository.wait_for_ci()`.
   - Steps:
     - [x] Create `github_actions_monitor.py` with `GithubActionsMonitor`, move `WorktreeMode._wait_for_ci()` body into `GithubActionsMonitor.wait_for_ci()`
     - [x] Add `ci_monitor` param to `WorktreeMode.__init__()`, replace `WorktreeMode._wait_for_ci()` body with delegate
     - [x] Construct `GithubActionsMonitor` in `implement_cmd()`, pass through to `WorktreeMode.__init__()`
     - [x] Update `_make_worktree_mode()` helper in `test_worktree_mode.py`
-    - [ ] Inline `GitRepository.wait_for_ci()` into `GithubActionsMonitor.wait_for_ci()` — call `GitHubClient.wait_for_workflow_completion(branch, head_sha, timeout)` directly
+    - [ ] Change `GithubActionsMonitor.__init__()` to take `gh_client` instead of `git_repo`
+    - [ ] Change `GithubActionsMonitor.wait_for_ci()` to take `(branch, head_sha)` as parameters, call `GitHubClient.wait_for_workflow_completion(branch, head_sha, timeout)` directly
+    - [ ] Update `WorktreeMode._wait_for_ci()` to pass `self._git_repo.branch, self._git_repo.head_sha` to `self._ci_monitor.wait_for_ci()`
+    - [ ] Update `implement_cmd()` to pass `gh_client` instead of `git_repo` when constructing `GithubActionsMonitor`
     - [ ] Delete `GitRepository.wait_for_ci()` and `FakeGitRepository.wait_for_ci()`
-    - [ ] Update `test_github_actions_monitor.py` to verify against `FakeGitHubClient` calls instead of `FakeGitRepository.wait_for_ci()` calls
+    - [ ] Update `test_github_actions_monitor.py` to pass `FakeGitHubClient` and `(branch, head_sha)` args
     - [ ] Delete `test_git_repository.py` tests for `GitRepository.wait_for_ci()`
     - [ ] Update `test_worktree_mode.py` assertions that check `fake_repo.calls` for `"wait_for_ci"`
     - [ ] Run pre-commit checklist

@@ -2,15 +2,17 @@
 
 import sys
 
-from i2code.implement.implement import (
+from i2code.implement.git_setup import (
     get_next_task,
     is_task_completed,
+    has_ci_workflow_files,
+)
+from i2code.implement.implement import (
     check_claude_success,
     print_task_failure_diagnostics,
-    has_ci_workflow_files,
-    get_failing_workflow_run,
     process_pr_feedback,
 )
+from i2code.implement.pr_helpers import get_failing_workflow_run
 
 
 class WorktreeMode:

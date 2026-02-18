@@ -7,7 +7,8 @@ import tempfile
 import pytest
 from git import Repo
 
-from i2code.implement.implement import ensure_project_setup, ensure_integration_branch
+from i2code.implement.project_setup import ensure_project_setup
+from i2code.implement.git_setup import ensure_integration_branch
 
 
 def create_mock_claude_script(path):

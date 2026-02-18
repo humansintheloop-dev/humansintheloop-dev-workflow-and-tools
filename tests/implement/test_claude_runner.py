@@ -29,7 +29,7 @@ class TestFakeClaudeRunner:
         assert fake.calls == [("run_with_capture", ["claude", "-p", "do task"], "/repo")]
 
     def test_returns_configured_result(self):
-        from i2code.implement.implement import ClaudeResult
+        from i2code.implement.claude_runner import ClaudeResult
 
         fake = FakeClaudeRunner()
         fake.set_result(ClaudeResult(returncode=1, stdout="error", stderr="fail"))
@@ -38,7 +38,7 @@ class TestFakeClaudeRunner:
         assert result.stdout == "error"
 
     def test_returns_sequence_of_results(self):
-        from i2code.implement.implement import ClaudeResult
+        from i2code.implement.claude_runner import ClaudeResult
 
         fake = FakeClaudeRunner()
         fake.set_results([
@@ -51,7 +51,7 @@ class TestFakeClaudeRunner:
         assert r2.returncode == 1
 
     def test_falls_back_to_default_after_sequence_exhausted(self):
-        from i2code.implement.implement import ClaudeResult
+        from i2code.implement.claude_runner import ClaudeResult
 
         fake = FakeClaudeRunner()
         fake.set_results([ClaudeResult(returncode=42, stdout="", stderr="")])

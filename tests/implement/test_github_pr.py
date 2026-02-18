@@ -12,14 +12,14 @@ class TestPRTitleGeneration:
 
     def test_generate_pr_title(self):
         """Should generate PR title from idea and slice name."""
-        from i2code.implement.implement import generate_pr_title
+        from i2code.implement.pr_helpers import generate_pr_title
 
         title = generate_pr_title("my-feature", "01-project-setup")
         assert title == "[my-feature] 01-project-setup"
 
     def test_generate_pr_title_preserves_slice_name(self):
         """PR title should preserve the full slice name."""
-        from i2code.implement.implement import generate_pr_title
+        from i2code.implement.pr_helpers import generate_pr_title
 
         title = generate_pr_title("wt-pr-based-development", "03-feedback-handling")
         assert title == "[wt-pr-based-development] 03-feedback-handling"
@@ -31,7 +31,7 @@ class TestPRBodyGeneration:
 
     def test_generate_pr_body(self):
         """Should generate PR body with idea directory reference."""
-        from i2code.implement.implement import generate_pr_body
+        from i2code.implement.pr_helpers import generate_pr_body
 
         body = generate_pr_body(
             idea_directory="docs/features/my-feature",
@@ -111,7 +111,7 @@ class TestDeferredPRCreation:
         from unittest.mock import MagicMock
 
         # Mock all the setup functions to avoid real git/github operations
-        monkeypatch.setattr("i2code.implement.implement.validate_idea_files_committed", lambda x, y: None)
+        monkeypatch.setattr("i2code.implement.cli.validate_idea_files_committed", lambda x, y: None)
 
         # Mock git operations
         class MockRepo:
@@ -128,11 +128,10 @@ class TestDeferredPRCreation:
                 def checkout(*args):
                     pass
 
-        monkeypatch.setattr("i2code.implement.implement.Repo", lambda *args, **kwargs: MockRepo())
         monkeypatch.setattr("i2code.implement.cli.Repo", lambda *args, **kwargs: MockRepo())
-        monkeypatch.setattr("i2code.implement.implement.ensure_integration_branch", lambda r, n: "idea/test-idea/integration")
-        monkeypatch.setattr("i2code.implement.implement.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
-        monkeypatch.setattr("i2code.implement.implement.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
+        monkeypatch.setattr("i2code.implement.cli.ensure_integration_branch", lambda r, n: "idea/test-idea/integration")
+        monkeypatch.setattr("i2code.implement.cli.ensure_worktree", lambda r, n, b: str(tmp_path / "worktree"))
+        monkeypatch.setattr("i2code.implement.cli.ensure_slice_branch", lambda r, n, s, t, i: "idea/test-idea/01-setup")
 
         # Also patch the cli module's imported references
         mock_project = MagicMock()
@@ -174,7 +173,7 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_includes_reviews(self):
         """Should format PR reviews with state and body."""
-        from i2code.implement.implement import format_all_feedback
+        from i2code.implement.pr_helpers import format_all_feedback
 
         reviews = [
             {"id": 1, "state": "CHANGES_REQUESTED", "body": "Please fix the tests",
@@ -190,7 +189,7 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_includes_review_comments(self):
         """Should format review comments with file path and line."""
-        from i2code.implement.implement import format_all_feedback
+        from i2code.implement.pr_helpers import format_all_feedback
 
         review_comments = [
             {"id": 2, "body": "This variable name is unclear",
@@ -205,7 +204,7 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_includes_conversation_comments(self):
         """Should format general PR comments."""
-        from i2code.implement.implement import format_all_feedback
+        from i2code.implement.pr_helpers import format_all_feedback
 
         conversation_comments = [
             {"id": 3, "body": "Great work overall!", "user": {"login": "lead"}}
@@ -219,7 +218,7 @@ class TestFormatAllFeedback:
 
     def test_format_all_feedback_combines_all_types(self):
         """Should combine all feedback types into one formatted string."""
-        from i2code.implement.implement import format_all_feedback
+        from i2code.implement.pr_helpers import format_all_feedback
 
         reviews = [{"id": 1, "state": "APPROVED", "body": "LGTM", "user": {"login": "r1"}}]
         review_comments = [{"id": 2, "body": "Nitpick", "path": "a.py", "line": 1, "user": {"login": "r2"}}]
@@ -320,7 +319,7 @@ class TestGetNewFeedback:
 
     def test_get_new_feedback_filters_processed(self):
         """Should filter out already processed feedback."""
-        from i2code.implement.implement import get_new_feedback
+        from i2code.implement.pr_helpers import get_new_feedback
 
         all_feedback = [
             {"id": 1, "body": "Old comment"},
@@ -336,7 +335,7 @@ class TestGetNewFeedback:
 
     def test_get_new_feedback_returns_all_when_none_processed(self):
         """Should return all feedback when nothing processed yet."""
-        from i2code.implement.implement import get_new_feedback
+        from i2code.implement.pr_helpers import get_new_feedback
 
         all_feedback = [
             {"id": 1, "body": "Comment 1"},
@@ -349,7 +348,7 @@ class TestGetNewFeedback:
 
     def test_get_new_feedback_returns_empty_when_all_processed(self):
         """Should return empty list when all feedback processed."""
-        from i2code.implement.implement import get_new_feedback
+        from i2code.implement.pr_helpers import get_new_feedback
 
         all_feedback = [{"id": 1, "body": "Comment"}]
         processed_ids = [1]
@@ -381,7 +380,7 @@ class TestParseTriageResult:
 
     def test_parse_triage_result_with_json_code_block(self):
         """Should parse JSON from markdown code block."""
-        from i2code.implement.implement import parse_triage_result
+        from i2code.implement.pr_helpers import parse_triage_result
 
         output = '''Here's the triage:
 ```json
@@ -399,7 +398,7 @@ class TestParseTriageResult:
 
     def test_parse_triage_result_with_plain_json(self):
         """Should parse plain JSON output."""
-        from i2code.implement.implement import parse_triage_result
+        from i2code.implement.pr_helpers import parse_triage_result
 
         output = '{"will_fix": [], "needs_clarification": [{"comment_id": 5, "question": "What?"}]}'
         result = parse_triage_result(output)
@@ -410,7 +409,7 @@ class TestParseTriageResult:
 
     def test_parse_triage_result_returns_none_on_invalid(self):
         """Should return None for invalid JSON."""
-        from i2code.implement.implement import parse_triage_result
+        from i2code.implement.pr_helpers import parse_triage_result
 
         result = parse_triage_result("This is not JSON at all")
 
@@ -423,7 +422,7 @@ class TestGetFeedbackByIds:
 
     def test_get_feedback_by_ids_returns_matching(self):
         """Should return only feedback with matching IDs."""
-        from i2code.implement.implement import get_feedback_by_ids
+        from i2code.implement.pr_helpers import get_feedback_by_ids
 
         all_feedback = [
             {"id": 1, "body": "Comment 1"},
@@ -439,7 +438,7 @@ class TestGetFeedbackByIds:
 
     def test_get_feedback_by_ids_returns_empty_for_no_matches(self):
         """Should return empty list when no IDs match."""
-        from i2code.implement.implement import get_feedback_by_ids
+        from i2code.implement.pr_helpers import get_feedback_by_ids
 
         all_feedback = [{"id": 1, "body": "Comment"}]
 
@@ -454,7 +453,7 @@ class TestDetermineCommentType:
 
     def test_determine_comment_type_review(self):
         """Should return 'review' for review comment IDs."""
-        from i2code.implement.implement import determine_comment_type
+        from i2code.implement.pr_helpers import determine_comment_type
 
         review_comments = [{"id": 100, "body": "Review comment"}]
         conversation_comments = [{"id": 200, "body": "General comment"}]
@@ -465,7 +464,7 @@ class TestDetermineCommentType:
 
     def test_determine_comment_type_conversation(self):
         """Should return 'conversation' for non-review comment IDs."""
-        from i2code.implement.implement import determine_comment_type
+        from i2code.implement.pr_helpers import determine_comment_type
 
         review_comments = [{"id": 100, "body": "Review comment"}]
         conversation_comments = [{"id": 200, "body": "General comment"}]

@@ -10,7 +10,7 @@ class TestWorktreeIdeaDirectory:
 
     def test_get_worktree_idea_directory(self):
         """Should compute the idea directory path within the worktree."""
-        from i2code.implement.implement import get_worktree_idea_directory
+        from i2code.implement.git_setup import get_worktree_idea_directory
 
         worktree_path = "/tmp/my-repo-wt-my-feature"
         main_repo_idea_dir = "/home/user/my-repo/docs/ideas/my-feature"
@@ -27,7 +27,7 @@ class TestWorktreeIdeaDirectory:
     def test_claude_prompt_uses_worktree_idea_directory(self, mocker):
         """Claude command prompt should reference worktree idea dir, not main repo."""
         from i2code.implement.command_builder import CommandBuilder
-        from i2code.implement.implement import get_worktree_idea_directory
+        from i2code.implement.git_setup import get_worktree_idea_directory
 
         # Simulate the paths
         main_repo_root = "/home/user/my-repo"
@@ -169,7 +169,7 @@ class TestCalculateClaudePermissions:
     """Test calculation of Claude permissions for --allowedTools."""
 
     def test_includes_required_permissions(self):
-        from i2code.implement.implement import calculate_claude_permissions, REQUIRED_PERMISSIONS
+        from i2code.implement.git_setup import calculate_claude_permissions, REQUIRED_PERMISSIONS
 
         perms = calculate_claude_permissions("/fake/repo")
 
@@ -177,7 +177,7 @@ class TestCalculateClaudePermissions:
             assert req in perms
 
     def test_includes_write_and_edit_for_repo_root(self):
-        from i2code.implement.implement import calculate_claude_permissions
+        from i2code.implement.git_setup import calculate_claude_permissions
 
         perms = calculate_claude_permissions("/fake/repo")
 
@@ -191,7 +191,7 @@ class TestRunClaudeWithOutputCapture:
 
     def test_run_claude_captures_stdout(self, mocker):
         """Should capture stdout from Claude process."""
-        from i2code.implement.implement import run_claude_with_output_capture
+        from i2code.implement.claude_runner import run_claude_with_output_capture
 
         # Mock Popen with pipe-like objects
         mock_stdout = mocker.MagicMock()
@@ -205,7 +205,7 @@ class TestRunClaudeWithOutputCapture:
         mock_process.stdout = mock_stdout
         mock_process.stderr = mock_stderr
         mock_process.returncode = 0
-        mocker.patch('i2code.implement.implement.subprocess.Popen', return_value=mock_process)
+        mocker.patch('i2code.implement.claude_runner.subprocess.Popen', return_value=mock_process)
 
         result = run_claude_with_output_capture(["claude", "test"], cwd="/tmp")
 
@@ -215,7 +215,7 @@ class TestRunClaudeWithOutputCapture:
 
     def test_run_claude_captures_stderr(self, mocker):
         """Should capture stderr from Claude process."""
-        from i2code.implement.implement import run_claude_with_output_capture
+        from i2code.implement.claude_runner import run_claude_with_output_capture
 
         mock_stdout = mocker.MagicMock()
         mock_stderr = mocker.MagicMock()
@@ -228,7 +228,7 @@ class TestRunClaudeWithOutputCapture:
         mock_process.stdout = mock_stdout
         mock_process.stderr = mock_stderr
         mock_process.returncode = 1
-        mocker.patch('i2code.implement.implement.subprocess.Popen', return_value=mock_process)
+        mocker.patch('i2code.implement.claude_runner.subprocess.Popen', return_value=mock_process)
 
         result = run_claude_with_output_capture(["claude", "test"], cwd="/tmp")
 
@@ -276,7 +276,7 @@ class TestPushOperations:
 
     def test_build_push_command(self):
         """Should build correct git push command."""
-        from i2code.implement.implement import build_push_command
+        from i2code.implement.pr_helpers import build_push_command
 
         cmd = build_push_command("idea/my-feature/01-setup")
 
@@ -284,7 +284,7 @@ class TestPushOperations:
 
     def test_build_push_command_with_force(self):
         """Should include --force-with-lease when requested."""
-        from i2code.implement.implement import build_push_command
+        from i2code.implement.pr_helpers import build_push_command
 
         cmd = build_push_command("idea/my-feature/01-setup", force=True)
 
@@ -298,12 +298,12 @@ class TestPushToSliceBranch:
     def test_push_returns_false_if_pr_not_draft(self, mocker):
         """Should not push and return False if PR is not in Draft state."""
         from fake_github_client import FakeGitHubClient
-        from i2code.implement.implement import push_to_slice_branch
+        from i2code.implement.pr_helpers import push_to_slice_branch
 
         fake = FakeGitHubClient()
         fake.set_pr_view(123, {"isDraft": False})
         # Mock subprocess.run to track if it was called
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.pr_helpers.subprocess.run')
 
         result = push_to_slice_branch(
             slice_branch="idea/my-feature/01-setup",
@@ -317,12 +317,12 @@ class TestPushToSliceBranch:
     def test_push_succeeds_when_pr_is_draft(self, mocker):
         """Should push and return True when PR is in Draft state."""
         from fake_github_client import FakeGitHubClient
-        from i2code.implement.implement import push_to_slice_branch
+        from i2code.implement.pr_helpers import push_to_slice_branch
 
         fake = FakeGitHubClient()
         fake.set_pr_view(123, {"isDraft": True})
         # Mock subprocess.run to simulate successful push
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.pr_helpers.subprocess.run')
         mock_run.return_value.returncode = 0
 
         result = push_to_slice_branch(
@@ -337,12 +337,12 @@ class TestPushToSliceBranch:
     def test_push_returns_false_on_push_failure(self, mocker):
         """Should return False when git push fails."""
         from fake_github_client import FakeGitHubClient
-        from i2code.implement.implement import push_to_slice_branch
+        from i2code.implement.pr_helpers import push_to_slice_branch
 
         fake = FakeGitHubClient()
         fake.set_pr_view(123, {"isDraft": True})
         # Mock subprocess.run to simulate failed push
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.pr_helpers.subprocess.run')
         mock_run.return_value.returncode = 1
 
         result = push_to_slice_branch(
@@ -407,7 +407,7 @@ class TestFeedbackDetection:
 
     def test_get_new_comments_filters_processed(self):
         """Should return only comments not in processed_comment_ids."""
-        from i2code.implement.implement import get_new_feedback
+        from i2code.implement.pr_helpers import get_new_feedback
 
         all_comments = [
             {"id": 1, "body": "Already processed"},
@@ -423,7 +423,7 @@ class TestFeedbackDetection:
 
     def test_get_new_comments_returns_empty_if_all_processed(self):
         """Should return empty list if all comments are processed."""
-        from i2code.implement.implement import get_new_feedback
+        from i2code.implement.pr_helpers import get_new_feedback
 
         all_comments = [
             {"id": 1, "body": "Processed"},
@@ -485,7 +485,7 @@ class TestMainBranchAdvancement:
 
     def test_has_main_advanced_returns_false_if_same(self):
         """Should return False when main branch HEAD hasn't changed."""
-        from i2code.implement.implement import has_main_advanced
+        from i2code.implement.branch_lifecycle import has_main_advanced
 
         assert has_main_advanced(
             original_head="abc123",
@@ -494,7 +494,7 @@ class TestMainBranchAdvancement:
 
     def test_has_main_advanced_returns_true_if_different(self):
         """Should return True when main branch HEAD has changed."""
-        from i2code.implement.implement import has_main_advanced
+        from i2code.implement.branch_lifecycle import has_main_advanced
 
         assert has_main_advanced(
             original_head="abc123",
@@ -503,10 +503,10 @@ class TestMainBranchAdvancement:
 
     def test_get_remote_main_head_returns_sha(self, mocker):
         """Should return the SHA of origin/main."""
-        from i2code.implement.implement import get_remote_main_head
+        from i2code.implement.branch_lifecycle import get_remote_main_head
 
         # Mock subprocess.run to simulate git fetch and ls-remote
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.branch_lifecycle.subprocess.run')
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = "abc123def456\trefs/heads/main\n"
 
@@ -518,7 +518,7 @@ class TestMainBranchAdvancement:
 
     def test_get_remote_main_head_fetches_first(self, mocker):
         """Should fetch from origin before getting HEAD."""
-        from i2code.implement.implement import get_remote_main_head
+        from i2code.implement.branch_lifecycle import get_remote_main_head
 
         # Track all subprocess calls
         calls = []
@@ -532,7 +532,7 @@ class TestMainBranchAdvancement:
                 result.stdout = "abc123\trefs/heads/main\n"
             return result
 
-        mocker.patch('i2code.implement.implement.subprocess.run', side_effect=mock_run)
+        mocker.patch('i2code.implement.branch_lifecycle.subprocess.run', side_effect=mock_run)
 
         get_remote_main_head(branch="main")
 
@@ -543,7 +543,7 @@ class TestMainBranchAdvancement:
 
     def test_get_remote_main_head_uses_passed_branch(self, mocker):
         """Should fetch and query the passed branch, not hardcoded 'main'."""
-        from i2code.implement.implement import get_remote_main_head
+        from i2code.implement.branch_lifecycle import get_remote_main_head
 
         calls = []
         def mock_run(*args, **kwargs):
@@ -556,7 +556,7 @@ class TestMainBranchAdvancement:
                 result.stdout = "abc123\trefs/heads/master\n"
             return result
 
-        mocker.patch('i2code.implement.implement.subprocess.run', side_effect=mock_run)
+        mocker.patch('i2code.implement.branch_lifecycle.subprocess.run', side_effect=mock_run)
 
         sha = get_remote_main_head(branch="master")
 
@@ -574,10 +574,10 @@ class TestRebaseOperations:
 
     def test_rebase_integration_branch_success(self, mocker):
         """Should return True when rebase succeeds."""
-        from i2code.implement.implement import rebase_integration_branch
+        from i2code.implement.branch_lifecycle import rebase_integration_branch
 
         # Mock subprocess.run to simulate successful rebase
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.branch_lifecycle.subprocess.run')
         mock_run.return_value.returncode = 0
 
         result = rebase_integration_branch("idea/my-feature/integration", base_branch="main")
@@ -586,10 +586,10 @@ class TestRebaseOperations:
 
     def test_rebase_integration_branch_returns_false_on_conflict(self, mocker):
         """Should return False when rebase has conflicts."""
-        from i2code.implement.implement import rebase_integration_branch
+        from i2code.implement.branch_lifecycle import rebase_integration_branch
 
         # Mock subprocess.run to simulate rebase conflict
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.branch_lifecycle.subprocess.run')
         mock_run.return_value.returncode = 1
 
         result = rebase_integration_branch("idea/my-feature/integration", base_branch="main")
@@ -598,7 +598,7 @@ class TestRebaseOperations:
 
     def test_rebase_integration_branch_aborts_on_conflict(self, mocker):
         """Should abort rebase when conflicts occur."""
-        from i2code.implement.implement import rebase_integration_branch
+        from i2code.implement.branch_lifecycle import rebase_integration_branch
 
         calls = []
         def mock_run(cmd, **kwargs):
@@ -611,7 +611,7 @@ class TestRebaseOperations:
                 result.returncode = 0
             return result
 
-        mocker.patch('i2code.implement.implement.subprocess.run', side_effect=mock_run)
+        mocker.patch('i2code.implement.branch_lifecycle.subprocess.run', side_effect=mock_run)
 
         rebase_integration_branch("idea/my-feature/integration", base_branch="main")
 
@@ -621,7 +621,7 @@ class TestRebaseOperations:
 
     def test_rebase_integration_branch_uses_passed_base_branch(self, mocker):
         """Should rebase onto the passed base_branch, not hardcoded 'main'."""
-        from i2code.implement.implement import rebase_integration_branch
+        from i2code.implement.branch_lifecycle import rebase_integration_branch
 
         calls = []
         def mock_run(cmd, **kwargs):
@@ -630,7 +630,7 @@ class TestRebaseOperations:
             result.returncode = 0
             return result
 
-        mocker.patch('i2code.implement.implement.subprocess.run', side_effect=mock_run)
+        mocker.patch('i2code.implement.branch_lifecycle.subprocess.run', side_effect=mock_run)
 
         rebase_integration_branch("idea/my-feature/integration", base_branch="master")
 
@@ -640,9 +640,9 @@ class TestRebaseOperations:
 
     def test_update_slice_after_rebase_force_pushes(self, mocker):
         """Should force push slice branch after rebase."""
-        from i2code.implement.implement import update_slice_after_rebase
+        from i2code.implement.branch_lifecycle import update_slice_after_rebase
 
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.branch_lifecycle.subprocess.run')
         mock_run.return_value.returncode = 0
 
         update_slice_after_rebase("idea/my-feature/01-setup")
@@ -658,7 +658,7 @@ class TestRebaseConflictHandling:
 
     def test_handle_rebase_conflict_returns_message(self):
         """Should return a message explaining the conflict."""
-        from i2code.implement.implement import get_rebase_conflict_message
+        from i2code.implement.branch_lifecycle import get_rebase_conflict_message
 
         message = get_rebase_conflict_message("idea/my-feature/integration", base_branch="main")
 
@@ -667,7 +667,7 @@ class TestRebaseConflictHandling:
 
     def test_handle_rebase_conflict_includes_instructions(self):
         """Should include instructions for manual resolution."""
-        from i2code.implement.implement import get_rebase_conflict_message
+        from i2code.implement.branch_lifecycle import get_rebase_conflict_message
 
         message = get_rebase_conflict_message("idea/my-feature/integration", base_branch="main")
 
@@ -676,7 +676,7 @@ class TestRebaseConflictHandling:
 
     def test_rebase_conflict_message_uses_passed_base_branch(self):
         """Should use the passed base_branch, not hardcoded 'main'."""
-        from i2code.implement.implement import get_rebase_conflict_message
+        from i2code.implement.branch_lifecycle import get_rebase_conflict_message
 
         message = get_rebase_conflict_message("idea/my-feature/integration", base_branch="master")
 
@@ -690,9 +690,9 @@ class TestPRReadyForReview:
 
     def test_mark_pr_ready_calls_gh_pr_ready(self, mocker):
         """Should call gh pr ready with PR number."""
-        from i2code.implement.implement import mark_pr_ready
+        from i2code.implement.pr_helpers import mark_pr_ready
 
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.github_client.subprocess.run')
         mock_run.return_value.returncode = 0
 
         result = mark_pr_ready(123)
@@ -707,9 +707,9 @@ class TestPRReadyForReview:
 
     def test_mark_pr_ready_returns_false_on_failure(self, mocker):
         """Should return False when gh pr ready fails."""
-        from i2code.implement.implement import mark_pr_ready
+        from i2code.implement.pr_helpers import mark_pr_ready
 
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.github_client.subprocess.run')
         mock_run.return_value.returncode = 1
 
         result = mark_pr_ready(123)
@@ -723,9 +723,9 @@ class TestPRPolling:
 
     def test_get_pr_state_returns_open(self, mocker):
         """Should return PR state from GitHub."""
-        from i2code.implement.implement import get_pr_state
+        from i2code.implement.pr_helpers import get_pr_state
 
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.github_client.subprocess.run')
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = '{"state": "OPEN"}'
 
@@ -735,9 +735,9 @@ class TestPRPolling:
 
     def test_get_pr_state_returns_merged(self, mocker):
         """Should return MERGED state when PR is merged."""
-        from i2code.implement.implement import get_pr_state
+        from i2code.implement.pr_helpers import get_pr_state
 
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.github_client.subprocess.run')
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = '{"state": "MERGED"}'
 
@@ -747,9 +747,9 @@ class TestPRPolling:
 
     def test_get_pr_state_returns_closed(self, mocker):
         """Should return CLOSED state when PR is closed."""
-        from i2code.implement.implement import get_pr_state
+        from i2code.implement.pr_helpers import get_pr_state
 
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.github_client.subprocess.run')
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = '{"state": "CLOSED"}'
 
@@ -759,19 +759,19 @@ class TestPRPolling:
 
     def test_is_pr_complete_true_when_merged(self):
         """Should return True when PR is merged."""
-        from i2code.implement.implement import is_pr_complete
+        from i2code.implement.pr_helpers import is_pr_complete
 
         assert is_pr_complete("MERGED") is True
 
     def test_is_pr_complete_true_when_closed(self):
         """Should return True when PR is closed."""
-        from i2code.implement.implement import is_pr_complete
+        from i2code.implement.pr_helpers import is_pr_complete
 
         assert is_pr_complete("CLOSED") is True
 
     def test_is_pr_complete_false_when_open(self):
         """Should return False when PR is still open."""
-        from i2code.implement.implement import is_pr_complete
+        from i2code.implement.pr_helpers import is_pr_complete
 
         assert is_pr_complete("OPEN") is False
 
@@ -782,9 +782,9 @@ class TestCleanupOperations:
 
     def test_remove_worktree_calls_git_worktree_remove(self, mocker):
         """Should call git worktree remove with correct path."""
-        from i2code.implement.implement import remove_worktree
+        from i2code.implement.branch_lifecycle import remove_worktree
 
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.branch_lifecycle.subprocess.run')
         mock_run.return_value.returncode = 0
 
         result = remove_worktree("/path/to/worktree")
@@ -798,9 +798,9 @@ class TestCleanupOperations:
 
     def test_remove_worktree_returns_false_on_failure(self, mocker):
         """Should return False when worktree removal fails."""
-        from i2code.implement.implement import remove_worktree
+        from i2code.implement.branch_lifecycle import remove_worktree
 
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.branch_lifecycle.subprocess.run')
         mock_run.return_value.returncode = 1
 
         result = remove_worktree("/path/to/worktree")
@@ -809,9 +809,9 @@ class TestCleanupOperations:
 
     def test_delete_local_branch_calls_git_branch_d(self, mocker):
         """Should call git branch -D to delete local branch."""
-        from i2code.implement.implement import delete_local_branch
+        from i2code.implement.branch_lifecycle import delete_local_branch
 
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.branch_lifecycle.subprocess.run')
         mock_run.return_value.returncode = 0
 
         result = delete_local_branch("idea/my-feature/integration")
@@ -825,9 +825,9 @@ class TestCleanupOperations:
 
     def test_delete_local_branch_returns_false_on_failure(self, mocker):
         """Should return False when branch deletion fails."""
-        from i2code.implement.implement import delete_local_branch
+        from i2code.implement.branch_lifecycle import delete_local_branch
 
-        mock_run = mocker.patch('i2code.implement.implement.subprocess.run')
+        mock_run = mocker.patch('i2code.implement.branch_lifecycle.subprocess.run')
         mock_run.return_value.returncode = 1
 
         result = delete_local_branch("idea/my-feature/integration")
@@ -842,7 +842,7 @@ class TestSliceRollover:
     def test_should_rollover_true_when_not_draft_with_local_commits(self):
         """Should return True when PR is not draft and has unpushed commits."""
         from fake_github_client import FakeGitHubClient
-        from i2code.implement.implement import should_rollover
+        from i2code.implement.pr_helpers import should_rollover
 
         fake = FakeGitHubClient()
         fake.set_pr_view(123, {"isDraft": False})
@@ -854,7 +854,7 @@ class TestSliceRollover:
     def test_should_rollover_false_when_draft(self):
         """Should return False when PR is still in draft state."""
         from fake_github_client import FakeGitHubClient
-        from i2code.implement.implement import should_rollover
+        from i2code.implement.pr_helpers import should_rollover
 
         fake = FakeGitHubClient()
         fake.set_pr_view(123, {"isDraft": True})
@@ -866,7 +866,7 @@ class TestSliceRollover:
     def test_should_rollover_false_when_no_unpushed_commits(self):
         """Should return False when there are no unpushed commits."""
         from fake_github_client import FakeGitHubClient
-        from i2code.implement.implement import should_rollover
+        from i2code.implement.pr_helpers import should_rollover
 
         fake = FakeGitHubClient()
         fake.set_pr_view(123, {"isDraft": False})
@@ -877,7 +877,7 @@ class TestSliceRollover:
 
     def test_generate_next_slice_branch_increments_number(self):
         """Should generate next slice branch with incremented number."""
-        from i2code.implement.implement import generate_next_slice_branch
+        from i2code.implement.pr_helpers import generate_next_slice_branch
 
         next_branch = generate_next_slice_branch(
             idea_name="my-feature",
@@ -889,7 +889,7 @@ class TestSliceRollover:
 
     def test_generate_next_slice_branch_zero_pads(self):
         """Should zero-pad the slice number."""
-        from i2code.implement.implement import generate_next_slice_branch
+        from i2code.implement.pr_helpers import generate_next_slice_branch
 
         next_branch = generate_next_slice_branch(
             idea_name="my-feature",
@@ -907,9 +907,9 @@ class TestInterruptHandling:
     def test_register_signal_handlers_sets_up_sigint(self, mocker):
         """Should register handler for SIGINT (Ctrl+C)."""
         import signal
-        from i2code.implement.implement import register_signal_handlers
+        from i2code.implement.branch_lifecycle import register_signal_handlers
 
-        mock_signal = mocker.patch('i2code.implement.implement.signal.signal')
+        mock_signal = mocker.patch('i2code.implement.branch_lifecycle.signal.signal')
 
         register_signal_handlers()
 
@@ -920,7 +920,7 @@ class TestInterruptHandling:
     def test_cleanup_on_interrupt_saves_state(self, mocker):
         """Should save state when interrupted."""
         from unittest.mock import MagicMock
-        from i2code.implement.implement import cleanup_on_interrupt
+        from i2code.implement.branch_lifecycle import cleanup_on_interrupt
 
         mock_state = MagicMock()
 

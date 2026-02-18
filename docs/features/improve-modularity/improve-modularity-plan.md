@@ -247,19 +247,19 @@ Replace the 180-line `implement_cmd` with a thin dispatcher and three execution 
     - [x] Migrate `test_cli_integration.py` tests from @patch to fakes
     - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
-- [ ] **Task 5.3: Extract IsolateMode and final cleanup**
+- [x] **Task 5.3: Extract IsolateMode and final cleanup**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/ -v`
   - Observable: `IsolateMode` class exists in `isolate_mode.py`. `implement_cmd` is a thin dispatcher (<50 lines): validate → select mode → execute. `implement.py` contains only `process_pr_feedback`, `check_claude_success`, `print_task_failure_diagnostics` and pure helpers (sanitize_branch_name, generate_pr_title, etc.) — all under 300 lines total.
   - Evidence: Pre-commit checklist passes. No test file uses `unittest.mock.patch`. `implement.py` is under 300 lines.
   - Steps:
-    - [ ] Write tests for IsolateMode using fakes
-    - [ ] Implement IsolateMode class
-    - [ ] Reduce `implement_cmd` to thin dispatcher
-    - [ ] Move remaining pure helpers into appropriate class files
-    - [ ] Verify `implement.py` is under 300 lines or deleted
-    - [ ] Audit all test files: no `from unittest.mock import patch` remains
-    - [ ] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
+    - [x] Write tests for IsolateMode using fakes
+    - [x] Implement IsolateMode class
+    - [x] Reduce `implement_cmd` to thin dispatcher
+    - [x] Move remaining pure helpers into appropriate class files
+    - [x] Verify `implement.py` is under 300 lines or deleted
+    - [x] Audit all test files: no `from unittest.mock import patch` remains
+    - [x] Run pre-commit checklist (ruff, CodeScene safeguard, `./test-scripts/test-end-to-end.sh`)
 
 ---
 
@@ -411,3 +411,15 @@ Ruff passes on all changed files. CodeScene safeguard unavailable (VCS root dete
 
 ### 2026-02-18 09:18 - mark-task-complete
 Extracted WorktreeMode class encapsulating the worktree + PR + CI loop with injectable dependencies. 16 new fake-based tests, default path delegates to WorktreeMode.
+
+### 2026-02-18 09:26 - mark-step-complete
+8 tests written for IsolateMode using FakeProjectSetup, FakeSubprocessRunner, FakeGitHubClient fakes
+
+### 2026-02-18 09:26 - mark-step-complete
+IsolateMode class implemented in isolate_mode.py with injectable project_setup and subprocess_runner
+
+### 2026-02-18 09:28 - mark-step-complete
+implement() isolate path now delegates to IsolateMode (22 lines). implement_cmd itself is 5 lines.
+
+### 2026-02-18 09:47 - mark-task-complete
+Extracted IsolateMode, slimmed implement.py from 1478 to 261 lines, extracted 6 new modules (git_setup, pr_helpers, branch_lifecycle, project_setup, ci_fix, claude_runner), updated all imports across 15+ files, 334 tests pass

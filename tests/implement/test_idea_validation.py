@@ -12,7 +12,7 @@ class TestIdeaFilesCommitValidation:
     def test_uncommitted_changes_raises_error(self, capsys):
         """Script should raise error when idea files have uncommitted changes."""
         from git import Repo
-        from i2code.implement.implement import validate_idea_files_committed
+        from i2code.implement.git_setup import validate_idea_files_committed
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Initialize a git repo using GitPython
@@ -47,7 +47,7 @@ class TestIdeaFilesCommitValidation:
     def test_untracked_files_raises_error(self):
         """Script should raise error when idea files are untracked."""
         from git import Repo
-        from i2code.implement.implement import validate_idea_files_committed
+        from i2code.implement.git_setup import validate_idea_files_committed
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Initialize a git repo using GitPython
@@ -70,7 +70,7 @@ class TestIdeaFilesCommitValidation:
     def test_committed_files_pass(self):
         """Validation should pass when all idea files are committed."""
         from git import Repo
-        from i2code.implement.implement import validate_idea_files_committed
+        from i2code.implement.git_setup import validate_idea_files_committed
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Initialize a git repo using GitPython

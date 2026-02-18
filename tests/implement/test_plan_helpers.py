@@ -36,7 +36,7 @@ PLAN_ALL_COMPLETED = """\
 class TestGetNextTask:
 
     def test_returns_numbered_task_for_first_uncompleted(self, tmp_path):
-        from i2code.implement.implement import get_next_task
+        from i2code.implement.git_setup import get_next_task
 
         plan_file = tmp_path / "test-plan.md"
         plan_file.write_text(PLAN_WITH_UNCOMPLETED_TASK)
@@ -49,7 +49,7 @@ class TestGetNextTask:
         assert result.task.title == "Create project structure"
 
     def test_returns_none_when_all_complete(self, tmp_path):
-        from i2code.implement.implement import get_next_task
+        from i2code.implement.git_setup import get_next_task
 
         plan_file = tmp_path / "test-plan.md"
         plan_file.write_text(PLAN_ALL_COMPLETED)
@@ -63,7 +63,7 @@ class TestGetNextTask:
 class TestIsTaskCompleted:
 
     def test_completed_task_returns_true(self, tmp_path):
-        from i2code.implement.implement import is_task_completed
+        from i2code.implement.git_setup import is_task_completed
 
         plan_file = tmp_path / "test-plan.md"
         plan_file.write_text(PLAN_ALL_COMPLETED)
@@ -71,7 +71,7 @@ class TestIsTaskCompleted:
         assert is_task_completed(str(plan_file), thread=1, task=1) is True
 
     def test_uncompleted_task_returns_false(self, tmp_path):
-        from i2code.implement.implement import is_task_completed
+        from i2code.implement.git_setup import is_task_completed
 
         plan_file = tmp_path / "test-plan.md"
         plan_file.write_text(PLAN_WITH_UNCOMPLETED_TASK)

@@ -1,7 +1,6 @@
 """Click command for the implement workflow."""
 
 import os
-import subprocess
 import sys
 
 import click
@@ -13,17 +12,16 @@ from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.workflow_state import WorkflowState
-from i2code.implement.implement import (
+from i2code.implement.git_setup import (
     validate_idea_files_committed,
     ensure_integration_branch,
-    ensure_project_setup,
     ensure_claude_permissions,
     ensure_worktree,
     ensure_slice_branch,
     get_next_task,
     get_worktree_idea_directory,
-    run_scaffolding,
 )
+from i2code.implement.project_setup import run_scaffolding
 from i2code.implement.trunk_mode import TrunkMode
 from i2code.implement.worktree_mode import WorktreeMode
 
@@ -90,51 +88,27 @@ def implement(opts: ImplementOpts, project: IdeaProject):
 
     # Delegate to isolarium VM if --isolate is set
     if opts.isolate:
-        repo = Repo(project.directory, search_parent_directories=True)
-        gh_client = GitHubClient()
+        from i2code.implement.isolate_mode import IsolateMode, RealProjectSetup, RealSubprocessRunner
 
-        # Run project scaffolding on host before delegating to VM
-        integration_branch = ensure_integration_branch(repo, project.name)
-        setup_ok = ensure_project_setup(
+        repo = Repo(project.directory, search_parent_directories=True)
+        isolate_mode = IsolateMode(
             repo=repo,
-            idea_directory=project.directory,
-            idea_name=project.name,
-            integration_branch=integration_branch,
-            interactive=not opts.non_interactive,
+            project=project,
+            gh_client=GitHubClient(),
+            project_setup=RealProjectSetup(),
+            subprocess_runner=RealSubprocessRunner(),
+        )
+        returncode = isolate_mode.execute(
+            non_interactive=opts.non_interactive,
             mock_claude=opts.mock_claude,
+            cleanup=opts.cleanup,
+            setup_only=opts.setup_only,
+            extra_prompt=opts.extra_prompt,
+            skip_ci_wait=opts.skip_ci_wait,
             ci_fix_retries=opts.ci_fix_retries,
             ci_timeout=opts.ci_timeout,
-            skip_ci_wait=opts.skip_ci_wait,
-            gh_client=gh_client,
         )
-        if not setup_ok:
-            print("Error: Project scaffolding setup failed", file=sys.stderr)
-            sys.exit(1)
-
-        rel_idea_dir = os.path.relpath(project.directory, repo.working_tree_dir)
-        isolarium_args = ["isolarium", "--name", f"i2code-{project.name}", "run"]
-        if not opts.non_interactive:
-            isolarium_args.append("--interactive")
-        cmd = isolarium_args + ["--", "i2code", "--with-sdkman", "implement", "--isolated", rel_idea_dir]
-        if opts.cleanup:
-            cmd.append("--cleanup")
-        if opts.mock_claude:
-            cmd.extend(["--mock-claude", opts.mock_claude])
-        if opts.setup_only:
-            cmd.append("--setup-only")
-        if opts.non_interactive:
-            cmd.append("--non-interactive")
-        if opts.extra_prompt:
-            cmd.extend(["--extra-prompt", opts.extra_prompt])
-        if opts.skip_ci_wait:
-            cmd.append("--skip-ci-wait")
-        if opts.ci_fix_retries != 3:
-            cmd.extend(["--ci-fix-retries", str(opts.ci_fix_retries)])
-        if opts.ci_timeout != 600:
-            cmd.extend(["--ci-timeout", str(opts.ci_timeout)])
-        print(f"Running: {' '.join(cmd)}")
-        result = subprocess.run(cmd)
-        sys.exit(result.returncode)
+        sys.exit(returncode)
 
     # Initialize or load state
     state = WorkflowState.load(project.state_file)

@@ -9,14 +9,9 @@ import shutil
 import subprocess
 import sys
 
+from i2code.implement.claude_runner import run_claude_interactive, run_claude_with_output_capture
 from i2code.implement.command_builder import CommandBuilder
-from i2code.implement.implement import (
-    generate_pr_title,
-    generate_pr_body,
-    get_failing_workflow_run,
-    run_claude_with_output_capture,
-    run_claude_interactive,
-)
+from i2code.implement.pr_helpers import generate_pr_body, generate_pr_title, get_failing_workflow_run
 
 
 class GitRepository:

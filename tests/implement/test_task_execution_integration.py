@@ -219,7 +219,7 @@ class TestTaskDetectionAndExecution:
         return pr
 
     def _assert_pr_is_open_and_not_complete(self, pr_number):
-        from i2code.implement.implement import get_pr_state, is_pr_complete
+        from i2code.implement.pr_helpers import get_pr_state, is_pr_complete
         original_cwd = os.getcwd()
         try:
             os.chdir(self.repo.tmpdir)
@@ -284,7 +284,7 @@ class TestTaskDetectionAndExecution:
 
     def _assert_new_feedback_filtering(self, pr_number):
         from i2code.implement.github_client import GitHubClient
-        from i2code.implement.implement import get_new_feedback
+        from i2code.implement.pr_helpers import get_new_feedback
 
         original_cwd = os.getcwd()
         try:
@@ -304,7 +304,7 @@ class TestTaskDetectionAndExecution:
     def _assert_state_tracks_processed_comments(self, pr_number):
         from i2code.implement.workflow_state import WorkflowState
         from i2code.implement.github_client import GitHubClient
-        from i2code.implement.implement import get_new_feedback
+        from i2code.implement.pr_helpers import get_new_feedback
 
         state_file = os.path.join(self.repo.idea_dir, f"{self.repo.idea_name}-wt-state.json")
         state = WorkflowState.load(state_file)

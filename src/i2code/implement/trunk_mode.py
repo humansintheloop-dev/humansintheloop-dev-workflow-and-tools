@@ -2,12 +2,14 @@
 
 import sys
 
-from i2code.implement.implement import (
+from i2code.implement.git_setup import (
     get_next_task,
     is_task_completed,
+    calculate_claude_permissions,
+)
+from i2code.implement.implement import (
     check_claude_success,
     print_task_failure_diagnostics,
-    calculate_claude_permissions,
 )
 
 

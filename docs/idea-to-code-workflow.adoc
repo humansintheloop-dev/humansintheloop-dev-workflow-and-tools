@@ -39,7 +39,7 @@ This is done using the link:./scripts/idea-to-code.adoc[idea-to-code.sh] orchest
 
 [source,bash]
 ----
-$ ./workflow-scripts/idea-to-code.sh docs/features/loc-outliner 
+$ i2code idea-to-plan idea-to-code docs/features/loc-outliner
 ----
 
 The orchestrator runs link:./scripts/brainstorm-idea.adoc[brainstorm-idea.sh] to first create the idea if it does not exist and then start or resume the interactive Q&A session.

@@ -43,7 +43,7 @@ brainstorm-idea.sh
 
 === Using the Orchestrator (Recommended)
 
-The easiest way to use the workflow is with the orchestrator script:
+The easiest way to use the workflow is with the orchestrator:
 
 [source,bash]
 ----
@@ -51,13 +51,13 @@ The easiest way to use the workflow is with the orchestrator script:
 mkdir ~/ideas/my-app
 
 # Run the orchestrator - it will guide you through each step
-./workflow-scripts/idea-to-code.sh ~/ideas/my-app
+i2code idea-to-plan idea-to-code ~/ideas/my-app
 ----
 
 The orchestrator will:
 
 * Detect your current workflow state
-* Present appropriate options at each step  
+* Present appropriate options at each step
 * Allow you to retry failed steps
 * Guide you through the entire process interactively
 
@@ -68,14 +68,14 @@ For a new project:
 [source,bash]
 ----
 # 1. Start with your idea
-./workflow-scripts/brainstorm-idea.sh ~/ideas/my-app
+i2code idea-to-plan brainstorm ~/ideas/my-app
 
 # 2. Create specification
-./workflow-scripts/make-spec.sh ~/ideas/my-app
+i2code idea-to-plan make-spec ~/ideas/my-app
 
 # 3. Create implementation plan
-./workflow-scripts/make-plan.sh ~/ideas/my-app
+i2code idea-to-plan make-plan ~/ideas/my-app
 
 # 4. Implement the application
-./workflow-scripts/implement-plan.sh ~/ideas/my-app
+i2code implement ~/ideas/my-app
 ----

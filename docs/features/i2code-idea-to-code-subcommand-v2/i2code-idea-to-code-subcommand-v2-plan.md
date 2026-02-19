@@ -273,16 +273,16 @@ Adds the `setup` group with two subcommands that accept `--config-dir` as a requ
 
 Removes the original `workflow-scripts/` directory and dead code after all scripts have been migrated and verified.
 
-- [ ] **Task 5.1: Remove remaining excluded files, `workflow-scripts/` directory, and update references**
+- [x] **Task 5.1: Remove remaining excluded files, `workflow-scripts/` directory, and update references**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: The remaining files in `workflow-scripts/` — `_helper.sh`, `_python_helper.sh`, `requirements.txt`, `implement-plan.sh`, `implement-with-worktree.sh`, `implement-todo-list.sh`, `refine-todo-list.sh` — are removed. The `workflow-scripts/` directory itself is deleted. All references to `workflow-scripts/` in the codebase (README, CLAUDE.md, docs, etc.) are updated or removed.
   - Evidence: `test-end-to-end.sh passes; `workflow-scripts/` directory no longer exists; `grep -r workflow-scripts` finds no stale references`
   - Steps:
-    - [ ] Run `git rm` on remaining files: `workflow-scripts/_helper.sh`, `_python_helper.sh`, `requirements.txt`, `implement-plan.sh`, `implement-with-worktree.sh`, `implement-todo-list.sh`, `refine-todo-list.sh`
-    - [ ] Remove the `workflow-scripts/` directory if not already empty
-    - [ ] Search the codebase for remaining references to `workflow-scripts/` and update or remove them
-    - [ ] Run `./test-scripts/test-end-to-end.sh` to confirm everything still passes
+    - [x] Run `git rm` on remaining files: `workflow-scripts/_helper.sh`, `_python_helper.sh`, `requirements.txt`, `implement-plan.sh`, `implement-with-worktree.sh`, `implement-todo-list.sh`, `refine-todo-list.sh`
+    - [x] Remove the `workflow-scripts/` directory if not already empty
+    - [x] Search the codebase for remaining references to `workflow-scripts/` and update or remove them
+    - [x] Run `./test-scripts/test-end-to-end.sh` to confirm everything still passes
 ## Summary
 
 This plan has 5 steel threads and 17 tasks:
@@ -546,3 +546,6 @@ Updated smoke tests to check update-project in setup --help and --help exits 0
 
 ### 2026-02-19 20:25 - mark-task-complete
 Implemented update-project subcommand: moved script and prompt template, modified script to accept --config-dir with git repo root derivation, added CLI command, pytest tests (4 pass), smoke tests pass
+
+### 2026-02-19 20:33 - mark-task-complete
+Removed all workflow-scripts/ files, directory, and updated stale references in README.adoc, docs/scripts/, docs/idea-to-code-workflow.adoc. Deleted obsolete test files for removed scripts.

@@ -108,11 +108,11 @@ To support continuous improvement, the `idea-to-code` Claude Code plugin provide
 * `claude-issue-report` - a slash command that reports an issue in `.hitl/issues`
 * hooks - record the Claude sessions (`.hitl/sessions`) and associate filed issues with the session
 
-In addition, there's are the following scripts:
+In addition, there are the following subcommands:
 
-* `workflow-scripts/review-issues.sh` script - analyzes filed issues and updates the Claude Code plugin
-* `workflow-scripts/update-claude-files-from-project.sh` - updates the template files with changes made to a project's `CLAUDE.md` and `.settings.local.json`
-* `workflow-scripts/workflow-scripts/update-project-claude-files.sh` - updates a project's `CLAUDE.md` and `.settings.local.json` from the template files.
+* `i2code improve review-issues` - analyzes filed issues and updates the Claude Code plugin
+* `i2code improve update-claude-files` - updates the template files with changes made to a project's `CLAUDE.md` and `.settings.local.json`
+* `i2code setup update-project` - updates a project's `CLAUDE.md` and `.settings.local.json` from the template files.
 
 === Examples
 

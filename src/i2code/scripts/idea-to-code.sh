@@ -24,20 +24,20 @@ detect_state() {
 # Function to run a workflow step
 run_step() {
     local description="$1"
-    local script="$2"
-    local dir="$3"
-    
+    shift
+    local cmd=("$@")
+
     echo ""
     echo "$description..."
     echo ""
-    
-    # Execute the script
-    if "$script" "$dir"; then
+
+    # Execute the command
+    if "${cmd[@]}"; then
         return 0
     else
         local exit_code=$?
         echo ""
-        echo "Error: Failed to execute $script (exit code: $exit_code)"
+        echo "Error: Failed to execute ${cmd[*]} (exit code: $exit_code)"
         return $exit_code
     fi
 }
@@ -250,9 +250,8 @@ main() {
                 choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
                     "Revise the plan" \
                     "Implement the entire plan" \
-                    "Implement a specific task" \
                     "Exit")
-                
+
                 case "$choice" in
                     1)
                         if run_step "Revising plan" "$SCRIPT_DIR/revise-plan.sh" "$dir"; then
@@ -264,7 +263,7 @@ main() {
                         fi
                         ;;
                     2)
-                        if run_step "Implementing plan" "$SCRIPT_DIR/implement-plan.sh" "$dir"; then
+                        if run_step "Implementing plan" i2code implement "$dir"; then
                             echo "Implementation completed successfully!"
                             echo ""
                             # Check if plan has uncompleted tasks
@@ -281,42 +280,12 @@ main() {
                                 exit 0
                             fi
                         else
-                            if handle_error "$SCRIPT_DIR/implement-plan.sh" "$dir"; then
+                            if handle_error "i2code implement" "$dir"; then
                                 continue  # Retry
                             fi
                         fi
                         ;;
                     3)
-                        echo ""
-                        # Use sk (skim) to select from steel thread or task headings in the plan
-                        # Supports multiple formats:
-                        # - ## Steel Thread N: title
-                        # - ### Task N.M: title
-                        # - - [ ] **Task N.M: title**
-                        # Strip leading markers to normalize to "Task N.M: title" format
-                        specific_task=$(grep -E '^## Steel Thread [0-9]+:|^### Task [0-9]+\.[0-9]+:|^- \[ \] \*\*Task [0-9]+\.[0-9]+:' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null | sed 's/^.*\(Task [0-9]\)/\1/' | sk --prompt="Select task to implement: " --height=40%)
-                        if [ -n "$specific_task" ]; then
-                            if "$SCRIPT_DIR/implement-plan.sh" "$dir" "$specific_task"; then
-                                echo "Task implementation completed successfully!"
-                                echo ""
-                                # Check if plan has uncompleted tasks
-                                if grep -q '\[ \]' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null; then
-                                    echo "Plan still has uncompleted tasks."
-                                else
-                                    echo "================================================"
-                                    echo "  All tasks complete!"
-                                    echo "================================================"
-                                fi
-                            else
-                                if handle_error "$SCRIPT_DIR/implement-plan.sh" "$dir"; then
-                                    continue  # Retry
-                                fi
-                            fi
-                        else
-                            echo "No task specified. Returning to menu."
-                        fi
-                        ;;
-                    4)
                         echo "Exiting workflow."
                         exit 0
                         ;;

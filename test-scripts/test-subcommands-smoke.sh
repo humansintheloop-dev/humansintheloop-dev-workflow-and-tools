@@ -106,5 +106,23 @@ OUTPUT=$(uv run i2code idea-to-plan make-plan --help 2>&1)
 echo "$OUTPUT"
 echo "PASS: idea-to-plan make-plan --help exits 0"
 
+# --- design-doc is listed in idea-to-plan --help ---
+echo ""
+echo "--- i2code idea-to-plan --help lists design-doc ---"
+OUTPUT=$(uv run i2code idea-to-plan --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"design-doc"* ]]; then
+    echo "FAIL: idea-to-plan --help does not list design-doc"
+    exit 1
+fi
+echo "PASS: design-doc listed in idea-to-plan --help"
+
+# --- design-doc --help exits 0 ---
+echo ""
+echo "--- i2code idea-to-plan design-doc --help exits 0 ---"
+OUTPUT=$(uv run i2code idea-to-plan design-doc --help 2>&1)
+echo "$OUTPUT"
+echo "PASS: idea-to-plan design-doc --help exits 0"
+
 echo ""
 echo "=== All Subcommand Smoke Tests Passed ==="

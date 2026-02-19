@@ -50,3 +50,11 @@ def make_plan_cmd(args):
     """Create an implementation plan from a specification."""
     result = run_script("make-plan.sh", args)
     sys.exit(result.returncode)
+
+
+@idea_to_plan.command("design-doc")
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def design_doc_cmd(args):
+    """Create a design document from a specification."""
+    result = run_script("create-design-doc.sh", args)
+    sys.exit(result.returncode)

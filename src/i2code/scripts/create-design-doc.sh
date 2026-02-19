@@ -18,7 +18,7 @@ if [ -f "$DESIGN_FILE" ]; then
 fi
 
 export IDEA_FILE DISCUSSION_FILE SPEC_FILE
-export DESIGN_SKILLS=$(ls -1 "$DIR/../skills" | sed 's/^/idea-to-code:/' | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
+export DESIGN_SKILLS=$("$DIR/list-plugin-skills.sh")
 PROMPT=$(envsubst < "$DIR/../prompt-templates/create-design-doc.md")
 
 SESSION_ID=$(_session_id)

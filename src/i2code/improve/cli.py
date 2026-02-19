@@ -34,3 +34,13 @@ def review_issues_cmd(args):
     """Review and triage active issues from HITL sessions."""
     result = run_script("review-issues.sh", args)
     sys.exit(result.returncode)
+
+
+@improve.command(
+    "update-claude-files", context_settings={"ignore_unknown_options": True}
+)
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def update_claude_files_cmd(args):
+    """Review project Claude files and update config-files templates."""
+    result = run_script("update-claude-files-from-project.sh", args)
+    sys.exit(result.returncode)

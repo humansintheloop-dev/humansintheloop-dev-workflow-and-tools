@@ -7,7 +7,7 @@ IMPORTANT: Use simple commands that you have permission to execute. Avoid comple
 When running scripts:
 - Run scripts directly: `./script.sh` (NOT `bash ./script.sh`)
 - Do not append `2>&1` to redirect stderr
-- Don not use `git -C directory` - cd to the top-level directory and run git commands from there
+- Do not use `git -C directory` - cd to the top-level directory and run git commands from there
 
 When copying or moving files:
 - Avoid compound commands with `&&` - run commands separately

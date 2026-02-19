@@ -351,15 +351,15 @@ Replaces the `idea-to-plan` group with `go` (top-level), `idea`, `spec`, `design
     - [x] Update `tests/script-command/test_all_script_commands.py`: replace the 7 `idea-to-plan` entries with new entries for `go`, `idea brainstorm`, `spec create`, `spec revise`, `design create`
     - [x] Run pytest to verify all parametrized tests pass
 
-- [ ] **Task 7.2: Add `create` and `revise` subcommands to existing `plan` group**
+- [x] **Task 7.2: Add `create` and `revise` subcommands to existing `plan` group**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/script-command/ tests/plan-manager/ -v -m unit`
   - Observable: `i2code plan create my-dir` invokes `make-plan.sh`. `i2code plan revise my-dir` invokes `revise-plan.sh`. Existing `plan` subcommands (get-next-task, mark-task-complete, etc.) are unaffected.
   - Evidence: `parametrized pytest tests verify correct script invocation; existing plan-manager tests still pass`
   - Steps:
-    - [ ] Add `script_command()` calls to `src/i2code/plan/cli.py` for `create` → `make-plan.sh` and `revise` → `revise-plan.sh`
-    - [ ] Update `tests/script-command/test_all_script_commands.py`: replace the `idea-to-plan make-plan` and `idea-to-plan revise-plan` entries with `plan create` and `plan revise`
-    - [ ] Run pytest for both `tests/script-command/` and `tests/plan-manager/` to verify no regressions
+    - [x] Add `script_command()` calls to `src/i2code/plan/cli.py` for `create` → `make-plan.sh` and `revise` → `revise-plan.sh`
+    - [x] Update `tests/script-command/test_all_script_commands.py`: replace the `idea-to-plan make-plan` and `idea-to-plan revise-plan` entries with `plan create` and `plan revise`
+    - [x] Run pytest for both `tests/script-command/` and `tests/plan-manager/` to verify no regressions
 
 - [ ] **Task 7.3: Remove `idea_to_plan` package and update smoke tests**
   - TaskType: INFRA
@@ -678,3 +678,6 @@ Added Steel Thread 7 (3 tasks) to rename the `idea-to-plan` group into `go` (top
 
 ### 2026-02-20 08:10 - mark-task-complete
 Created go, idea, spec, design commands with parametrized tests — 49 tests pass
+
+### 2026-02-20 08:14 - mark-task-complete
+Added create and revise script_command() calls to plan/cli.py; parametrized tests verify correct script invocation; all 138 tests pass

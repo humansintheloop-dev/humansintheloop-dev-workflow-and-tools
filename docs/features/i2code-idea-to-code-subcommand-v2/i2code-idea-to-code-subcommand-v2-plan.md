@@ -298,15 +298,15 @@ Replaces the repeated Click decorator + `run_script` + `sys.exit` pattern with a
     - [x] Rewrite `src/i2code/improve/cli.py` to use `script_command()` — replace the four decorated function definitions with four `script_command()` calls
     - [x] Run all improve tests and smoke tests to confirm no regressions
 
-- [ ] **Task 6.2: Convert `setup` and `idea-to-plan` groups to use `script_command()`**
+- [x] **Task 6.2: Convert `setup` and `idea-to-plan` groups to use `script_command()`**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/setup-cmd/ tests/idea-to-plan/ -v -m unit`
   - Observable: `setup_cmd/cli.py` and `idea_to_plan/cli.py` use `script_command()` for all subcommands — no per-command function definitions remain. All existing tests still pass unchanged.
   - Evidence: `pytest tests pass with exit code 0; smoke tests pass`
   - Steps:
-    - [ ] Rewrite `src/i2code/setup_cmd/cli.py` to use `script_command()` — replace the two decorated function definitions with two `script_command()` calls
-    - [ ] Rewrite `src/i2code/idea_to_plan/cli.py` to use `script_command()` — replace the seven decorated function definitions with seven `script_command()` calls
-    - [ ] Run all setup-cmd, idea-to-plan tests and smoke tests to confirm no regressions
+    - [x] Rewrite `src/i2code/setup_cmd/cli.py` to use `script_command()` — replace the two decorated function definitions with two `script_command()` calls
+    - [x] Rewrite `src/i2code/idea_to_plan/cli.py` to use `script_command()` — replace the seven decorated function definitions with seven `script_command()` calls
+    - [x] Run all setup-cmd, idea-to-plan tests and smoke tests to confirm no regressions
 
 - [ ] **Task 6.3: Parametrize duplicate test classes into a single shared test**
   - TaskType: REFACTOR
@@ -591,3 +591,15 @@ Removed all workflow-scripts/ files, directory, and updated stale references in 
 
 ### 2026-02-20 07:34 - mark-task-complete
 Extracted script_command() factory, added tests, converted improve/cli.py — all 26 tests pass
+
+### 2026-02-20 07:38 - mark-step-complete
+Replaced two decorated function definitions with two script_command() calls
+
+### 2026-02-20 07:38 - mark-step-complete
+Replaced seven decorated function definitions with seven script_command() calls
+
+### 2026-02-20 07:38 - mark-step-complete
+All 24 setup-cmd and idea-to-plan tests pass; all 17 improve tests also pass
+
+### 2026-02-20 07:38 - mark-task-complete
+Converted setup_cmd/cli.py (2 commands) and idea_to_plan/cli.py (7 commands) to use script_command(); all 24 tests pass

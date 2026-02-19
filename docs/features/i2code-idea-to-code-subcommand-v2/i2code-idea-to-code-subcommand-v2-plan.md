@@ -361,16 +361,16 @@ Replaces the `idea-to-plan` group with `go` (top-level), `idea`, `spec`, `design
     - [x] Update `tests/script-command/test_all_script_commands.py`: replace the `idea-to-plan make-plan` and `idea-to-plan revise-plan` entries with `plan create` and `plan revise`
     - [x] Run pytest for both `tests/script-command/` and `tests/plan-manager/` to verify no regressions
 
-- [ ] **Task 7.3: Remove `idea_to_plan` package and update smoke tests**
+- [x] **Task 7.3: Remove `idea_to_plan` package and update smoke tests**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `src/i2code/idea_to_plan/` directory is removed. `i2code --help` lists `go`, `idea`, `spec`, `design` (and no longer lists `idea-to-plan`). Smoke tests validate all new groups and subcommands are discoverable.
   - Evidence: `test-end-to-end.sh passes; i2code --help no longer shows idea-to-plan`
   - Steps:
-    - [ ] Remove the `idea_to_plan` import and `main.add_command(idea_to_plan)` from `src/i2code/cli.py`
-    - [ ] Delete `src/i2code/idea_to_plan/` directory
-    - [ ] Rewrite `test-scripts/test-subcommands-smoke.sh`: replace the `idea-to-plan` section with tests for `go --help` exits 0, `idea --help` lists `brainstorm`, `idea brainstorm --help` exits 0, `spec --help` lists `create` and `revise`, `spec create --help` exits 0, `spec revise --help` exits 0, `plan --help` lists `create` and `revise`, `plan create --help` exits 0, `plan revise --help` exits 0, `design --help` lists `create`, `design create --help` exits 0
-    - [ ] Run `./test-scripts/test-end-to-end.sh` to confirm everything passes
+    - [x] Remove the `idea_to_plan` import and `main.add_command(idea_to_plan)` from `src/i2code/cli.py`
+    - [x] Delete `src/i2code/idea_to_plan/` directory
+    - [x] Rewrite `test-scripts/test-subcommands-smoke.sh`: replace the `idea-to-plan` section with tests for `go --help` exits 0, `idea --help` lists `brainstorm`, `idea brainstorm --help` exits 0, `spec --help` lists `create` and `revise`, `spec create --help` exits 0, `spec revise --help` exits 0, `plan --help` lists `create` and `revise`, `plan create --help` exits 0, `plan revise --help` exits 0, `design --help` lists `create`, `design create --help` exits 0
+    - [x] Run `./test-scripts/test-end-to-end.sh` to confirm everything passes
 
 ---
 
@@ -681,3 +681,6 @@ Created go, idea, spec, design commands with parametrized tests — 49 tests pas
 
 ### 2026-02-20 08:14 - mark-task-complete
 Added create and revise script_command() calls to plan/cli.py; parametrized tests verify correct script invocation; all 138 tests pass
+
+### 2026-02-20 08:21 - mark-task-complete
+Removed idea_to_plan package, updated cli.py, rewrote smoke tests for new groups

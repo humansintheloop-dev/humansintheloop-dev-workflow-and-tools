@@ -121,14 +121,14 @@
 
 ## Steel Thread 5: Consolidate `test_pull_request_review_processor.py` (Rank 4)
 
-- [ ] **Task 5.1: Move static method tests from `test_github_pr_leftovers.py`**
+- [x] **Task 5.1: Move static method tests from `test_github_pr_leftovers.py`**
   - TaskType: code
   - Observable: 5 classes (14 tests) added
   - Evidence: `uv run --with pytest pytest tests/implement/test_pull_request_review_processor.py -v`
   - Steps:
-    - [ ] Move `TestFormatAllFeedback` (4), `TestGetNewFeedback` (3), `TestParseTriageResult` (3), `TestGetFeedbackByIds` (2), `TestDetermineCommentType` (2) from `test_github_pr_leftovers.py`
-    - [ ] Delete `TestFeedbackDetection` (2 tests) from `test_claude_invocation_leftovers.py` — duplicates `TestGetNewFeedback`
-    - [ ] Run tests
+    - [x] Move `TestFormatAllFeedback` (4), `TestGetNewFeedback` (3), `TestParseTriageResult` (3), `TestGetFeedbackByIds` (2), `TestDetermineCommentType` (2) from `test_github_pr_leftovers.py`
+    - [x] Delete `TestFeedbackDetection` (2 tests) from `test_claude_invocation_leftovers.py` — duplicates `TestGetNewFeedback`
+    - [x] Run tests
 
 ## Steel Thread 6: Consolidate `test_git_repository*.py` (Rank 5)
 
@@ -314,3 +314,6 @@ All 19 tests pass in test_implement_command.py, all 20 tests pass in test_github
 
 ### 2026-02-19 09:12 - mark-task-complete
 TestDeferredPRCreation moved to test_implement_command.py, all tests pass
+
+### 2026-02-19 09:16 - mark-task-complete
+Moved 5 test classes (14 tests) to test_pull_request_review_processor.py, deleted duplicate TestFeedbackDetection from test_claude_invocation_leftovers.py

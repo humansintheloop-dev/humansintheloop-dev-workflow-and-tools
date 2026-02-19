@@ -213,40 +213,6 @@ class TestPushToSliceBranch:
 
 
 
-@pytest.mark.unit
-class TestFeedbackDetection:
-    """Test detection of new PR comments and reviews."""
-
-    def test_get_new_comments_filters_processed(self):
-        """Should return only comments not in processed_comment_ids."""
-        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
-
-        all_comments = [
-            {"id": 1, "body": "Already processed"},
-            {"id": 2, "body": "New comment"},
-            {"id": 3, "body": "Another new one"}
-        ]
-        processed_ids = [1]
-
-        new_comments = PullRequestReviewProcessor._get_new_feedback(all_comments, processed_ids)
-
-        assert len(new_comments) == 2
-        assert all(c["id"] not in processed_ids for c in new_comments)
-
-    def test_get_new_comments_returns_empty_if_all_processed(self):
-        """Should return empty list if all comments are processed."""
-        from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
-
-        all_comments = [
-            {"id": 1, "body": "Processed"},
-            {"id": 2, "body": "Also processed"}
-        ]
-        processed_ids = [1, 2]
-
-        new_comments = PullRequestReviewProcessor._get_new_feedback(all_comments, processed_ids)
-
-        assert len(new_comments) == 0
-
 
 @pytest.mark.unit
 class TestMainBranchAdvancement:

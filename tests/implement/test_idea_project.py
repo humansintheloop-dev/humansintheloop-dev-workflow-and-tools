@@ -186,3 +186,20 @@ class TestIsTaskCompleted:
         project = _make_project_with_plan(tmp_path, PLAN_WITH_UNCOMPLETED_TASK)
 
         assert project.is_task_completed(thread=1, task=1) is False
+
+
+@pytest.mark.unit
+class TestWorktreeIdeaDirectory:
+    """Test that Claude is invoked with worktree idea directory, not main repo."""
+
+    def test_worktree_idea_project(self):
+        """Should return an IdeaProject for the path within the worktree."""
+        project = IdeaProject("/home/user/my-repo/docs/ideas/my-feature")
+
+        result = project.worktree_idea_project(
+            "/tmp/my-repo-wt-my-feature",
+            "/home/user/my-repo",
+        )
+
+        assert isinstance(result, IdeaProject)
+        assert result.directory == "/tmp/my-repo-wt-my-feature/docs/ideas/my-feature"

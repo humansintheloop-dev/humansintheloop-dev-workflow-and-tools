@@ -153,18 +153,18 @@ Completes the `idea-to-plan` group with all remaining subcommands, including ski
     - [x] Create tests/idea-to-plan/test_make_plan_cli.py
     - [x] Create test-scripts/test-list-plugin-skills.sh that validates output format (add to test-end-to-end.sh)
     - [x] Update test-scripts/test-subcommands-smoke.sh to check for make-plan in idea-to-plan --help, and verify uv run i2code idea-to-plan make-plan --help exits 0
-- [ ] **Task 2.5: `i2code idea-to-plan design-doc` subcommand with skill discovery**
+- [x] **Task 2.5: `i2code idea-to-plan design-doc` subcommand with skill discovery**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan design-doc my-dir`
   - Observable: `create-design-doc.sh` (in `src/i2code/scripts/`) calls `list-plugin-skills.sh` instead of `ls -1 "/../skills"`. The `design-doc` subcommand invokes modified `create-design-doc.sh` and propagates exit code.
   - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies create-design-doc.sh is invoked with correct arguments`
   - Steps:
-    - [ ] git mv workflow-scripts/create-design-doc.sh to src/i2code/scripts/create-design-doc.sh
-    - [ ] git mv prompt-templates/create-design-doc.md to src/i2code/prompt-templates/create-design-doc.md
-    - [ ] Modify src/i2code/scripts/create-design-doc.sh to replace ls -1 "$DIR/../skills" | sed ... with a call to $DIR/list-plugin-skills.sh
-    - [ ] Add design_doc_cmd to src/i2code/idea_to_plan/cli.py
-    - [ ] Create tests/idea-to-plan/test_design_doc_cli.py
-    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for design-doc in idea-to-plan --help, and verify uv run i2code idea-to-plan design-doc --help exits 0
+    - [x] git mv workflow-scripts/create-design-doc.sh to src/i2code/scripts/create-design-doc.sh
+    - [x] git mv prompt-templates/create-design-doc.md to src/i2code/prompt-templates/create-design-doc.md
+    - [x] Modify src/i2code/scripts/create-design-doc.sh to replace ls -1 "$DIR/../skills" | sed ... with a call to $DIR/list-plugin-skills.sh
+    - [x] Add design_doc_cmd to src/i2code/idea_to_plan/cli.py
+    - [x] Create tests/idea-to-plan/test_design_doc_cli.py
+    - [x] Update test-scripts/test-subcommands-smoke.sh to check for design-doc in idea-to-plan --help, and verify uv run i2code idea-to-plan design-doc --help exits 0
 - [ ] **Task 2.6: Modify `idea-to-code.sh` to call `i2code implement` instead of `implement-plan.sh`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan run my-dir`
@@ -462,3 +462,6 @@ Added make-plan checks to test-subcommands-smoke.sh
 
 ### 2026-02-19 19:31 - mark-task-complete
 All 8 steps complete: git-moved make-plan.sh and prompt template, created list-plugin-skills.sh, modified make-plan.sh to use it, added CLI command, pytest tests, shell tests, and smoke tests
+
+### 2026-02-19 19:37 - mark-task-complete
+Implemented design-doc subcommand with plugin skill discovery

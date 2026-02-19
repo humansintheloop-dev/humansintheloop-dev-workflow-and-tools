@@ -132,16 +132,16 @@
 
 ## Steel Thread 6: Consolidate `test_git_repository*.py` (Rank 5)
 
-- [ ] **Task 6.1: Create `test_git_repository_setup.py`**
+- [x] **Task 6.1: Create `test_git_repository_setup.py`**
   - TaskType: code
   - Observable: New file with infrastructure/setup tests, `test_git_infrastructure.py` deleted
   - Evidence: `uv run --with pytest pytest tests/implement/test_git_repository*.py -v`
   - Steps:
-    - [ ] Create `test_git_repository_setup.py` with `TestIntegrationBranch` (7), unique `TestWorktree` (3), `TestSliceBranch` (3), `TestSliceNameSanitization` (4) from `test_git_infrastructure.py`
-    - [ ] Move `TestEnsurePrOnGitRepository` (3 tests) from `test_github_pr_leftovers.py`
-    - [ ] Delete 2 duplicate worktree tests (already in `test_git_repository.py`)
-    - [ ] Delete `test_git_infrastructure.py`
-    - [ ] Run tests
+    - [x] Create `test_git_repository_setup.py` with `TestIntegrationBranch` (7), unique `TestWorktree` (3), `TestSliceBranch` (3), `TestSliceNameSanitization` (4) from `test_git_infrastructure.py`
+    - [x] Move `TestEnsurePrOnGitRepository` (3 tests) from `test_github_pr_leftovers.py`
+    - [x] Delete 2 duplicate worktree tests (already in `test_git_repository.py`)
+    - [x] Delete `test_git_infrastructure.py`
+    - [x] Run tests
 
 ## Steel Thread 7: Create `test_pr_helpers.py` (Rank 6)
 
@@ -317,3 +317,6 @@ TestDeferredPRCreation moved to test_implement_command.py, all tests pass
 
 ### 2026-02-19 09:16 - mark-task-complete
 Moved 5 test classes (14 tests) to test_pull_request_review_processor.py, deleted duplicate TestFeedbackDetection from test_claude_invocation_leftovers.py
+
+### 2026-02-19 09:21 - mark-task-complete
+Created test_git_repository_setup.py with 20 tests (7 TestIntegrationBranch, 3 unique TestWorktree, 3 TestSliceBranch, 4 TestSliceNameSanitization, 3 TestEnsurePrOnGitRepository). Deleted 2 duplicate worktree tests and test_git_infrastructure.py. All 41 tests pass.

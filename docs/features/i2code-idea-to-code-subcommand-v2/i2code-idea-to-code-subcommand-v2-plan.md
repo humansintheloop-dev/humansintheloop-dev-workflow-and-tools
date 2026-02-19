@@ -92,14 +92,14 @@ Proves that shell scripts can be bundled as package data, located at runtime, in
     - [x] Create `tests/idea-to-plan/__init__.py` and `tests/idea-to-plan/conftest.py` (mark tests as `unit`)
     - [x] Create `tests/idea-to-plan/test_brainstorm_cli.py` that uses `CliRunner` and mocks `subprocess.run` to verify correct invocation
 
-- [ ] **Task 1.3: CLI smoke tests validate idea-to-plan group and brainstorm subcommand are discoverable**
+- [x] **Task 1.3: CLI smoke tests validate idea-to-plan group and brainstorm subcommand are discoverable**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `i2code --help` lists `idea-to-plan` group; `i2code idea-to-plan --help` lists `brainstorm` subcommand with its help text
   - Evidence: `test-scripts/test-subcommands-smoke.sh` passes within `test-end-to-end.sh`; CI runs `test-end-to-end.sh` and passes
   - Steps:
-    - [ ] Create `test-scripts/test-subcommands-smoke.sh` that verifies `uv run i2code --help` contains `idea-to-plan`, `uv run i2code idea-to-plan --help` contains `brainstorm`, and `uv run i2code idea-to-plan brainstorm --help` exits 0 (follow the pattern in `test-scripts/test-plan-cli-smoke.sh`)
-    - [ ] Add `"$SCRIPT_DIR/test-subcommands-smoke.sh"` to `test-scripts/test-end-to-end.sh` after the plan CLI smoke tests line
+    - [x] Create `test-scripts/test-subcommands-smoke.sh` that verifies `uv run i2code --help` contains `idea-to-plan`, `uv run i2code idea-to-plan --help` contains `brainstorm`, and `uv run i2code idea-to-plan brainstorm --help` exits 0 (follow the pattern in `test-scripts/test-plan-cli-smoke.sh`)
+    - [x] Add `"$SCRIPT_DIR/test-subcommands-smoke.sh"` to `test-scripts/test-end-to-end.sh` after the plan CLI smoke tests line
 
 ---
 
@@ -393,3 +393,12 @@ Created test_script_runner.py with 5 tests: resolves path, ensures executability
 
 ### 2026-02-19 18:55 - mark-task-complete
 All 5 tests pass: resolves path, ensures executability, forwards args, returns result, raises for missing script
+
+### 2026-02-19 19:06 - mark-step-complete
+Created test-subcommands-smoke.sh with 3 checks: idea-to-plan in i2code --help, brainstorm in idea-to-plan --help, brainstorm --help exits 0
+
+### 2026-02-19 19:06 - mark-step-complete
+Added test-subcommands-smoke.sh to test-end-to-end.sh after plan CLI smoke tests
+
+### 2026-02-19 19:06 - mark-task-complete
+All 3 smoke tests pass: idea-to-plan in i2code --help, brainstorm in idea-to-plan --help, brainstorm --help exits 0. Integrated into test-end-to-end.sh.

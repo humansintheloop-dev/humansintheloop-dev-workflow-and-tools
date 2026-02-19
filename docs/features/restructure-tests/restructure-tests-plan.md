@@ -91,13 +91,13 @@
 
 ## Steel Thread 3: Consolidate `test_workflow_state.py` (Rank 2)
 
-- [ ] **Task 3.1: Move stray WorkflowState test**
+- [x] **Task 3.1: Move stray WorkflowState test**
   - TaskType: code
   - Observable: `test_includes_processed_conversation_ids` added to `TestWorkflowStateDefaultState`
   - Evidence: `uv run --with pytest pytest tests/implement/test_workflow_state.py -v`
   - Steps:
-    - [ ] Move `TestDefaultStateIncludesConversationIds` (1 test) from `test_github_pr_leftovers.py` into existing `TestWorkflowStateDefaultState`
-    - [ ] Run tests
+    - [x] Move `TestDefaultStateIncludesConversationIds` (1 test) from `test_github_pr_leftovers.py` into existing `TestWorkflowStateDefaultState`
+    - [x] Run tests
 
 ## Steel Thread 4: Consolidate `test_implement_command.py` (Rank 3)
 
@@ -299,3 +299,6 @@ All 32 tests in test_command_builder.py pass; 70 leftover tests pass
 
 ### 2026-02-19 09:00 - mark-task-complete
 7 unique tests moved to test_command_builder.py; 3 duplicates deleted; source files renamed to _leftovers
+
+### 2026-02-19 09:03 - mark-task-complete
+Moved test_init_state_includes_processed_conversation_ids from TestDefaultStateIncludesConversationIds in test_github_pr_leftovers.py into TestWorkflowStateDefaultState in test_workflow_state.py

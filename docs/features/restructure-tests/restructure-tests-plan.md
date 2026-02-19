@@ -197,17 +197,17 @@
 
 ## Steel Thread 12: Delete Emptied Source Files & Verify
 
-- [ ] **Task 12.1: Delete emptied leftovers files and verify**
+- [x] **Task 12.1: Delete emptied leftovers files and verify**
   - TaskType: code
   - Observable: `test_github_pr_leftovers.py` and `test_claude_invocation_leftovers.py` deleted
   - Evidence: `uv run --with pytest pytest tests/implement/ -v -m unit`
   - Steps:
-    - [ ] Verify `test_github_pr_leftovers.py` has no remaining test classes
-    - [ ] Delete `test_github_pr_leftovers.py`
-    - [ ] Verify `test_claude_invocation_leftovers.py` has no remaining test classes
-    - [ ] Delete `test_claude_invocation_leftovers.py`
-    - [ ] Run full unit test suite
-    - [ ] Verify each test file maps to exactly one production module
+    - [x] Verify `test_github_pr_leftovers.py` has no remaining test classes
+    - [x] Delete `test_github_pr_leftovers.py`
+    - [x] Verify `test_claude_invocation_leftovers.py` has no remaining test classes
+    - [x] Delete `test_claude_invocation_leftovers.py`
+    - [x] Run full unit test suite
+    - [x] Verify each test file maps to exactly one production module
 
 ---
 
@@ -341,3 +341,6 @@ All tests pass in both files
 
 ### 2026-02-19 09:41 - mark-task-complete
 Moved test_worktree_idea_project to test_idea_project.py, all tests pass
+
+### 2026-02-19 09:46 - mark-task-complete
+Deleted emptied test_github_pr_leftovers.py and test_claude_invocation_leftovers.py; 341 unit tests pass

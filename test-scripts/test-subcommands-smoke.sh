@@ -124,5 +124,23 @@ OUTPUT=$(uv run i2code idea-to-plan design-doc --help 2>&1)
 echo "$OUTPUT"
 echo "PASS: idea-to-plan design-doc --help exits 0"
 
+# --- run is listed in idea-to-plan --help ---
+echo ""
+echo "--- i2code idea-to-plan --help lists run ---"
+OUTPUT=$(uv run i2code idea-to-plan --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"run"* ]]; then
+    echo "FAIL: idea-to-plan --help does not list run"
+    exit 1
+fi
+echo "PASS: run listed in idea-to-plan --help"
+
+# --- run --help exits 0 ---
+echo ""
+echo "--- i2code idea-to-plan run --help exits 0 ---"
+OUTPUT=$(uv run i2code idea-to-plan run --help 2>&1)
+echo "$OUTPUT"
+echo "PASS: idea-to-plan run --help exits 0"
+
 echo ""
 echo "=== All Subcommand Smoke Tests Passed ==="

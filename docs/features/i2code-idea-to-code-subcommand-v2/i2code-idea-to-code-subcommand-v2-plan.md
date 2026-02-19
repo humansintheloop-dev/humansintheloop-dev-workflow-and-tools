@@ -283,14 +283,53 @@ Removes the original `workflow-scripts/` directory and dead code after all scrip
     - [x] Remove the `workflow-scripts/` directory if not already empty
     - [x] Search the codebase for remaining references to `workflow-scripts/` and update or remove them
     - [x] Run `./test-scripts/test-end-to-end.sh` to confirm everything still passes
+## Steel Thread 6: Extract Script Command Factory to Eliminate Boilerplate
+
+Replaces the repeated Click decorator + `run_script` + `sys.exit` pattern with a `script_command()` factory function. Each subcommand becomes a single function call. Tests are parametrized accordingly.
+
+- [ ] **Task 6.1: Extract `script_command()` factory and convert `improve` group**
+  - TaskType: REFACTOR
+  - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/improve/ tests/script-runner/ -v -m unit`
+  - Observable: A new `script_command(group, name, script_name, help_text)` function in `src/i2code/script_command.py` generates Click commands that accept unprocessed args, call `run_script`, and `sys.exit`. `improve/cli.py` uses `script_command()` for all four subcommands — no per-command function definitions remain. All existing tests still pass unchanged.
+  - Evidence: `pytest tests pass with exit code 0; smoke tests pass`
+  - Steps:
+    - [ ] Create `src/i2code/script_command.py` with `script_command(group, name, script_name, help_text)` that registers a Click command on `group` using `context_settings={"ignore_unknown_options": True}`, `@click.argument("args", nargs=-1, type=click.UNPROCESSED)`, calls `run_script(script_name, args)`, and `sys.exit(result.returncode)`
+    - [ ] Create `tests/script-runner/test_script_command.py` with tests verifying: command is registered on group, help text is set, args are forwarded to `run_script`, exit code is propagated
+    - [ ] Rewrite `src/i2code/improve/cli.py` to use `script_command()` — replace the four decorated function definitions with four `script_command()` calls
+    - [ ] Run all improve tests and smoke tests to confirm no regressions
+
+- [ ] **Task 6.2: Convert `setup` and `idea-to-plan` groups to use `script_command()`**
+  - TaskType: REFACTOR
+  - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/setup-cmd/ tests/idea-to-plan/ -v -m unit`
+  - Observable: `setup_cmd/cli.py` and `idea_to_plan/cli.py` use `script_command()` for all subcommands — no per-command function definitions remain. All existing tests still pass unchanged.
+  - Evidence: `pytest tests pass with exit code 0; smoke tests pass`
+  - Steps:
+    - [ ] Rewrite `src/i2code/setup_cmd/cli.py` to use `script_command()` — replace the two decorated function definitions with two `script_command()` calls
+    - [ ] Rewrite `src/i2code/idea_to_plan/cli.py` to use `script_command()` — replace the seven decorated function definitions with seven `script_command()` calls
+    - [ ] Run all setup-cmd, idea-to-plan tests and smoke tests to confirm no regressions
+
+- [ ] **Task 6.3: Parametrize duplicate test classes into a single shared test**
+  - TaskType: REFACTOR
+  - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/script-command/ -v -m unit`
+  - Observable: A single parametrized test class in `tests/script-command/test_all_script_commands.py` covers all 13 script commands. Each entry specifies (cli_args, expected_script_name, expected_forwarded_args). Variant argument patterns (extra flags, `--` separator) are additional entries in the parametrized list. Help-output tests are dropped (already covered by smoke tests). The 13 per-subcommand test files are removed. Test count is equal or greater than before.
+  - Evidence: `pytest tests pass with exit code 0; test count is equal or greater than before`
+  - Steps:
+    - [ ] Create `tests/script-command/__init__.py` and `tests/script-command/conftest.py`
+    - [ ] Create `tests/script-command/test_all_script_commands.py` with `SCRIPT_COMMANDS` list of (cli_args, script_name, expected_args) tuples — include multiple entries per subcommand where variant arg patterns exist (e.g., extra flags, `--` separator forwarding). Parametrize `TestScriptCommand` class with `test_invokes_correct_script_with_args` and `test_propagates_script_exit_code`.
+    - [ ] Remove the 13 per-subcommand test files now covered by the parametrized test
+    - [ ] Run full test suite and smoke tests to confirm no regressions
+
+---
+
 ## Summary
 
-This plan has 5 steel threads and 17 tasks:
+This plan has 6 steel threads and 20 tasks:
 - **Thread 1** (3 tasks): Script runner infrastructure, first subcommand (`brainstorm`), CI smoke tests
 - **Thread 2** (7 tasks): Remaining `idea-to-plan` subcommands including skill discovery helper
 - **Thread 3** (4 tasks): `improve` subcommands including config-dir modification
 - **Thread 4** (2 tasks): `setup` subcommands with config-dir modifications
 - **Thread 5** (1 task): Remove remaining excluded files and `workflow-scripts/` directory
+- **Thread 6** (3 tasks): Extract `script_command()` factory, convert all groups, parametrize tests
 
 ---
 

@@ -166,13 +166,13 @@
 
 ## Steel Thread 9: Consolidate `test_claude_runner.py` (Rank 8)
 
-- [ ] **Task 9.1: Move claude_runner tests**
+- [x] **Task 9.1: Move claude_runner tests**
   - TaskType: code
   - Observable: 2 classes (6 tests) added
   - Evidence: `uv run --with pytest pytest tests/implement/test_claude_runner.py -v`
   - Steps:
-    - [ ] Move `TestRunClaudeWithOutputCapture` (2 tests) and `TestClaudeInvocationResult` (4 tests) from `test_claude_invocation_leftovers.py`
-    - [ ] Run tests
+    - [x] Move `TestRunClaudeWithOutputCapture` (2 tests) and `TestClaudeInvocationResult` (4 tests) from `test_claude_invocation_leftovers.py`
+    - [x] Run tests
 
 ## Steel Thread 10: Create `test_git_setup.py` (Rank 9)
 
@@ -323,3 +323,12 @@ Created test_git_repository_setup.py with 20 tests (7 TestIntegrationBranch, 3 u
 
 ### 2026-02-19 09:26 - mark-task-complete
 Created test_pr_helpers.py with 21 tests from 7 classes; removed from source files
+
+### 2026-02-19 09:33 - mark-step-complete
+Moved TestRunClaudeWithOutputCapture and TestClaudeInvocationResult from test_claude_invocation_leftovers.py to test_claude_runner.py
+
+### 2026-02-19 09:33 - mark-step-complete
+All 16 tests in test_claude_runner.py pass, all 22 tests in test_claude_invocation_leftovers.py pass
+
+### 2026-02-19 09:33 - mark-task-complete
+Moved 2 classes (6 tests) to test_claude_runner.py, all tests pass

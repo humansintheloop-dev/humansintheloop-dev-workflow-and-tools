@@ -249,6 +249,24 @@ REFACTOR tasks:
 
 ---
 
+## Steel thread heading format (MANDATORY)
+
+Steel thread headings MUST use this exact format:
+
+```
+## Steel Thread N: Description
+```
+
+Example:
+```
+## Steel Thread 1: Spring Boot Application with Health Check
+## Steel Thread 2: Create Customer Endpoint
+```
+
+Do NOT use `## Thread N:` — it must be `## Steel Thread N:`.
+
+---
+
 ## Task structure (MANDATORY FORMAT)
 
 Each task MUST use this exact format:

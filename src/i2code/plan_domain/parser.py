@@ -7,7 +7,7 @@ from i2code.plan_domain.thread import Thread
 from i2code.plan_domain.task import Task
 
 
-_THREAD_HEADING_RE = re.compile(r'^## Steel Thread (\d+):')
+_THREAD_HEADING_RE = re.compile(r'^## (?:Steel )?Thread (\d+):')
 _TASK_LINE_RE = re.compile(r'^- \[[ x]\] \*\*Task \d+\.\d+:')
 
 

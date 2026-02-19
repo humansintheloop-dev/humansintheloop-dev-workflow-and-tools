@@ -60,8 +60,42 @@ All done.
 """
 
 
+PLAN_WITH_THREAD_HEADING = """\
+# Implementation Plan: Test Plan
+
+---
+
+## Thread 1: First Thread
+Intro.
+
+- [ ] **Task 1.1: First task**
+  - TaskType: INFRA
+  - Entrypoint: `echo hello`
+  - Observable: Something happens
+  - Evidence: `echo done`
+  - Steps:
+    - [ ] Step one
+
+---
+
+## Summary
+Done.
+"""
+
+
 class TestGetNextTaskCli:
     """CLI integration: get-next-task outputs formatted task info."""
+
+    def test_parses_thread_heading_without_steel_prefix(self, tmp_path):
+        """Plans using '## Thread N:' headings should work the same as '## Steel Thread N:'."""
+        plan_file = tmp_path / "plan.md"
+        plan_file.write_text(PLAN_WITH_THREAD_HEADING)
+
+        runner = CliRunner(catch_exceptions=False)
+        result = runner.invoke(get_next_task_cmd, [str(plan_file)])
+
+        assert result.exit_code == 0
+        assert "Thread 1, Task 1.1: First task" in result.output
 
     def test_outputs_formatted_task_info(self, tmp_path):
         plan_file = tmp_path / "plan.md"

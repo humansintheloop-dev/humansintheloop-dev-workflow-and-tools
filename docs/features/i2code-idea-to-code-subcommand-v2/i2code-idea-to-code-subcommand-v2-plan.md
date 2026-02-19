@@ -257,18 +257,18 @@ Adds the `setup` group with two subcommands that accept `--config-dir` as a requ
     - [x] Create tests/setup-cmd/__init__.py and tests/setup-cmd/conftest.py (mark tests as unit)
     - [x] Create tests/setup-cmd/test_claude_files_cli.py
     - [x] Update test-scripts/test-subcommands-smoke.sh to check i2code --help contains setup, i2code setup --help contains claude-files, and verify uv run i2code setup claude-files --help exits 0
-- [ ] **Task 4.2: `i2code setup update-project <project-dir> --config-dir <path>` subcommand**
+- [x] **Task 4.2: `i2code setup update-project <project-dir> --config-dir <path>` subcommand**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code setup update-project my-project-dir --config-dir /path/to/config-files`
   - Observable: `update-project-claude-files.sh` (in `src/i2code/scripts/`) accepts config directory as a new argument instead of deriving it from `$DIR/../config-files`. The git history lookup for config-files/ changes derives the repo root from the config-dir path. The `update-project` subcommand invokes the modified script, forwarding all arguments, and propagates exit code.
   - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies script is invoked with correct arguments`
   - Steps:
-    - [ ] git mv workflow-scripts/update-project-claude-files.sh to src/i2code/scripts/update-project-claude-files.sh
-    - [ ] git mv prompt-templates/update-project-claude-files.md to src/i2code/prompt-templates/update-project-claude-files.md
-    - [ ] Modify src/i2code/scripts/update-project-claude-files.sh to accept a --config-dir argument instead of using $DIR/../config-files. Update git repo root derivation to use the config-dir path for commit history lookup.
-    - [ ] Add update_project_cmd to src/i2code/setup_cmd/cli.py
-    - [ ] Create tests/setup-cmd/test_update_project_cli.py
-    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for update-project in setup --help, and verify uv run i2code setup update-project --help exits 0
+    - [x] git mv workflow-scripts/update-project-claude-files.sh to src/i2code/scripts/update-project-claude-files.sh
+    - [x] git mv prompt-templates/update-project-claude-files.md to src/i2code/prompt-templates/update-project-claude-files.md
+    - [x] Modify src/i2code/scripts/update-project-claude-files.sh to accept a --config-dir argument instead of using $DIR/../config-files. Update git repo root derivation to use the config-dir path for commit history lookup.
+    - [x] Add update_project_cmd to src/i2code/setup_cmd/cli.py
+    - [x] Create tests/setup-cmd/test_update_project_cli.py
+    - [x] Update test-scripts/test-subcommands-smoke.sh to check for update-project in setup --help, and verify uv run i2code setup update-project --help exits 0
 ## Steel Thread 5: Cleanup
 
 Removes the original `workflow-scripts/` directory and dead code after all scripts have been migrated and verified.
@@ -525,3 +525,24 @@ Updated smoke tests to check i2code --help contains setup, setup --help contains
 
 ### 2026-02-19 20:17 - mark-task-complete
 Implemented setup group with claude-files subcommand: moved and modified setup-claude-files.sh to accept --config-dir, created setup_cmd package, pytest tests (5 pass), smoke tests pass
+
+### 2026-02-19 20:21 - mark-step-complete
+git mv workflow-scripts/update-project-claude-files.sh to src/i2code/scripts/
+
+### 2026-02-19 20:21 - mark-step-complete
+git mv prompt-templates/update-project-claude-files.md to src/i2code/prompt-templates/
+
+### 2026-02-19 20:23 - mark-step-complete
+Added update_project_cmd to setup_cmd/cli.py
+
+### 2026-02-19 20:23 - mark-step-complete
+Created test_update_project_cli.py with 4 tests, all pass
+
+### 2026-02-19 20:23 - mark-step-complete
+Modified script to accept --config-dir argument with argument parsing, git repo root derivation from config-dir path
+
+### 2026-02-19 20:24 - mark-step-complete
+Updated smoke tests to check update-project in setup --help and --help exits 0
+
+### 2026-02-19 20:25 - mark-task-complete
+Implemented update-project subcommand: moved script and prompt template, modified script to accept --config-dir with git repo root derivation, added CLI command, pytest tests (4 pass), smoke tests pass

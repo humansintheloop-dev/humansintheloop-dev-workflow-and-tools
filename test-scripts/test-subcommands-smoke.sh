@@ -254,5 +254,23 @@ OUTPUT=$(uv run i2code setup claude-files --help 2>&1)
 echo "$OUTPUT"
 echo "PASS: setup claude-files --help exits 0"
 
+# --- update-project is listed in setup --help ---
+echo ""
+echo "--- i2code setup --help lists update-project ---"
+OUTPUT=$(uv run i2code setup --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"update-project"* ]]; then
+    echo "FAIL: setup --help does not list update-project"
+    exit 1
+fi
+echo "PASS: update-project listed in setup --help"
+
+# --- update-project --help exits 0 ---
+echo ""
+echo "--- i2code setup update-project --help exits 0 ---"
+OUTPUT=$(uv run i2code setup update-project --help 2>&1)
+echo "$OUTPUT"
+echo "PASS: setup update-project --help exits 0"
+
 echo ""
 echo "=== All Subcommand Smoke Tests Passed ==="

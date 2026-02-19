@@ -80,17 +80,17 @@ Proves that shell scripts can be bundled as package data, located at runtime, in
     - [x] Create src/i2code/script_runner.py with run_script(script_name, args=()) that: resolves path via Path(__file__).parent / "scripts" / script_name, raises FileNotFoundError if missing, ensures execute permission via os.chmod, calls subprocess.run([str(script_path)] + list(args)), and returns the CompletedProcess result
     - [x] Create tests/script-runner/__init__.py and tests/script-runner/conftest.py (mark tests as unit)
     - [x] Create tests/script-runner/test_script_runner.py with tests: resolves correct path, ensures executability, forwards arguments to subprocess, returns subprocess result, raises error for missing script
-- [ ] **Task 1.2: `i2code idea-to-plan brainstorm <dir>` invokes bundled brainstorm-idea.sh**
+- [x] **Task 1.2: `i2code idea-to-plan brainstorm <dir>` invokes bundled brainstorm-idea.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan brainstorm my-dir`
   - Observable: The command locates `brainstorm-idea.sh` from bundled package data, invokes it via `subprocess.run` with `["my-dir"]` as arguments, and exits with the script's exit code
   - Evidence: pytest test using `CliRunner` with mocked `subprocess.run` verifies `brainstorm-idea.sh` is invoked with correct arguments and exit code is propagated
   - Steps:
-    - [ ] Create `src/i2code/idea_to_plan/__init__.py`
-    - [ ] Create `src/i2code/idea_to_plan/cli.py` with Click group `idea_to_plan` (command name `"idea-to-plan"`, help text `"Develop an idea into an implementation plan."`) and `brainstorm_cmd` that accepts `args` via `@click.argument("args", nargs=-1, type=click.UNPROCESSED)`, calls `run_script("brainstorm-idea.sh", args)`, and exits with the result's return code
-    - [ ] Register `idea_to_plan` group in `src/i2code/cli.py` via `main.add_command(idea_to_plan)`
-    - [ ] Create `tests/idea-to-plan/__init__.py` and `tests/idea-to-plan/conftest.py` (mark tests as `unit`)
-    - [ ] Create `tests/idea-to-plan/test_brainstorm_cli.py` that uses `CliRunner` and mocks `subprocess.run` to verify correct invocation
+    - [x] Create `src/i2code/idea_to_plan/__init__.py`
+    - [x] Create `src/i2code/idea_to_plan/cli.py` with Click group `idea_to_plan` (command name `"idea-to-plan"`, help text `"Develop an idea into an implementation plan."`) and `brainstorm_cmd` that accepts `args` via `@click.argument("args", nargs=-1, type=click.UNPROCESSED)`, calls `run_script("brainstorm-idea.sh", args)`, and exits with the result's return code
+    - [x] Register `idea_to_plan` group in `src/i2code/cli.py` via `main.add_command(idea_to_plan)`
+    - [x] Create `tests/idea-to-plan/__init__.py` and `tests/idea-to-plan/conftest.py` (mark tests as `unit`)
+    - [x] Create `tests/idea-to-plan/test_brainstorm_cli.py` that uses `CliRunner` and mocks `subprocess.run` to verify correct invocation
 
 - [ ] **Task 1.3: CLI smoke tests validate idea-to-plan group and brainstorm subcommand are discoverable**
   - TaskType: INFRA

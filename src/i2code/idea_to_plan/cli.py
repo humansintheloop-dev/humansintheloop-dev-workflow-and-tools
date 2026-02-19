@@ -1,0 +1,20 @@
+"""Click commands for the idea-to-plan workflow."""
+
+import sys
+
+import click
+
+from i2code.script_runner import run_script
+
+
+@click.group("idea-to-plan")
+def idea_to_plan():
+    """Develop an idea into an implementation plan."""
+
+
+@idea_to_plan.command("brainstorm")
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def brainstorm_cmd(args):
+    """Brainstorm an idea."""
+    result = run_script("brainstorm-idea.sh", args)
+    sys.exit(result.returncode)

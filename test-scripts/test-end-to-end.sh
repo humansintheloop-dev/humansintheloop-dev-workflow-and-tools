@@ -10,6 +10,10 @@ echo ""
 echo "--- CLI smoke tests ---"
 "$SCRIPT_DIR/test-plan-cli-smoke.sh"
 
+echo ""
+echo "--- Subcommand smoke tests ---"
+"$SCRIPT_DIR/test-subcommands-smoke.sh"
+
 "$SCRIPT_DIR/test-integration.sh"
 
 "$SCRIPT_DIR/test-integration-gh.sh"

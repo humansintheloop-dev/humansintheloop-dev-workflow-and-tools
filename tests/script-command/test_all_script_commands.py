@@ -89,6 +89,25 @@ SCRIPT_COMMANDS = [
         ["my-project-dir", "--config-dir", "/path/to/config-files", "--verbose"],
         id="update-project-with-separator",
     ),
+    # plan group (script commands)
+    pytest.param(
+        ["plan", "create", "my-dir"],
+        "make-plan.sh",
+        ["my-dir"],
+        id="plan-create",
+    ),
+    pytest.param(
+        ["plan", "revise", "my-dir"],
+        "revise-plan.sh",
+        ["my-dir"],
+        id="plan-revise",
+    ),
+    pytest.param(
+        ["plan", "revise", "my-dir", "--feedback", "more detail"],
+        "revise-plan.sh",
+        ["my-dir", "--feedback", "more detail"],
+        id="plan-revise-with-extra-args",
+    ),
     # improve group
     pytest.param(
         ["improve", "analyze-sessions", "my-tracking-dir"],

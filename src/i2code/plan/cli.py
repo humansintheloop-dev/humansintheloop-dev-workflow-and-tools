@@ -5,6 +5,7 @@ import click
 from i2code.plan.plan_cli import register as register_plan_commands
 from i2code.plan.task_cli import register as register_task_commands
 from i2code.plan.thread_cli import register as register_thread_commands
+from i2code.script_command import script_command
 
 
 @click.group()
@@ -16,3 +17,17 @@ def plan():
 register_plan_commands(plan)
 register_task_commands(plan)
 register_thread_commands(plan)
+
+script_command(
+    plan,
+    "create",
+    "make-plan.sh",
+    "Create an implementation plan from a specification.",
+)
+
+script_command(
+    plan,
+    "revise",
+    "revise-plan.sh",
+    "Revise an existing implementation plan.",
+)

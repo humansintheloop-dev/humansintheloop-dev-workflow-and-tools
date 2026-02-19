@@ -14,6 +14,10 @@ echo ""
 echo "--- Subcommand smoke tests ---"
 "$SCRIPT_DIR/test-subcommands-smoke.sh"
 
+echo ""
+echo "--- list-plugin-skills tests ---"
+"$SCRIPT_DIR/test-list-plugin-skills.sh"
+
 "$SCRIPT_DIR/test-integration.sh"
 
 "$SCRIPT_DIR/test-integration-gh.sh"

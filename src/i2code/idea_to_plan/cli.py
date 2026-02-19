@@ -42,3 +42,11 @@ def revise_plan_cmd(args):
     """Revise an existing implementation plan."""
     result = run_script("revise-plan.sh", args)
     sys.exit(result.returncode)
+
+
+@idea_to_plan.command("make-plan")
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def make_plan_cmd(args):
+    """Create an implementation plan from a specification."""
+    result = run_script("make-plan.sh", args)
+    sys.exit(result.returncode)

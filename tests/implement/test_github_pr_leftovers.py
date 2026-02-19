@@ -274,22 +274,6 @@ class TestGetNewFeedback:
 
 
 @pytest.mark.unit
-class TestDefaultStateIncludesConversationIds:
-    """Test that default state includes processed_conversation_ids."""
-
-    def test_init_state_includes_processed_conversation_ids(self, tmp_path):
-        """Default state should include processed_conversation_ids."""
-        from i2code.implement.workflow_state import WorkflowState
-
-        idea_dir = tmp_path / "test-idea"
-        idea_dir.mkdir()
-
-        state = WorkflowState.load(str(idea_dir / "test-idea-wt-state.json"))
-
-        assert state.processed_conversation_ids == []
-
-
-@pytest.mark.unit
 class TestParseTriageResult:
     """Test parsing JSON triage result from Claude."""
 

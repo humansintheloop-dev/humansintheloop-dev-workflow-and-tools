@@ -33,6 +33,16 @@ class TestWorkflowStateDefaultState:
             assert state.processed_review_ids == []
             assert state.processed_conversation_ids == []
 
+    def test_includes_processed_conversation_ids(self, tmp_path):
+        from i2code.implement.workflow_state import WorkflowState
+
+        idea_dir = tmp_path / "test-idea"
+        idea_dir.mkdir()
+
+        state = WorkflowState.load(str(idea_dir / "test-idea-wt-state.json"))
+
+        assert state.processed_conversation_ids == []
+
 
 @pytest.mark.unit
 class TestWorkflowStateLoad:

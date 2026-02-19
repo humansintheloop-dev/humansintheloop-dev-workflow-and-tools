@@ -337,19 +337,19 @@ Replaces the `idea-to-plan` group with `go` (top-level), `idea`, `spec`, `design
 | `i2code idea-to-plan revise-plan` | `i2code plan revise` |
 | `i2code idea-to-plan design-doc` | `i2code design create` |
 
-- [ ] **Task 7.1: Create `go` top-level command, `idea` group, `spec` group, and `design` group**
+- [x] **Task 7.1: Create `go` top-level command, `idea` group, `spec` group, and `design` group**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/script-command/ -v -m unit`
   - Observable: `i2code go my-dir` invokes `idea-to-code.sh`. `i2code idea brainstorm my-dir` invokes `brainstorm-idea.sh`. `i2code spec create my-dir` invokes `make-spec.sh`. `i2code spec revise my-dir` invokes `revise-spec.sh`. `i2code design create my-dir` invokes `create-design-doc.sh`. All propagate exit codes.
   - Evidence: `parametrized pytest tests verify correct script invocation for all 5 new command paths`
   - Steps:
-    - [ ] Create `src/i2code/idea_cmd/__init__.py` and `src/i2code/idea_cmd/cli.py` with Click group `idea` (help: "Brainstorm and explore ideas.") and `script_command(idea, "brainstorm", "brainstorm-idea.sh", "Brainstorm an idea.")`
-    - [ ] Create `src/i2code/spec_cmd/__init__.py` and `src/i2code/spec_cmd/cli.py` with Click group `spec` (help: "Create and revise specifications.") and two `script_command()` calls: `create` → `make-spec.sh`, `revise` → `revise-spec.sh`
-    - [ ] Create `src/i2code/design_cmd/__init__.py` and `src/i2code/design_cmd/cli.py` with Click group `design` (help: "Create design documents.") and `script_command(design, "create", "create-design-doc.sh", "Create a design document from a specification.")`
-    - [ ] Add `go` as a top-level command in `src/i2code/cli.py` using `script_command(main, "go", "idea-to-code.sh", "Run the idea-to-code orchestrator.")`
-    - [ ] Register `idea`, `spec`, and `design` groups in `src/i2code/cli.py` via `main.add_command()`
-    - [ ] Update `tests/script-command/test_all_script_commands.py`: replace the 7 `idea-to-plan` entries with new entries for `go`, `idea brainstorm`, `spec create`, `spec revise`, `design create`
-    - [ ] Run pytest to verify all parametrized tests pass
+    - [x] Create `src/i2code/idea_cmd/__init__.py` and `src/i2code/idea_cmd/cli.py` with Click group `idea` (help: "Brainstorm and explore ideas.") and `script_command(idea, "brainstorm", "brainstorm-idea.sh", "Brainstorm an idea.")`
+    - [x] Create `src/i2code/spec_cmd/__init__.py` and `src/i2code/spec_cmd/cli.py` with Click group `spec` (help: "Create and revise specifications.") and two `script_command()` calls: `create` → `make-spec.sh`, `revise` → `revise-spec.sh`
+    - [x] Create `src/i2code/design_cmd/__init__.py` and `src/i2code/design_cmd/cli.py` with Click group `design` (help: "Create design documents.") and `script_command(design, "create", "create-design-doc.sh", "Create a design document from a specification.")`
+    - [x] Add `go` as a top-level command in `src/i2code/cli.py` using `script_command(main, "go", "idea-to-code.sh", "Run the idea-to-code orchestrator.")`
+    - [x] Register `idea`, `spec`, and `design` groups in `src/i2code/cli.py` via `main.add_command()`
+    - [x] Update `tests/script-command/test_all_script_commands.py`: replace the 7 `idea-to-plan` entries with new entries for `go`, `idea brainstorm`, `spec create`, `spec revise`, `design create`
+    - [x] Run pytest to verify all parametrized tests pass
 
 - [ ] **Task 7.2: Add `create` and `revise` subcommands to existing `plan` group**
   - TaskType: OUTCOME
@@ -675,3 +675,6 @@ Parametrized 13 script commands into single test class with 40 tests (20 entries
 
 ### 2026-02-20 - plan revision: rename idea-to-plan to artifact-verb pattern
 Added Steel Thread 7 (3 tasks) to rename the `idea-to-plan` group into `go` (top-level), `idea`, `spec`, `design` (new groups), and `plan create`/`plan revise` (additions to existing group). Updated spec FR1, FR2, FR4, Epics, and Scenarios to match.
+
+### 2026-02-20 08:10 - mark-task-complete
+Created go, idea, spec, design commands with parametrized tests — 49 tests pass

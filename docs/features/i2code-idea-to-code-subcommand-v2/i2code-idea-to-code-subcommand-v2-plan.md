@@ -287,16 +287,16 @@ Removes the original `workflow-scripts/` directory and dead code after all scrip
 
 Replaces the repeated Click decorator + `run_script` + `sys.exit` pattern with a `script_command()` factory function. Each subcommand becomes a single function call. Tests are parametrized accordingly.
 
-- [ ] **Task 6.1: Extract `script_command()` factory and convert `improve` group**
+- [x] **Task 6.1: Extract `script_command()` factory and convert `improve` group**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/improve/ tests/script-runner/ -v -m unit`
   - Observable: A new `script_command(group, name, script_name, help_text)` function in `src/i2code/script_command.py` generates Click commands that accept unprocessed args, call `run_script`, and `sys.exit`. `improve/cli.py` uses `script_command()` for all four subcommands — no per-command function definitions remain. All existing tests still pass unchanged.
   - Evidence: `pytest tests pass with exit code 0; smoke tests pass`
   - Steps:
-    - [ ] Create `src/i2code/script_command.py` with `script_command(group, name, script_name, help_text)` that registers a Click command on `group` using `context_settings={"ignore_unknown_options": True}`, `@click.argument("args", nargs=-1, type=click.UNPROCESSED)`, calls `run_script(script_name, args)`, and `sys.exit(result.returncode)`
-    - [ ] Create `tests/script-runner/test_script_command.py` with tests verifying: command is registered on group, help text is set, args are forwarded to `run_script`, exit code is propagated
-    - [ ] Rewrite `src/i2code/improve/cli.py` to use `script_command()` — replace the four decorated function definitions with four `script_command()` calls
-    - [ ] Run all improve tests and smoke tests to confirm no regressions
+    - [x] Create `src/i2code/script_command.py` with `script_command(group, name, script_name, help_text)` that registers a Click command on `group` using `context_settings={"ignore_unknown_options": True}`, `@click.argument("args", nargs=-1, type=click.UNPROCESSED)`, calls `run_script(script_name, args)`, and `sys.exit(result.returncode)`
+    - [x] Create `tests/script-runner/test_script_command.py` with tests verifying: command is registered on group, help text is set, args are forwarded to `run_script`, exit code is propagated
+    - [x] Rewrite `src/i2code/improve/cli.py` to use `script_command()` — replace the four decorated function definitions with four `script_command()` calls
+    - [x] Run all improve tests and smoke tests to confirm no regressions
 
 - [ ] **Task 6.2: Convert `setup` and `idea-to-plan` groups to use `script_command()`**
   - TaskType: REFACTOR
@@ -588,3 +588,6 @@ Implemented update-project subcommand: moved script and prompt template, modifie
 
 ### 2026-02-19 20:33 - mark-task-complete
 Removed all workflow-scripts/ files, directory, and updated stale references in README.adoc, docs/scripts/, docs/idea-to-code-workflow.adoc. Deleted obsolete test files for removed scripts.
+
+### 2026-02-20 07:34 - mark-task-complete
+Extracted script_command() factory, added tests, converted improve/cli.py — all 26 tests pass

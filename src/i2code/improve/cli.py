@@ -26,3 +26,11 @@ def summary_reports_cmd(args):
     """Create summary reports from HITL session data."""
     result = run_script("create-summary-reports.sh", args)
     sys.exit(result.returncode)
+
+
+@improve.command("review-issues", context_settings={"ignore_unknown_options": True})
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def review_issues_cmd(args):
+    """Review and triage active issues from HITL sessions."""
+    result = run_script("review-issues.sh", args)
+    sys.exit(result.returncode)

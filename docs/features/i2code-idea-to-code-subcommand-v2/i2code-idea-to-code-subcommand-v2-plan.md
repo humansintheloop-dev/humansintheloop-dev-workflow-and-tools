@@ -308,16 +308,16 @@ Replaces the repeated Click decorator + `run_script` + `sys.exit` pattern with a
     - [x] Rewrite `src/i2code/idea_to_plan/cli.py` to use `script_command()` — replace the seven decorated function definitions with seven `script_command()` calls
     - [x] Run all setup-cmd, idea-to-plan tests and smoke tests to confirm no regressions
 
-- [ ] **Task 6.3: Parametrize duplicate test classes into a single shared test**
+- [x] **Task 6.3: Parametrize duplicate test classes into a single shared test**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/script-command/ -v -m unit`
   - Observable: A single parametrized test class in `tests/script-command/test_all_script_commands.py` covers all 13 script commands. Each entry specifies (cli_args, expected_script_name, expected_forwarded_args). Variant argument patterns (extra flags, `--` separator) are additional entries in the parametrized list. Help-output tests are dropped (already covered by smoke tests). The 13 per-subcommand test files are removed. Test count is equal or greater than before.
   - Evidence: `pytest tests pass with exit code 0; test count is equal or greater than before`
   - Steps:
-    - [ ] Create `tests/script-command/__init__.py` and `tests/script-command/conftest.py`
-    - [ ] Create `tests/script-command/test_all_script_commands.py` with `SCRIPT_COMMANDS` list of (cli_args, script_name, expected_args) tuples — include multiple entries per subcommand where variant arg patterns exist (e.g., extra flags, `--` separator forwarding). Parametrize `TestScriptCommand` class with `test_invokes_correct_script_with_args` and `test_propagates_script_exit_code`.
-    - [ ] Remove the 13 per-subcommand test files now covered by the parametrized test
-    - [ ] Run full test suite and smoke tests to confirm no regressions
+    - [x] Create `tests/script-command/__init__.py` and `tests/script-command/conftest.py`
+    - [x] Create `tests/script-command/test_all_script_commands.py` with `SCRIPT_COMMANDS` list of (cli_args, script_name, expected_args) tuples — include multiple entries per subcommand where variant arg patterns exist (e.g., extra flags, `--` separator forwarding). Parametrize `TestScriptCommand` class with `test_invokes_correct_script_with_args` and `test_propagates_script_exit_code`.
+    - [x] Remove the 13 per-subcommand test files now covered by the parametrized test
+    - [x] Run full test suite and smoke tests to confirm no regressions
 
 ---
 
@@ -603,3 +603,18 @@ All 24 setup-cmd and idea-to-plan tests pass; all 17 improve tests also pass
 
 ### 2026-02-20 07:38 - mark-task-complete
 Converted setup_cmd/cli.py (2 commands) and idea_to_plan/cli.py (7 commands) to use script_command(); all 24 tests pass
+
+### 2026-02-20 07:45 - mark-step-complete
+Created tests/script-command/__init__.py and conftest.py
+
+### 2026-02-20 07:45 - mark-step-complete
+Created parametrized test class with 20 SCRIPT_COMMANDS entries covering all 13 commands with variant arg patterns
+
+### 2026-02-20 07:45 - mark-step-complete
+Removed 13 per-subcommand test files and cleaned up empty test directories
+
+### 2026-02-20 07:45 - mark-step-complete
+Full unit test suite: 704 passed. Parametrized tests: 40 passed (>= 33 non-help tests from before)
+
+### 2026-02-20 07:45 - mark-task-complete
+Parametrized 13 script commands into single test class with 40 tests (20 entries x 2 methods), removed 13 per-subcommand files

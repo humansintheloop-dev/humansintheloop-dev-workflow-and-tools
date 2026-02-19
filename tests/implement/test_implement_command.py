@@ -7,6 +7,8 @@ from unittest.mock import MagicMock, patch
 
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.implement_opts import ImplementOpts
+from i2code.plan_domain.numbered_task import NumberedTask, TaskNumber
+from i2code.plan_domain.task import Task
 
 from fake_idea_project import FakeIdeaProject
 
@@ -208,3 +210,66 @@ class TestNoModuleLevelFunctions:
         import i2code.implement.cli as cli_module
         assert not hasattr(cli_module, 'implement_worktree_mode'), \
             "cli.py should not have module-level implement_worktree_mode()"
+
+
+@pytest.mark.unit
+class TestDeferredPRCreation:
+    """Test that PR creation is deferred until after first push."""
+
+    def test_setup_only_does_not_create_pr(self, monkeypatch, tmp_path):
+        """Running with --setup-only should NOT attempt to create a PR."""
+        from click.testing import CliRunner
+        from i2code.implement.cli import implement_cmd
+        from fake_github_client import FakeGitHubClient
+
+        # Mock all the setup functions to avoid real git/github operations
+        monkeypatch.setattr("i2code.implement.implement_command.validate_idea_files_committed", lambda p: None)
+
+        # Mock git operations
+        class MockRepo:
+            working_tree_dir = str(tmp_path)
+            branches = []
+            heads = {}
+            def create_head(self, name, ref=None):
+                pass
+            class git:
+                @staticmethod
+                def worktree(*args):
+                    pass
+                @staticmethod
+                def checkout(*args):
+                    pass
+
+        monkeypatch.setattr("i2code.implement.cli.Repo", lambda *args, **kwargs: MockRepo())
+
+        # Also patch the cli module's imported references
+        mock_project = MagicMock()
+        mock_project.name = "test-idea"
+        mock_project.directory = str(tmp_path)
+        mock_project.plan_file = str(tmp_path / "test-idea-plan.md")
+        mock_project.validate.return_value = mock_project
+        mock_project.validate_files.return_value = None
+        mock_wt_project = MagicMock()
+        mock_wt_project.plan_file = str(tmp_path / "worktree" / "test-idea" / "test-idea-plan.md")
+        mock_project.worktree_idea_project = MagicMock(return_value=mock_wt_project)
+        monkeypatch.setattr("i2code.implement.cli.IdeaProject", lambda x: mock_project)
+        _mock_state = MagicMock(slice_number=1, processed_comment_ids=[], processed_review_ids=[], processed_conversation_ids=[])
+        mock_project.get_next_task.return_value = NumberedTask(
+            number=TaskNumber(thread=1, task=1),
+            task=Task(_lines=["- [ ] **Task 1.1: test-task**"]),
+        )
+        monkeypatch.setattr("i2code.implement.implement_command.WorkflowState.load", lambda x: _mock_state)
+        monkeypatch.setattr("i2code.implement.cli.GitHubClient", lambda: FakeGitHubClient())
+
+        # Track if GitRepository.ensure_pr was called
+        mock_git_repo = MagicMock()
+        mock_git_repo.ensure_pr = MagicMock(return_value=123)
+        monkeypatch.setattr("i2code.implement.cli.GitRepository", lambda *a, **kw: mock_git_repo)
+        monkeypatch.setattr("i2code.implement.implement_command.ensure_claude_permissions", lambda x: None)
+
+        # Run via Click test runner
+        runner = CliRunner(catch_exceptions=False)
+        _result = runner.invoke(implement_cmd, [str(tmp_path), "--setup-only"])
+
+        # Verify ensure_pr was NOT called on the GitRepository
+        mock_git_repo.ensure_pr.assert_not_called()

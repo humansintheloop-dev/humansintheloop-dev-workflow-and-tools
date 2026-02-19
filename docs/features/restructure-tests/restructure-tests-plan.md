@@ -145,14 +145,14 @@
 
 ## Steel Thread 7: Create `test_pr_helpers.py` (Rank 6)
 
-- [ ] **Task 7.1: Create `test_pr_helpers.py` with all pr_helpers tests**
+- [x] **Task 7.1: Create `test_pr_helpers.py` with all pr_helpers tests**
   - TaskType: code
   - Observable: New file with 21 tests from 7 classes
   - Evidence: `uv run --with pytest pytest tests/implement/test_pr_helpers.py -v`
   - Steps:
-    - [ ] Create file with `TestPRTitleGeneration` (2), `TestPRBodyGeneration` (1) from `test_github_pr_leftovers.py`
-    - [ ] Move `TestPushOperations` (2), `TestPushToSliceBranch` (3), `TestPRReadyForReview` (2), `TestPRPolling` (6), `TestSliceRollover` (5) from `test_claude_invocation_leftovers.py`
-    - [ ] Run tests
+    - [x] Create file with `TestPRTitleGeneration` (2), `TestPRBodyGeneration` (1) from `test_github_pr_leftovers.py`
+    - [x] Move `TestPushOperations` (2), `TestPushToSliceBranch` (3), `TestPRReadyForReview` (2), `TestPRPolling` (6), `TestSliceRollover` (5) from `test_claude_invocation_leftovers.py`
+    - [x] Run tests
 
 ## Steel Thread 8: Create `test_branch_lifecycle.py` (Rank 7)
 
@@ -320,3 +320,6 @@ Moved 5 test classes (14 tests) to test_pull_request_review_processor.py, delete
 
 ### 2026-02-19 09:21 - mark-task-complete
 Created test_git_repository_setup.py with 20 tests (7 TestIntegrationBranch, 3 unique TestWorktree, 3 TestSliceBranch, 4 TestSliceNameSanitization, 3 TestEnsurePrOnGitRepository). Deleted 2 duplicate worktree tests and test_git_infrastructure.py. All 41 tests pass.
+
+### 2026-02-19 09:26 - mark-task-complete
+Created test_pr_helpers.py with 21 tests from 7 classes; removed from source files

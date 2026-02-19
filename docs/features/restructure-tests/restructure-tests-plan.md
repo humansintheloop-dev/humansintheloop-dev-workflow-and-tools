@@ -156,13 +156,13 @@
 
 ## Steel Thread 8: Create `test_branch_lifecycle.py` (Rank 7)
 
-- [ ] **Task 8.1: Create `test_branch_lifecycle.py` with all branch_lifecycle tests**
+- [x] **Task 8.1: Create `test_branch_lifecycle.py` with all branch_lifecycle tests**
   - TaskType: code
   - Observable: New file with 19 tests from 5 classes
   - Evidence: `uv run --with pytest pytest tests/implement/test_branch_lifecycle.py -v`
   - Steps:
-    - [ ] Create file with `TestMainBranchAdvancement` (5), `TestRebaseOperations` (5), `TestRebaseConflictHandling` (3), `TestCleanupOperations` (4), `TestInterruptHandling` (2) from `test_claude_invocation_leftovers.py`
-    - [ ] Run tests
+    - [x] Create file with `TestMainBranchAdvancement` (5), `TestRebaseOperations` (5), `TestRebaseConflictHandling` (3), `TestCleanupOperations` (4), `TestInterruptHandling` (2) from `test_claude_invocation_leftovers.py`
+    - [x] Run tests
 
 ## Steel Thread 9: Consolidate `test_claude_runner.py` (Rank 8)
 

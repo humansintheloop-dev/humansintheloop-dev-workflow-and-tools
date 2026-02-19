@@ -139,20 +139,20 @@ Completes the `idea-to-plan` group with all remaining subcommands, including ski
     - [x] Add revise_plan_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: revise-plan.sh)
     - [x] Create tests/idea-to-plan/test_revise_plan_cli.py — verify with CliRunner and mocked subprocess.run
     - [x] Update test-scripts/test-subcommands-smoke.sh to check for revise-plan in idea-to-plan --help and verify uv run i2code idea-to-plan revise-plan --help exits 0
-- [ ] **Task 2.4: Skill discovery helper `list-plugin-skills.sh` and `i2code idea-to-plan make-plan` subcommand**
+- [x] **Task 2.4: Skill discovery helper `list-plugin-skills.sh` and `i2code idea-to-plan make-plan` subcommand**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan make-plan my-dir`
   - Observable: `list-plugin-skills.sh` searches `~/.claude/plugins/cache/` for the `idea-to-code` plugin, lists subdirectory names under its `skills/` directory, and outputs them as `idea-to-code:<skill-name>` comma-separated. If the plugin is not installed, it prints a warning to stderr and outputs an empty string. `make-plan.sh` (in `src/i2code/scripts/`) calls `list-plugin-skills.sh` instead of `ls -1 "/../skills"`. The `make-plan` subcommand invokes modified `make-plan.sh` and propagates exit code.
   - Evidence: `pytest test for make-plan subcommand verifies script invocation; shell test script validates list-plugin-skills.sh outputs correct format when plugin exists and outputs empty string with warning when plugin is absent`
   - Steps:
-    - [ ] git mv workflow-scripts/make-plan.sh to src/i2code/scripts/make-plan.sh
-    - [ ] git mv prompt-templates/create-implementation-plan.md to src/i2code/prompt-templates/create-implementation-plan.md
-    - [ ] Create src/i2code/scripts/list-plugin-skills.sh that: searches ~/.claude/plugins/cache/ for a directory matching *idea-to-code*/skills/, lists subdirectory names, formats as idea-to-code:<name> comma-separated, prints warning to stderr and outputs empty string if not found
-    - [ ] Modify src/i2code/scripts/make-plan.sh to replace ls -1 "$DIR/../skills" | sed ... with a call to $DIR/list-plugin-skills.sh
-    - [ ] Add make_plan_cmd to src/i2code/idea_to_plan/cli.py
-    - [ ] Create tests/idea-to-plan/test_make_plan_cli.py
-    - [ ] Create test-scripts/test-list-plugin-skills.sh that validates output format (add to test-end-to-end.sh)
-    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for make-plan in idea-to-plan --help, and verify uv run i2code idea-to-plan make-plan --help exits 0
+    - [x] git mv workflow-scripts/make-plan.sh to src/i2code/scripts/make-plan.sh
+    - [x] git mv prompt-templates/create-implementation-plan.md to src/i2code/prompt-templates/create-implementation-plan.md
+    - [x] Create src/i2code/scripts/list-plugin-skills.sh that: searches ~/.claude/plugins/cache/ for a directory matching *idea-to-code*/skills/, lists subdirectory names, formats as idea-to-code:<name> comma-separated, prints warning to stderr and outputs empty string if not found
+    - [x] Modify src/i2code/scripts/make-plan.sh to replace ls -1 "$DIR/../skills" | sed ... with a call to $DIR/list-plugin-skills.sh
+    - [x] Add make_plan_cmd to src/i2code/idea_to_plan/cli.py
+    - [x] Create tests/idea-to-plan/test_make_plan_cli.py
+    - [x] Create test-scripts/test-list-plugin-skills.sh that validates output format (add to test-end-to-end.sh)
+    - [x] Update test-scripts/test-subcommands-smoke.sh to check for make-plan in idea-to-plan --help, and verify uv run i2code idea-to-plan make-plan --help exits 0
 - [ ] **Task 2.5: `i2code idea-to-plan design-doc` subcommand with skill discovery**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan design-doc my-dir`
@@ -435,3 +435,30 @@ Updated smoke test to check revise-spec in idea-to-plan --help and --help exits 
 
 ### 2026-02-19 19:16 - mark-task-complete
 revise-spec subcommand invokes bundled revise-spec.sh, verified by pytest and smoke tests
+
+### 2026-02-19 19:30 - mark-step-complete
+git mv workflow-scripts/make-plan.sh src/i2code/scripts/make-plan.sh
+
+### 2026-02-19 19:31 - mark-step-complete
+git mv prompt-templates/create-implementation-plan.md src/i2code/prompt-templates/
+
+### 2026-02-19 19:31 - mark-step-complete
+Created list-plugin-skills.sh with PLUGIN_CACHE_DIR override for testing
+
+### 2026-02-19 19:31 - mark-step-complete
+Replaced ls -1 skills pipe with call to list-plugin-skills.sh
+
+### 2026-02-19 19:31 - mark-step-complete
+Added make_plan_cmd to cli.py following established pattern
+
+### 2026-02-19 19:31 - mark-step-complete
+Created test_make_plan_cli.py with invocation and exit code tests
+
+### 2026-02-19 19:31 - mark-step-complete
+Created test-list-plugin-skills.sh validating plugin-exists, plugin-absent, and single-skill scenarios; added to test-end-to-end.sh
+
+### 2026-02-19 19:31 - mark-step-complete
+Added make-plan checks to test-subcommands-smoke.sh
+
+### 2026-02-19 19:31 - mark-task-complete
+All 8 steps complete: git-moved make-plan.sh and prompt template, created list-plugin-skills.sh, modified make-plan.sh to use it, added CLI command, pytest tests, shell tests, and smoke tests

@@ -10,7 +10,7 @@ _validate_idea
 _validate_spec
 
 export IDEA_FILE SPEC_FILE
-export PLAN_SKILLS=$(ls -1 "$DIR/../skills" | sed 's/^/idea-to-code:/' | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
+export PLAN_SKILLS=$("$DIR/list-plugin-skills.sh")
 PROMPT="$(envsubst < "$DIR/../prompt-templates/create-implementation-plan.md")"
 
 SESSION_ID="$(_session_id)"

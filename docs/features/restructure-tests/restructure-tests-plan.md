@@ -111,13 +111,13 @@
     - [x] Clean up imports
     - [x] Run tests
 
-- [ ] **Task 4.2: Move `TestDeferredPRCreation` to `test_implement_command.py`**
+- [x] **Task 4.2: Move `TestDeferredPRCreation` to `test_implement_command.py`**
   - TaskType: code
   - Observable: Test moved from `test_github_pr_leftovers.py`
   - Evidence: `uv run --with pytest pytest tests/implement/test_implement_command.py -v`
   - Steps:
-    - [ ] Move `TestDeferredPRCreation` (1 test) from `test_github_pr_leftovers.py`
-    - [ ] Run tests
+    - [x] Move `TestDeferredPRCreation` (1 test) from `test_github_pr_leftovers.py`
+    - [x] Run tests
 
 ## Steel Thread 5: Consolidate `test_pull_request_review_processor.py` (Rank 4)
 
@@ -305,3 +305,12 @@ Moved test_init_state_includes_processed_conversation_ids from TestDefaultStateI
 
 ### 2026-02-19 09:08 - mark-task-complete
 Removed 5 unit test classes, 2 helpers, cleaned up imports. Only 2 integration classes remain.
+
+### 2026-02-19 09:12 - mark-step-complete
+Moved TestDeferredPRCreation from test_github_pr_leftovers.py to test_implement_command.py
+
+### 2026-02-19 09:12 - mark-step-complete
+All 19 tests pass in test_implement_command.py, all 20 tests pass in test_github_pr_leftovers.py
+
+### 2026-02-19 09:12 - mark-task-complete
+TestDeferredPRCreation moved to test_implement_command.py, all tests pass

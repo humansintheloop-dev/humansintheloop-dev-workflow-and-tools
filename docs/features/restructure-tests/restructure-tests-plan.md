@@ -101,15 +101,15 @@
 
 ## Steel Thread 4: Consolidate `test_implement_command.py` (Rank 3)
 
-- [ ] **Task 4.1: Remove duplicate unit tests from `test_cli_integration.py`**
+- [x] **Task 4.1: Remove duplicate unit tests from `test_cli_integration.py`**
   - TaskType: code
   - Observable: Only 2 `@pytest.mark.integration` classes remain in `test_cli_integration.py`
   - Evidence: `uv run --with pytest pytest tests/implement/test_cli_integration.py -v`
   - Steps:
-    - [ ] Remove `TestIsolatedFlagPassthrough` (2 tests), `TestTrunkModeAcceptance` (1), `TestTrunkModeIncompatibleFlags` (1), `TestIgnoreUncommittedIdeaChanges` (2), `TestWorktreeModeAcceptance` (1)
-    - [ ] Remove unused helpers `_make_mock_project`, `_make_numbered_task`
-    - [ ] Clean up imports
-    - [ ] Run tests
+    - [x] Remove `TestIsolatedFlagPassthrough` (2 tests), `TestTrunkModeAcceptance` (1), `TestTrunkModeIncompatibleFlags` (1), `TestIgnoreUncommittedIdeaChanges` (2), `TestWorktreeModeAcceptance` (1)
+    - [x] Remove unused helpers `_make_mock_project`, `_make_numbered_task`
+    - [x] Clean up imports
+    - [x] Run tests
 
 - [ ] **Task 4.2: Move `TestDeferredPRCreation` to `test_implement_command.py`**
   - TaskType: code
@@ -302,3 +302,6 @@ All 32 tests in test_command_builder.py pass; 70 leftover tests pass
 
 ### 2026-02-19 09:03 - mark-task-complete
 Moved test_init_state_includes_processed_conversation_ids from TestDefaultStateIncludesConversationIds in test_github_pr_leftovers.py into TestWorkflowStateDefaultState in test_workflow_state.py
+
+### 2026-02-19 09:08 - mark-task-complete
+Removed 5 unit test classes, 2 helpers, cleaned up imports. Only 2 integration classes remain.

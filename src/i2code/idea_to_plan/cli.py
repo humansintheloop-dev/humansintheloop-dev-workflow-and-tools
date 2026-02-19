@@ -18,3 +18,11 @@ def brainstorm_cmd(args):
     """Brainstorm an idea."""
     result = run_script("brainstorm-idea.sh", args)
     sys.exit(result.returncode)
+
+
+@idea_to_plan.command("spec")
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def spec_cmd(args):
+    """Create a specification from an idea."""
+    result = run_script("make-spec.sh", args)
+    sys.exit(result.returncode)

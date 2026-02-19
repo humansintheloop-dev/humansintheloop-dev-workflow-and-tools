@@ -207,5 +207,23 @@ OUTPUT=$(uv run i2code improve review-issues --help 2>&1)
 echo "$OUTPUT"
 echo "PASS: improve review-issues --help exits 0"
 
+# --- update-claude-files is listed in improve --help ---
+echo ""
+echo "--- i2code improve --help lists update-claude-files ---"
+OUTPUT=$(uv run i2code improve --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"update-claude-files"* ]]; then
+    echo "FAIL: improve --help does not list update-claude-files"
+    exit 1
+fi
+echo "PASS: update-claude-files listed in improve --help"
+
+# --- update-claude-files --help exits 0 ---
+echo ""
+echo "--- i2code improve update-claude-files --help exits 0 ---"
+OUTPUT=$(uv run i2code improve update-claude-files --help 2>&1)
+echo "$OUTPUT"
+echo "PASS: improve update-claude-files --help exits 0"
+
 echo ""
 echo "=== All Subcommand Smoke Tests Passed ==="

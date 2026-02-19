@@ -227,18 +227,18 @@ Adds the `improve` group with four subcommands for session analysis, summary rep
     - [x] Add review_issues_cmd to src/i2code/improve/cli.py (script: review-issues.sh)
     - [x] Create tests/improve/test_review_issues_cli.py — verify with CliRunner and mocked subprocess.run
     - [x] Update test-scripts/test-subcommands-smoke.sh to check for review-issues in improve --help and verify uv run i2code improve review-issues --help exits 0
-- [ ] **Task 3.4: `i2code improve update-claude-files` subcommand with config-dir modification**
+- [x] **Task 3.4: `i2code improve update-claude-files` subcommand with config-dir modification**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code improve update-claude-files my-project-dir --config-dir /path/to/config-files`
   - Observable: `update-claude-files-from-project.sh` (in `src/i2code/scripts/`) accepts config directory as a new argument instead of deriving it from `$DIR/../config-files`. The `update-claude-files` subcommand invokes the modified script, forwarding all arguments including `--config-dir` and extra `claude-args`, and propagates exit code.
   - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies script is invoked with correct arguments`
   - Steps:
-    - [ ] git mv workflow-scripts/update-claude-files-from-project.sh to src/i2code/scripts/update-claude-files-from-project.sh
-    - [ ] git mv prompt-templates/update-claude-files-from-project.md to src/i2code/prompt-templates/update-claude-files-from-project.md
-    - [ ] Modify src/i2code/scripts/update-claude-files-from-project.sh to accept a --config-dir argument (parse it from the argument list) instead of using $DIR/../config-files. Also update the git repo root derivation to use the config directory path.
-    - [ ] Add update_claude_files_cmd to src/i2code/improve/cli.py
-    - [ ] Create tests/improve/test_update_claude_files_cli.py
-    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for update-claude-files in improve --help, and verify uv run i2code improve update-claude-files --help exits 0
+    - [x] git mv workflow-scripts/update-claude-files-from-project.sh to src/i2code/scripts/update-claude-files-from-project.sh
+    - [x] git mv prompt-templates/update-claude-files-from-project.md to src/i2code/prompt-templates/update-claude-files-from-project.md
+    - [x] Modify src/i2code/scripts/update-claude-files-from-project.sh to accept a --config-dir argument (parse it from the argument list) instead of using $DIR/../config-files. Also update the git repo root derivation to use the config directory path.
+    - [x] Add update_claude_files_cmd to src/i2code/improve/cli.py
+    - [x] Create tests/improve/test_update_claude_files_cli.py
+    - [x] Update test-scripts/test-subcommands-smoke.sh to check for update-claude-files in improve --help, and verify uv run i2code improve update-claude-files --help exits 0
 ## Steel Thread 4: setup Subcommands with Config Directory Argument
 
 Adds the `setup` group with two subcommands that accept `--config-dir` as a required argument, replacing the `$DIR/../config-files` path derivation.
@@ -495,3 +495,6 @@ summary-reports subcommand implemented with bundled script, tests pass
 
 ### 2026-02-19 20:03 - mark-task-complete
 review-issues subcommand implemented with bundled script, tests, and smoke tests
+
+### 2026-02-19 20:10 - mark-task-complete
+Implemented update-claude-files subcommand: moved script and prompt template to bundled locations, modified script to accept --config-dir argument, added CLI command, created pytest tests, updated smoke tests

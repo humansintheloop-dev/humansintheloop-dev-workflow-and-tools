@@ -76,18 +76,18 @@
     - [x] Delete `TestBuildCiFixCommand` duplicate tests (3 of 4); move `test_build_ci_fix_command_renders_ci_fix_template` (unique — verifies render_template call) to `test_command_builder.py`
     - [x] Run tests
 
-- [ ] **Task 2.2: Move unique CommandBuilder tests to `test_command_builder.py`**
+- [x] **Task 2.2: Move unique CommandBuilder tests to `test_command_builder.py`**
   - TaskType: code
   - Observable: 7 unique tests added, source files renamed to `_leftovers`
   - Evidence: `uv run --with pytest pytest tests/implement/test_command_builder.py -v`
   - Steps:
-    - [ ] Move `TestFeedbackTemplate` (4 tests) from `test_claude_invocation.py`
-    - [ ] Move `test_claude_prompt_uses_worktree_idea_directory` (1 test) from `test_claude_invocation.py`
-    - [ ] Move unique `test_build_triage_command_requests_json_output` (1 test) from `test_github_pr.py`; delete 2 duplicate triage tests
-    - [ ] Move unique `test_build_fix_command_interactive` feedback/description check (1 test) from `test_github_pr.py`; delete 1 duplicate fix test
-    - [ ] Rename remaining `test_github_pr.py` → `test_github_pr_leftovers.py`
-    - [ ] Rename remaining `test_claude_invocation.py` → `test_claude_invocation_leftovers.py`
-    - [ ] Run tests
+    - [x] Move `TestFeedbackTemplate` (4 tests) from `test_claude_invocation.py`
+    - [x] Move `test_claude_prompt_uses_worktree_idea_directory` (1 test) from `test_claude_invocation.py`
+    - [x] Move unique `test_build_triage_command_requests_json_output` (1 test) from `test_github_pr.py`; delete 2 duplicate triage tests
+    - [x] Move unique `test_build_fix_command_interactive` feedback/description check (1 test) from `test_github_pr.py`; delete 1 duplicate fix test
+    - [x] Rename remaining `test_github_pr.py` → `test_github_pr_leftovers.py`
+    - [x] Rename remaining `test_claude_invocation.py` → `test_claude_invocation_leftovers.py`
+    - [x] Run tests
 
 ## Steel Thread 3: Consolidate `test_workflow_state.py` (Rank 2)
 
@@ -275,3 +275,27 @@ All 78 tests pass (down from 90 — 14 duplicates removed, 2 unique tests moved)
 
 ### 2026-02-19 08:55 - mark-task-complete
 Deleted 14 duplicate tests from test_claude_invocation.py (7 TestClaudeCommandConstruction, 3 TestFeedbackHandling, 4 TestBuildCiFixCommand); moved 2 unique tests to test_command_builder.py
+
+### 2026-02-19 09:00 - mark-step-complete
+Moved TestFeedbackTemplate (4 tests) to test_command_builder.py
+
+### 2026-02-19 09:00 - mark-step-complete
+Moved test_claude_prompt_uses_worktree_idea_directory to test_command_builder.py
+
+### 2026-02-19 09:00 - mark-step-complete
+Moved unique triage test; deleted 2 duplicate triage tests
+
+### 2026-02-19 09:00 - mark-step-complete
+Moved unique fix test feedback/description check; deleted 1 duplicate fix test
+
+### 2026-02-19 09:00 - mark-step-complete
+Renamed test_github_pr.py to test_github_pr_leftovers.py
+
+### 2026-02-19 09:00 - mark-step-complete
+Renamed test_claude_invocation.py to test_claude_invocation_leftovers.py
+
+### 2026-02-19 09:00 - mark-step-complete
+All 32 tests in test_command_builder.py pass; 70 leftover tests pass
+
+### 2026-02-19 09:00 - mark-task-complete
+7 unique tests moved to test_command_builder.py; 3 duplicates deleted; source files renamed to _leftovers

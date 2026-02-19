@@ -1,5 +1,6 @@
 """Tests for CommandBuilder: consolidates all Claude command-building functions."""
 
+import os
 import pytest
 
 
@@ -93,6 +94,30 @@ class TestCommandBuilderTaskCommand:
 
         assert "--allowedTools" in cmd
         assert "-p" in cmd
+
+    def test_claude_prompt_uses_worktree_idea_directory(self, mocker):
+        """Claude command prompt should reference worktree idea dir, not main repo."""
+        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.idea_project import IdeaProject
+
+        main_repo_root = "/home/user/my-repo"
+        worktree_path = "/tmp/my-repo-wt-kafka-security-poc"
+
+        project = IdeaProject("/home/user/my-repo/kafka-security-poc")
+        worktree_idea_dir = project.worktree_idea_project(worktree_path, main_repo_root).directory
+
+        # Build command with worktree idea dir
+        cmd = CommandBuilder().build_task_command(
+            idea_directory=worktree_idea_dir,
+            task_description="Task 1.1: Create project"
+        )
+
+        # The prompt should reference the worktree path, not main repo
+        prompt = cmd[1]
+        assert worktree_path in prompt, \
+            f"Prompt should use worktree path. Got: {prompt}"
+        assert main_repo_root not in prompt, \
+            f"Prompt should NOT use main repo path. Got: {prompt}"
 
 
 @pytest.mark.unit
@@ -193,6 +218,19 @@ class TestCommandBuilderTriageCommand:
 
         assert "Please fix the typo" in cmd[1]
 
+    def test_requests_json_output(self):
+        """Should request JSON output format."""
+        from i2code.implement.command_builder import CommandBuilder
+
+        cmd = CommandBuilder().build_triage_command(
+            feedback_content="Some feedback",
+            interactive=True
+        )
+
+        prompt = cmd[1]
+        assert "json" in prompt.lower()
+        assert "comment_ids" in prompt
+
 
 @pytest.mark.unit
 class TestCommandBuilderFixCommand:
@@ -241,6 +279,20 @@ class TestCommandBuilderFixCommand:
         )
 
         assert "https://github.com/owner/repo/pull/123" in cmd[1]
+
+    def test_includes_feedback_and_description_in_prompt(self):
+        """Should include feedback content and fix description in prompt."""
+        from i2code.implement.command_builder import CommandBuilder
+
+        cmd = CommandBuilder().build_fix_command(
+            pr_url="https://github.com/owner/repo/pull/123",
+            feedback_content="Please add tests",
+            fix_description="Add unit tests",
+            interactive=True
+        )
+
+        assert "Please add tests" in cmd[1]
+        assert "Add unit tests" in cmd[1]
 
 
 @pytest.mark.unit
@@ -388,3 +440,50 @@ class TestCommandBuilderFeedbackCommand:
         )
 
         assert "wt-handle-feedback.md" in " ".join(cmd)
+
+
+@pytest.mark.unit
+class TestFeedbackTemplate:
+    """Test wt-handle-feedback.md prompt template."""
+
+    def test_feedback_template_exists(self):
+        """Template file should exist in prompt-templates directory."""
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            '../../prompt-templates/wt-handle-feedback.md'
+        )
+        assert os.path.exists(template_path), \
+            f"Template not found at {template_path}"
+
+    def test_feedback_template_has_pr_url_placeholder(self):
+        """Template should have placeholder for PR URL."""
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            '../../prompt-templates/wt-handle-feedback.md'
+        )
+        with open(template_path, 'r') as f:
+            content = f.read()
+        assert 'PR_URL' in content, \
+            "Template should have PR_URL placeholder"
+
+    def test_feedback_template_has_feedback_content_placeholder(self):
+        """Template should have placeholder for feedback content."""
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            '../../prompt-templates/wt-handle-feedback.md'
+        )
+        with open(template_path, 'r') as f:
+            content = f.read()
+        assert 'FEEDBACK_CONTENT' in content, \
+            "Template should have FEEDBACK_CONTENT placeholder"
+
+    def test_feedback_template_has_feedback_type_placeholder(self):
+        """Template should have placeholder for feedback type."""
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            '../../prompt-templates/wt-handle-feedback.md'
+        )
+        with open(template_path, 'r') as f:
+            content = f.read()
+        assert 'FEEDBACK_TYPE' in content, \
+            "Template should have FEEDBACK_TYPE placeholder"

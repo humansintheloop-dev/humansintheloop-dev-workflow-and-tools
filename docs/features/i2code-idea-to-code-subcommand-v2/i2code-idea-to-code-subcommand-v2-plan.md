@@ -118,16 +118,16 @@ Completes the `idea-to-plan` group with all remaining subcommands, including ski
     - [x] Add spec_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: make-spec.sh)
     - [x] Create tests/idea-to-plan/test_spec_cli.py — verify with CliRunner and mocked subprocess.run
     - [x] Update test-scripts/test-subcommands-smoke.sh to check for spec in idea-to-plan --help and verify uv run i2code idea-to-plan spec --help exits 0
-- [ ] **Task 2.2: `i2code idea-to-plan revise-spec` subcommand invokes bundled revise-spec.sh**
+- [x] **Task 2.2: `i2code idea-to-plan revise-spec` subcommand invokes bundled revise-spec.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan revise-spec my-dir`
   - Observable: The command locates revise-spec.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments, and exits with the script's exit code
   - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies revise-spec.sh is invoked with correct arguments and exit code is propagated`
   - Steps:
-    - [ ] git mv workflow-scripts/revise-spec.sh to src/i2code/scripts/revise-spec.sh
-    - [ ] Add revise_spec_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: revise-spec.sh)
-    - [ ] Create tests/idea-to-plan/test_revise_spec_cli.py — verify with CliRunner and mocked subprocess.run
-    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for revise-spec in idea-to-plan --help and verify uv run i2code idea-to-plan revise-spec --help exits 0
+    - [x] git mv workflow-scripts/revise-spec.sh to src/i2code/scripts/revise-spec.sh
+    - [x] Add revise_spec_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: revise-spec.sh)
+    - [x] Create tests/idea-to-plan/test_revise_spec_cli.py — verify with CliRunner and mocked subprocess.run
+    - [x] Update test-scripts/test-subcommands-smoke.sh to check for revise-spec in idea-to-plan --help and verify uv run i2code idea-to-plan revise-spec --help exits 0
 - [ ] **Task 2.3: `i2code idea-to-plan revise-plan` subcommand invokes bundled revise-plan.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan revise-plan my-dir`
@@ -420,3 +420,18 @@ Updated smoke tests for spec in idea-to-plan --help and --help exits 0
 
 ### 2026-02-19 19:11 - mark-task-complete
 spec subcommand invokes bundled make-spec.sh with tests passing
+
+### 2026-02-19 19:15 - mark-step-complete
+git mv workflow-scripts/revise-spec.sh src/i2code/scripts/revise-spec.sh
+
+### 2026-02-19 19:15 - mark-step-complete
+Added revise_spec_cmd to cli.py following brainstorm/spec pattern
+
+### 2026-02-19 19:15 - mark-step-complete
+Created test_revise_spec_cli.py with CliRunner and mocked subprocess.run
+
+### 2026-02-19 19:16 - mark-step-complete
+Updated smoke test to check revise-spec in idea-to-plan --help and --help exits 0
+
+### 2026-02-19 19:16 - mark-task-complete
+revise-spec subcommand invokes bundled revise-spec.sh, verified by pytest and smoke tests

@@ -7,7 +7,6 @@ import click
 
 from i2code.design_cmd.cli import design
 from i2code.idea_cmd.cli import idea
-from i2code.idea_to_plan.cli import idea_to_plan
 from i2code.implement.cli import implement_cmd, scaffold_cmd
 from i2code.improve.cli import improve
 from i2code.plan.cli import plan
@@ -36,7 +35,6 @@ def main(with_sdkman):
 
 
 main.add_command(plan)
-main.add_command(idea_to_plan)
 main.add_command(idea)
 main.add_command(spec)
 main.add_command(design)

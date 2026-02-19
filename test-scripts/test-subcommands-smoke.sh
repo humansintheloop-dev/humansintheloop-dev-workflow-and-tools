@@ -5,142 +5,110 @@ set -euo pipefail
 
 echo "=== Subcommand Smoke Tests ==="
 
-# --- idea-to-plan group is listed in i2code --help ---
+# --- go --help exits 0 ---
 echo ""
-echo "--- i2code --help lists idea-to-plan ---"
-OUTPUT=$(uv run i2code --help 2>&1)
-echo "$OUTPUT"
-if [[ "$OUTPUT" != *"idea-to-plan"* ]]; then
-    echo "FAIL: i2code --help does not list idea-to-plan"
-    exit 1
-fi
-echo "PASS: idea-to-plan listed in i2code --help"
+echo "--- i2code go --help exits 0 ---"
+uv run i2code go --help
+echo "PASS: go --help exits 0"
 
-# --- brainstorm is listed in idea-to-plan --help ---
+# --- idea --help lists brainstorm ---
 echo ""
-echo "--- i2code idea-to-plan --help lists brainstorm ---"
-OUTPUT=$(uv run i2code idea-to-plan --help 2>&1)
+echo "--- i2code idea --help lists brainstorm ---"
+OUTPUT=$(uv run i2code idea --help 2>&1)
 echo "$OUTPUT"
 if [[ "$OUTPUT" != *"brainstorm"* ]]; then
-    echo "FAIL: idea-to-plan --help does not list brainstorm"
+    echo "FAIL: idea --help does not list brainstorm"
     exit 1
 fi
-echo "PASS: brainstorm listed in idea-to-plan --help"
+echo "PASS: brainstorm listed in idea --help"
 
-# --- brainstorm --help exits 0 ---
+# --- idea brainstorm --help exits 0 ---
 echo ""
-echo "--- i2code idea-to-plan brainstorm --help exits 0 ---"
-OUTPUT=$(uv run i2code idea-to-plan brainstorm --help 2>&1)
-echo "$OUTPUT"
-echo "PASS: idea-to-plan brainstorm --help exits 0"
+echo "--- i2code idea brainstorm --help exits 0 ---"
+uv run i2code idea brainstorm --help
+echo "PASS: idea brainstorm --help exits 0"
 
-# --- spec is listed in idea-to-plan --help ---
+# --- spec --help lists create and revise ---
 echo ""
-echo "--- i2code idea-to-plan --help lists spec ---"
-OUTPUT=$(uv run i2code idea-to-plan --help 2>&1)
+echo "--- i2code spec --help lists create and revise ---"
+OUTPUT=$(uv run i2code spec --help 2>&1)
 echo "$OUTPUT"
-if [[ "$OUTPUT" != *"spec"* ]]; then
-    echo "FAIL: idea-to-plan --help does not list spec"
+if [[ "$OUTPUT" != *"create"* ]]; then
+    echo "FAIL: spec --help does not list create"
     exit 1
 fi
-echo "PASS: spec listed in idea-to-plan --help"
-
-# --- spec --help exits 0 ---
-echo ""
-echo "--- i2code idea-to-plan spec --help exits 0 ---"
-OUTPUT=$(uv run i2code idea-to-plan spec --help 2>&1)
-echo "$OUTPUT"
-echo "PASS: idea-to-plan spec --help exits 0"
-
-# --- revise-spec is listed in idea-to-plan --help ---
-echo ""
-echo "--- i2code idea-to-plan --help lists revise-spec ---"
-OUTPUT=$(uv run i2code idea-to-plan --help 2>&1)
-echo "$OUTPUT"
-if [[ "$OUTPUT" != *"revise-spec"* ]]; then
-    echo "FAIL: idea-to-plan --help does not list revise-spec"
+if [[ "$OUTPUT" != *"revise"* ]]; then
+    echo "FAIL: spec --help does not list revise"
     exit 1
 fi
-echo "PASS: revise-spec listed in idea-to-plan --help"
+echo "PASS: create and revise listed in spec --help"
 
-# --- revise-spec --help exits 0 ---
+# --- spec create --help exits 0 ---
 echo ""
-echo "--- i2code idea-to-plan revise-spec --help exits 0 ---"
-OUTPUT=$(uv run i2code idea-to-plan revise-spec --help 2>&1)
-echo "$OUTPUT"
-echo "PASS: idea-to-plan revise-spec --help exits 0"
+echo "--- i2code spec create --help exits 0 ---"
+uv run i2code spec create --help
+echo "PASS: spec create --help exits 0"
 
-# --- revise-plan is listed in idea-to-plan --help ---
+# --- spec revise --help exits 0 ---
 echo ""
-echo "--- i2code idea-to-plan --help lists revise-plan ---"
-OUTPUT=$(uv run i2code idea-to-plan --help 2>&1)
+echo "--- i2code spec revise --help exits 0 ---"
+uv run i2code spec revise --help
+echo "PASS: spec revise --help exits 0"
+
+# --- plan --help lists create and revise ---
+echo ""
+echo "--- i2code plan --help lists create and revise ---"
+OUTPUT=$(uv run i2code plan --help 2>&1)
 echo "$OUTPUT"
-if [[ "$OUTPUT" != *"revise-plan"* ]]; then
-    echo "FAIL: idea-to-plan --help does not list revise-plan"
+if [[ "$OUTPUT" != *"create"* ]]; then
+    echo "FAIL: plan --help does not list create"
     exit 1
 fi
-echo "PASS: revise-plan listed in idea-to-plan --help"
-
-# --- revise-plan --help exits 0 ---
-echo ""
-echo "--- i2code idea-to-plan revise-plan --help exits 0 ---"
-OUTPUT=$(uv run i2code idea-to-plan revise-plan --help 2>&1)
-echo "$OUTPUT"
-echo "PASS: idea-to-plan revise-plan --help exits 0"
-
-# --- make-plan is listed in idea-to-plan --help ---
-echo ""
-echo "--- i2code idea-to-plan --help lists make-plan ---"
-OUTPUT=$(uv run i2code idea-to-plan --help 2>&1)
-echo "$OUTPUT"
-if [[ "$OUTPUT" != *"make-plan"* ]]; then
-    echo "FAIL: idea-to-plan --help does not list make-plan"
+if [[ "$OUTPUT" != *"revise"* ]]; then
+    echo "FAIL: plan --help does not list revise"
     exit 1
 fi
-echo "PASS: make-plan listed in idea-to-plan --help"
+echo "PASS: create and revise listed in plan --help"
 
-# --- make-plan --help exits 0 ---
+# --- plan create --help exits 0 ---
 echo ""
-echo "--- i2code idea-to-plan make-plan --help exits 0 ---"
-OUTPUT=$(uv run i2code idea-to-plan make-plan --help 2>&1)
-echo "$OUTPUT"
-echo "PASS: idea-to-plan make-plan --help exits 0"
+echo "--- i2code plan create --help exits 0 ---"
+uv run i2code plan create --help
+echo "PASS: plan create --help exits 0"
 
-# --- design-doc is listed in idea-to-plan --help ---
+# --- plan revise --help exits 0 ---
 echo ""
-echo "--- i2code idea-to-plan --help lists design-doc ---"
-OUTPUT=$(uv run i2code idea-to-plan --help 2>&1)
+echo "--- i2code plan revise --help exits 0 ---"
+uv run i2code plan revise --help
+echo "PASS: plan revise --help exits 0"
+
+# --- design --help lists create ---
+echo ""
+echo "--- i2code design --help lists create ---"
+OUTPUT=$(uv run i2code design --help 2>&1)
 echo "$OUTPUT"
-if [[ "$OUTPUT" != *"design-doc"* ]]; then
-    echo "FAIL: idea-to-plan --help does not list design-doc"
+if [[ "$OUTPUT" != *"create"* ]]; then
+    echo "FAIL: design --help does not list create"
     exit 1
 fi
-echo "PASS: design-doc listed in idea-to-plan --help"
+echo "PASS: create listed in design --help"
 
-# --- design-doc --help exits 0 ---
+# --- design create --help exits 0 ---
 echo ""
-echo "--- i2code idea-to-plan design-doc --help exits 0 ---"
-OUTPUT=$(uv run i2code idea-to-plan design-doc --help 2>&1)
-echo "$OUTPUT"
-echo "PASS: idea-to-plan design-doc --help exits 0"
+echo "--- i2code design create --help exits 0 ---"
+uv run i2code design create --help
+echo "PASS: design create --help exits 0"
 
-# --- run is listed in idea-to-plan --help ---
+# --- i2code --help does NOT list idea-to-plan ---
 echo ""
-echo "--- i2code idea-to-plan --help lists run ---"
-OUTPUT=$(uv run i2code idea-to-plan --help 2>&1)
+echo "--- i2code --help does NOT list idea-to-plan ---"
+OUTPUT=$(uv run i2code --help 2>&1)
 echo "$OUTPUT"
-if [[ "$OUTPUT" != *"run"* ]]; then
-    echo "FAIL: idea-to-plan --help does not list run"
+if [[ "$OUTPUT" == *"idea-to-plan"* ]]; then
+    echo "FAIL: i2code --help still lists idea-to-plan"
     exit 1
 fi
-echo "PASS: run listed in idea-to-plan --help"
-
-# --- run --help exits 0 ---
-echo ""
-echo "--- i2code idea-to-plan run --help exits 0 ---"
-OUTPUT=$(uv run i2code idea-to-plan run --help 2>&1)
-echo "$OUTPUT"
-echo "PASS: idea-to-plan run --help exits 0"
+echo "PASS: idea-to-plan no longer listed in i2code --help"
 
 # --- improve group is listed in i2code --help ---
 echo ""
@@ -167,8 +135,7 @@ echo "PASS: analyze-sessions listed in improve --help"
 # --- analyze-sessions --help exits 0 ---
 echo ""
 echo "--- i2code improve analyze-sessions --help exits 0 ---"
-OUTPUT=$(uv run i2code improve analyze-sessions --help 2>&1)
-echo "$OUTPUT"
+uv run i2code improve analyze-sessions --help
 echo "PASS: improve analyze-sessions --help exits 0"
 
 # --- summary-reports is listed in improve --help ---
@@ -185,8 +152,7 @@ echo "PASS: summary-reports listed in improve --help"
 # --- summary-reports --help exits 0 ---
 echo ""
 echo "--- i2code improve summary-reports --help exits 0 ---"
-OUTPUT=$(uv run i2code improve summary-reports --help 2>&1)
-echo "$OUTPUT"
+uv run i2code improve summary-reports --help
 echo "PASS: improve summary-reports --help exits 0"
 
 # --- review-issues is listed in improve --help ---
@@ -203,8 +169,7 @@ echo "PASS: review-issues listed in improve --help"
 # --- review-issues --help exits 0 ---
 echo ""
 echo "--- i2code improve review-issues --help exits 0 ---"
-OUTPUT=$(uv run i2code improve review-issues --help 2>&1)
-echo "$OUTPUT"
+uv run i2code improve review-issues --help
 echo "PASS: improve review-issues --help exits 0"
 
 # --- update-claude-files is listed in improve --help ---
@@ -221,8 +186,7 @@ echo "PASS: update-claude-files listed in improve --help"
 # --- update-claude-files --help exits 0 ---
 echo ""
 echo "--- i2code improve update-claude-files --help exits 0 ---"
-OUTPUT=$(uv run i2code improve update-claude-files --help 2>&1)
-echo "$OUTPUT"
+uv run i2code improve update-claude-files --help
 echo "PASS: improve update-claude-files --help exits 0"
 
 # --- setup group is listed in i2code --help ---
@@ -250,8 +214,7 @@ echo "PASS: claude-files listed in setup --help"
 # --- claude-files --help exits 0 ---
 echo ""
 echo "--- i2code setup claude-files --help exits 0 ---"
-OUTPUT=$(uv run i2code setup claude-files --help 2>&1)
-echo "$OUTPUT"
+uv run i2code setup claude-files --help
 echo "PASS: setup claude-files --help exits 0"
 
 # --- update-project is listed in setup --help ---
@@ -268,8 +231,7 @@ echo "PASS: update-project listed in setup --help"
 # --- update-project --help exits 0 ---
 echo ""
 echo "--- i2code setup update-project --help exits 0 ---"
-OUTPUT=$(uv run i2code setup update-project --help 2>&1)
-echo "$OUTPUT"
+uv run i2code setup update-project --help
 echo "PASS: setup update-project --help exits 0"
 
 echo ""

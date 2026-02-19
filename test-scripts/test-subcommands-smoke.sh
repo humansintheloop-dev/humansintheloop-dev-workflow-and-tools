@@ -225,5 +225,34 @@ OUTPUT=$(uv run i2code improve update-claude-files --help 2>&1)
 echo "$OUTPUT"
 echo "PASS: improve update-claude-files --help exits 0"
 
+# --- setup group is listed in i2code --help ---
+echo ""
+echo "--- i2code --help lists setup ---"
+OUTPUT=$(uv run i2code --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"setup"* ]]; then
+    echo "FAIL: i2code --help does not list setup"
+    exit 1
+fi
+echo "PASS: setup listed in i2code --help"
+
+# --- claude-files is listed in setup --help ---
+echo ""
+echo "--- i2code setup --help lists claude-files ---"
+OUTPUT=$(uv run i2code setup --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"claude-files"* ]]; then
+    echo "FAIL: setup --help does not list claude-files"
+    exit 1
+fi
+echo "PASS: claude-files listed in setup --help"
+
+# --- claude-files --help exits 0 ---
+echo ""
+echo "--- i2code setup claude-files --help exits 0 ---"
+OUTPUT=$(uv run i2code setup claude-files --help 2>&1)
+echo "$OUTPUT"
+echo "PASS: setup claude-files --help exits 0"
+
 echo ""
 echo "=== All Subcommand Smoke Tests Passed ==="

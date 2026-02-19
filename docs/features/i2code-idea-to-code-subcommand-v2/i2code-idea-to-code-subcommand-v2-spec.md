@@ -23,7 +23,7 @@ A developer who uses Claude and the idea-to-code process to go from a rough idea
 
 ## In-Scope
 
-- Packaging 13 shell scripts as `i2code` subcommands across 3 new Click groups
+- Packaging 13 shell scripts as `i2code` subcommands across 4 new Click groups, 1 top-level command, and 2 additions to the existing `plan` group
 - Bundling `_helper.sh` and prompt templates as package data
 - Creating a helper script to discover plugin skill names from `~/.claude/plugins/cache/`
 - Modifying 3 scripts to accept `config-files/` as a script argument
@@ -42,29 +42,59 @@ A developer who uses Claude and the idea-to-code process to go from a rough idea
 
 ### FR1: CLI Group Structure
 
-Three new Click groups are added to the `i2code` CLI:
+Four new Click groups and one top-level command are added to the `i2code` CLI:
 
-| Group | Purpose |
+| Group/Command | Purpose |
 |---|---|
-| `idea-to-plan` | Develop an idea into an implementation plan |
+| `go` | Top-level orchestrator command — runs the full idea-to-code workflow |
+| `idea` | Brainstorm and explore ideas |
+| `spec` | Create and revise specifications |
+| `design` | Create design documents |
 | `improve` | Analyze sessions, review issues, and update configuration |
 | `setup` | Initial project setup and configuration updates |
 
-These sit alongside the existing groups, creating a workflow progression: `idea-to-plan` → `plan` → `implement`.
+Two new subcommands are added to the existing `plan` group:
+
+| Subcommand | Purpose |
+|---|---|
+| `plan create` | Create an implementation plan from a specification |
+| `plan revise` | Revise an existing implementation plan |
+
+The naming follows a consistent `<artifact> <verb>` pattern for artifact-focused groups (`idea`, `spec`, `plan`, `design`), creating a clear workflow progression: `idea` → `spec` → `plan` → `design` → `implement`.
 
 ### FR2: Subcommand Mapping
 
-#### `i2code idea-to-plan` (7 subcommands)
+#### `i2code go` (top-level command)
+
+| Command | Source Script | Arguments |
+|---|---|---|
+| `go` | `idea-to-code.sh` | `<idea-directory>` |
+
+#### `i2code idea` (1 subcommand)
 
 | Subcommand | Source Script | Arguments |
 |---|---|---|
-| `run` | `idea-to-code.sh` | `<idea-directory>` |
 | `brainstorm` | `brainstorm-idea.sh` | `<idea-directory>` |
-| `spec` | `make-spec.sh` | `<idea-directory>` [claude-args...] |
-| `revise-spec` | `revise-spec.sh` | `<idea-directory>` |
-| `make-plan` | `make-plan.sh` | `<idea-directory>` [claude-args...] |
-| `revise-plan` | `revise-plan.sh` | `<idea-directory>` |
-| `design-doc` | `create-design-doc.sh` | `<idea-directory>` [claude-args...] |
+
+#### `i2code spec` (2 subcommands)
+
+| Subcommand | Source Script | Arguments |
+|---|---|---|
+| `create` | `make-spec.sh` | `<idea-directory>` [claude-args...] |
+| `revise` | `revise-spec.sh` | `<idea-directory>` |
+
+#### `i2code plan` (2 new subcommands added to existing group)
+
+| Subcommand | Source Script | Arguments |
+|---|---|---|
+| `create` | `make-plan.sh` | `<idea-directory>` [claude-args...] |
+| `revise` | `revise-plan.sh` | `<idea-directory>` |
+
+#### `i2code design` (1 subcommand)
+
+| Subcommand | Source Script | Arguments |
+|---|---|---|
+| `create` | `create-design-doc.sh` | `<idea-directory>` [claude-args...] |
 
 #### `i2code improve` (4 subcommands)
 
@@ -121,14 +151,20 @@ src/i2code/
 │   ├── review-issues.md
 │   ├── update-claude-files-from-project.md
 │   └── update-project-claude-files.md
-├── cli.py                # Updated: registers new groups
-├── idea_to_plan/         # New: Click group + subcommands
+├── cli.py                # Updated: registers new groups and top-level go command
+├── idea_cmd/             # New: Click group for idea brainstorming
+│   └── cli.py
+├── spec_cmd/             # New: Click group for spec create/revise
+│   └── cli.py
+├── design_cmd/           # New: Click group for design document creation
 │   └── cli.py
 ├── improve/              # New: Click group + subcommands
 │   └── cli.py
 ├── setup_cmd/            # New: Click group + subcommands
 │   └── cli.py
-└── ...                   # Existing packages (plan/, implement/, tracking/)
+├── plan/                 # Existing: gains create and revise subcommands
+│   └── cli.py
+└── ...                   # Existing packages (implement/, tracking/)
 ```
 
 The `scripts/` and `prompt-templates/` directories are siblings under `src/i2code/`, preserving the existing `$DIR/../prompt-templates/` path references in the shell scripts without modification.
@@ -200,21 +236,21 @@ If the `idea-to-code` plugin is not installed in `~/.claude/plugins/cache/`, the
 
 **US1.2:** As a developer, I want `pyproject.toml` updated to include the new package data directories so `hatchling` bundles them in the wheel.
 
-### Epic 2: idea-to-plan Subcommands
+### Epic 2: Workflow Subcommands (go, idea, spec, plan, design)
 
-**US2.1:** As a developer, I want to run `i2code idea-to-plan brainstorm <dir>` to brainstorm an idea, so I don't need to know the script path.
+**US2.1:** As a developer, I want to run `i2code go <dir>` to launch the interactive orchestrator that guides me through the full workflow.
 
-**US2.2:** As a developer, I want to run `i2code idea-to-plan spec <dir>` to generate a specification from an idea.
+**US2.2:** As a developer, I want to run `i2code idea brainstorm <dir>` to brainstorm an idea, so I don't need to know the script path.
 
-**US2.3:** As a developer, I want to run `i2code idea-to-plan revise-spec <dir>` to revise an existing specification.
+**US2.3:** As a developer, I want to run `i2code spec create <dir>` to generate a specification from an idea.
 
-**US2.4:** As a developer, I want to run `i2code idea-to-plan make-plan <dir>` to generate an implementation plan from a specification.
+**US2.4:** As a developer, I want to run `i2code spec revise <dir>` to revise an existing specification.
 
-**US2.5:** As a developer, I want to run `i2code idea-to-plan revise-plan <dir>` to revise an existing plan.
+**US2.5:** As a developer, I want to run `i2code plan create <dir>` to generate an implementation plan from a specification.
 
-**US2.6:** As a developer, I want to run `i2code idea-to-plan design-doc <dir>` to generate a design document.
+**US2.6:** As a developer, I want to run `i2code plan revise <dir>` to revise an existing plan.
 
-**US2.7:** As a developer, I want to run `i2code idea-to-plan run <dir>` to launch the interactive orchestrator that guides me through the full workflow.
+**US2.7:** As a developer, I want to run `i2code design create <dir>` to generate a design document.
 
 ### Epic 3: improve Subcommands
 
@@ -238,6 +274,10 @@ If the `idea-to-code` plugin is not installed in `~/.claude/plugins/cache/`, the
 
 **US5.2:** As a developer, I want `setup-claude-files.sh`, `update-project-claude-files.sh`, and `update-claude-files-from-project.sh` to accept `config-dir` as a script argument so they work independently of their filesystem location.
 
+### Epic 7: Command Renaming
+
+**US7.1:** As a developer, I want the `idea-to-plan` group replaced with `go`, `idea`, `spec`, `plan`, and `design` commands so the CLI follows a consistent `<artifact> <verb>` naming pattern.
+
 ### Epic 6: Cleanup
 
 **US6.1:** As a developer, I want `workflow-scripts/` removed from the repository after migration so there is a single source of truth for these scripts.
@@ -248,7 +288,7 @@ If the `idea-to-code` plugin is not installed in `~/.claude/plugins/cache/`, the
 
 A developer has a new feature idea. They run:
 ```
-i2code idea-to-plan run docs/features/my-feature
+i2code go docs/features/my-feature
 ```
 The orchestrator detects no idea file exists, launches brainstorming, then walks them through spec creation and plan generation — the same interactive flow as `idea-to-code.sh` today.
 
@@ -256,7 +296,7 @@ The orchestrator detects no idea file exists, launches brainstorming, then walks
 
 A developer already has an idea and spec. They skip the orchestrator and run:
 ```
-i2code idea-to-plan make-plan docs/features/my-feature
+i2code plan create docs/features/my-feature
 ```
 This generates the implementation plan directly.
 
@@ -282,7 +322,10 @@ A developer installs the tool and explores available commands:
 ```
 uv tool install .
 i2code --help
-i2code idea-to-plan --help
+i2code idea --help
+i2code spec --help
+i2code plan --help
+i2code design --help
 i2code improve --help
 i2code setup --help
 ```

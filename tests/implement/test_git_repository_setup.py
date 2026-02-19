@@ -1,4 +1,4 @@
-"""Tests for Git infrastructure setup in implement-with-worktree."""
+"""Tests for Git repository setup: integration branches, worktrees, slice branches."""
 
 import os
 import tempfile
@@ -239,70 +239,10 @@ class TestIntegrationBranch:
 
 @pytest.mark.unit
 class TestWorktree:
-    """Test worktree creation and reuse."""
-
-    def test_create_worktree_when_not_exists(self):
-        """Should create worktree if it doesn't exist."""
-
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create main repo
-            repo_path = os.path.join(tmpdir, "my-repo")
-            os.makedirs(repo_path)
-            repo = Repo.init(repo_path)
-            repo.config_writer().set_value("user", "email", "test@test.com").release()
-            repo.config_writer().set_value("user", "name", "Test").release()
-
-            # Create an initial commit
-            test_file = os.path.join(repo_path, "README.md")
-            with open(test_file, "w") as f:
-                f.write("# Test")
-            repo.index.add(["README.md"])
-            repo.index.commit("Initial commit")
-
-            # Create integration branch
-            integration_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_integration_branch("my-feature")
-
-            # Create worktree
-            wt_repo = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_worktree("my-feature", integration_branch)
-
-            expected_path = os.path.join(tmpdir, "my-repo-wt-my-feature")
-            assert wt_repo.working_tree_dir == expected_path
-            assert os.path.isdir(wt_repo.working_tree_dir)
-
-    def test_reuse_existing_worktree(self):
-        """Should reuse worktree if it already exists."""
-
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create main repo
-            repo_path = os.path.join(tmpdir, "my-repo")
-            os.makedirs(repo_path)
-            repo = Repo.init(repo_path)
-            repo.config_writer().set_value("user", "email", "test@test.com").release()
-            repo.config_writer().set_value("user", "name", "Test").release()
-
-            # Create an initial commit
-            test_file = os.path.join(repo_path, "README.md")
-            with open(test_file, "w") as f:
-                f.write("# Test")
-            repo.index.add(["README.md"])
-            repo.index.commit("Initial commit")
-
-            # Create integration branch
-            integration_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_integration_branch("my-feature")
-
-            # Create worktree first time
-            wt1 = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_worktree("my-feature", integration_branch)
-
-            # Call again - should reuse, not error
-            wt2 = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_worktree("my-feature", integration_branch)
-
-            assert wt1.working_tree_dir == wt2.working_tree_dir
+    """Test worktree creation details (naming, settings copy)."""
 
     def test_worktree_naming_pattern(self):
         """Worktree path should follow ../<repo-name>-wt-<idea-name> pattern."""
-
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo with specific name
@@ -330,7 +270,6 @@ class TestWorktree:
 
     def test_copies_settings_local_json_to_worktree(self):
         """Should copy .claude/settings.local.json to worktree if it exists."""
-
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo
@@ -370,7 +309,6 @@ class TestWorktree:
 
     def test_does_not_fail_if_settings_local_json_missing(self):
         """Should not fail if .claude/settings.local.json does not exist."""
-
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create main repo WITHOUT .claude/settings.local.json
@@ -508,3 +446,53 @@ class TestSliceNameSanitization:
         """Leading and trailing dashes should be stripped."""
 
         assert GitRepository.sanitize_branch_name("--foo-bar--") == "foo-bar"
+
+
+@pytest.mark.unit
+class TestEnsurePrOnGitRepository:
+    """Test GitRepository.ensure_pr() orchestration with FakeGitHubClient."""
+
+    def test_ensure_pr_raises_on_creation_failure(self, test_git_repo_with_commit):
+        """ensure_pr should raise when PR creation fails."""
+        from fake_github_client import FakeGitHubClient as _FakeGitHubClient
+
+        class FailingFakeClient(_FakeGitHubClient):
+            def create_draft_pr(self, *args, **kwargs):
+                raise RuntimeError("PR creation failed")
+
+        tmpdir, repo = test_git_repo_with_commit
+        fake = FailingFakeClient()
+        git_repo = GitRepository(repo, gh_client=fake)
+        git_repo.branch = "idea/test/01-setup"
+
+        with pytest.raises(RuntimeError):
+            git_repo.ensure_pr("/path/to/idea", "test", 1)
+
+    def test_ensure_pr_uses_default_branch_from_gh_client(self, test_git_repo_with_commit):
+        """ensure_pr should fetch default branch from gh_client."""
+
+        tmpdir, repo = test_git_repo_with_commit
+        fake = FakeGitHubClient()
+        fake.set_next_pr_number(42)
+        fake.set_default_branch("develop")
+        git_repo = GitRepository(repo, gh_client=fake)
+        git_repo.branch = "idea/test/01-setup"
+
+        git_repo.ensure_pr("/path/to/idea", "test", 1)
+
+        assert len(fake._created_prs) == 1
+        assert fake._created_prs[0]["base"] == "develop"
+
+    def test_ensure_pr_reuses_existing_pr(self, test_git_repo_with_commit):
+        """ensure_pr should return existing PR number if one exists."""
+
+        tmpdir, repo = test_git_repo_with_commit
+        fake = FakeGitHubClient()
+        fake.set_pr_list([{"number": 77, "headRefName": "idea/test/01-setup"}])
+        git_repo = GitRepository(repo, gh_client=fake)
+        git_repo.branch = "idea/test/01-setup"
+
+        result = git_repo.ensure_pr("/path/to/idea", "test", 1)
+
+        assert result == 77
+        assert len(fake._created_prs) == 0

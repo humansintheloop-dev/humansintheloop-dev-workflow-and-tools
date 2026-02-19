@@ -22,3 +22,7 @@ select = ["E4", "E7", "E9", "F", "PLC0415"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/i2code"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/i2code/scripts" = "i2code/scripts"
+"src/i2code/prompt-templates" = "i2code/prompt-templates"

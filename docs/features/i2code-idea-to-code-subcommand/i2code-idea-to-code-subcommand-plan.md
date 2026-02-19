@@ -68,18 +68,18 @@ This plan packages 13 shell scripts from `workflow-scripts/` as `i2code` subcomm
 
 Proves that shell scripts can be bundled as package data, located at runtime, invoked via Click CLI wrapper, and validated by CI.
 
-- [ ] **Task 1.1: Script runner locates bundled script, forwards arguments, and propagates exit code**
+- [x] **Task 1.1: Script runner locates bundled script, forwards arguments, and propagates exit code**
   - TaskType: INFRA
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/script-runner/ -v -m unit`
   - Observable: `run_script("brainstorm-idea.sh", ["my-dir"])` resolves the path to `src/i2code/scripts/brainstorm-idea.sh`, ensures execute permission, calls `subprocess.run` with `[resolved_path, "my-dir"]`, and returns the subprocess result. Raises an error for scripts that do not exist in the bundle.
   - Evidence: pytest tests pass with exit code 0
   - Steps:
-    - [ ] Copy all 14 in-scope shell scripts from `workflow-scripts/` to `src/i2code/scripts/`: `_helper.sh`, `brainstorm-idea.sh`, `idea-to-code.sh`, `make-spec.sh`, `make-plan.sh`, `revise-spec.sh`, `revise-plan.sh`, `create-design-doc.sh`, `analyze-sessions.sh`, `create-summary-reports.sh`, `review-issues.sh`, `update-claude-files-from-project.sh`, `setup-claude-files.sh`, `update-project-claude-files.sh`
-    - [ ] Copy all 10 prompt templates from `prompt-templates/` to `src/i2code/prompt-templates/`: `brainstorm-idea.md`, `create-spec.md`, `create-implementation-plan.md`, `revise-plan.md`, `create-design-doc.md`, `analyze-sessions.md`, `create-summary-report.md`, `review-issues.md`, `update-claude-files-from-project.md`, `update-project-claude-files.md`
-    - [ ] Update `pyproject.toml` `[tool.hatch.build.targets.wheel]` to include `scripts/` and `prompt-templates/` directories as package data (they are already under `src/i2code/` which is in `packages`)
-    - [ ] Create `src/i2code/script_runner.py` with `run_script(script_name, args=())` that: resolves path via `Path(__file__).parent / "scripts" / script_name`, raises `FileNotFoundError` if missing, ensures execute permission via `os.chmod`, calls `subprocess.run([str(script_path)] + list(args))`, and returns the `CompletedProcess` result
-    - [ ] Create `tests/script-runner/__init__.py` and `tests/script-runner/conftest.py` (mark tests as `unit`)
-    - [ ] Create `tests/script-runner/test_script_runner.py` with tests: resolves correct path, ensures executability, forwards arguments to subprocess, returns subprocess result, raises error for missing script
+    - [x] Copy all 14 in-scope shell scripts from `workflow-scripts/` to `src/i2code/scripts/`: `_helper.sh`, `brainstorm-idea.sh`, `idea-to-code.sh`, `make-spec.sh`, `make-plan.sh`, `revise-spec.sh`, `revise-plan.sh`, `create-design-doc.sh`, `analyze-sessions.sh`, `create-summary-reports.sh`, `review-issues.sh`, `update-claude-files-from-project.sh`, `setup-claude-files.sh`, `update-project-claude-files.sh`
+    - [x] Copy all 10 prompt templates from `prompt-templates/` to `src/i2code/prompt-templates/`: `brainstorm-idea.md`, `create-spec.md`, `create-implementation-plan.md`, `revise-plan.md`, `create-design-doc.md`, `analyze-sessions.md`, `create-summary-report.md`, `review-issues.md`, `update-claude-files-from-project.md`, `update-project-claude-files.md`
+    - [x] Update `pyproject.toml` `[tool.hatch.build.targets.wheel]` to include `scripts/` and `prompt-templates/` directories as package data (they are already under `src/i2code/` which is in `packages`)
+    - [x] Create `src/i2code/script_runner.py` with `run_script(script_name, args=())` that: resolves path via `Path(__file__).parent / "scripts" / script_name`, raises `FileNotFoundError` if missing, ensures execute permission via `os.chmod`, calls `subprocess.run([str(script_path)] + list(args))`, and returns the `CompletedProcess` result
+    - [x] Create `tests/script-runner/__init__.py` and `tests/script-runner/conftest.py` (mark tests as `unit`)
+    - [x] Create `tests/script-runner/test_script_runner.py` with tests: resolves correct path, ensures executability, forwards arguments to subprocess, returns subprocess result, raises error for missing script
 
 - [ ] **Task 1.2: `i2code idea-to-plan brainstorm <dir>` invokes bundled brainstorm-idea.sh**
   - TaskType: OUTCOME

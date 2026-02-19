@@ -12,54 +12,57 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "src" / "i2code" /
 
 # (cli_args, expected_script_name, expected_forwarded_args)
 SCRIPT_COMMANDS = [
-    # idea-to-plan group
+    # go (top-level command)
     pytest.param(
-        ["idea-to-plan", "brainstorm", "my-dir"],
-        "brainstorm-idea.sh",
-        ["my-dir"],
-        id="brainstorm",
-    ),
-    pytest.param(
-        ["idea-to-plan", "spec", "my-dir"],
-        "make-spec.sh",
-        ["my-dir"],
-        id="spec",
-    ),
-    pytest.param(
-        ["idea-to-plan", "revise-spec", "my-dir"],
-        "revise-spec.sh",
-        ["my-dir"],
-        id="revise-spec",
-    ),
-    pytest.param(
-        ["idea-to-plan", "revise-plan", "my-dir"],
-        "revise-plan.sh",
-        ["my-dir"],
-        id="revise-plan",
-    ),
-    pytest.param(
-        ["idea-to-plan", "make-plan", "my-dir"],
-        "make-plan.sh",
-        ["my-dir"],
-        id="make-plan",
-    ),
-    pytest.param(
-        ["idea-to-plan", "design-doc", "my-dir"],
-        "create-design-doc.sh",
-        ["my-dir"],
-        id="design-doc",
-    ),
-    pytest.param(
-        ["idea-to-plan", "run", "my-dir"],
+        ["go", "my-dir"],
         "idea-to-code.sh",
         ["my-dir"],
-        id="run",
+        id="go",
     ),
     pytest.param(
-        ["idea-to-plan", "run", "my-dir", "--verbose", "extra"],
+        ["go", "my-dir", "--verbose", "extra"],
         "idea-to-code.sh",
         ["my-dir", "--verbose", "extra"],
-        id="run-with-extra-flags",
+        id="go-with-extra-flags",
+    ),
+    # idea group
+    pytest.param(
+        ["idea", "brainstorm", "my-dir"],
+        "brainstorm-idea.sh",
+        ["my-dir"],
+        id="idea-brainstorm",
+    ),
+    pytest.param(
+        ["idea", "brainstorm", "my-dir", "--verbose"],
+        "brainstorm-idea.sh",
+        ["my-dir", "--verbose"],
+        id="idea-brainstorm-with-extra-flags",
+    ),
+    # spec group
+    pytest.param(
+        ["spec", "create", "my-dir"],
+        "make-spec.sh",
+        ["my-dir"],
+        id="spec-create",
+    ),
+    pytest.param(
+        ["spec", "revise", "my-dir"],
+        "revise-spec.sh",
+        ["my-dir"],
+        id="spec-revise",
+    ),
+    pytest.param(
+        ["spec", "revise", "my-dir", "--feedback", "fix typos"],
+        "revise-spec.sh",
+        ["my-dir", "--feedback", "fix typos"],
+        id="spec-revise-with-extra-args",
+    ),
+    # design group
+    pytest.param(
+        ["design", "create", "my-dir"],
+        "create-design-doc.sh",
+        ["my-dir"],
+        id="design-create",
     ),
     # setup group
     pytest.param(

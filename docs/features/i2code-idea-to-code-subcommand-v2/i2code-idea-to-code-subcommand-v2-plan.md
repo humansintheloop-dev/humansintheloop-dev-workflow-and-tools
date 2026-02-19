@@ -205,17 +205,17 @@ Adds the `improve` group with four subcommands for session analysis, summary rep
     - [x] Create tests/improve/__init__.py and tests/improve/conftest.py (mark tests as unit)
     - [x] Create tests/improve/test_analyze_sessions_cli.py — verify with CliRunner and mocked subprocess.run
     - [x] Update test-scripts/test-subcommands-smoke.sh to check i2code --help contains improve, i2code improve --help contains analyze-sessions, and verify uv run i2code improve analyze-sessions --help exits 0
-- [ ] **Task 3.2: `i2code improve summary-reports` subcommand invokes bundled create-summary-reports.sh**
+- [x] **Task 3.2: `i2code improve summary-reports` subcommand invokes bundled create-summary-reports.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code improve summary-reports my-hitl-dir`
   - Observable: The command locates create-summary-reports.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments (including --project-name), and exits with the script's exit code
   - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies create-summary-reports.sh is invoked with correct arguments and exit code is propagated`
   - Steps:
-    - [ ] git mv workflow-scripts/create-summary-reports.sh to src/i2code/scripts/create-summary-reports.sh
-    - [ ] git mv prompt-templates/create-summary-report.md to src/i2code/prompt-templates/create-summary-report.md
-    - [ ] Add summary_reports_cmd to src/i2code/improve/cli.py (script: create-summary-reports.sh)
-    - [ ] Create tests/improve/test_summary_reports_cli.py — verify with CliRunner and mocked subprocess.run
-    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for summary-reports in improve --help and verify uv run i2code improve summary-reports --help exits 0
+    - [x] git mv workflow-scripts/create-summary-reports.sh to src/i2code/scripts/create-summary-reports.sh
+    - [x] git mv prompt-templates/create-summary-report.md to src/i2code/prompt-templates/create-summary-report.md
+    - [x] Add summary_reports_cmd to src/i2code/improve/cli.py (script: create-summary-reports.sh)
+    - [x] Create tests/improve/test_summary_reports_cli.py — verify with CliRunner and mocked subprocess.run
+    - [x] Update test-scripts/test-subcommands-smoke.sh to check for summary-reports in improve --help and verify uv run i2code improve summary-reports --help exits 0
 - [ ] **Task 3.3: `i2code improve review-issues` subcommand invokes bundled review-issues.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code improve review-issues my-hitl-dir`
@@ -474,3 +474,21 @@ Added run_cmd to cli.py, created test_run_cli.py, updated smoke tests
 
 ### 2026-02-19 19:53 - mark-task-complete
 Implemented improve group with analyze-sessions subcommand, tests pass
+
+### 2026-02-19 19:58 - mark-step-complete
+git mv workflow-scripts/create-summary-reports.sh to src/i2code/scripts/
+
+### 2026-02-19 19:58 - mark-step-complete
+git mv prompt-templates/create-summary-report.md to src/i2code/prompt-templates/
+
+### 2026-02-19 19:58 - mark-step-complete
+Added summary_reports_cmd to src/i2code/improve/cli.py
+
+### 2026-02-19 19:58 - mark-step-complete
+Created tests/improve/test_summary_reports_cli.py with 4 tests, all pass
+
+### 2026-02-19 19:58 - mark-step-complete
+Updated test-scripts/test-subcommands-smoke.sh with summary-reports checks
+
+### 2026-02-19 19:58 - mark-task-complete
+summary-reports subcommand implemented with bundled script, tests pass

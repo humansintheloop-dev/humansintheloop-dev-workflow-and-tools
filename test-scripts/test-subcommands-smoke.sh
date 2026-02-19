@@ -171,5 +171,23 @@ OUTPUT=$(uv run i2code improve analyze-sessions --help 2>&1)
 echo "$OUTPUT"
 echo "PASS: improve analyze-sessions --help exits 0"
 
+# --- summary-reports is listed in improve --help ---
+echo ""
+echo "--- i2code improve --help lists summary-reports ---"
+OUTPUT=$(uv run i2code improve --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"summary-reports"* ]]; then
+    echo "FAIL: improve --help does not list summary-reports"
+    exit 1
+fi
+echo "PASS: summary-reports listed in improve --help"
+
+# --- summary-reports --help exits 0 ---
+echo ""
+echo "--- i2code improve summary-reports --help exits 0 ---"
+OUTPUT=$(uv run i2code improve summary-reports --help 2>&1)
+echo "$OUTPUT"
+echo "PASS: improve summary-reports --help exits 0"
+
 echo ""
 echo "=== All Subcommand Smoke Tests Passed ==="

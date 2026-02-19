@@ -68,18 +68,18 @@ This plan packages 13 shell scripts from `workflow-scripts/` as `i2code` subcomm
 
 Proves that shell scripts can be bundled as package data, located at runtime, invoked via Click CLI wrapper, and validated by CI.
 
-- [ ] **Task 1.1: Script runner locates bundled script, forwards arguments, and propagates exit code**
+- [x] **Task 1.1: Script runner locates bundled script, forwards arguments, and propagates exit code**
   - TaskType: INFRA
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/script-runner/ -v -m unit`
   - Observable: run_script("brainstorm-idea.sh", ["my-dir"]) resolves the path to src/i2code/scripts/brainstorm-idea.sh, ensures execute permission, calls subprocess.run with [resolved_path, "my-dir"], and returns the subprocess result. Raises an error for scripts that do not exist in the bundle.
   - Evidence: `pytest tests pass with exit code 0`
   - Steps:
-    - [ ] git mv workflow-scripts/_helper.sh to src/i2code/scripts/_helper.sh and workflow-scripts/brainstorm-idea.sh to src/i2code/scripts/brainstorm-idea.sh (create src/i2code/scripts/ directory first)
-    - [ ] git mv prompt-templates/brainstorm-idea.md to src/i2code/prompt-templates/brainstorm-idea.md (create src/i2code/prompt-templates/ directory first)
-    - [ ] Update pyproject.toml [tool.hatch.build.targets.wheel] to include scripts/ and prompt-templates/ directories as package data
-    - [ ] Create src/i2code/script_runner.py with run_script(script_name, args=()) that: resolves path via Path(__file__).parent / "scripts" / script_name, raises FileNotFoundError if missing, ensures execute permission via os.chmod, calls subprocess.run([str(script_path)] + list(args)), and returns the CompletedProcess result
-    - [ ] Create tests/script-runner/__init__.py and tests/script-runner/conftest.py (mark tests as unit)
-    - [ ] Create tests/script-runner/test_script_runner.py with tests: resolves correct path, ensures executability, forwards arguments to subprocess, returns subprocess result, raises error for missing script
+    - [x] git mv workflow-scripts/_helper.sh to src/i2code/scripts/_helper.sh and workflow-scripts/brainstorm-idea.sh to src/i2code/scripts/brainstorm-idea.sh (create src/i2code/scripts/ directory first)
+    - [x] git mv prompt-templates/brainstorm-idea.md to src/i2code/prompt-templates/brainstorm-idea.md (create src/i2code/prompt-templates/ directory first)
+    - [x] Update pyproject.toml [tool.hatch.build.targets.wheel] to include scripts/ and prompt-templates/ directories as package data
+    - [x] Create src/i2code/script_runner.py with run_script(script_name, args=()) that: resolves path via Path(__file__).parent / "scripts" / script_name, raises FileNotFoundError if missing, ensures execute permission via os.chmod, calls subprocess.run([str(script_path)] + list(args)), and returns the CompletedProcess result
+    - [x] Create tests/script-runner/__init__.py and tests/script-runner/conftest.py (mark tests as unit)
+    - [x] Create tests/script-runner/test_script_runner.py with tests: resolves correct path, ensures executability, forwards arguments to subprocess, returns subprocess result, raises error for missing script
 - [ ] **Task 1.2: `i2code idea-to-plan brainstorm <dir>` invokes bundled brainstorm-idea.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan brainstorm my-dir`
@@ -372,3 +372,24 @@ Three structural revisions applied to enforce incremental-development and file-o
 1. **Split bundled tasks** — Tasks 2.1 (spec + revise-spec + revise-plan) and 3.1 (analyze-sessions + summary-reports + review-issues) each split into one task per subcommand (10→17 tasks total)
 2. **Incremental git mv** — Each task now `git mv`s only the scripts and prompt templates it needs, replacing the bulk copy of all 14 scripts and 10 templates in Task 1.1
 3. **Eliminated cleanup tasks** — Deleted Tasks 1.4, 2.6, 3.3, 4.3 (separate "remove migrated scripts" steps) since `git mv` handles the move and removal atomically
+
+### 2026-02-19 18:53 - mark-step-complete
+git mv _helper.sh and brainstorm-idea.sh to src/i2code/scripts/
+
+### 2026-02-19 18:53 - mark-step-complete
+git mv brainstorm-idea.md to src/i2code/prompt-templates/
+
+### 2026-02-19 18:54 - mark-step-complete
+pyproject.toml packages=['src/i2code'] already includes all files under src/i2code/ - no change needed, consistent with existing .j2 templates
+
+### 2026-02-19 18:55 - mark-step-complete
+Created src/i2code/script_runner.py with run_script function
+
+### 2026-02-19 18:55 - mark-step-complete
+Created tests/script-runner/__init__.py and conftest.py with unit marker
+
+### 2026-02-19 18:55 - mark-step-complete
+Created test_script_runner.py with 5 tests: resolves path, ensures executability, forwards args, returns result, raises for missing
+
+### 2026-02-19 18:55 - mark-task-complete
+All 5 tests pass: resolves path, ensures executability, forwards args, returns result, raises for missing script

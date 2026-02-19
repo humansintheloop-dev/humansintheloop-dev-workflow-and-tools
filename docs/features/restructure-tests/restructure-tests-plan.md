@@ -176,14 +176,14 @@
 
 ## Steel Thread 10: Create `test_git_setup.py` (Rank 9)
 
-- [ ] **Task 10.1: Rename `test_idea_validation.py` and add stray test**
+- [x] **Task 10.1: Rename `test_idea_validation.py` and add stray test**
   - TaskType: code
   - Observable: File renamed, `TestCalculateClaudePermissions` added
   - Evidence: `uv run --with pytest pytest tests/implement/test_git_setup.py -v`
   - Steps:
-    - [ ] `git mv tests/implement/test_idea_validation.py tests/implement/test_git_setup.py`
-    - [ ] Move `TestCalculateClaudePermissions` (2 tests) from `test_claude_invocation_leftovers.py`
-    - [ ] Run tests
+    - [x] `git mv tests/implement/test_idea_validation.py tests/implement/test_git_setup.py`
+    - [x] Move `TestCalculateClaudePermissions` (2 tests) from `test_claude_invocation_leftovers.py`
+    - [x] Run tests
 
 ## Steel Thread 11: Consolidate `test_idea_project.py` (Rank 10)
 

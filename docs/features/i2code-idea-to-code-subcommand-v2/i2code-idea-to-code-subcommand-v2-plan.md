@@ -46,7 +46,7 @@ Use these skills by invoking them before the relevant action:
 
 ## Overview
 
-This plan packages 13 shell scripts from `workflow-scripts/` as `i2code` subcommands across three new Click groups (`idea-to-plan`, `improve`, `setup`). The scripts remain as shell scripts but are bundled as package data under `src/i2code/scripts/` and `src/i2code/prompt-templates/`, with thin Click wrappers that invoke them via `subprocess.run()`. A shared `script_runner.py` module handles script location, executability, and exit code propagation.
+This plan packages 13 shell scripts from `workflow-scripts/` as `i2code` subcommands across four new Click groups (`idea`, `spec`, `design`, `improve`, `setup`), one top-level command (`go`), and two additions to the existing `plan` group. The scripts remain as shell scripts but are bundled as package data under `src/i2code/scripts/` and `src/i2code/prompt-templates/`, with thin Click wrappers that invoke them via `subprocess.run()`. A shared `script_runner.py` module handles script location, executability, and exit code propagation.
 
 **Key architectural decisions:**
 - `src/i2code/script_runner.py` — shared utility that resolves bundled script paths using `Path(__file__).parent / "scripts"`, ensures execute permission, and runs scripts via `subprocess.run()`
@@ -321,15 +321,69 @@ Replaces the repeated Click decorator + `run_script` + `sys.exit` pattern with a
 
 ---
 
+## Steel Thread 7: Rename idea-to-plan Commands to Artifact-Verb Pattern
+
+Replaces the `idea-to-plan` group with `go` (top-level), `idea`, `spec`, `design` (new groups), and `plan create`/`plan revise` (additions to existing group). Follows the `<artifact> <verb>` naming convention for consistency.
+
+**Renaming map:**
+
+| Old | New |
+|---|---|
+| `i2code idea-to-plan run` | `i2code go` |
+| `i2code idea-to-plan brainstorm` | `i2code idea brainstorm` |
+| `i2code idea-to-plan spec` | `i2code spec create` |
+| `i2code idea-to-plan revise-spec` | `i2code spec revise` |
+| `i2code idea-to-plan make-plan` | `i2code plan create` |
+| `i2code idea-to-plan revise-plan` | `i2code plan revise` |
+| `i2code idea-to-plan design-doc` | `i2code design create` |
+
+- [ ] **Task 7.1: Create `go` top-level command, `idea` group, `spec` group, and `design` group**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/script-command/ -v -m unit`
+  - Observable: `i2code go my-dir` invokes `idea-to-code.sh`. `i2code idea brainstorm my-dir` invokes `brainstorm-idea.sh`. `i2code spec create my-dir` invokes `make-spec.sh`. `i2code spec revise my-dir` invokes `revise-spec.sh`. `i2code design create my-dir` invokes `create-design-doc.sh`. All propagate exit codes.
+  - Evidence: `parametrized pytest tests verify correct script invocation for all 5 new command paths`
+  - Steps:
+    - [ ] Create `src/i2code/idea_cmd/__init__.py` and `src/i2code/idea_cmd/cli.py` with Click group `idea` (help: "Brainstorm and explore ideas.") and `script_command(idea, "brainstorm", "brainstorm-idea.sh", "Brainstorm an idea.")`
+    - [ ] Create `src/i2code/spec_cmd/__init__.py` and `src/i2code/spec_cmd/cli.py` with Click group `spec` (help: "Create and revise specifications.") and two `script_command()` calls: `create` → `make-spec.sh`, `revise` → `revise-spec.sh`
+    - [ ] Create `src/i2code/design_cmd/__init__.py` and `src/i2code/design_cmd/cli.py` with Click group `design` (help: "Create design documents.") and `script_command(design, "create", "create-design-doc.sh", "Create a design document from a specification.")`
+    - [ ] Add `go` as a top-level command in `src/i2code/cli.py` using `script_command(main, "go", "idea-to-code.sh", "Run the idea-to-code orchestrator.")`
+    - [ ] Register `idea`, `spec`, and `design` groups in `src/i2code/cli.py` via `main.add_command()`
+    - [ ] Update `tests/script-command/test_all_script_commands.py`: replace the 7 `idea-to-plan` entries with new entries for `go`, `idea brainstorm`, `spec create`, `spec revise`, `design create`
+    - [ ] Run pytest to verify all parametrized tests pass
+
+- [ ] **Task 7.2: Add `create` and `revise` subcommands to existing `plan` group**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/script-command/ tests/plan-manager/ -v -m unit`
+  - Observable: `i2code plan create my-dir` invokes `make-plan.sh`. `i2code plan revise my-dir` invokes `revise-plan.sh`. Existing `plan` subcommands (get-next-task, mark-task-complete, etc.) are unaffected.
+  - Evidence: `parametrized pytest tests verify correct script invocation; existing plan-manager tests still pass`
+  - Steps:
+    - [ ] Add `script_command()` calls to `src/i2code/plan/cli.py` for `create` → `make-plan.sh` and `revise` → `revise-plan.sh`
+    - [ ] Update `tests/script-command/test_all_script_commands.py`: replace the `idea-to-plan make-plan` and `idea-to-plan revise-plan` entries with `plan create` and `plan revise`
+    - [ ] Run pytest for both `tests/script-command/` and `tests/plan-manager/` to verify no regressions
+
+- [ ] **Task 7.3: Remove `idea_to_plan` package and update smoke tests**
+  - TaskType: INFRA
+  - Entrypoint: `./test-scripts/test-end-to-end.sh`
+  - Observable: `src/i2code/idea_to_plan/` directory is removed. `i2code --help` lists `go`, `idea`, `spec`, `design` (and no longer lists `idea-to-plan`). Smoke tests validate all new groups and subcommands are discoverable.
+  - Evidence: `test-end-to-end.sh passes; i2code --help no longer shows idea-to-plan`
+  - Steps:
+    - [ ] Remove the `idea_to_plan` import and `main.add_command(idea_to_plan)` from `src/i2code/cli.py`
+    - [ ] Delete `src/i2code/idea_to_plan/` directory
+    - [ ] Rewrite `test-scripts/test-subcommands-smoke.sh`: replace the `idea-to-plan` section with tests for `go --help` exits 0, `idea --help` lists `brainstorm`, `idea brainstorm --help` exits 0, `spec --help` lists `create` and `revise`, `spec create --help` exits 0, `spec revise --help` exits 0, `plan --help` lists `create` and `revise`, `plan create --help` exits 0, `plan revise --help` exits 0, `design --help` lists `create`, `design create --help` exits 0
+    - [ ] Run `./test-scripts/test-end-to-end.sh` to confirm everything passes
+
+---
+
 ## Summary
 
-This plan has 6 steel threads and 20 tasks:
+This plan has 7 steel threads and 23 tasks:
 - **Thread 1** (3 tasks): Script runner infrastructure, first subcommand (`brainstorm`), CI smoke tests
 - **Thread 2** (7 tasks): Remaining `idea-to-plan` subcommands including skill discovery helper
 - **Thread 3** (4 tasks): `improve` subcommands including config-dir modification
 - **Thread 4** (2 tasks): `setup` subcommands with config-dir modifications
 - **Thread 5** (1 task): Remove remaining excluded files and `workflow-scripts/` directory
 - **Thread 6** (3 tasks): Extract `script_command()` factory, convert all groups, parametrize tests
+- **Thread 7** (3 tasks): Rename `idea-to-plan` to `go`, `idea`, `spec`, `plan`, `design` with artifact-verb pattern
 
 ---
 
@@ -618,3 +672,6 @@ Full unit test suite: 704 passed. Parametrized tests: 40 passed (>= 33 non-help 
 
 ### 2026-02-20 07:45 - mark-task-complete
 Parametrized 13 script commands into single test class with 40 tests (20 entries x 2 methods), removed 13 per-subcommand files
+
+### 2026-02-20 - plan revision: rename idea-to-plan to artifact-verb pattern
+Added Steel Thread 7 (3 tasks) to rename the `idea-to-plan` group into `go` (top-level), `idea`, `spec`, `design` (new groups), and `plan create`/`plan revise` (additions to existing group). Updated spec FR1, FR2, FR4, Epics, and Scenarios to match.

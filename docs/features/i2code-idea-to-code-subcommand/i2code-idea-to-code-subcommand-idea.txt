@@ -1,0 +1,17 @@
+Package all workflow scripts in workflow-scripts/ as i2code subcommands, organized into three CLI groups:
+
+- `i2code idea-to-plan` — brainstorm, spec, plan, design-doc (7 subcommands including orchestrator)
+- `i2code improve` — analyze-sessions, summary-reports, review-issues, update-claude-files (4 subcommands)
+- `i2code setup` — claude-files, update-project (2 subcommands)
+
+The scripts remain as shell scripts initially but are bundled as package data (in src/i2code/scripts/ and src/i2code/prompt-templates/) with thin Click wrappers that exec them via subprocess. This makes the entire workflow installable via uv.
+
+Excluded from scope:
+- implement-plan.sh and implement-with-worktree.sh (replaced by i2code implement)
+- implement-todo-list.sh and refine-todo-list.sh (deferred)
+- _python_helper.sh and requirements.txt (dead code)
+
+Key modifications:
+- Config-files-dependent scripts accept config directory as a script argument
+- Skill name discovery via a helper script that reads ~/.claude/plugins/cache/
+- Original workflow-scripts/ directory removed after migration

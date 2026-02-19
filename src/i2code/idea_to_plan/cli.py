@@ -34,3 +34,11 @@ def revise_spec_cmd(args):
     """Revise an existing specification."""
     result = run_script("revise-spec.sh", args)
     sys.exit(result.returncode)
+
+
+@idea_to_plan.command("revise-plan")
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def revise_plan_cmd(args):
+    """Revise an existing implementation plan."""
+    result = run_script("revise-plan.sh", args)
+    sys.exit(result.returncode)

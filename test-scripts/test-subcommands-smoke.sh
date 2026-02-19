@@ -70,5 +70,23 @@ OUTPUT=$(uv run i2code idea-to-plan revise-spec --help 2>&1)
 echo "$OUTPUT"
 echo "PASS: idea-to-plan revise-spec --help exits 0"
 
+# --- revise-plan is listed in idea-to-plan --help ---
+echo ""
+echo "--- i2code idea-to-plan --help lists revise-plan ---"
+OUTPUT=$(uv run i2code idea-to-plan --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"revise-plan"* ]]; then
+    echo "FAIL: idea-to-plan --help does not list revise-plan"
+    exit 1
+fi
+echo "PASS: revise-plan listed in idea-to-plan --help"
+
+# --- revise-plan --help exits 0 ---
+echo ""
+echo "--- i2code idea-to-plan revise-plan --help exits 0 ---"
+OUTPUT=$(uv run i2code idea-to-plan revise-plan --help 2>&1)
+echo "$OUTPUT"
+echo "PASS: idea-to-plan revise-plan --help exits 0"
+
 echo ""
 echo "=== All Subcommand Smoke Tests Passed ==="

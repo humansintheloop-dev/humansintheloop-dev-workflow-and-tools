@@ -165,16 +165,16 @@ Completes the `idea-to-plan` group with all remaining subcommands, including ski
     - [x] Add design_doc_cmd to src/i2code/idea_to_plan/cli.py
     - [x] Create tests/idea-to-plan/test_design_doc_cli.py
     - [x] Update test-scripts/test-subcommands-smoke.sh to check for design-doc in idea-to-plan --help, and verify uv run i2code idea-to-plan design-doc --help exits 0
-- [ ] **Task 2.6: Modify `idea-to-code.sh` to call `i2code implement` instead of `implement-plan.sh`**
+- [x] **Task 2.6: Modify `idea-to-code.sh` to call `i2code implement` instead of `implement-plan.sh`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan run my-dir`
   - Observable: `idea-to-code.sh` (in `src/i2code/scripts/`) replaces all references to `$SCRIPT_DIR/implement-plan.sh` with `i2code implement`. The orchestrator no longer depends on `implement-plan.sh` being present in the scripts bundle.
   - Evidence: `Manual review of modified idea-to-code.sh confirms no remaining references to implement-plan.sh; the run subcommand smoke test passes`
   - Steps:
-    - [ ] git mv workflow-scripts/idea-to-code.sh to src/i2code/scripts/idea-to-code.sh
-    - [ ] Modify src/i2code/scripts/idea-to-code.sh to replace "$SCRIPT_DIR/implement-plan.sh" "$dir" with i2code implement "$dir"
-    - [ ] Remove the "Implement a specific task" menu option since i2code implement does not support a task argument — renumber the Exit option accordingly
-    - [ ] Update the handle_error call for implement to reference i2code implement instead of $SCRIPT_DIR/implement-plan.sh
+    - [x] git mv workflow-scripts/idea-to-code.sh to src/i2code/scripts/idea-to-code.sh
+    - [x] Modify src/i2code/scripts/idea-to-code.sh to replace "$SCRIPT_DIR/implement-plan.sh" "$dir" with i2code implement "$dir"
+    - [x] Remove the "Implement a specific task" menu option since i2code implement does not support a task argument — renumber the Exit option accordingly
+    - [x] Update the handle_error call for implement to reference i2code implement instead of $SCRIPT_DIR/implement-plan.sh
 - [ ] **Task 2.7: `i2code idea-to-plan run` subcommand invokes the orchestrator**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan run my-dir`
@@ -465,3 +465,6 @@ All 8 steps complete: git-moved make-plan.sh and prompt template, created list-p
 
 ### 2026-02-19 19:37 - mark-task-complete
 Implemented design-doc subcommand with plugin skill discovery
+
+### 2026-02-19 19:42 - mark-task-complete
+Moved idea-to-code.sh to src/i2code/scripts/, replaced implement-plan.sh with i2code implement, removed specific task menu option

@@ -71,16 +71,15 @@ Proves that shell scripts can be bundled as package data, located at runtime, in
 - [ ] **Task 1.1: Script runner locates bundled script, forwards arguments, and propagates exit code**
   - TaskType: INFRA
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/script-runner/ -v -m unit`
-  - Observable: `run_script("brainstorm-idea.sh", ["my-dir"])` resolves the path to `src/i2code/scripts/brainstorm-idea.sh`, ensures execute permission, calls `subprocess.run` with `[resolved_path, "my-dir"]`, and returns the subprocess result. Raises an error for scripts that do not exist in the bundle.
-  - Evidence: pytest tests pass with exit code 0
+  - Observable: run_script("brainstorm-idea.sh", ["my-dir"]) resolves the path to src/i2code/scripts/brainstorm-idea.sh, ensures execute permission, calls subprocess.run with [resolved_path, "my-dir"], and returns the subprocess result. Raises an error for scripts that do not exist in the bundle.
+  - Evidence: `pytest tests pass with exit code 0`
   - Steps:
-    - [ ] Copy all 14 in-scope shell scripts from `workflow-scripts/` to `src/i2code/scripts/`: `_helper.sh`, `brainstorm-idea.sh`, `idea-to-code.sh`, `make-spec.sh`, `make-plan.sh`, `revise-spec.sh`, `revise-plan.sh`, `create-design-doc.sh`, `analyze-sessions.sh`, `create-summary-reports.sh`, `review-issues.sh`, `update-claude-files-from-project.sh`, `setup-claude-files.sh`, `update-project-claude-files.sh`
-    - [ ] Copy all 10 prompt templates from `prompt-templates/` to `src/i2code/prompt-templates/`: `brainstorm-idea.md`, `create-spec.md`, `create-implementation-plan.md`, `revise-plan.md`, `create-design-doc.md`, `analyze-sessions.md`, `create-summary-report.md`, `review-issues.md`, `update-claude-files-from-project.md`, `update-project-claude-files.md`
-    - [ ] Update `pyproject.toml` `[tool.hatch.build.targets.wheel]` to include `scripts/` and `prompt-templates/` directories as package data (they are already under `src/i2code/` which is in `packages`)
-    - [ ] Create `src/i2code/script_runner.py` with `run_script(script_name, args=())` that: resolves path via `Path(__file__).parent / "scripts" / script_name`, raises `FileNotFoundError` if missing, ensures execute permission via `os.chmod`, calls `subprocess.run([str(script_path)] + list(args))`, and returns the `CompletedProcess` result
-    - [ ] Create `tests/script-runner/__init__.py` and `tests/script-runner/conftest.py` (mark tests as `unit`)
-    - [ ] Create `tests/script-runner/test_script_runner.py` with tests: resolves correct path, ensures executability, forwards arguments to subprocess, returns subprocess result, raises error for missing script
-
+    - [ ] git mv workflow-scripts/_helper.sh to src/i2code/scripts/_helper.sh and workflow-scripts/brainstorm-idea.sh to src/i2code/scripts/brainstorm-idea.sh (create src/i2code/scripts/ directory first)
+    - [ ] git mv prompt-templates/brainstorm-idea.md to src/i2code/prompt-templates/brainstorm-idea.md (create src/i2code/prompt-templates/ directory first)
+    - [ ] Update pyproject.toml [tool.hatch.build.targets.wheel] to include scripts/ and prompt-templates/ directories as package data
+    - [ ] Create src/i2code/script_runner.py with run_script(script_name, args=()) that: resolves path via Path(__file__).parent / "scripts" / script_name, raises FileNotFoundError if missing, ensures execute permission via os.chmod, calls subprocess.run([str(script_path)] + list(args)), and returns the CompletedProcess result
+    - [ ] Create tests/script-runner/__init__.py and tests/script-runner/conftest.py (mark tests as unit)
+    - [ ] Create tests/script-runner/test_script_runner.py with tests: resolves correct path, ensures executability, forwards arguments to subprocess, returns subprocess result, raises error for missing script
 - [ ] **Task 1.2: `i2code idea-to-plan brainstorm <dir>` invokes bundled brainstorm-idea.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan brainstorm my-dir`
@@ -104,62 +103,79 @@ Proves that shell scripts can be bundled as package data, located at runtime, in
 
 ---
 
-- [ ] **Task 1.4: Remove migrated `brainstorm-idea.sh` from `workflow-scripts/`**
-  - TaskType: INFRA
-  - Entrypoint: `./test-scripts/test-end-to-end.sh`
-  - Observable: `workflow-scripts/brainstorm-idea.sh` is removed from the repository. All tests continue to pass since the bundled copy in `src/i2code/scripts/` is used by the `i2code idea-to-plan brainstorm` subcommand.
-  - Evidence: `test-end-to-end.sh passes; `workflow-scripts/brainstorm-idea.sh` no longer exists`
-  - Steps:
-    - [ ] Run `git rm workflow-scripts/brainstorm-idea.sh`
-    - [ ] Run `./test-scripts/test-end-to-end.sh` to confirm everything still passes
 ## Steel Thread 2: Complete idea-to-plan Subcommands
 
 Completes the `idea-to-plan` group with all remaining subcommands, including skill discovery modifications for `make-plan` and `design-doc`.
 
-- [ ] **Task 2.1: `i2code idea-to-plan spec`, `revise-spec`, and `revise-plan` subcommands invoke their respective scripts**
+- [ ] **Task 2.1: `i2code idea-to-plan spec` subcommand invokes bundled make-spec.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan spec my-dir`
-  - Observable: Each subcommand locates its corresponding bundled script (`make-spec.sh`, `revise-spec.sh`, `revise-plan.sh`), forwards all arguments, and propagates exit code. `spec` and `revise-plan` also forward additional `claude-args`.
-  - Evidence: pytest tests using `CliRunner` with mocked `subprocess.run` verify correct script invocation for each subcommand; smoke test updated to verify all three appear in `i2code idea-to-plan --help`
+  - Observable: The command locates make-spec.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments (including extra claude-args), and exits with the script's exit code
+  - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies make-spec.sh is invoked with correct arguments and exit code is propagated`
   - Steps:
-    - [ ] Add `spec_cmd`, `revise_spec_cmd`, and `revise_plan_cmd` to `src/i2code/idea_to_plan/cli.py`, each following the brainstorm pattern (script names: `make-spec.sh`, `revise-spec.sh`, `revise-plan.sh`)
-    - [ ] Create `tests/idea-to-plan/test_spec_cli.py`, `tests/idea-to-plan/test_revise_spec_cli.py`, `tests/idea-to-plan/test_revise_plan_cli.py` — verify each one incrementally before creating the next
-    - [ ] Update `test-scripts/test-subcommands-smoke.sh` to check for `spec`, `revise-spec`, and `revise-plan` in `idea-to-plan --help`, and verify `uv run i2code idea-to-plan spec --help`, `revise-spec --help`, and `revise-plan --help` each exit 0
-
-- [ ] **Task 2.2: Skill discovery helper `list-plugin-skills.sh` and `i2code idea-to-plan make-plan` subcommand**
+    - [ ] git mv workflow-scripts/make-spec.sh to src/i2code/scripts/make-spec.sh
+    - [ ] git mv prompt-templates/create-spec.md to src/i2code/prompt-templates/create-spec.md
+    - [ ] Add spec_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: make-spec.sh)
+    - [ ] Create tests/idea-to-plan/test_spec_cli.py — verify with CliRunner and mocked subprocess.run
+    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for spec in idea-to-plan --help and verify uv run i2code idea-to-plan spec --help exits 0
+- [ ] **Task 2.2: `i2code idea-to-plan revise-spec` subcommand invokes bundled revise-spec.sh**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run i2code idea-to-plan revise-spec my-dir`
+  - Observable: The command locates revise-spec.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments, and exits with the script's exit code
+  - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies revise-spec.sh is invoked with correct arguments and exit code is propagated`
+  - Steps:
+    - [ ] git mv workflow-scripts/revise-spec.sh to src/i2code/scripts/revise-spec.sh
+    - [ ] Add revise_spec_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: revise-spec.sh)
+    - [ ] Create tests/idea-to-plan/test_revise_spec_cli.py — verify with CliRunner and mocked subprocess.run
+    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for revise-spec in idea-to-plan --help and verify uv run i2code idea-to-plan revise-spec --help exits 0
+- [ ] **Task 2.3: `i2code idea-to-plan revise-plan` subcommand invokes bundled revise-plan.sh**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run i2code idea-to-plan revise-plan my-dir`
+  - Observable: The command locates revise-plan.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments, and exits with the script's exit code
+  - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies revise-plan.sh is invoked with correct arguments and exit code is propagated`
+  - Steps:
+    - [ ] git mv workflow-scripts/revise-plan.sh to src/i2code/scripts/revise-plan.sh
+    - [ ] git mv prompt-templates/revise-plan.md to src/i2code/prompt-templates/revise-plan.md
+    - [ ] Add revise_plan_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: revise-plan.sh)
+    - [ ] Create tests/idea-to-plan/test_revise_plan_cli.py — verify with CliRunner and mocked subprocess.run
+    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for revise-plan in idea-to-plan --help and verify uv run i2code idea-to-plan revise-plan --help exits 0
+- [ ] **Task 2.4: Skill discovery helper `list-plugin-skills.sh` and `i2code idea-to-plan make-plan` subcommand**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan make-plan my-dir`
-  - Observable: `list-plugin-skills.sh` searches `~/.claude/plugins/cache/` for the `idea-to-code` plugin, lists subdirectory names under its `skills/` directory, and outputs them as `idea-to-code:<skill-name>` comma-separated. If the plugin is not installed, it prints a warning to stderr and outputs an empty string. `make-plan.sh` (in `src/i2code/scripts/`) calls `list-plugin-skills.sh` instead of `ls -1 "$DIR/../skills"`. The `make-plan` subcommand invokes modified `make-plan.sh` and propagates exit code.
-  - Evidence: pytest test for `make-plan` subcommand verifies script invocation; shell test script validates `list-plugin-skills.sh` outputs correct format when plugin exists and outputs empty string with warning when plugin is absent
+  - Observable: `list-plugin-skills.sh` searches `~/.claude/plugins/cache/` for the `idea-to-code` plugin, lists subdirectory names under its `skills/` directory, and outputs them as `idea-to-code:<skill-name>` comma-separated. If the plugin is not installed, it prints a warning to stderr and outputs an empty string. `make-plan.sh` (in `src/i2code/scripts/`) calls `list-plugin-skills.sh` instead of `ls -1 "/../skills"`. The `make-plan` subcommand invokes modified `make-plan.sh` and propagates exit code.
+  - Evidence: `pytest test for make-plan subcommand verifies script invocation; shell test script validates list-plugin-skills.sh outputs correct format when plugin exists and outputs empty string with warning when plugin is absent`
   - Steps:
-    - [ ] Create `src/i2code/scripts/list-plugin-skills.sh` that: searches `~/.claude/plugins/cache/` for a directory matching `*idea-to-code*/skills/`, lists subdirectory names, formats as `idea-to-code:<name>` comma-separated, prints warning to stderr and outputs empty string if not found
-    - [ ] Modify `src/i2code/scripts/make-plan.sh` to replace `ls -1 "$DIR/../skills" | sed ...` with a call to `$DIR/list-plugin-skills.sh`
-    - [ ] Add `make_plan_cmd` to `src/i2code/idea_to_plan/cli.py`
-    - [ ] Create `tests/idea-to-plan/test_make_plan_cli.py`
-    - [ ] Create `test-scripts/test-list-plugin-skills.sh` that validates output format (add to `test-end-to-end.sh`)
-    - [ ] Update `test-scripts/test-subcommands-smoke.sh` to check for `make-plan` in `idea-to-plan --help`, and verify `uv run i2code idea-to-plan make-plan --help` exits 0
-
-- [ ] **Task 2.3: `i2code idea-to-plan design-doc` subcommand with skill discovery**
+    - [ ] git mv workflow-scripts/make-plan.sh to src/i2code/scripts/make-plan.sh
+    - [ ] git mv prompt-templates/create-implementation-plan.md to src/i2code/prompt-templates/create-implementation-plan.md
+    - [ ] Create src/i2code/scripts/list-plugin-skills.sh that: searches ~/.claude/plugins/cache/ for a directory matching *idea-to-code*/skills/, lists subdirectory names, formats as idea-to-code:<name> comma-separated, prints warning to stderr and outputs empty string if not found
+    - [ ] Modify src/i2code/scripts/make-plan.sh to replace ls -1 "$DIR/../skills" | sed ... with a call to $DIR/list-plugin-skills.sh
+    - [ ] Add make_plan_cmd to src/i2code/idea_to_plan/cli.py
+    - [ ] Create tests/idea-to-plan/test_make_plan_cli.py
+    - [ ] Create test-scripts/test-list-plugin-skills.sh that validates output format (add to test-end-to-end.sh)
+    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for make-plan in idea-to-plan --help, and verify uv run i2code idea-to-plan make-plan --help exits 0
+- [ ] **Task 2.5: `i2code idea-to-plan design-doc` subcommand with skill discovery**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan design-doc my-dir`
-  - Observable: `create-design-doc.sh` (in `src/i2code/scripts/`) calls `list-plugin-skills.sh` instead of `ls -1 "$DIR/../skills"`. The `design-doc` subcommand invokes modified `create-design-doc.sh` and propagates exit code.
-  - Evidence: pytest test using `CliRunner` with mocked `subprocess.run` verifies `create-design-doc.sh` is invoked with correct arguments
+  - Observable: `create-design-doc.sh` (in `src/i2code/scripts/`) calls `list-plugin-skills.sh` instead of `ls -1 "/../skills"`. The `design-doc` subcommand invokes modified `create-design-doc.sh` and propagates exit code.
+  - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies create-design-doc.sh is invoked with correct arguments`
   - Steps:
-    - [ ] Modify `src/i2code/scripts/create-design-doc.sh` to replace `ls -1 "$DIR/../skills" | sed ...` with a call to `$DIR/list-plugin-skills.sh`
-    - [ ] Add `design_doc_cmd` to `src/i2code/idea_to_plan/cli.py`
-    - [ ] Create `tests/idea-to-plan/test_design_doc_cli.py`
-    - [ ] Update `test-scripts/test-subcommands-smoke.sh` to check for `design-doc` in `idea-to-plan --help`, and verify `uv run i2code idea-to-plan design-doc --help` exits 0
-
-- [ ] **Task 2.4: Modify `idea-to-code.sh` to call `i2code implement` instead of `implement-plan.sh`**
+    - [ ] git mv workflow-scripts/create-design-doc.sh to src/i2code/scripts/create-design-doc.sh
+    - [ ] git mv prompt-templates/create-design-doc.md to src/i2code/prompt-templates/create-design-doc.md
+    - [ ] Modify src/i2code/scripts/create-design-doc.sh to replace ls -1 "$DIR/../skills" | sed ... with a call to $DIR/list-plugin-skills.sh
+    - [ ] Add design_doc_cmd to src/i2code/idea_to_plan/cli.py
+    - [ ] Create tests/idea-to-plan/test_design_doc_cli.py
+    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for design-doc in idea-to-plan --help, and verify uv run i2code idea-to-plan design-doc --help exits 0
+- [ ] **Task 2.6: Modify `idea-to-code.sh` to call `i2code implement` instead of `implement-plan.sh`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan run my-dir`
-  - Observable: `idea-to-code.sh` (in `src/i2code/scripts/`) replaces all references to `$SCRIPT_DIR/implement-plan.sh` with `i2code implement`. The "Implement the entire plan" menu option calls `i2code implement "$dir"` and the "Implement a specific task" option is removed (since `i2code implement` does not accept a task argument). The orchestrator no longer depends on `implement-plan.sh` being present in the scripts bundle.
-  - Evidence: `Manual review of modified `idea-to-code.sh` confirms no remaining references to `implement-plan.sh`; the `run` subcommand smoke test passes`
+  - Observable: `idea-to-code.sh` (in `src/i2code/scripts/`) replaces all references to `$SCRIPT_DIR/implement-plan.sh` with `i2code implement`. The orchestrator no longer depends on `implement-plan.sh` being present in the scripts bundle.
+  - Evidence: `Manual review of modified idea-to-code.sh confirms no remaining references to implement-plan.sh; the run subcommand smoke test passes`
   - Steps:
-    - [ ] Modify `src/i2code/scripts/idea-to-code.sh` to replace `"$SCRIPT_DIR/implement-plan.sh" "$dir"` (line 267) with `i2code implement "$dir"`
-    - [ ] Remove the "Implement a specific task" menu option (lines 289-317) since `i2code implement` does not support a task argument — renumber the Exit option accordingly
-    - [ ] Update the `handle_error` call for implement to reference `i2code implement` instead of `$SCRIPT_DIR/implement-plan.sh`
-- [ ] **Task 2.5: `i2code idea-to-plan run` subcommand invokes the orchestrator**
+    - [ ] git mv workflow-scripts/idea-to-code.sh to src/i2code/scripts/idea-to-code.sh
+    - [ ] Modify src/i2code/scripts/idea-to-code.sh to replace "$SCRIPT_DIR/implement-plan.sh" "$dir" with i2code implement "$dir"
+    - [ ] Remove the "Implement a specific task" menu option since i2code implement does not support a task argument — renumber the Exit option accordingly
+    - [ ] Update the handle_error call for implement to reference i2code implement instead of $SCRIPT_DIR/implement-plan.sh
+- [ ] **Task 2.7: `i2code idea-to-plan run` subcommand invokes the orchestrator**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan run my-dir`
   - Observable: The `run` subcommand invokes `idea-to-code.sh` with all forwarded arguments and propagates exit code
@@ -171,52 +187,58 @@ Completes the `idea-to-plan` group with all remaining subcommands, including ski
 
 ---
 
-- [ ] **Task 2.6: Remove migrated idea-to-plan scripts from `workflow-scripts/`**
-  - TaskType: INFRA
-  - Entrypoint: `./test-scripts/test-end-to-end.sh`
-  - Observable: `workflow-scripts/make-spec.sh`, `revise-spec.sh`, `revise-plan.sh`, `make-plan.sh`, `create-design-doc.sh`, and `idea-to-code.sh` are removed from the repository. All tests continue to pass.
-  - Evidence: `test-end-to-end.sh passes; listed scripts no longer exist in `workflow-scripts/``
-  - Steps:
-    - [ ] Run `git rm workflow-scripts/make-spec.sh workflow-scripts/revise-spec.sh workflow-scripts/revise-plan.sh workflow-scripts/make-plan.sh workflow-scripts/create-design-doc.sh workflow-scripts/idea-to-code.sh`
-    - [ ] Run `./test-scripts/test-end-to-end.sh` to confirm everything still passes
 ## Steel Thread 3: improve Subcommands
 
 Adds the `improve` group with four subcommands for session analysis, summary reports, issue review, and Claude file updates.
 
-- [ ] **Task 3.1: `i2code improve analyze-sessions`, `summary-reports`, and `review-issues` subcommands**
+- [ ] **Task 3.1: `i2code improve analyze-sessions` subcommand and improve group infrastructure**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code improve analyze-sessions my-tracking-dir`
-  - Observable: Each subcommand locates its corresponding bundled script (`analyze-sessions.sh`, `create-summary-reports.sh`, `review-issues.sh`), forwards all arguments (including `--project-name`, `--project`, and extra `claude-args`), and propagates exit code. `i2code --help` lists the `improve` group.
-  - Evidence: pytest tests using `CliRunner` with mocked `subprocess.run` verify correct script invocation for each subcommand; smoke test verifies all three appear in `i2code improve --help`
+  - Observable: The command locates analyze-sessions.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments, and exits with the script's exit code. i2code --help lists the improve group.
+  - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies analyze-sessions.sh is invoked with correct arguments and exit code is propagated; smoke test verifies improve group appears in i2code --help`
   - Steps:
-    - [ ] Create `src/i2code/improve/__init__.py`
-    - [ ] Create `src/i2code/improve/cli.py` with Click group `improve` (help text `"Analyze sessions, review issues, and update configuration."`) and commands `analyze_sessions_cmd` (script: `analyze-sessions.sh`), `summary_reports_cmd` (script: `create-summary-reports.sh`), `review_issues_cmd` (script: `review-issues.sh`)
-    - [ ] Register `improve` group in `src/i2code/cli.py` via `main.add_command(improve)`
-    - [ ] Create `tests/improve/__init__.py` and `tests/improve/conftest.py` (mark tests as `unit`)
-    - [ ] Create `tests/improve/test_analyze_sessions_cli.py`, `tests/improve/test_summary_reports_cli.py`, `tests/improve/test_review_issues_cli.py` — verify each one incrementally
-    - [ ] Update `test-scripts/test-subcommands-smoke.sh` to check `i2code --help` contains `improve`, `i2code improve --help` contains all three subcommands, and verify `uv run i2code improve analyze-sessions --help`, `summary-reports --help`, and `review-issues --help` each exit 0
-
-- [ ] **Task 3.2: `i2code improve update-claude-files` subcommand with config-dir modification**
+    - [ ] git mv workflow-scripts/analyze-sessions.sh to src/i2code/scripts/analyze-sessions.sh
+    - [ ] git mv prompt-templates/analyze-sessions.md to src/i2code/prompt-templates/analyze-sessions.md
+    - [ ] Create src/i2code/improve/__init__.py
+    - [ ] Create src/i2code/improve/cli.py with Click group improve (help text "Analyze sessions, review issues, and update configuration.") and analyze_sessions_cmd (script: analyze-sessions.sh)
+    - [ ] Register improve group in src/i2code/cli.py via main.add_command(improve)
+    - [ ] Create tests/improve/__init__.py and tests/improve/conftest.py (mark tests as unit)
+    - [ ] Create tests/improve/test_analyze_sessions_cli.py — verify with CliRunner and mocked subprocess.run
+    - [ ] Update test-scripts/test-subcommands-smoke.sh to check i2code --help contains improve, i2code improve --help contains analyze-sessions, and verify uv run i2code improve analyze-sessions --help exits 0
+- [ ] **Task 3.2: `i2code improve summary-reports` subcommand invokes bundled create-summary-reports.sh**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run i2code improve summary-reports my-hitl-dir`
+  - Observable: The command locates create-summary-reports.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments (including --project-name), and exits with the script's exit code
+  - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies create-summary-reports.sh is invoked with correct arguments and exit code is propagated`
+  - Steps:
+    - [ ] git mv workflow-scripts/create-summary-reports.sh to src/i2code/scripts/create-summary-reports.sh
+    - [ ] git mv prompt-templates/create-summary-report.md to src/i2code/prompt-templates/create-summary-report.md
+    - [ ] Add summary_reports_cmd to src/i2code/improve/cli.py (script: create-summary-reports.sh)
+    - [ ] Create tests/improve/test_summary_reports_cli.py — verify with CliRunner and mocked subprocess.run
+    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for summary-reports in improve --help and verify uv run i2code improve summary-reports --help exits 0
+- [ ] **Task 3.3: `i2code improve review-issues` subcommand invokes bundled review-issues.sh**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run i2code improve review-issues my-hitl-dir`
+  - Observable: The command locates review-issues.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments (including --project and extra claude-args), and exits with the script's exit code
+  - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies review-issues.sh is invoked with correct arguments and exit code is propagated`
+  - Steps:
+    - [ ] git mv workflow-scripts/review-issues.sh to src/i2code/scripts/review-issues.sh
+    - [ ] git mv prompt-templates/review-issues.md to src/i2code/prompt-templates/review-issues.md
+    - [ ] Add review_issues_cmd to src/i2code/improve/cli.py (script: review-issues.sh)
+    - [ ] Create tests/improve/test_review_issues_cli.py — verify with CliRunner and mocked subprocess.run
+    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for review-issues in improve --help and verify uv run i2code improve review-issues --help exits 0
+- [ ] **Task 3.4: `i2code improve update-claude-files` subcommand with config-dir modification**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code improve update-claude-files my-project-dir --config-dir /path/to/config-files`
   - Observable: `update-claude-files-from-project.sh` (in `src/i2code/scripts/`) accepts config directory as a new argument instead of deriving it from `$DIR/../config-files`. The `update-claude-files` subcommand invokes the modified script, forwarding all arguments including `--config-dir` and extra `claude-args`, and propagates exit code.
-  - Evidence: pytest test using `CliRunner` with mocked `subprocess.run` verifies script is invoked with correct arguments
+  - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies script is invoked with correct arguments`
   - Steps:
-    - [ ] Modify `src/i2code/scripts/update-claude-files-from-project.sh` to accept a `--config-dir` argument (parse it from the argument list) instead of using `$DIR/../config-files`. Also update the `git -C` reference to derive the git repo root from the config directory path.
-    - [ ] Add `update_claude_files_cmd` to `src/i2code/improve/cli.py`
-    - [ ] Create `tests/improve/test_update_claude_files_cli.py`
-    - [ ] Update `test-scripts/test-subcommands-smoke.sh` to check for `update-claude-files` in `improve --help`, and verify `uv run i2code improve update-claude-files --help` exits 0
-
----
-
-- [ ] **Task 3.3: Remove migrated improve scripts from `workflow-scripts/`**
-  - TaskType: INFRA
-  - Entrypoint: `./test-scripts/test-end-to-end.sh`
-  - Observable: `workflow-scripts/analyze-sessions.sh`, `create-summary-reports.sh`, `review-issues.sh`, and `update-claude-files-from-project.sh` are removed from the repository. All tests continue to pass.
-  - Evidence: `test-end-to-end.sh passes; listed scripts no longer exist in `workflow-scripts/``
-  - Steps:
-    - [ ] Run `git rm workflow-scripts/analyze-sessions.sh workflow-scripts/create-summary-reports.sh workflow-scripts/review-issues.sh workflow-scripts/update-claude-files-from-project.sh`
-    - [ ] Run `./test-scripts/test-end-to-end.sh` to confirm everything still passes
+    - [ ] git mv workflow-scripts/update-claude-files-from-project.sh to src/i2code/scripts/update-claude-files-from-project.sh
+    - [ ] git mv prompt-templates/update-claude-files-from-project.md to src/i2code/prompt-templates/update-claude-files-from-project.md
+    - [ ] Modify src/i2code/scripts/update-claude-files-from-project.sh to accept a --config-dir argument (parse it from the argument list) instead of using $DIR/../config-files. Also update the git repo root derivation to use the config directory path.
+    - [ ] Add update_claude_files_cmd to src/i2code/improve/cli.py
+    - [ ] Create tests/improve/test_update_claude_files_cli.py
+    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for update-claude-files in improve --help, and verify uv run i2code improve update-claude-files --help exits 0
 ## Steel Thread 4: setup Subcommands with Config Directory Argument
 
 Adds the `setup` group with two subcommands that accept `--config-dir` as a required argument, replacing the `$DIR/../config-files` path derivation.
@@ -225,37 +247,28 @@ Adds the `setup` group with two subcommands that accept `--config-dir` as a requ
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code setup claude-files --config-dir /path/to/config-files`
   - Observable: `setup-claude-files.sh` (in `src/i2code/scripts/`) accepts config directory as a new argument instead of deriving it from `$DIR/../config-files`. The `claude-files` subcommand invokes the modified script, forwarding `--config-dir` and any other arguments, and propagates exit code. `i2code --help` lists the `setup` group.
-  - Evidence: pytest test using `CliRunner` with mocked `subprocess.run` verifies script is invoked with correct arguments
+  - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies script is invoked with correct arguments`
   - Steps:
-    - [ ] Modify `src/i2code/scripts/setup-claude-files.sh` to accept a `--config-dir` argument instead of using `$DIR/../config-files`
-    - [ ] Create `src/i2code/setup_cmd/__init__.py`
-    - [ ] Create `src/i2code/setup_cmd/cli.py` with Click group `setup_group` (command name `"setup"`, help text `"Initial project setup and configuration updates."`) and `claude_files_cmd` (script: `setup-claude-files.sh`)
-    - [ ] Register `setup_group` group in `src/i2code/cli.py` via `main.add_command(setup_group)`
-    - [ ] Create `tests/setup-cmd/__init__.py` and `tests/setup-cmd/conftest.py` (mark tests as `unit`)
-    - [ ] Create `tests/setup-cmd/test_claude_files_cli.py`
-    - [ ] Update `test-scripts/test-subcommands-smoke.sh` to check `i2code --help` contains `setup`, `i2code setup --help` contains `claude-files`, and verify `uv run i2code setup claude-files --help` exits 0
-
+    - [ ] git mv workflow-scripts/setup-claude-files.sh to src/i2code/scripts/setup-claude-files.sh
+    - [ ] Modify src/i2code/scripts/setup-claude-files.sh to accept a --config-dir argument instead of using $DIR/../config-files
+    - [ ] Create src/i2code/setup_cmd/__init__.py
+    - [ ] Create src/i2code/setup_cmd/cli.py with Click group setup_group (command name "setup", help text "Initial project setup and configuration updates.") and claude_files_cmd (script: setup-claude-files.sh)
+    - [ ] Register setup_group group in src/i2code/cli.py via main.add_command(setup_group)
+    - [ ] Create tests/setup-cmd/__init__.py and tests/setup-cmd/conftest.py (mark tests as unit)
+    - [ ] Create tests/setup-cmd/test_claude_files_cli.py
+    - [ ] Update test-scripts/test-subcommands-smoke.sh to check i2code --help contains setup, i2code setup --help contains claude-files, and verify uv run i2code setup claude-files --help exits 0
 - [ ] **Task 4.2: `i2code setup update-project <project-dir> --config-dir <path>` subcommand**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code setup update-project my-project-dir --config-dir /path/to/config-files`
   - Observable: `update-project-claude-files.sh` (in `src/i2code/scripts/`) accepts config directory as a new argument instead of deriving it from `$DIR/../config-files`. The git history lookup for config-files/ changes derives the repo root from the config-dir path. The `update-project` subcommand invokes the modified script, forwarding all arguments, and propagates exit code.
-  - Evidence: pytest test using `CliRunner` with mocked `subprocess.run` verifies script is invoked with correct arguments
+  - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies script is invoked with correct arguments`
   - Steps:
-    - [ ] Modify `src/i2code/scripts/update-project-claude-files.sh` to accept a `--config-dir` argument instead of using `$DIR/../config-files`. Update `git -C "$DIR/.."` to use `git -C "$(dirname "$CONFIG_DIR")"` for commit history lookup.
-    - [ ] Add `update_project_cmd` to `src/i2code/setup_cmd/cli.py`
-    - [ ] Create `tests/setup-cmd/test_update_project_cli.py`
-    - [ ] Update `test-scripts/test-subcommands-smoke.sh` to check for `update-project` in `setup --help`, and verify `uv run i2code setup update-project --help` exits 0
-
----
-
-- [ ] **Task 4.3: Remove migrated setup scripts from `workflow-scripts/`**
-  - TaskType: INFRA
-  - Entrypoint: `./test-scripts/test-end-to-end.sh`
-  - Observable: `workflow-scripts/setup-claude-files.sh` and `update-project-claude-files.sh` are removed from the repository. All tests continue to pass.
-  - Evidence: `test-end-to-end.sh passes; listed scripts no longer exist in `workflow-scripts/``
-  - Steps:
-    - [ ] Run `git rm workflow-scripts/setup-claude-files.sh workflow-scripts/update-project-claude-files.sh`
-    - [ ] Run `./test-scripts/test-end-to-end.sh` to confirm everything still passes
+    - [ ] git mv workflow-scripts/update-project-claude-files.sh to src/i2code/scripts/update-project-claude-files.sh
+    - [ ] git mv prompt-templates/update-project-claude-files.md to src/i2code/prompt-templates/update-project-claude-files.md
+    - [ ] Modify src/i2code/scripts/update-project-claude-files.sh to accept a --config-dir argument instead of using $DIR/../config-files. Update git repo root derivation to use the config-dir path for commit history lookup.
+    - [ ] Add update_project_cmd to src/i2code/setup_cmd/cli.py
+    - [ ] Create tests/setup-cmd/test_update_project_cli.py
+    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for update-project in setup --help, and verify uv run i2code setup update-project --help exits 0
 ## Steel Thread 5: Cleanup
 
 Removes the original `workflow-scripts/` directory and dead code after all scripts have been migrated and verified.
@@ -272,12 +285,12 @@ Removes the original `workflow-scripts/` directory and dead code after all scrip
     - [ ] Run `./test-scripts/test-end-to-end.sh` to confirm everything still passes
 ## Summary
 
-This plan has 5 steel threads and 10 tasks:
+This plan has 5 steel threads and 17 tasks:
 - **Thread 1** (3 tasks): Script runner infrastructure, first subcommand (`brainstorm`), CI smoke tests
-- **Thread 2** (4 tasks): Remaining `idea-to-plan` subcommands including skill discovery helper
-- **Thread 3** (2 tasks): `improve` subcommands including config-dir modification
+- **Thread 2** (7 tasks): Remaining `idea-to-plan` subcommands including skill discovery helper
+- **Thread 3** (4 tasks): `improve` subcommands including config-dir modification
 - **Thread 4** (2 tasks): `setup` subcommands with config-dir modifications
-- **Thread 5** (1 task): Remove `workflow-scripts/` directory
+- **Thread 5** (1 task): Remove remaining excluded files and `workflow-scripts/` directory
 
 ---
 
@@ -302,3 +315,60 @@ Slimmed down to only handle excluded/dead files and directory removal since migr
 
 ### 2026-02-19 - updated smoke test steps
 Added per-subcommand `--help` smoke tests: each task that adds subcommands now also verifies `uv run i2code <group> <subcommand> --help` exits 0. This catches broken imports or misconfigured command registration without executing shell scripts. Tests are added incrementally as each subcommand is wired up.
+
+### 2026-02-19 18:13 - delete-task
+git mv handles removal; no separate cleanup task needed
+
+### 2026-02-19 18:13 - delete-task
+git mv handles removal; no separate cleanup task needed
+
+### 2026-02-19 18:13 - delete-task
+git mv handles removal; no separate cleanup task needed
+
+### 2026-02-19 18:13 - delete-task
+git mv handles removal; no separate cleanup task needed
+
+### 2026-02-19 18:14 - replace-task
+Replace bulk copy of all 14 scripts with incremental git mv of only the files needed for this task
+
+### 2026-02-19 18:14 - replace-task
+Split bundled 3-subcommand task into individual tasks for incremental development
+
+### 2026-02-19 18:14 - insert-task-after
+Split bundled 3-subcommand task into individual tasks for incremental development
+
+### 2026-02-19 18:14 - insert-task-after
+Split bundled 3-subcommand task into individual tasks for incremental development
+
+### 2026-02-19 18:14 - replace-task
+Add incremental git mv of make-plan.sh and create-implementation-plan.md
+
+### 2026-02-19 18:14 - replace-task
+Add incremental git mv of create-design-doc.sh and create-design-doc.md
+
+### 2026-02-19 18:15 - replace-task
+Add incremental git mv of idea-to-code.sh
+
+### 2026-02-19 18:15 - replace-task
+Split bundled 3-subcommand task into individual tasks for incremental development
+
+### 2026-02-19 18:15 - insert-task-after
+Split bundled 3-subcommand task into individual tasks for incremental development
+
+### 2026-02-19 18:15 - insert-task-after
+Split bundled 3-subcommand task into individual tasks for incremental development
+
+### 2026-02-19 18:16 - replace-task
+Add incremental git mv of update-claude-files-from-project.sh and its prompt template
+
+### 2026-02-19 18:16 - replace-task
+Add incremental git mv of setup-claude-files.sh
+
+### 2026-02-19 18:16 - replace-task
+Add incremental git mv of update-project-claude-files.sh and its prompt template
+
+### 2026-02-19 - plan revision: incremental development and git mv
+Three structural revisions applied to enforce incremental-development and file-organization skills:
+1. **Split bundled tasks** — Tasks 2.1 (spec + revise-spec + revise-plan) and 3.1 (analyze-sessions + summary-reports + review-issues) each split into one task per subcommand (10→17 tasks total)
+2. **Incremental git mv** — Each task now `git mv`s only the scripts and prompt templates it needs, replacing the bulk copy of all 14 scripts and 10 templates in Task 1.1
+3. **Eliminated cleanup tasks** — Deleted Tasks 1.4, 2.6, 3.3, 4.3 (separate "remove migrated scripts" steps) since `git mv` handles the move and removal atomically

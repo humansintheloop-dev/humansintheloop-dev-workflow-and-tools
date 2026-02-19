@@ -128,17 +128,17 @@ Completes the `idea-to-plan` group with all remaining subcommands, including ski
     - [x] Add revise_spec_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: revise-spec.sh)
     - [x] Create tests/idea-to-plan/test_revise_spec_cli.py — verify with CliRunner and mocked subprocess.run
     - [x] Update test-scripts/test-subcommands-smoke.sh to check for revise-spec in idea-to-plan --help and verify uv run i2code idea-to-plan revise-spec --help exits 0
-- [ ] **Task 2.3: `i2code idea-to-plan revise-plan` subcommand invokes bundled revise-plan.sh**
+- [x] **Task 2.3: `i2code idea-to-plan revise-plan` subcommand invokes bundled revise-plan.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan revise-plan my-dir`
   - Observable: The command locates revise-plan.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments, and exits with the script's exit code
   - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies revise-plan.sh is invoked with correct arguments and exit code is propagated`
   - Steps:
-    - [ ] git mv workflow-scripts/revise-plan.sh to src/i2code/scripts/revise-plan.sh
-    - [ ] git mv prompt-templates/revise-plan.md to src/i2code/prompt-templates/revise-plan.md
-    - [ ] Add revise_plan_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: revise-plan.sh)
-    - [ ] Create tests/idea-to-plan/test_revise_plan_cli.py — verify with CliRunner and mocked subprocess.run
-    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for revise-plan in idea-to-plan --help and verify uv run i2code idea-to-plan revise-plan --help exits 0
+    - [x] git mv workflow-scripts/revise-plan.sh to src/i2code/scripts/revise-plan.sh
+    - [x] git mv prompt-templates/revise-plan.md to src/i2code/prompt-templates/revise-plan.md
+    - [x] Add revise_plan_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: revise-plan.sh)
+    - [x] Create tests/idea-to-plan/test_revise_plan_cli.py — verify with CliRunner and mocked subprocess.run
+    - [x] Update test-scripts/test-subcommands-smoke.sh to check for revise-plan in idea-to-plan --help and verify uv run i2code idea-to-plan revise-plan --help exits 0
 - [ ] **Task 2.4: Skill discovery helper `list-plugin-skills.sh` and `i2code idea-to-plan make-plan` subcommand**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan make-plan my-dir`

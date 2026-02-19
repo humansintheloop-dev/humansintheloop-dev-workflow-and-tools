@@ -26,3 +26,11 @@ def spec_cmd(args):
     """Create a specification from an idea."""
     result = run_script("make-spec.sh", args)
     sys.exit(result.returncode)
+
+
+@idea_to_plan.command("revise-spec")
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def revise_spec_cmd(args):
+    """Revise an existing specification."""
+    result = run_script("revise-spec.sh", args)
+    sys.exit(result.returncode)

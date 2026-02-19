@@ -107,17 +107,17 @@ Proves that shell scripts can be bundled as package data, located at runtime, in
 
 Completes the `idea-to-plan` group with all remaining subcommands, including skill discovery modifications for `make-plan` and `design-doc`.
 
-- [ ] **Task 2.1: `i2code idea-to-plan spec` subcommand invokes bundled make-spec.sh**
+- [x] **Task 2.1: `i2code idea-to-plan spec` subcommand invokes bundled make-spec.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan spec my-dir`
   - Observable: The command locates make-spec.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments (including extra claude-args), and exits with the script's exit code
   - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies make-spec.sh is invoked with correct arguments and exit code is propagated`
   - Steps:
-    - [ ] git mv workflow-scripts/make-spec.sh to src/i2code/scripts/make-spec.sh
-    - [ ] git mv prompt-templates/create-spec.md to src/i2code/prompt-templates/create-spec.md
-    - [ ] Add spec_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: make-spec.sh)
-    - [ ] Create tests/idea-to-plan/test_spec_cli.py — verify with CliRunner and mocked subprocess.run
-    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for spec in idea-to-plan --help and verify uv run i2code idea-to-plan spec --help exits 0
+    - [x] git mv workflow-scripts/make-spec.sh to src/i2code/scripts/make-spec.sh
+    - [x] git mv prompt-templates/create-spec.md to src/i2code/prompt-templates/create-spec.md
+    - [x] Add spec_cmd to src/i2code/idea_to_plan/cli.py following the brainstorm pattern (script: make-spec.sh)
+    - [x] Create tests/idea-to-plan/test_spec_cli.py — verify with CliRunner and mocked subprocess.run
+    - [x] Update test-scripts/test-subcommands-smoke.sh to check for spec in idea-to-plan --help and verify uv run i2code idea-to-plan spec --help exits 0
 - [ ] **Task 2.2: `i2code idea-to-plan revise-spec` subcommand invokes bundled revise-spec.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan revise-spec my-dir`
@@ -402,3 +402,21 @@ Added test-subcommands-smoke.sh to test-end-to-end.sh after plan CLI smoke tests
 
 ### 2026-02-19 19:06 - mark-task-complete
 All 3 smoke tests pass: idea-to-plan in i2code --help, brainstorm in idea-to-plan --help, brainstorm --help exits 0. Integrated into test-end-to-end.sh.
+
+### 2026-02-19 19:10 - mark-step-complete
+git mv workflow-scripts/make-spec.sh to src/i2code/scripts/make-spec.sh
+
+### 2026-02-19 19:10 - mark-step-complete
+git mv prompt-templates/create-spec.md to src/i2code/prompt-templates/create-spec.md
+
+### 2026-02-19 19:10 - mark-step-complete
+Added spec_cmd to cli.py following brainstorm pattern
+
+### 2026-02-19 19:10 - mark-step-complete
+Created test_spec_cli.py with CliRunner and mocked subprocess.run
+
+### 2026-02-19 19:10 - mark-step-complete
+Updated smoke tests for spec in idea-to-plan --help and --help exits 0
+
+### 2026-02-19 19:11 - mark-task-complete
+spec subcommand invokes bundled make-spec.sh with tests passing

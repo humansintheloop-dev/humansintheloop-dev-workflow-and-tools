@@ -243,20 +243,20 @@ Adds the `improve` group with four subcommands for session analysis, summary rep
 
 Adds the `setup` group with two subcommands that accept `--config-dir` as a required argument, replacing the `$DIR/../config-files` path derivation.
 
-- [ ] **Task 4.1: `i2code setup claude-files --config-dir <path>` subcommand**
+- [x] **Task 4.1: `i2code setup claude-files --config-dir <path>` subcommand**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code setup claude-files --config-dir /path/to/config-files`
   - Observable: `setup-claude-files.sh` (in `src/i2code/scripts/`) accepts config directory as a new argument instead of deriving it from `$DIR/../config-files`. The `claude-files` subcommand invokes the modified script, forwarding `--config-dir` and any other arguments, and propagates exit code. `i2code --help` lists the `setup` group.
   - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies script is invoked with correct arguments`
   - Steps:
-    - [ ] git mv workflow-scripts/setup-claude-files.sh to src/i2code/scripts/setup-claude-files.sh
-    - [ ] Modify src/i2code/scripts/setup-claude-files.sh to accept a --config-dir argument instead of using $DIR/../config-files
-    - [ ] Create src/i2code/setup_cmd/__init__.py
-    - [ ] Create src/i2code/setup_cmd/cli.py with Click group setup_group (command name "setup", help text "Initial project setup and configuration updates.") and claude_files_cmd (script: setup-claude-files.sh)
-    - [ ] Register setup_group group in src/i2code/cli.py via main.add_command(setup_group)
-    - [ ] Create tests/setup-cmd/__init__.py and tests/setup-cmd/conftest.py (mark tests as unit)
-    - [ ] Create tests/setup-cmd/test_claude_files_cli.py
-    - [ ] Update test-scripts/test-subcommands-smoke.sh to check i2code --help contains setup, i2code setup --help contains claude-files, and verify uv run i2code setup claude-files --help exits 0
+    - [x] git mv workflow-scripts/setup-claude-files.sh to src/i2code/scripts/setup-claude-files.sh
+    - [x] Modify src/i2code/scripts/setup-claude-files.sh to accept a --config-dir argument instead of using $DIR/../config-files
+    - [x] Create src/i2code/setup_cmd/__init__.py
+    - [x] Create src/i2code/setup_cmd/cli.py with Click group setup_group (command name "setup", help text "Initial project setup and configuration updates.") and claude_files_cmd (script: setup-claude-files.sh)
+    - [x] Register setup_group group in src/i2code/cli.py via main.add_command(setup_group)
+    - [x] Create tests/setup-cmd/__init__.py and tests/setup-cmd/conftest.py (mark tests as unit)
+    - [x] Create tests/setup-cmd/test_claude_files_cli.py
+    - [x] Update test-scripts/test-subcommands-smoke.sh to check i2code --help contains setup, i2code setup --help contains claude-files, and verify uv run i2code setup claude-files --help exits 0
 - [ ] **Task 4.2: `i2code setup update-project <project-dir> --config-dir <path>` subcommand**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code setup update-project my-project-dir --config-dir /path/to/config-files`
@@ -498,3 +498,30 @@ review-issues subcommand implemented with bundled script, tests, and smoke tests
 
 ### 2026-02-19 20:10 - mark-task-complete
 Implemented update-claude-files subcommand: moved script and prompt template to bundled locations, modified script to accept --config-dir argument, added CLI command, created pytest tests, updated smoke tests
+
+### 2026-02-19 20:17 - mark-step-complete
+git mv workflow-scripts/setup-claude-files.sh to src/i2code/scripts/setup-claude-files.sh
+
+### 2026-02-19 20:17 - mark-step-complete
+Modified setup-claude-files.sh to accept --config-dir argument with usage/help and validation
+
+### 2026-02-19 20:17 - mark-step-complete
+Created src/i2code/setup_cmd/__init__.py
+
+### 2026-02-19 20:17 - mark-step-complete
+Created setup_cmd/cli.py with setup_group and claude_files_cmd
+
+### 2026-02-19 20:17 - mark-step-complete
+Registered setup_group in src/i2code/cli.py via main.add_command(setup_group)
+
+### 2026-02-19 20:17 - mark-step-complete
+Created tests/setup-cmd/__init__.py and conftest.py with unit marker
+
+### 2026-02-19 20:17 - mark-step-complete
+Created test_claude_files_cli.py with 5 tests verifying script invocation, exit code propagation, arg forwarding, and help output
+
+### 2026-02-19 20:17 - mark-step-complete
+Updated smoke tests to check i2code --help contains setup, setup --help contains claude-files, and claude-files --help exits 0
+
+### 2026-02-19 20:17 - mark-task-complete
+Implemented setup group with claude-files subcommand: moved and modified setup-claude-files.sh to accept --config-dir, created setup_cmd package, pytest tests (5 pass), smoke tests pass

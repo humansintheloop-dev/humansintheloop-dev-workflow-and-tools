@@ -191,20 +191,20 @@ Completes the `idea-to-plan` group with all remaining subcommands, including ski
 
 Adds the `improve` group with four subcommands for session analysis, summary reports, issue review, and Claude file updates.
 
-- [ ] **Task 3.1: `i2code improve analyze-sessions` subcommand and improve group infrastructure**
+- [x] **Task 3.1: `i2code improve analyze-sessions` subcommand and improve group infrastructure**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code improve analyze-sessions my-tracking-dir`
   - Observable: The command locates analyze-sessions.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments, and exits with the script's exit code. i2code --help lists the improve group.
   - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies analyze-sessions.sh is invoked with correct arguments and exit code is propagated; smoke test verifies improve group appears in i2code --help`
   - Steps:
-    - [ ] git mv workflow-scripts/analyze-sessions.sh to src/i2code/scripts/analyze-sessions.sh
-    - [ ] git mv prompt-templates/analyze-sessions.md to src/i2code/prompt-templates/analyze-sessions.md
-    - [ ] Create src/i2code/improve/__init__.py
-    - [ ] Create src/i2code/improve/cli.py with Click group improve (help text "Analyze sessions, review issues, and update configuration.") and analyze_sessions_cmd (script: analyze-sessions.sh)
-    - [ ] Register improve group in src/i2code/cli.py via main.add_command(improve)
-    - [ ] Create tests/improve/__init__.py and tests/improve/conftest.py (mark tests as unit)
-    - [ ] Create tests/improve/test_analyze_sessions_cli.py — verify with CliRunner and mocked subprocess.run
-    - [ ] Update test-scripts/test-subcommands-smoke.sh to check i2code --help contains improve, i2code improve --help contains analyze-sessions, and verify uv run i2code improve analyze-sessions --help exits 0
+    - [x] git mv workflow-scripts/analyze-sessions.sh to src/i2code/scripts/analyze-sessions.sh
+    - [x] git mv prompt-templates/analyze-sessions.md to src/i2code/prompt-templates/analyze-sessions.md
+    - [x] Create src/i2code/improve/__init__.py
+    - [x] Create src/i2code/improve/cli.py with Click group improve (help text "Analyze sessions, review issues, and update configuration.") and analyze_sessions_cmd (script: analyze-sessions.sh)
+    - [x] Register improve group in src/i2code/cli.py via main.add_command(improve)
+    - [x] Create tests/improve/__init__.py and tests/improve/conftest.py (mark tests as unit)
+    - [x] Create tests/improve/test_analyze_sessions_cli.py — verify with CliRunner and mocked subprocess.run
+    - [x] Update test-scripts/test-subcommands-smoke.sh to check i2code --help contains improve, i2code improve --help contains analyze-sessions, and verify uv run i2code improve analyze-sessions --help exits 0
 - [ ] **Task 3.2: `i2code improve summary-reports` subcommand invokes bundled create-summary-reports.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code improve summary-reports my-hitl-dir`
@@ -471,3 +471,6 @@ Moved idea-to-code.sh to src/i2code/scripts/, replaced implement-plan.sh with i2
 
 ### 2026-02-19 19:47 - mark-task-complete
 Added run_cmd to cli.py, created test_run_cli.py, updated smoke tests
+
+### 2026-02-19 19:53 - mark-task-complete
+Implemented improve group with analyze-sessions subcommand, tests pass

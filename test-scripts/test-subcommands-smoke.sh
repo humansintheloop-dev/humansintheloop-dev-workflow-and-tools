@@ -142,5 +142,34 @@ OUTPUT=$(uv run i2code idea-to-plan run --help 2>&1)
 echo "$OUTPUT"
 echo "PASS: idea-to-plan run --help exits 0"
 
+# --- improve group is listed in i2code --help ---
+echo ""
+echo "--- i2code --help lists improve ---"
+OUTPUT=$(uv run i2code --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"improve"* ]]; then
+    echo "FAIL: i2code --help does not list improve"
+    exit 1
+fi
+echo "PASS: improve listed in i2code --help"
+
+# --- analyze-sessions is listed in improve --help ---
+echo ""
+echo "--- i2code improve --help lists analyze-sessions ---"
+OUTPUT=$(uv run i2code improve --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"analyze-sessions"* ]]; then
+    echo "FAIL: improve --help does not list analyze-sessions"
+    exit 1
+fi
+echo "PASS: analyze-sessions listed in improve --help"
+
+# --- analyze-sessions --help exits 0 ---
+echo ""
+echo "--- i2code improve analyze-sessions --help exits 0 ---"
+OUTPUT=$(uv run i2code improve analyze-sessions --help 2>&1)
+echo "$OUTPUT"
+echo "PASS: improve analyze-sessions --help exits 0"
+
 echo ""
 echo "=== All Subcommand Smoke Tests Passed ==="

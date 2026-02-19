@@ -7,6 +7,7 @@ import click
 
 from i2code.idea_to_plan.cli import idea_to_plan
 from i2code.implement.cli import implement_cmd, scaffold_cmd
+from i2code.improve.cli import improve
 from i2code.plan.cli import plan
 from i2code.tracking.cli import manage_tracking_cmd
 
@@ -32,5 +33,6 @@ def main(with_sdkman):
 main.add_command(plan)
 main.add_command(idea_to_plan)
 main.add_command(implement_cmd)
+main.add_command(improve)
 main.add_command(scaffold_cmd)
 main.add_command(manage_tracking_cmd)

@@ -216,17 +216,17 @@ Adds the `improve` group with four subcommands for session analysis, summary rep
     - [x] Add summary_reports_cmd to src/i2code/improve/cli.py (script: create-summary-reports.sh)
     - [x] Create tests/improve/test_summary_reports_cli.py — verify with CliRunner and mocked subprocess.run
     - [x] Update test-scripts/test-subcommands-smoke.sh to check for summary-reports in improve --help and verify uv run i2code improve summary-reports --help exits 0
-- [ ] **Task 3.3: `i2code improve review-issues` subcommand invokes bundled review-issues.sh**
+- [x] **Task 3.3: `i2code improve review-issues` subcommand invokes bundled review-issues.sh**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code improve review-issues my-hitl-dir`
   - Observable: The command locates review-issues.sh from bundled package data, invokes it via subprocess.run with all forwarded arguments (including --project and extra claude-args), and exits with the script's exit code
   - Evidence: `pytest test using CliRunner with mocked subprocess.run verifies review-issues.sh is invoked with correct arguments and exit code is propagated`
   - Steps:
-    - [ ] git mv workflow-scripts/review-issues.sh to src/i2code/scripts/review-issues.sh
-    - [ ] git mv prompt-templates/review-issues.md to src/i2code/prompt-templates/review-issues.md
-    - [ ] Add review_issues_cmd to src/i2code/improve/cli.py (script: review-issues.sh)
-    - [ ] Create tests/improve/test_review_issues_cli.py — verify with CliRunner and mocked subprocess.run
-    - [ ] Update test-scripts/test-subcommands-smoke.sh to check for review-issues in improve --help and verify uv run i2code improve review-issues --help exits 0
+    - [x] git mv workflow-scripts/review-issues.sh to src/i2code/scripts/review-issues.sh
+    - [x] git mv prompt-templates/review-issues.md to src/i2code/prompt-templates/review-issues.md
+    - [x] Add review_issues_cmd to src/i2code/improve/cli.py (script: review-issues.sh)
+    - [x] Create tests/improve/test_review_issues_cli.py — verify with CliRunner and mocked subprocess.run
+    - [x] Update test-scripts/test-subcommands-smoke.sh to check for review-issues in improve --help and verify uv run i2code improve review-issues --help exits 0
 - [ ] **Task 3.4: `i2code improve update-claude-files` subcommand with config-dir modification**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code improve update-claude-files my-project-dir --config-dir /path/to/config-files`
@@ -492,3 +492,6 @@ Updated test-scripts/test-subcommands-smoke.sh with summary-reports checks
 
 ### 2026-02-19 19:58 - mark-task-complete
 summary-reports subcommand implemented with bundled script, tests pass
+
+### 2026-02-19 20:03 - mark-task-complete
+review-issues subcommand implemented with bundled script, tests, and smoke tests

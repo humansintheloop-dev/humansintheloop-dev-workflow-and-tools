@@ -58,3 +58,11 @@ def design_doc_cmd(args):
     """Create a design document from a specification."""
     result = run_script("create-design-doc.sh", args)
     sys.exit(result.returncode)
+
+
+@idea_to_plan.command("run", context_settings={"ignore_unknown_options": True})
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def run_cmd(args):
+    """Run the idea-to-code orchestrator."""
+    result = run_script("idea-to-code.sh", args)
+    sys.exit(result.returncode)

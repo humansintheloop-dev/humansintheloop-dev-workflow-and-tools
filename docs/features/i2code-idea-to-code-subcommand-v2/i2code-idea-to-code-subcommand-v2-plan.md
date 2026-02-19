@@ -175,15 +175,15 @@ Completes the `idea-to-plan` group with all remaining subcommands, including ski
     - [x] Modify src/i2code/scripts/idea-to-code.sh to replace "$SCRIPT_DIR/implement-plan.sh" "$dir" with i2code implement "$dir"
     - [x] Remove the "Implement a specific task" menu option since i2code implement does not support a task argument — renumber the Exit option accordingly
     - [x] Update the handle_error call for implement to reference i2code implement instead of $SCRIPT_DIR/implement-plan.sh
-- [ ] **Task 2.7: `i2code idea-to-plan run` subcommand invokes the orchestrator**
+- [x] **Task 2.7: `i2code idea-to-plan run` subcommand invokes the orchestrator**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code idea-to-plan run my-dir`
   - Observable: The `run` subcommand invokes `idea-to-code.sh` with all forwarded arguments and propagates exit code
   - Evidence: pytest test using `CliRunner` with mocked `subprocess.run` verifies `idea-to-code.sh` is invoked with correct arguments
   - Steps:
-    - [ ] Add `run_cmd` to `src/i2code/idea_to_plan/cli.py` (script: `idea-to-code.sh`)
-    - [ ] Create `tests/idea-to-plan/test_run_cli.py`
-    - [ ] Update `test-scripts/test-subcommands-smoke.sh` to check for `run` in `idea-to-plan --help`, and verify `uv run i2code idea-to-plan run --help` exits 0
+    - [x] Add `run_cmd` to `src/i2code/idea_to_plan/cli.py` (script: `idea-to-code.sh`)
+    - [x] Create `tests/idea-to-plan/test_run_cli.py`
+    - [x] Update `test-scripts/test-subcommands-smoke.sh` to check for `run` in `idea-to-plan --help`, and verify `uv run i2code idea-to-plan run --help` exits 0
 
 ---
 
@@ -468,3 +468,6 @@ Implemented design-doc subcommand with plugin skill discovery
 
 ### 2026-02-19 19:42 - mark-task-complete
 Moved idea-to-code.sh to src/i2code/scripts/, replaced implement-plan.sh with i2code implement, removed specific task menu option
+
+### 2026-02-19 19:47 - mark-task-complete
+Added run_cmd to cli.py, created test_run_cli.py, updated smoke tests

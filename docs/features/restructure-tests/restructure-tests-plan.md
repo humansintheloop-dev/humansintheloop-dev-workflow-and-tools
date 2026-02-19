@@ -187,13 +187,13 @@
 
 ## Steel Thread 11: Consolidate `test_idea_project.py` (Rank 10)
 
-- [ ] **Task 11.1: Move stray IdeaProject test**
+- [x] **Task 11.1: Move stray IdeaProject test**
   - TaskType: code
   - Observable: `test_worktree_idea_project` added
   - Evidence: `uv run --with pytest pytest tests/implement/test_idea_project.py -v`
   - Steps:
-    - [ ] Move `test_worktree_idea_project` (1 test) from `test_claude_invocation_leftovers.py`
-    - [ ] Run tests
+    - [x] Move `test_worktree_idea_project` (1 test) from `test_claude_invocation_leftovers.py`
+    - [x] Run tests
 
 ## Steel Thread 12: Delete Emptied Source Files & Verify
 
@@ -332,3 +332,12 @@ All 16 tests in test_claude_runner.py pass, all 22 tests in test_claude_invocati
 
 ### 2026-02-19 09:33 - mark-task-complete
 Moved 2 classes (6 tests) to test_claude_runner.py, all tests pass
+
+### 2026-02-19 09:41 - mark-step-complete
+Moved test_worktree_idea_project from test_claude_invocation_leftovers.py to test_idea_project.py
+
+### 2026-02-19 09:41 - mark-step-complete
+All tests pass in both files
+
+### 2026-02-19 09:41 - mark-task-complete
+Moved test_worktree_idea_project to test_idea_project.py, all tests pass

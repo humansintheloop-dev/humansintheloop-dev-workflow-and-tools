@@ -3,25 +3,6 @@
 import pytest
 
 
-@pytest.mark.unit
-class TestWorktreeIdeaDirectory:
-    """Test that Claude is invoked with worktree idea directory, not main repo."""
-
-    def test_worktree_idea_project(self):
-        """Should return an IdeaProject for the path within the worktree."""
-        from i2code.implement.idea_project import IdeaProject
-
-        project = IdeaProject("/home/user/my-repo/docs/ideas/my-feature")
-
-        result = project.worktree_idea_project(
-            "/tmp/my-repo-wt-my-feature",
-            "/home/user/my-repo",
-        )
-
-        assert isinstance(result, IdeaProject)
-        assert result.directory == "/tmp/my-repo-wt-my-feature/docs/ideas/my-feature"
-
-
 
 
 @pytest.mark.unit

@@ -41,7 +41,7 @@ def migrate(project_dir, dry_run=False):
     if not moved_any:
         print("  Nothing to migrate")
 
-    _warn_stale_subdirectories(project_dir)
+    _migrate_subdirectories(project_dir, dry_run)
 
 
 def _migrate_symlink(project_dir, src, dst, dry_run):
@@ -222,28 +222,47 @@ def _find_gitignore_insert_position(lines):
     return len(lines)
 
 
-def _warn_stale_subdirectories(project_dir):
-    """Warn about .claude/issues or .claude/sessions dirs in subdirectories.
+def _migrate_subdirectories(project_dir, dry_run):
+    """Migrate .claude/{sessions,issues} from subdirectories into root .hitl/."""
+    hitl_dir = os.path.join(project_dir, ".hitl")
 
-    These were previously gitignored by **/.claude/sessions etc. but are
-    no longer ignored after switching to **/.hitl.
-    """
-    stale = []
+    for claude_dir in _find_subdirectory_claude_dirs(project_dir):
+        parent_dir = os.path.dirname(claude_dir)
+        for subdir in SUBDIRS:
+            src = os.path.join(claude_dir, subdir)
+            if not os.path.isdir(src) or os.path.islink(src):
+                continue
+
+            dst = os.path.join(hitl_dir, subdir)
+            if not dry_run:
+                os.makedirs(dst, exist_ok=True)
+            _merge_into_existing(project_dir, src, dst, dry_run)
+
+            sub_hitl_dir = os.path.join(parent_dir, ".hitl")
+            link_path = os.path.join(sub_hitl_dir, subdir)
+            rel_target = os.path.relpath(dst, sub_hitl_dir)
+            _ensure_symlink(project_dir, link_path, rel_target, dry_run)
+
+
+def _find_subdirectory_claude_dirs(project_dir):
+    """Yield .claude directories in subdirectories (not the root .claude)."""
+    root_claude = os.path.join(project_dir, ".claude")
     for dirpath, dirnames, _ in os.walk(project_dir):
-        # Don't descend into .git or node_modules
-        dirnames[:] = [d for d in dirnames if d not in (".git", "node_modules")]
+        dirnames[:] = [d for d in dirnames if d not in (".git", "node_modules", ".hitl")]
+        if os.path.basename(dirpath) == ".claude" and dirpath != root_claude:
+            yield dirpath
 
-        if os.path.basename(dirpath) == ".claude" and dirpath != os.path.join(project_dir, ".claude"):
-            for subdir in SUBDIRS:
-                candidate = os.path.join(dirpath, subdir)
-                if os.path.exists(candidate):
-                    stale.append(_rel(project_dir, candidate))
 
-    if stale:
-        print("\n  Warning: the following subdirectories are no longer gitignored")
-        print("  (previously covered by **/.claude/sessions and **/.claude/issues):\n")
-        for path in sorted(stale):
-            print(f"    {path}")
+def _ensure_symlink(project_dir, link_path, rel_target, dry_run):
+    """Create link_path as symlink to rel_target, skipping if already correct."""
+    if os.path.islink(link_path) and os.readlink(link_path) == rel_target:
+        print(f"  {_rel(project_dir, link_path)} already linked to {rel_target}")
+        return
+
+    print(f"  Symlink {_rel(project_dir, link_path)} -> {rel_target}")
+    if not dry_run:
+        os.makedirs(os.path.dirname(link_path), exist_ok=True)
+        os.symlink(rel_target, link_path)
 
 
 def _rel(base, path):

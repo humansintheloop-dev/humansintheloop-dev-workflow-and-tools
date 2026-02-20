@@ -118,23 +118,110 @@ class TestMigrate:
         assert not (project / ".claude" / "issues").exists()
 
 
-    def test_warns_about_stale_subdirectories(self, project, capsys):
-        """Warn when subdirectories have .claude/sessions or .claude/issues."""
+    def test_migrates_subdirectory_sessions(self, project):
+        """Subdirectory .claude/sessions files merge into root .hitl/sessions,
+        debug.log excluded, and SUBDIR/.hitl/sessions becomes symlink to root."""
         _make_claude_dirs(project)
-        # Create a stale subdirectory like hooks/.claude/sessions
-        stale = project / "hooks" / ".claude" / "sessions"
-        stale.mkdir(parents=True)
-        (stale / "old-session.md").write_text("stale")
+        # Create a subdirectory with .claude/sessions
+        sub_sessions = project / "hooks" / ".claude" / "sessions"
+        sub_sessions.mkdir(parents=True)
+        (sub_sessions / "old-session.md").write_text("stale")
+        (sub_sessions / "debug.log").write_text("debug stuff")
         migrate(str(project))
-        output = capsys.readouterr().out
-        assert "hooks/.claude/sessions" in output
-        assert "no longer gitignored" in output
+        # Subdirectory file merged into root .hitl/sessions
+        assert (project / ".hitl" / "sessions" / "old-session.md").read_text() == "stale"
+        # debug.log not merged
+        assert not (project / ".hitl" / "sessions" / "debug.log").exists()
+        # Subdirectory .claude/sessions removed
+        assert not sub_sessions.exists()
+        # hooks/.hitl/sessions is a symlink to root .hitl/sessions
+        sub_hitl = project / "hooks" / ".hitl" / "sessions"
+        assert sub_hitl.is_symlink()
+        link_target = os.path.relpath(
+            str(project / ".hitl" / "sessions"),
+            str(project / "hooks" / ".hitl"),
+        )
+        assert os.readlink(str(sub_hitl)) == link_target
 
-    def test_no_warning_when_no_stale_subdirectories(self, project, capsys):
+    def test_skips_already_symlinked_subdirectory(self, project, capsys):
+        """When SUBDIR/.hitl/sessions is already the correct symlink, skip it."""
+        _make_claude_dirs(project)
+        # Pre-create the correct symlink
+        sub_hitl = project / "hooks" / ".hitl"
+        sub_hitl.mkdir(parents=True)
+        rel_target = os.path.relpath(
+            str(project / ".hitl" / "sessions"),
+            str(sub_hitl),
+        )
+        os.symlink(rel_target, str(sub_hitl / "sessions"))
+        # Also create a subdirectory .claude/sessions to trigger discovery
+        sub_sessions = project / "hooks" / ".claude" / "sessions"
+        sub_sessions.mkdir(parents=True)
+        (sub_sessions / "file.md").write_text("data")
+        migrate(str(project))
+        output = capsys.readouterr().out
+        assert "already linked" in output
+        # Symlink unchanged
+        assert os.readlink(str(sub_hitl / "sessions")) == rel_target
+
+    def test_dry_run_skips_subdirectory_migration(self, project):
+        """Dry run does not merge subdirectory files or create symlinks."""
+        _make_claude_dirs(project)
+        sub_sessions = project / "hooks" / ".claude" / "sessions"
+        sub_sessions.mkdir(parents=True)
+        (sub_sessions / "file.md").write_text("data")
+        migrate(str(project), dry_run=True)
+        # File not merged
+        assert not (project / ".hitl").exists()
+        # Subdirectory still intact
+        assert sub_sessions.exists()
+        # No symlink created
+        assert not (project / "hooks" / ".hitl").exists()
+
+    def test_migrates_multiple_subdirectories(self, project):
+        """Multiple subdirectories all merge into root .hitl/ and get symlinks."""
+        _make_claude_dirs(project)
+        for name in ("app-a", "app-b"):
+            d = project / name / ".claude" / "sessions"
+            d.mkdir(parents=True)
+            (d / f"{name}.md").write_text(name)
+        migrate(str(project))
+        # Both files merged into root
+        assert (project / ".hitl" / "sessions" / "app-a.md").read_text() == "app-a"
+        assert (project / ".hitl" / "sessions" / "app-b.md").read_text() == "app-b"
+        # Both get symlinks
+        for name in ("app-a", "app-b"):
+            sub_hitl = project / name / ".hitl" / "sessions"
+            assert sub_hitl.is_symlink()
+
+    def test_subdirectory_conflict_keeps_root_version(self, project):
+        """When root .hitl/ already has a file with the same name, root wins."""
+        _make_claude_dirs(project)
+        sub_sessions = project / "hooks" / ".claude" / "sessions"
+        sub_sessions.mkdir(parents=True)
+        (sub_sessions / "sample.md").write_text("from subdirectory")
+        migrate(str(project))
+        # Root .claude/sessions/sample.md was moved first, so root version wins
+        assert (project / ".hitl" / "sessions" / "sample.md").read_text() == "sample"
+
+    def test_migrates_subdirectory_issues(self, project):
+        """Handles issues/ subdirectory, not just sessions/."""
+        _make_claude_dirs(project)
+        sub_issues = project / "hooks" / ".claude" / "issues"
+        sub_issues.mkdir(parents=True)
+        (sub_issues / "bug.md").write_text("bug report")
+        migrate(str(project))
+        assert (project / ".hitl" / "issues" / "bug.md").read_text() == "bug report"
+        assert not sub_issues.exists()
+        sub_hitl = project / "hooks" / ".hitl" / "issues"
+        assert sub_hitl.is_symlink()
+
+    def test_no_subdirectory_output_when_none_exist(self, project, capsys):
+        """No subdirectory migration output when no subdirectories have .claude/."""
         _make_claude_dirs(project)
         migrate(str(project))
         output = capsys.readouterr().out
-        assert "no longer gitignored" not in output
+        assert "Symlink" not in output or "hooks" not in output
 
 
 @pytest.mark.unit

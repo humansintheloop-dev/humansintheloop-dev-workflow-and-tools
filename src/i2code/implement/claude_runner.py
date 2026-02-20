@@ -12,6 +12,8 @@ import sys
 import threading
 from typing import Any, Dict, List, Optional
 
+from i2code.implement.managed_subprocess import ManagedSubprocess
+
 
 class ClaudeResult:
     """Result of running Claude with output capture."""
@@ -57,6 +59,7 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
         cwd=cwd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        start_new_session=True,
     )
 
     stdout_chunks: List[str] = []
@@ -100,7 +103,19 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
     stdout_thread.start()
     stderr_thread.start()
 
-    process.wait()
+    with ManagedSubprocess(
+        process=process,
+        label="claude",
+        threads=[stdout_thread, stderr_thread],
+    ) as managed:
+        process.wait()
+
+    if managed.interrupted:
+        return ClaudeResult(
+            returncode=130,
+            stdout=''.join(stdout_chunks),
+            stderr=''.join(stderr_chunks),
+        )
 
     stdout_thread.join()
     stderr_thread.join()

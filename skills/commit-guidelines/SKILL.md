@@ -7,9 +7,23 @@ description: Provides a pre-commit checklist and commit message formatting stand
 
 Before committing, complete these steps in order:
 
-1. Run `uvx ruff check --fix` to auto-fix lint issues. Resolve any unfixable errors.
-2. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it. If Code Health regresses, refactor before committing. CodeScene may flag pre-existing Complex Method smells in files you modified. Fix these before committing (boy scout rule). If `pre_commit_code_health_safeguard` fails with "Not inside a supported VCS root" (common in git worktrees), use `code_health_review` on each modified source file instead. If Code Health regresses, refactor before committing.
-3. Run `git add` and `git commit` as separate tool calls (not chained with `&&`).
+1. On the final task of a Steel Thread, check for dead code and review findings.
+2. If the project has a configured linter, run it with auto-fix. Resolve any unfixable errors.
+3. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it.
+   * If it fails with "Not inside a supported VCS root" (common in git worktrees), use `code_health_review` on each modified source file instead.
+   * If Code Health regresses, refactor before committing.
+   * Try to achieve a score of 10 for new code.
+   * Try to achieve a score of at least 9.5 for modified files including fixing pre-existing issues (boy scout rule).
+4. If adding or modifying production code and coverage tooling is available, verify test coverage and check that new/modified lines are covered.
+
+NOTES:
+- **Python dead code (step 1):** `uvx vulture src`
+- **Python linter (step 2):** `uvx ruff check --fix`
+- **Python coverage (step 4):** `uv run --with pytest --with pytest-mock --with pytest-cov pytest -m "unit or integration" --cov=src/i2code --cov-report=term-missing`
+
+# Running `git add` and `git commit`
+
+Run `git add` and `git commit` as separate tool calls (not chained with `&&`).
 
 # Commit Message Guidelines
 

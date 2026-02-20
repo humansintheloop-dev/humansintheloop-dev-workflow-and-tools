@@ -1,0 +1,19 @@
+title = "Custom gitleaks config"
+extends = "default"
+
+# -----------------------------
+# Custom rule: Local user paths
+# -----------------------------
+
+[[rules]]
+id = "local-unix-home-path"
+description = "Local Unix or macOS home directory path"
+regex = '''/(?:Users|home)/[A-Za-z0-9._-]+(?:/|$)'''
+tags = ["sensitive", "local-path"]
+severity = "high"
+
+[rules.allowlist]
+description = "Exclude common placeholder usernames in docs/examples"
+regexes = [
+  '''/(Users|home)/(user|username|name)(/|$)'''
+]

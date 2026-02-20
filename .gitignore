@@ -1,8 +1,6 @@
 JUNK-*
 *.code-workspace
 **/.hitl
-.claude/sessions
-.claude/issues
 .claude/settings.local.json
 test-ideas/kafka-security-poc/kafka-security-poc-discussion.md
 test-ideas/kafka-security-poc/kafka-security-poc-idea.txt
@@ -15,3 +13,4 @@ __pycache__
 debug.log
 .idea
 
+.ruff_cache

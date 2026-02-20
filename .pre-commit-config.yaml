@@ -13,3 +13,7 @@ repos:
         language: script
         pass_filenames: false
         always_run: true
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks        

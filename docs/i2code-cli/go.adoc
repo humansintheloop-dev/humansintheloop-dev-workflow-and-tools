@@ -1,0 +1,63 @@
+= `i2code go` -- Workflow Orchestrator
+
+== Overview
+
+`i2code go` is the main orchestrator command that guides you through the entire idea-to-code workflow interactively.
+It detects the current state of your idea directory and presents the appropriate options at each step.
+
+== Usage
+
+[source,shell]
+----
+i2code go <idea-directory>
+----
+
+== Parameters
+
+`<idea-directory>`::
+Directory containing (or that will contain) workflow files.
+If the directory does not yet exist, the orchestrator will create it.
+
+== Workflow States
+
+The orchestrator inspects the idea directory to determine which stage you are at and presents an interactive menu with numbered choices accordingly.
+
+`no_idea`::
+No idea file exists yet. Offers to brainstorm a new idea.
+
+`has_idea_no_spec`::
+An idea file exists but no specification has been created. Offers to generate a spec.
+
+`has_spec`::
+A specification exists but no plan has been produced. Offers to create a plan.
+
+`has_plan`::
+A plan exists but implementation has not been completed. Offers to begin or continue implementation.
+
+`complete`::
+All workflow stages have been finished.
+
+At every state the menu displays the available actions as numbered choices.
+Select a number to proceed.
+
+== Error Handling
+
+If a step fails, the orchestrator presents two options:
+
+* *Retry* -- re-run the failed step.
+* *Abort* -- exit the orchestrator immediately.
+
+== Example
+
+[source,shell]
+----
+i2code go ~/ideas/my-feature
+----
+
+== See Also
+
+* link:idea.adoc[`i2code idea` -- Idea Exploration]
+* link:spec.adoc[`i2code spec` -- Specification]
+* link:plan.adoc[`i2code plan` -- Planning]
+* link:design.adoc[`i2code design` -- Design]
+* link:implement.adoc[`i2code implement` -- Implementation]

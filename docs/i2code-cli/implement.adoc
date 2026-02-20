@@ -1,0 +1,104 @@
+= `i2code implement` -- Plan Implementation
+
+== Command Help
+
+Implement a development plan using Git worktrees and GitHub Draft PRs.
+
+== Usage
+
+[source,shell]
+----
+i2code implement <idea-directory> [options]
+----
+
+== Parameters
+
+`<idea-directory>`::
+Directory containing the plan file and related idea artifacts.
+
+== Options
+
+`--cleanup`::
+Remove worktree and delete local branches after the PR is merged or closed.
+
+`--setup-only`::
+Only set up infrastructure (branches, worktree, PR) without executing tasks.
+
+`--non-interactive`::
+Run Claude in non-interactive mode (uses the `-p` flag).
+
+`--extra-prompt TEXT`::
+Extra text to append to Claude's prompt (after a blank line).
+
+`--trunk`::
+Execute tasks locally on the current branch (no worktree, PR, or CI).
+
+`--skip-ci-wait`::
+Skip waiting for CI after push.
+
+`--ci-fix-retries N`::
+Maximum retries for fixing CI failures (default: 3).
+
+`--ci-timeout N`::
+Timeout in seconds for CI completion (default: 600).
+
+`--isolate`::
+Run inside an isolarium VM.
+
+`--ignore-uncommitted-idea-changes`::
+Skip validation that idea files are committed.
+
+`--dry-run`::
+Print what mode would be used and exit without executing.
+
+== Description
+
+The `implement` command reads a plan file from the idea directory and executes each task.
+By default it operates in _worktree mode_: it creates a Git worktree on a feature branch, opens a GitHub Draft PR, executes each task with Claude, pushes changes, and waits for CI to pass.
+
+When `--trunk` is specified, the command operates in _trunk mode_: it executes tasks directly on the current branch without creating a worktree, PR, or waiting for CI.
+
+== Examples
+
+[source,shell]
+----
+# Implement a plan using a worktree and Draft PR
+i2code implement docs/features/my-feature
+
+# Implement directly on the current branch
+i2code implement docs/features/my-feature --trunk
+
+# Set up infrastructure only (worktree, branch, PR) without running tasks
+i2code implement docs/features/my-feature --setup-only
+
+# Dry run to see what mode would be used
+i2code implement docs/features/my-feature --dry-run
+----
+
+== `i2code scaffold` -- Project Scaffolding
+
+The `scaffold` command generates project scaffolding for an idea directory.
+It reads the plan and spec files and invokes Claude to produce initial project structure (directories, configuration files, and boilerplate).
+
+=== Usage
+
+[source,shell]
+----
+i2code scaffold <idea-directory> [options]
+----
+
+=== Options
+
+`--non-interactive`::
+Run Claude in non-interactive mode (uses the `-p` flag).
+
+=== Example
+
+[source,shell]
+----
+i2code scaffold docs/features/my-feature
+----
+
+== See Also
+
+* link:plan.adoc[`i2code plan` -- Planning] -- the previous step (creating an implementation plan).

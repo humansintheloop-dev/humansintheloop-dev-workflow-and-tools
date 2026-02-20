@@ -1,0 +1,60 @@
+= `i2code idea` -- Idea Exploration
+
+== Group Help
+
+Brainstorm and explore ideas.
+
+== Subcommands
+
+=== `brainstorm`
+
+Brainstorm an idea interactively using the Claude CLI.
+
+==== Usage
+
+[source,shell]
+----
+i2code idea brainstorm <idea-directory>
+----
+
+==== Parameters
+
+`<idea-directory>`::
+Directory where the idea files will be created and managed.
+
+==== Description
+
+The `brainstorm` subcommand walks you through the initial ideation phase:
+
+1. Creates an initial idea file in `<idea-directory>` if one does not already exist.
+2. Opens the idea file for editing.
+3. Manages a Claude session for interactive brainstorming.
+4. Invokes the brainstorming process and captures the discussion.
+
+==== Created Files
+
+The following files are created inside `<idea-directory>`, where `<name>` is derived from the directory name:
+
+`<name>-idea.*`::
+The idea file containing your initial concept.
+
+`<name>-sessionID.txt`::
+A file that stores the Claude session identifier so the conversation can be resumed.
+
+`<name>-discussion.md`::
+A Markdown file capturing the full brainstorming discussion.
+
+==== Prerequisites
+
+* The `claude` CLI must be available in your `PATH`.
+
+==== Example
+
+[source,shell]
+----
+i2code idea brainstorm ~/ideas/my-new-idea
+----
+
+== See Also
+
+* link:spec.adoc[`i2code spec` -- Specification] -- the next step after brainstorming an idea.

@@ -1,0 +1,67 @@
+= `i2code setup` -- Project Setup
+
+== Group Help
+
+Initial project setup and configuration updates.
+
+== Subcommands
+
+=== `claude-files`
+
+Copy Claude configuration files into a project.
+
+==== Usage
+
+[source,shell]
+----
+i2code setup claude-files --config-dir <path>
+----
+
+==== Parameters
+
+`--config-dir <path>`::
+Path to the config-files directory containing the Claude configuration templates to copy.
+
+==== Description
+
+The `claude-files` subcommand copies initial Claude configuration files (`CLAUDE.md`, `.settings.local.json`) into a project.
+The `--config-dir` argument specifies the path to the config-files directory.
+
+=== `update-project`
+
+Push template updates into a project's Claude files.
+
+==== Usage
+
+[source,shell]
+----
+i2code setup update-project <project-dir> --config-dir <path> [claude-args...]
+----
+
+==== Parameters
+
+`<project-dir>`::
+Path to the project whose Claude files should be updated.
+
+`--config-dir <path>`::
+Path to the config-files directory containing the updated templates.
+
+`[claude-args...]`::
+Optional extra arguments forwarded to the underlying script.
+
+==== Description
+
+The `update-project` subcommand pushes template updates into a project's Claude files.
+The `--config-dir` argument specifies the config-files directory path.
+
+== Examples
+
+[source,shell]
+----
+i2code setup claude-files --config-dir /path/to/config-files
+i2code setup update-project /path/to/my-project --config-dir /path/to/config-files
+----
+
+== See Also
+
+* link:improve.adoc[`i2code improve` -- Continuous Improvement]

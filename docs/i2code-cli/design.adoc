@@ -1,0 +1,49 @@
+= `i2code design` -- Design Documents
+
+== Group Help
+
+Create design documents.
+
+== Subcommands
+
+=== `create`
+
+Create a design document from a specification.
+
+==== Usage
+
+[source,shell]
+----
+i2code design create <idea-directory> [claude-args...]
+----
+
+==== Parameters
+
+`<idea-directory>`::
+Directory containing the specification from which the design document will be generated.
+
+`[claude-args...]`::
+Optional extra arguments forwarded to the underlying script.
+
+==== Description
+
+The `create` subcommand generates a design document based on an existing specification:
+
+1. Locates the spec file in `<idea-directory>`.
+2. Produces a design document that elaborates on the specification with architectural and implementation details.
+
+==== Prerequisites
+
+* A spec file must already exist in `<idea-directory>` (created by `i2code spec create`).
+
+== Example
+
+[source,shell]
+----
+i2code design create ~/ideas/my-app
+----
+
+== See Also
+
+* link:spec.adoc[`i2code spec` -- Specification] -- the prerequisite step.
+* link:plan.adoc[`i2code plan` -- Planning] -- a related step in the workflow.

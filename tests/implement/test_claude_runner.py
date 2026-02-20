@@ -3,10 +3,12 @@
 import os
 import stat
 import tempfile
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from fake_claude_runner import FakeClaudeRunner
+from i2code.implement.claude_runner import ClaudeResult, run_claude_with_output_capture
 
 
 @pytest.mark.unit
@@ -29,7 +31,6 @@ class TestFakeClaudeRunner:
         assert fake.calls == [("run_with_capture", ["claude", "-p", "do task"], "/repo")]
 
     def test_returns_configured_result(self):
-        from i2code.implement.claude_runner import ClaudeResult
 
         fake = FakeClaudeRunner()
         fake.set_result(ClaudeResult(returncode=1, stdout="error", stderr="fail"))
@@ -38,7 +39,6 @@ class TestFakeClaudeRunner:
         assert result.stdout == "error"
 
     def test_returns_sequence_of_results(self):
-        from i2code.implement.claude_runner import ClaudeResult
 
         fake = FakeClaudeRunner()
         fake.set_results([
@@ -51,7 +51,6 @@ class TestFakeClaudeRunner:
         assert r2.returncode == 1
 
     def test_falls_back_to_default_after_sequence_exhausted(self):
-        from i2code.implement.claude_runner import ClaudeResult
 
         fake = FakeClaudeRunner()
         fake.set_results([ClaudeResult(returncode=42, stdout="", stderr="")])
@@ -66,7 +65,7 @@ class TestMockClaudeRunner:
     """MockClaudeRunner wraps a mock shell script for integration testing."""
 
     def test_run_interactive_invokes_mock_script(self):
-        from i2code.implement.claude_runner import MockClaudeRunner, ClaudeResult
+        from i2code.implement.claude_runner import MockClaudeRunner
 
         with tempfile.TemporaryDirectory() as tmpdir:
             script = os.path.join(tmpdir, "mock-claude.sh")
@@ -80,7 +79,7 @@ class TestMockClaudeRunner:
             assert result.returncode == 0
 
     def test_run_with_capture_invokes_mock_script(self):
-        from i2code.implement.claude_runner import MockClaudeRunner, ClaudeResult
+        from i2code.implement.claude_runner import MockClaudeRunner
 
         with tempfile.TemporaryDirectory() as tmpdir:
             script = os.path.join(tmpdir, "mock-claude.sh")
@@ -112,7 +111,6 @@ class TestClaudeResultInModule:
     """ClaudeResult is accessible from claude_runner module."""
 
     def test_claude_result_importable_from_claude_runner(self):
-        from i2code.implement.claude_runner import ClaudeResult
 
         result = ClaudeResult(returncode=0, stdout="hi", stderr="")
         assert result.returncode == 0
@@ -168,6 +166,70 @@ class TestRunClaudeWithOutputCapture:
 
         assert "error1" in result.stderr
         assert result.returncode == 1
+
+
+def _make_mock_popen():
+    """Create a mock Popen that simulates a process with empty pipes."""
+    mock_process = MagicMock()
+    mock_process.stdout.read1.return_value = b""
+    mock_process.stderr.read1.return_value = b""
+    mock_process.returncode = 0
+    mock_process.wait.return_value = 0
+    return mock_process
+
+
+@pytest.mark.unit
+class TestRunClaudeWithOutputCaptureSignalHandling:
+    """run_claude_with_output_capture integrates ManagedSubprocess for signal handling."""
+
+    @patch("i2code.implement.claude_runner.subprocess.Popen")
+    def test_popen_called_with_start_new_session(self, mock_popen_cls):
+        mock_process = _make_mock_popen()
+        mock_popen_cls.return_value = mock_process
+
+        run_claude_with_output_capture(["claude", "-p", "task"], cwd="/tmp")
+
+        mock_popen_cls.assert_called_once()
+        call_kwargs = mock_popen_cls.call_args[1]
+        assert call_kwargs.get("start_new_session") is True
+
+    @patch("i2code.implement.claude_runner.ManagedSubprocess")
+    @patch("i2code.implement.claude_runner.subprocess.Popen")
+    def test_managed_subprocess_used_with_correct_args(self, mock_popen_cls, mock_managed_cls):
+        mock_process = _make_mock_popen()
+        mock_popen_cls.return_value = mock_process
+
+        mock_managed = MagicMock()
+        mock_managed.interrupted = False
+        mock_managed.__enter__ = MagicMock(return_value=mock_managed)
+        mock_managed.__exit__ = MagicMock(return_value=False)
+        mock_managed_cls.return_value = mock_managed
+
+        run_claude_with_output_capture(["claude", "-p", "task"], cwd="/tmp")
+
+        mock_managed_cls.assert_called_once()
+        call_kwargs = mock_managed_cls.call_args[1]
+        assert call_kwargs["process"] is mock_process
+        assert call_kwargs["label"] == "claude"
+        assert len(call_kwargs["threads"]) == 2
+
+    @patch("i2code.implement.claude_runner.ManagedSubprocess")
+    @patch("i2code.implement.claude_runner.subprocess.Popen")
+    def test_returns_returncode_130_when_interrupted(self, mock_popen_cls, mock_managed_cls):
+        mock_process = _make_mock_popen()
+        mock_popen_cls.return_value = mock_process
+
+        mock_managed = MagicMock()
+        mock_managed.interrupted = True
+        mock_managed.__enter__ = MagicMock(return_value=mock_managed)
+        mock_managed.__exit__ = MagicMock(return_value=True)
+        mock_managed_cls.return_value = mock_managed
+
+        result = run_claude_with_output_capture(["claude", "-p", "task"], cwd="/tmp")
+
+        assert result.returncode == 130
+        assert result.stdout == ""
+        assert result.stderr == ""
 
 
 @pytest.mark.unit

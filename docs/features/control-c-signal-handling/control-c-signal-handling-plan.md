@@ -130,19 +130,19 @@ Adds SIGTSTP and SIGCONT handler installation to `__enter__`, enabling Unix susp
 
 Wires ManagedSubprocess into `run_claude_with_output_capture()` so that Ctrl+C during non-interactive Claude produces clean termination.
 
-- [ ] **Task 3.1: run_claude_with_output_capture uses ManagedSubprocess for clean interrupt handling**
+- [x] **Task 3.1: run_claude_with_output_capture uses ManagedSubprocess for clean interrupt handling**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_claude_runner.py`
   - Observable: `subprocess.Popen` is called with `start_new_session=True`; `process.wait()` is wrapped in `ManagedSubprocess` context manager with `label="claude"` and both reader threads; when `ManagedSubprocess.interrupted` is `True` after the context manager exits, the function returns a `ClaudeResult` with `returncode=130`
   - Evidence: Existing tests continue to pass (normal behavior unchanged); new test patches `subprocess.Popen` and `ManagedSubprocess`, verifies `start_new_session=True` passed to Popen constructor and `ManagedSubprocess` instantiated with correct label and threads
   - Steps:
-    - [ ] Write test that patches `subprocess.Popen` in `claude_runner` module and asserts `start_new_session=True` is in the Popen kwargs
-    - [ ] Add `start_new_session=True` to the `Popen` call in `run_claude_with_output_capture()`
-    - [ ] Write test that patches `ManagedSubprocess` and verifies it is used as context manager with `label="claude"` and both reader threads
-    - [ ] Wrap `process.wait()` in `ManagedSubprocess` context manager, passing process, label, and thread list
-    - [ ] Write test for interrupt path: when `managed.interrupted` is `True`, function returns `ClaudeResult` with `returncode=130`
-    - [ ] Implement early return with `ClaudeResult(returncode=130, ...)` when interrupt detected
-    - [ ] Run full test suite to verify no regressions
+    - [x] Write test that patches `subprocess.Popen` in `claude_runner` module and asserts `start_new_session=True` is in the Popen kwargs
+    - [x] Add `start_new_session=True` to the `Popen` call in `run_claude_with_output_capture()`
+    - [x] Write test that patches `ManagedSubprocess` and verifies it is used as context manager with `label="claude"` and both reader threads
+    - [x] Wrap `process.wait()` in `ManagedSubprocess` context manager, passing process, label, and thread list
+    - [x] Write test for interrupt path: when `managed.interrupted` is `True`, function returns `ClaudeResult` with `returncode=130`
+    - [x] Implement early return with `ClaudeResult(returncode=130, ...)` when interrupt detected
+    - [x] Run full test suite to verify no regressions
 
 ---
 
@@ -183,3 +183,6 @@ Implemented KeyboardInterrupt handling: __exit__ detects KeyboardInterrupt, call
 
 ### 2026-02-20 18:14 - mark-task-complete
 Implemented SIGTSTP and SIGCONT forwarding to child process group with handler restoration on both exit paths
+
+### 2026-02-20 18:22 - mark-task-complete
+Integrated ManagedSubprocess into run_claude_with_output_capture: start_new_session=True on Popen, ManagedSubprocess context manager wraps process.wait(), early return with returncode=130 on interrupt

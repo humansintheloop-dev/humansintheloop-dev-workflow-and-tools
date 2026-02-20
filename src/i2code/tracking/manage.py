@@ -9,177 +9,277 @@ SUBDIRS = ("issues", "sessions")
 
 def migrate(project_dir, dry_run=False):
     """Move .claude/issues and .claude/sessions to .hitl/, update .gitignore."""
-    claude_dir = os.path.join(project_dir, ".claude")
-    hitl_dir = os.path.join(project_dir, ".hitl")
-
-    moved_any = False
-    for subdir in SUBDIRS:
-        src = os.path.join(claude_dir, subdir)
-        dst = os.path.join(hitl_dir, subdir)
-
-        if not os.path.exists(src):
-            continue
-
-        if os.path.islink(src):
-            _migrate_symlink(project_dir, src, dst, dry_run)
-            moved_any = True
-            continue
-
-        if os.path.exists(dst):
-            _merge_into_existing(project_dir, src, dst, dry_run)
-            moved_any = True
-            continue
-
-        print(f"  Move {_rel(project_dir, src)} -> {_rel(project_dir, dst)}")
-        if not dry_run:
-            os.makedirs(os.path.dirname(dst), exist_ok=True)
-            shutil.move(src, dst)
-        moved_any = True
-
-    _update_gitignore(project_dir, dry_run)
-
-    if not moved_any:
-        print("  Nothing to migrate")
-
-    _migrate_subdirectories(project_dir, dry_run)
-
-
-def _migrate_symlink(project_dir, src, dst, dry_run):
-    """Migrate a .claude/<subdir> symlink to .hitl/<subdir>.
-
-    If .hitl/<subdir> is a real directory, move its contents into the
-    symlink target first, then replace the directory with a symlink.
-    """
-    link_target = os.readlink(src)
-
-    dst_cleared = False
-    if os.path.isdir(dst) and not os.path.islink(dst):
-        # Remove debug.log before moving — it will be recreated
-        debug_log = os.path.join(dst, "debug.log")
-        if os.path.isfile(debug_log):
-            print(f"  Remove {_rel(project_dir, debug_log)}")
-            if not dry_run:
-                os.remove(debug_log)
-        # Move remaining contents to the symlink target
-        entries = [e for e in os.listdir(dst) if e != "debug.log"]
-        if entries:
-            print(f"  Move {len(entries)} file(s) from {_rel(project_dir, dst)} to {link_target}")
-            if not dry_run:
-                for entry in entries:
-                    entry_src = os.path.join(dst, entry)
-                    entry_dst = os.path.join(link_target, entry)
-                    if not os.path.exists(entry_dst):
-                        shutil.move(entry_src, entry_dst)
-        print(f"  Remove empty directory {_rel(project_dir, dst)}")
-        if not dry_run:
-            os.rmdir(dst)
-        dst_cleared = True
-
-    if os.path.islink(dst) and os.readlink(dst) == link_target:
-        print(f"  {_rel(project_dir, dst)} already linked to {link_target}")
-    elif not dst_cleared and (os.path.exists(dst) or os.path.islink(dst)):
-        print(f"  Skipping {_rel(project_dir, src)} (destination {_rel(project_dir, dst)} already exists)")
-        return
-    else:
-        if not dry_run:
-            os.makedirs(os.path.dirname(dst), exist_ok=True)
-        print(f"  Symlink {_rel(project_dir, dst)} -> {link_target}")
-        if not dry_run:
-            os.symlink(link_target, dst)
-
-    print(f"  Remove {_rel(project_dir, src)}")
-    if not dry_run:
-        os.remove(src)
-
-
-def _merge_into_existing(project_dir, src, dst, dry_run):
-    """Merge files from src into dst, then remove src.
-
-    Walks src recursively, moving files that don't exist in dst.
-    Ignores debug.log.
-    """
-    moved = 0
-    for dirpath, _, filenames in os.walk(src):
-        rel_dir = os.path.relpath(dirpath, src)
-        dst_dir = os.path.join(dst, rel_dir) if rel_dir != "." else dst
-
-        for fname in filenames:
-            if fname == "debug.log":
-                continue
-            file_src = os.path.join(dirpath, fname)
-            file_dst = os.path.join(dst_dir, fname)
-            if os.path.exists(file_dst):
-                continue
-            if not dry_run:
-                os.makedirs(dst_dir, exist_ok=True)
-                shutil.move(file_src, file_dst)
-            moved += 1
-
-    if moved:
-        print(f"  Move {moved} file(s) from {_rel(project_dir, src)} to {_rel(project_dir, dst)}")
-
-    print(f"  Remove {_rel(project_dir, src)}")
-    if not dry_run:
-        shutil.rmtree(src)
+    TrackingManager(project_dir, dry_run).migrate()
 
 
 def link(project_dir, target_base, dry_run=False):
     """Create symlinks from .hitl/issues and .hitl/sessions to target_base subdirectories."""
-    hitl_dir = os.path.join(project_dir, ".hitl")
+    TrackingManager(project_dir, dry_run).link(target_base)
 
-    for subdir in SUBDIRS:
-        src = os.path.join(hitl_dir, subdir)
-        target = os.path.join(target_base, subdir)
 
-        # Create target directory
-        if not os.path.isdir(target):
-            print(f"  Create directory {target}")
-            if not dry_run:
-                os.makedirs(target, exist_ok=True)
+class TrackingManager:
+    """Manages migration from .claude to .hitl tracking directories."""
 
-        # Handle existing source path
-        if os.path.exists(src) or os.path.islink(src):
+    def __init__(self, project_dir, dry_run=False):
+        self.project_dir = project_dir
+        self.dry_run = dry_run
+        self.claude_dir = os.path.join(project_dir, ".claude")
+        self.hitl_dir = os.path.join(project_dir, ".hitl")
+
+    def migrate(self):
+        """Move .claude/issues and .claude/sessions to .hitl/, update .gitignore."""
+        moved_any = False
+        for subdir in SUBDIRS:
+            src = os.path.join(self.claude_dir, subdir)
+            dst = os.path.join(self.hitl_dir, subdir)
+
+            if not os.path.exists(src):
+                continue
+
             if os.path.islink(src):
-                current = os.readlink(src)
-                if current == target:
-                    print(f"  {_rel(project_dir, src)} already linked to {target}")
-                    continue
-                print(f"  Remove old symlink {_rel(project_dir, src)} -> {current}")
-                if not dry_run:
-                    os.remove(src)
+                self._migrate_symlink(src, dst)
+            elif os.path.exists(dst):
+                self._merge_into_existing(src, dst)
             else:
-                # Move contents to target, then remove directory
-                entries = os.listdir(src)
-                if entries:
-                    print(f"  Move {len(entries)} file(s) from {_rel(project_dir, src)} to {target}")
-                    if not dry_run:
-                        for entry in entries:
-                            entry_src = os.path.join(src, entry)
-                            entry_dst = os.path.join(target, entry)
-                            if not os.path.exists(entry_dst):
-                                shutil.move(entry_src, entry_dst)
-                print(f"  Remove directory {_rel(project_dir, src)}")
-                if not dry_run:
-                    shutil.rmtree(src)
+                self._move_directory(src, dst)
+            moved_any = True
 
-        # Ensure parent exists
-        if not dry_run:
-            os.makedirs(os.path.dirname(src), exist_ok=True)
+        self._update_gitignore()
 
-        print(f"  Symlink {_rel(project_dir, src)} -> {target}")
-        if not dry_run:
-            os.symlink(target, src)
+        if not moved_any:
+            print("  Nothing to migrate")
+
+        self._migrate_subdirectories()
+
+    def link(self, target_base):
+        """Create symlinks from .hitl/issues and .hitl/sessions to target_base."""
+        for subdir in SUBDIRS:
+            src = os.path.join(self.hitl_dir, subdir)
+            target = os.path.join(target_base, subdir)
+
+            self._ensure_directory(target)
+
+            if _symlink_already_correct(src, target):
+                print(f"  {self._rel(src)} already linked to {target}")
+                continue
+
+            self._clear_existing_path(src, target)
+            self._create_symlink(src, target)
+
+    # -- migrate helpers --
+
+    def _migrate_symlink(self, src, dst):
+        link_target = os.readlink(src)
+        dst_cleared = self._absorb_real_dir_into_target(dst, link_target)
+
+        if _symlink_already_correct(dst, link_target):
+            print(f"  {self._rel(dst)} already linked to {link_target}")
+        elif _destination_blocked(dst, dst_cleared):
+            print(f"  Skipping {self._rel(src)} "
+                  f"(destination {self._rel(dst)} already exists)")
+            return
+        else:
+            self._create_symlink(dst, link_target)
+
+        self._remove_path(src)
+
+    def _absorb_real_dir_into_target(self, dst, link_target):
+        if not os.path.isdir(dst) or os.path.islink(dst):
+            return False
+
+        self._remove_debug_log(dst)
+        self._move_filtered_entries(dst, link_target)
+
+        print(f"  Remove empty directory {self._rel(dst)}")
+        if not self.dry_run:
+            os.rmdir(dst)
+        return True
+
+    def _remove_debug_log(self, directory):
+        debug_log = os.path.join(directory, "debug.log")
+        if not os.path.isfile(debug_log):
+            return
+        print(f"  Remove {self._rel(debug_log)}")
+        if not self.dry_run:
+            os.remove(debug_log)
+
+    def _move_directory(self, src, dst):
+        print(f"  Move {self._rel(src)} -> {self._rel(dst)}")
+        if not self.dry_run:
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.move(src, dst)
+
+    def _merge_into_existing(self, src, dst):
+        moved = self._move_tree_contents(src, dst)
+        if moved:
+            print(f"  Move {moved} file(s) from {self._rel(src)} "
+                  f"to {self._rel(dst)}")
+        print(f"  Remove {self._rel(src)}")
+        if not self.dry_run:
+            shutil.rmtree(src)
+
+    def _move_tree_contents(self, src, dst):
+        moved = 0
+        for dirpath, _, filenames in os.walk(src):
+            rel_dir = os.path.relpath(dirpath, src)
+            dst_dir = os.path.join(dst, rel_dir) if rel_dir != "." else dst
+            moved += self._move_new_files(dirpath, dst_dir, filenames)
+        return moved
+
+    def _move_new_files(self, src_dir, dst_dir, filenames):
+        moved = 0
+        for file_src, file_dst in _new_file_pairs(src_dir, dst_dir, filenames):
+            if not self.dry_run:
+                os.makedirs(dst_dir, exist_ok=True)
+                shutil.move(file_src, file_dst)
+            moved += 1
+        return moved
+
+    def _update_gitignore(self):
+        gitignore = os.path.join(self.project_dir, ".gitignore")
+        if not os.path.isfile(gitignore):
+            return
+
+        with open(gitignore, "r") as f:
+            lines = f.readlines()
+
+        new_lines, removed, has_hitl = _filter_gitignore_entries(lines)
+
+        if not removed and has_hitl:
+            print("  .gitignore already up to date")
+            return
+
+        for r in removed:
+            print(f"  Remove .gitignore entry: {r}")
+
+        if not has_hitl:
+            insert_pos = _find_gitignore_insert_position(new_lines)
+            new_lines.insert(insert_pos, "**/.hitl\n")
+            print("  Add .gitignore entry: **/.hitl")
+
+        if not self.dry_run:
+            with open(gitignore, "w") as f:
+                f.writelines(new_lines)
+
+    def _migrate_subdirectories(self):
+        for claude_dir in _find_subdirectory_claude_dirs(self.project_dir):
+            parent_dir = os.path.dirname(claude_dir)
+            for subdir in SUBDIRS:
+                src = os.path.join(claude_dir, subdir)
+                if not os.path.isdir(src) or os.path.islink(src):
+                    continue
+
+                dst = os.path.join(self.hitl_dir, subdir)
+                if not self.dry_run:
+                    os.makedirs(dst, exist_ok=True)
+                self._merge_into_existing(src, dst)
+
+                sub_hitl_dir = os.path.join(parent_dir, ".hitl")
+                link_path = os.path.join(sub_hitl_dir, subdir)
+                rel_target = os.path.relpath(dst, sub_hitl_dir)
+                self._ensure_symlink(link_path, rel_target)
+
+    # -- link helpers --
+
+    def _clear_existing_path(self, src, target):
+        if not os.path.exists(src) and not os.path.islink(src):
+            return
+
+        if os.path.islink(src):
+            self._remove_old_symlink(src)
+        else:
+            self._replace_directory(src, target)
+
+    def _remove_old_symlink(self, src):
+        print(f"  Remove old symlink {self._rel(src)} -> {os.readlink(src)}")
+        if not self.dry_run:
+            os.remove(src)
+
+    def _replace_directory(self, src, target):
+        self._move_all_entries(src, target)
+        print(f"  Remove directory {self._rel(src)}")
+        if not self.dry_run:
+            shutil.rmtree(src)
+
+    def _move_all_entries(self, src_dir, target_dir):
+        entries = os.listdir(src_dir)
+        if not entries:
+            return
+        print(f"  Move {len(entries)} file(s) from {self._rel(src_dir)} "
+              f"to {target_dir}")
+        if not self.dry_run:
+            for entry in entries:
+                entry_dst = os.path.join(target_dir, entry)
+                if not os.path.exists(entry_dst):
+                    shutil.move(os.path.join(src_dir, entry), entry_dst)
+
+    # -- shared helpers --
+
+    def _create_symlink(self, path, target):
+        if not self.dry_run:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+        print(f"  Symlink {self._rel(path)} -> {target}")
+        if not self.dry_run:
+            os.symlink(target, path)
+
+    def _ensure_directory(self, path):
+        if os.path.isdir(path):
+            return
+        print(f"  Create directory {path}")
+        if not self.dry_run:
+            os.makedirs(path, exist_ok=True)
+
+    def _remove_path(self, path):
+        print(f"  Remove {self._rel(path)}")
+        if not self.dry_run:
+            os.remove(path)
+
+    def _ensure_symlink(self, link_path, rel_target):
+        if _symlink_already_correct(link_path, rel_target):
+            print(f"  {self._rel(link_path)} already linked to {rel_target}")
+            return
+        print(f"  Symlink {self._rel(link_path)} -> {rel_target}")
+        if not self.dry_run:
+            os.makedirs(os.path.dirname(link_path), exist_ok=True)
+            os.symlink(rel_target, link_path)
+
+    def _move_filtered_entries(self, src_dir, target_dir):
+        entries = [e for e in os.listdir(src_dir) if e != "debug.log"]
+        if not entries:
+            return
+        print(f"  Move {len(entries)} file(s) from {self._rel(src_dir)} "
+              f"to {target_dir}")
+        if not self.dry_run:
+            for entry in entries:
+                entry_dst = os.path.join(target_dir, entry)
+                if not os.path.exists(entry_dst):
+                    shutil.move(os.path.join(src_dir, entry), entry_dst)
+
+    def _rel(self, path):
+        return os.path.relpath(path, self.project_dir)
 
 
-def _update_gitignore(project_dir, dry_run):
-    """Replace .claude/issues and .claude/sessions entries with .hitl in .gitignore."""
-    gitignore = os.path.join(project_dir, ".gitignore")
-    if not os.path.isfile(gitignore):
-        return
+# -- pure functions --
 
-    with open(gitignore, "r") as f:
-        lines = f.readlines()
 
+def _symlink_already_correct(path, expected_target):
+    return os.path.islink(path) and os.readlink(path) == expected_target
+
+
+def _destination_blocked(dst, dst_cleared):
+    return not dst_cleared and (os.path.exists(dst) or os.path.islink(dst))
+
+
+def _new_file_pairs(src_dir, dst_dir, filenames):
+    for fname in filenames:
+        if fname == "debug.log":
+            continue
+        file_dst = os.path.join(dst_dir, fname)
+        if not os.path.exists(file_dst):
+            yield os.path.join(src_dir, fname), file_dst
+
+
+def _filter_gitignore_entries(lines):
     old_patterns = {".claude/issues", ".claude/sessions",
                     "**/.claude/issues", "**/.claude/sessions"}
     new_lines = []
@@ -195,26 +295,10 @@ def _update_gitignore(project_dir, dry_run):
             has_hitl = True
         new_lines.append(line)
 
-    if not removed and has_hitl:
-        print("  .gitignore already up to date")
-        return
-
-    if removed:
-        for r in removed:
-            print(f"  Remove .gitignore entry: {r}")
-
-    if not has_hitl:
-        insert_pos = _find_gitignore_insert_position(new_lines)
-        new_lines.insert(insert_pos, "**/.hitl\n")
-        print("  Add .gitignore entry: **/.hitl")
-
-    if not dry_run:
-        with open(gitignore, "w") as f:
-            f.writelines(new_lines)
+    return new_lines, removed, has_hitl
 
 
 def _find_gitignore_insert_position(lines):
-    """Find a reasonable position to insert the .hitl entry."""
     for i, line in enumerate(lines):
         stripped = line.strip()
         if stripped and not stripped.startswith("#"):
@@ -222,49 +306,10 @@ def _find_gitignore_insert_position(lines):
     return len(lines)
 
 
-def _migrate_subdirectories(project_dir, dry_run):
-    """Migrate .claude/{sessions,issues} from subdirectories into root .hitl/."""
-    hitl_dir = os.path.join(project_dir, ".hitl")
-
-    for claude_dir in _find_subdirectory_claude_dirs(project_dir):
-        parent_dir = os.path.dirname(claude_dir)
-        for subdir in SUBDIRS:
-            src = os.path.join(claude_dir, subdir)
-            if not os.path.isdir(src) or os.path.islink(src):
-                continue
-
-            dst = os.path.join(hitl_dir, subdir)
-            if not dry_run:
-                os.makedirs(dst, exist_ok=True)
-            _merge_into_existing(project_dir, src, dst, dry_run)
-
-            sub_hitl_dir = os.path.join(parent_dir, ".hitl")
-            link_path = os.path.join(sub_hitl_dir, subdir)
-            rel_target = os.path.relpath(dst, sub_hitl_dir)
-            _ensure_symlink(project_dir, link_path, rel_target, dry_run)
-
-
 def _find_subdirectory_claude_dirs(project_dir):
-    """Yield .claude directories in subdirectories (not the root .claude)."""
     root_claude = os.path.join(project_dir, ".claude")
     for dirpath, dirnames, _ in os.walk(project_dir):
-        dirnames[:] = [d for d in dirnames if d not in (".git", "node_modules", ".hitl")]
+        dirnames[:] = [d for d in dirnames
+                       if d not in (".git", "node_modules", ".hitl")]
         if os.path.basename(dirpath) == ".claude" and dirpath != root_claude:
             yield dirpath
-
-
-def _ensure_symlink(project_dir, link_path, rel_target, dry_run):
-    """Create link_path as symlink to rel_target, skipping if already correct."""
-    if os.path.islink(link_path) and os.readlink(link_path) == rel_target:
-        print(f"  {_rel(project_dir, link_path)} already linked to {rel_target}")
-        return
-
-    print(f"  Symlink {_rel(project_dir, link_path)} -> {rel_target}")
-    if not dry_run:
-        os.makedirs(os.path.dirname(link_path), exist_ok=True)
-        os.symlink(rel_target, link_path)
-
-
-def _rel(base, path):
-    """Return path relative to base for display."""
-    return os.path.relpath(path, base)

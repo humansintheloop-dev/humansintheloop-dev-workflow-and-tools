@@ -4,6 +4,8 @@ import os
 import subprocess
 import sys
 
+from i2code.implement.managed_subprocess import ManagedSubprocess
+
 
 class IsolateMode:
     """Execution mode that runs project setup on the host then delegates to isolarium VM.
@@ -110,8 +112,12 @@ class IsolateMode:
 
 
 class RealSubprocessRunner:
-    """Delegates to the real subprocess.run."""
+    """Runs subprocess with ManagedSubprocess for clean interrupt handling."""
 
     def run(self, cmd):
-        result = subprocess.run(cmd)
-        return result.returncode
+        process = subprocess.Popen(cmd, start_new_session=True)
+        with ManagedSubprocess(process, label="isolarium") as managed:
+            process.wait()
+        if managed.interrupted:
+            return 130
+        return process.returncode

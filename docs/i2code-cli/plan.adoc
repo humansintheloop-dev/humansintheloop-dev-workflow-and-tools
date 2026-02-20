@@ -1,0 +1,190 @@
+= `i2code plan` -- Plan Creation and Management
+
+== Group Help
+
+Plan file management commands.
+
+== Workflow Subcommands
+
+These subcommands are thin wrappers around shell scripts that create or revise an implementation plan.
+
+=== `create`
+
+Create an implementation plan from a specification.
+
+==== Usage
+
+[source,shell]
+----
+i2code plan create <idea-directory> [claude-args...]
+----
+
+==== Parameters
+
+`<idea-directory>`::
+Directory containing the specification produced by `i2code spec create`.
+
+`[claude-args...]`::
+Optional extra arguments forwarded to the underlying script.
+
+==== Description
+
+The `create` subcommand generates an implementation plan from the specification file in the idea directory.
+
+==== Prerequisites
+
+* A spec file must already exist in `<idea-directory>` (produced by `i2code spec create`).
+
+=== `revise`
+
+Revise an existing implementation plan.
+
+==== Usage
+
+[source,shell]
+----
+i2code plan revise <idea-directory>
+----
+
+==== Parameters
+
+`<idea-directory>`::
+Directory containing the plan to revise.
+
+==== Description
+
+The `revise` subcommand updates an existing plan in place, allowing you to refine tasks, reorder threads, or adjust the implementation strategy.
+
+==== Prerequisites
+
+* A plan file must already exist in `<idea-directory>`.
+
+== Plan File Management Subcommands
+
+These subcommands are Python-based and operate directly on a plan file.
+They are primarily used by the `plan-file-management` skill to enable Claude to read and edit plan files programmatically.
+
+=== General Usage
+
+[source,shell]
+----
+i2code plan <subcommand> <plan-file> [options]
+----
+
+=== Query Subcommands
+
+`get-next-task`::
+Get the first uncompleted task in the plan.
+
+`list-threads`::
+List all threads with completion status (e.g., `Thread 1: Title (3/5 tasks completed)`).
+
+`get-summary`::
+Get plan metadata and progress summary, including plan name, idea type, overview, thread count, and task completion.
+
+`get-thread`::
+Get a thread's full content, including all tasks and steps. +
+Options: `--thread N` (required).
+
+=== Mutation Subcommands
+
+==== Task Operations
+
+`mark-task-complete`::
+Mark a task and all its steps as complete. +
+Options: `--thread N --task N [--rationale TEXT]`.
+
+`mark-task-incomplete`::
+Mark a completed task and all its steps as incomplete. +
+Options: `--thread N --task N [--rationale TEXT]`.
+
+`mark-step-complete`::
+Mark a single step as complete. +
+Options: `--thread N --task N --step N --rationale TEXT`.
+
+`mark-step-incomplete`::
+Mark a single completed step as incomplete. +
+Options: `--thread N --task N --step N --rationale TEXT`.
+
+`insert-task-before`::
+Insert a new task before a specified task within a thread. +
+Options: `--thread N --before N --title TEXT --task-type TYPE --entrypoint TEXT --observable TEXT --evidence TEXT --steps JSON --rationale TEXT`.
+
+`insert-task-after`::
+Insert a new task after a specified task within a thread. +
+Options: `--thread N --after N --title TEXT --task-type TYPE --entrypoint TEXT --observable TEXT --evidence TEXT --steps JSON --rationale TEXT`.
+
+`delete-task`::
+Remove a task from a thread. +
+Options: `--thread N --task N --rationale TEXT`.
+
+`replace-task`::
+Replace a task's content in place within a thread. +
+Options: `--thread N --task N --title TEXT --task-type TYPE --entrypoint TEXT --observable TEXT --evidence TEXT --steps JSON --rationale TEXT`.
+
+`reorder-tasks`::
+Reorder tasks within a thread. +
+Options: `--thread N --order 3,1,2 --rationale TEXT`.
+
+`move-task-before`::
+Move a task to before another task within the same thread. +
+Options: `--thread N --task N --before N --rationale TEXT`.
+
+`move-task-after`::
+Move a task to after another task within the same thread. +
+Options: `--thread N --task N --after N --rationale TEXT`.
+
+==== Thread Operations
+
+`insert-thread-before`::
+Insert a new thread before a specified thread. +
+Options: `--before N --title TEXT --introduction TEXT --tasks JSON --rationale TEXT`.
+
+`insert-thread-after`::
+Insert a new thread after a specified thread. +
+Options: `--after N --title TEXT --introduction TEXT --tasks JSON --rationale TEXT`.
+
+`delete-thread`::
+Remove a thread entirely. +
+Options: `--thread N --rationale TEXT`.
+
+`replace-thread`::
+Replace a thread's entire content in place. +
+Options: `--thread N --title TEXT --introduction TEXT --tasks JSON --rationale TEXT`.
+
+`reorder-threads`::
+Reorder threads according to a specified ordering. +
+Options: `--order 3,1,2 --rationale TEXT`.
+
+==== Housekeeping
+
+`fix-numbering`::
+Renumber all threads and tasks sequentially. Takes no options beyond the plan file.
+
+== Examples
+
+[source,shell]
+----
+# Create a plan from an existing spec
+i2code plan create ~/ideas/my-app
+
+# Revise an existing plan
+i2code plan revise ~/ideas/my-app
+
+# Get the next uncompleted task
+i2code plan get-next-task path/to/plan.md
+
+# List all threads with completion status
+i2code plan list-threads path/to/plan.md
+
+# Mark a task as complete
+i2code plan mark-task-complete path/to/plan.md --thread 1 --task 2
+
+# Mark a step as complete
+i2code plan mark-step-complete path/to/plan.md --thread 1 --task 2 --step 3 --rationale "Tests pass"
+----
+
+== See Also
+
+* link:spec.adoc[`i2code spec` -- Specification] -- the previous step (creating a specification).
+* link:implement.adoc[`i2code implement` -- Implementation] -- the next step (implementing the plan).

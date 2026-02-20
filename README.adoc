@@ -25,12 +25,9 @@ The developer must carefully review any GenAI-generated code and provide prompt 
 
 Idea to Code consists of the following:
 
-* The `idea-to-code.sh` script that implements the idea to code workflow.
+* The `i2code` CLI tool — a UV-installable Python CLI that implements the entire idea-to-code workflow and plan file management.
 * A Claude Code plugin that provides skills, commands and hooks.
 * Template `CLAUDE.md` and `.settings.local.json`.
-* Supporting scripts.
-* The `i2code` CLI tool — a UV-installable Python CLI that's the future home of the other scripts. 
-Currently, it implements plan file management (reading, updating, and structuring implementation plans)
 
 Let's look at the key features starting with the idea to code workflow.
 
@@ -43,11 +40,11 @@ The idea to code workflow consists of the following steps:
 . Creating an implementation plan - a sequence tasks that are prompts for Claude Code
 . Executing the implementation plan - running the coding agent to execute the plan
 
-To use this workflow simply run link:./docs/scripts/idea-to-code.adoc[idea-to-code.sh]:
+To use this workflow simply run `i2code go`:
 
 [source,bash]
 ----
-./idea-to-code.sh ~/ideas/some-feature
+i2code go ~/ideas/some-feature
 ----
 
 where `~/ideas/some-feature` is a directory that will contain the idea, spec, and implementation plan.
@@ -65,18 +62,56 @@ For example, see https://github.com/humansintheloop-dev/humansintheloop-dev-exam
 
 === The `i2code` CLI tool
 
-The `i2code` CLI tool is a UV-installable Python CLI that's the future home of the other scripts. 
-Currently, it implements plan file management (reading, updating, and structuring implementation plans)
-It provides structured plan file management commands used by the `plan-file-management` skill to enable Claude to efficiently read and edit plan files.
-For example, it supports marking tasks and steps complete, inserting/deleting/reordering threads and tasks, and querying plan status.
+The `i2code` CLI tool is a UV-installable Python CLI that provides the entire idea-to-code workflow as subcommands.
+It bundles the workflow shell scripts and prompt templates as package data, with thin Click wrappers that forward arguments and propagate exit codes.
+
+The CLI is organized into the following command groups (see link:./docs/i2code-cli/i2code-cli.adoc[full CLI reference] for details):
+
+[cols="1,3"]
+|===
+| Command | Purpose
+
+| link:./docs/i2code-cli/go.adoc[`i2code go <dir>`]
+| Run the full idea-to-code orchestrator
+
+| link:./docs/i2code-cli/idea.adoc[`i2code idea brainstorm <dir>`]
+| Brainstorm and explore an idea
+
+| link:./docs/i2code-cli/spec.adoc[`i2code spec create\|revise <dir>`]
+| Create or revise a specification
+
+| link:./docs/i2code-cli/plan.adoc[`i2code plan create\|revise <dir>`]
+| Create or revise an implementation plan
+
+| link:./docs/i2code-cli/design.adoc[`i2code design create <dir>`]
+| Create a design document from a specification
+
+| link:./docs/i2code-cli/implement.adoc[`i2code implement <dir>`]
+| Execute an implementation plan
+
+| link:./docs/i2code-cli/improve.adoc[`i2code improve ...`]
+| Analyze sessions, review issues, update configuration
+
+| link:./docs/i2code-cli/setup.adoc[`i2code setup ...`]
+| Initial project setup and configuration updates
+
+| link:./docs/i2code-cli/implement.adoc[`i2code scaffold <dir>`]
+| Generate project scaffolding for an idea directory
+
+| link:./docs/i2code-cli/manage-tracking.adoc[`i2code manage-tracking`]
+| Manage HITL tracking directories for session and issue recording
+|===
+
+The `plan` group also includes subcommands for plan file management (`get-next-task`, `mark-task-complete`, etc.) used by the `plan-file-management` skill to enable Claude to read and edit plan files.
 
 Example commands:
 
 [source,bash]
 ----
-i2code plan get-next-task path/to/plan.md
-i2code plan mark-task-complete path/to/plan.md --thread 1 --task 2 --rationale "All tests passing"
-i2code plan list-threads path/to/plan.md
+i2code go docs/features/my-feature
+i2code idea brainstorm docs/features/my-feature
+i2code spec create docs/features/my-feature
+i2code plan create docs/features/my-feature
 ----
 
 === Guiding Claude code
@@ -98,7 +133,7 @@ Key commands are:
 
 There are also session tracking hooks, which are described below.
 
-=== Improving how Claude Code operates
+=== Improving how Claude Code operates through context engineering
 
 Claude Code regularly makes mistakes and, unlike a human, will repeatedly make the same mistake again.
 It's essential, therefore, to continue update the plugin to improve how Claude Code operates.
@@ -108,11 +143,20 @@ To support continuous improvement, the `idea-to-code` Claude Code plugin provide
 * `claude-issue-report` - a slash command that reports an issue in `.hitl/issues`
 * hooks - record the Claude sessions (`.hitl/sessions`) and associate filed issues with the session
 
-In addition, there are the following subcommands:
+In addition, there are the following `i2code` subcommands:
 
-* `i2code improve review-issues` - analyzes filed issues and updates the Claude Code plugin
-* `i2code improve update-claude-files` - updates the template files with changes made to a project's `CLAUDE.md` and `.settings.local.json`
-* `i2code setup update-project` - updates a project's `CLAUDE.md` and `.settings.local.json` from the template files.
+* `i2code manage-tracking` - migrates and links HITL tracking directories (see link:./docs/i2code-cli/manage-tracking.adoc[manage-tracking])
+* `i2code improve analyze-sessions <tracking-dir>` - analyzes project tracking sessions
+* `i2code improve summary-reports <hitl-dir>` - generates summary reports from sessions
+* `i2code improve review-issues <hitl-dir>` - analyzes filed issues and updates the Claude Code plugin
+* `i2code improve update-claude-files <project-dir>` - updates the template files with changes made to a project's `CLAUDE.md` and `.settings.local.json`
+
+=== Setting up a project
+
+The `i2code setup` commands configure Claude Code files in a project directory:
+
+* `i2code setup claude-files --config-dir <path>` - copies initial Claude config files into a project
+* `i2code setup update-project <project-dir> --config-dir <path>` - updates a project's `CLAUDE.md` and `.settings.local.json` from the template files
 
 === Examples
 
@@ -121,8 +165,11 @@ Here's some examples
 * https://github.com/eventuate-platform/eventuate-tram-spring-micrometer-tracing/tree/master[eventuate-tram-spring-micrometer-tracing/tree/master] - provides distributed tracing support for Eventuate Tram using Micrometer Tracing.
 Here's the https://github.com/eventuate-platform/eventuate-tram-spring-micrometer-tracing/blob/master/docs/features/use-micrometer-tracing/use-micrometer-tracing-idea.txt[idea file].
 
-* https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree[`loctree`], a GoLang terminal user interface (TUI) application that provides an interactive, hierarchical view of lines of code (LOC) counts for a given directory structure. 
+* https://github.com/humansintheloop-dev/humansintheloop-dev-examples-loctree[`loctree`], a GoLang terminal user interface (TUI) application that provides an interactive, hierarchical view of lines of code (LOC) counts for a given directory structure.
 See link:./docs/idea-to-code-workflow.adoc[idea to code workflow for Loctree]
+
+* This project itself — packaging workflow scripts as `i2code` subcommands.
+See link:./docs/features/i2code-idea-to-code-subcommand-v2/i2code-idea-to-code-subcommand-v2-idea.txt[idea], link:./docs/features/i2code-idea-to-code-subcommand-v2/i2code-idea-to-code-subcommand-v2-spec.md[spec], and link:./docs/features/i2code-idea-to-code-subcommand-v2/i2code-idea-to-code-subcommand-v2-plan.md[plan]
 
 == Installation
 

@@ -1,0 +1,110 @@
+= `i2code improve` -- Continuous Improvement
+
+== Group Help
+
+Analyze sessions, review issues, and update configuration.
+
+== Subcommands
+
+=== `analyze-sessions`
+
+Analyze tracking sessions for patterns and improvements.
+
+==== Usage
+
+[source,shell]
+----
+i2code improve analyze-sessions <tracking-dir>
+----
+
+==== Parameters
+
+`<tracking-dir>`::
+Directory containing the project tracking sessions to analyze.
+
+==== Description
+
+The `analyze-sessions` subcommand analyzes project tracking sessions for patterns and improvements.
+
+=== `summary-reports`
+
+Create summary reports from HITL session data.
+
+==== Usage
+
+[source,shell]
+----
+i2code improve summary-reports <hitl-dir> [--project-name NAME]
+----
+
+==== Parameters
+
+`<hitl-dir>`::
+Directory containing the HITL (Human-in-the-Loop) session data.
+
+`[--project-name NAME]`::
+Optional project name to include in the generated reports.
+
+==== Description
+
+The `summary-reports` subcommand creates summary reports from HITL session data.
+
+=== `review-issues`
+
+Review and triage active issues from HITL sessions.
+
+==== Usage
+
+[source,shell]
+----
+i2code improve review-issues <hitl-dir> [--project NAME] [-- claude-args...]
+----
+
+==== Parameters
+
+`<hitl-dir>`::
+Directory containing the HITL session data with issues to review.
+
+`[--project NAME]`::
+Optional project name to scope the issue review.
+
+`[-- claude-args...]`::
+Optional extra arguments forwarded to the underlying Claude invocation.
+
+==== Description
+
+The `review-issues` subcommand reviews and triages active issues from HITL sessions.
+
+=== `update-claude-files`
+
+Review project Claude files and update config-files templates.
+
+==== Usage
+
+[source,shell]
+----
+i2code improve update-claude-files <project-dir>
+----
+
+==== Parameters
+
+`<project-dir>`::
+Path to the project whose Claude files should be reviewed and used to update the config-files templates.
+
+==== Description
+
+The `update-claude-files` subcommand reviews project Claude files and updates config-files templates.
+
+== Examples
+
+[source,shell]
+----
+i2code improve analyze-sessions .hitl
+i2code improve summary-reports .hitl --project-name my-project
+i2code improve review-issues .hitl --project my-project
+i2code improve update-claude-files /path/to/project
+----
+
+== See Also
+
+* link:setup.adoc[`i2code setup` -- Project Setup]

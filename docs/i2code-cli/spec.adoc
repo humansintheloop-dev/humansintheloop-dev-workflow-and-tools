@@ -1,0 +1,80 @@
+= `i2code spec` -- Specification Management
+
+== Group Help
+
+Create and revise specifications.
+
+== Subcommands
+
+=== `create`
+
+Create a specification from an idea.
+
+==== Usage
+
+[source,shell]
+----
+i2code spec create <idea-directory> [claude-args...]
+----
+
+==== Parameters
+
+`<idea-directory>`::
+Directory containing the idea files produced by `i2code idea brainstorm`.
+
+`[claude-args...]`::
+Optional extra arguments forwarded to the underlying script.
+
+==== Description
+
+The `create` subcommand generates a technical specification from an existing idea:
+
+1. Validates that the idea file exists in `<idea-directory>`.
+2. Resumes the Claude session from the brainstorming phase.
+3. Generates a technical specification based on the idea and discussion.
+
+==== Created Files
+
+`<name>-spec.md`::
+The generated specification file, where `<name>` is derived from the directory name.
+
+==== Prerequisites
+
+* Must have run `i2code idea brainstorm` first so that an idea file exists.
+
+=== `revise`
+
+Revise an existing specification.
+
+==== Usage
+
+[source,shell]
+----
+i2code spec revise <idea-directory>
+----
+
+==== Parameters
+
+`<idea-directory>`::
+Directory containing the specification to revise.
+
+==== Description
+
+The `revise` subcommand updates an existing specification in place.
+
+==== Prerequisites
+
+* A spec file must already exist in `<idea-directory>`.
+
+== Examples
+
+[source,shell]
+----
+i2code spec create ~/ideas/my-app
+i2code spec revise ~/ideas/my-app
+----
+
+== See Also
+
+* link:idea.adoc[`i2code idea` -- Idea Exploration] -- the previous step (brainstorming).
+* link:plan.adoc[`i2code plan` -- Planning] -- the next step after creating a specification.

@@ -1,0 +1,97 @@
+= `i2code` CLI Reference
+:toc:
+:toclevels: 2
+
+== Overview
+
+`i2code` is a UV-installable Python CLI that provides the entire idea-to-code workflow as subcommands.
+It bundles workflow shell scripts and prompt templates as package data, with thin Click wrappers that locate the bundled scripts, forward arguments, and propagate exit codes.
+
+== Workflow Diagram
+
+----
+idea brainstorm
+       |
+  spec create
+       |
+  plan create
+       |
+   implement
+----
+
+== Command Groups
+
+[cols="1,2,1", options="header"]
+|===
+| Command | Purpose | Detail page
+
+| `i2code go <dir>`
+| Run the full idea-to-code orchestrator
+| link:go.adoc[go]
+
+| `i2code idea brainstorm <dir>`
+| Brainstorm and explore an idea
+| link:idea.adoc[idea]
+
+| `i2code spec create\|revise <dir>`
+| Create or revise a specification
+| link:spec.adoc[spec]
+
+| `i2code plan create\|revise <dir>`
+| Create or revise an implementation plan
+| link:plan.adoc[plan]
+
+| `i2code design create <dir>`
+| Create a design document
+| link:design.adoc[design]
+
+| `i2code implement <dir>`
+| Execute an implementation plan
+| link:implement.adoc[implement]
+
+| `i2code improve ...`
+| Analyze sessions, review issues, update configuration
+| link:improve.adoc[improve]
+
+| `i2code setup ...`
+| Project setup and configuration
+| link:setup.adoc[setup]
+
+| `i2code scaffold <dir>`
+| Generate project scaffolding for an idea directory
+| link:implement.adoc#_i2code_scaffold_project_scaffolding[scaffold]
+
+| `i2code manage-tracking`
+| Manage HITL tracking directories for session and issue recording
+| link:manage-tracking.adoc[manage-tracking]
+|===
+
+NOTE: The `plan` group also includes plan-file-management subcommands used by the `plan-file-management` skill.
+
+== Quick Start Examples
+
+=== Using the Orchestrator (Recommended)
+
+[source,bash]
+----
+i2code go ~/ideas/my-app
+----
+
+The orchestrator detects your current workflow state, presents appropriate options at each step, and guides you through the entire process interactively.
+
+=== Manual Execution
+
+[source,bash]
+----
+# 1. Brainstorm your idea
+i2code idea brainstorm ~/ideas/my-app
+
+# 2. Create specification
+i2code spec create ~/ideas/my-app
+
+# 3. Create implementation plan
+i2code plan create ~/ideas/my-app
+
+# 4. Implement the plan
+i2code implement ~/ideas/my-app
+----

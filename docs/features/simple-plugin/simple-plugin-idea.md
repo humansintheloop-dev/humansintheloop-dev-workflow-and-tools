@@ -194,7 +194,7 @@ genai-development-workflow/
 - [ ] Add plugin note to `docs/scripts/scripts.adoc`
 - [ ] Test plugin installation locally:
   ```bash
-  /plugin install /Users/cer/src/genai-development-workflow
+  /plugin install /path/to/genai-development-workflow
   /help  # Verify commands appear
   ```
 - [ ] Commit changes with message: "Convert to Claude Code plugin with standard structure"
@@ -210,7 +210,7 @@ genai-development-workflow/
 ### Local Testing
 ```bash
 # Install from local directory
-/plugin install /Users/cer/src/genai-development-workflow
+/plugin install /path/to/genai-development-workflow
 
 # Verify commands are available
 /help
@@ -220,7 +220,7 @@ cd /tmp/test-idea
 /idea-create-stories idea-file=./test-idea.txt spec-file=./test-spec.md
 
 # Verify shell scripts still work
-cd /Users/cer/src/genai-development-workflow
+cd /path/to/genai-development-workflow
 ./workflow-scripts/idea-to-code.sh /tmp/test-idea
 ```
 

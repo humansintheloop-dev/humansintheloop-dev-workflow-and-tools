@@ -1,0 +1,24 @@
+Add proper Ctrl+C (SIGINT) and Ctrl+Z (SIGTSTP) signal handling to `i2code implement` for non-interactive subprocess scenarios.
+
+Scope:
+- Non-interactive Claude invocation (subprocess.Popen + reader threads)
+- Isolarium invocation (subprocess.run, to be converted to Popen)
+- Ctrl+C: clean termination with SIGTERM/SIGKILL escalation
+- Ctrl+Z: suspend/resume via SIGTSTP/SIGCONT forwarding
+
+Out of scope:
+- Interactive Claude (Ctrl+C already propagates naturally via terminal inheritance; Ctrl+Z is consumed by Claude's TUI in raw mode)
+- Short-lived subprocess calls (gh CLI in github_client.py)
+- Isolarium VM cleanup (VM must never be destroyed by i2code)
+- Isolarium's own signal handling (separate work item)
+
+Approach:
+- Create a `ManagedSubprocess` context manager that wraps Popen
+- Start child processes with `start_new_session=True` for process group isolation
+- On KeyboardInterrupt: SIGTERM the child process, wait up to 5 seconds, escalate to SIGKILL
+- On SIGTSTP (Ctrl+Z): forward to child process group, then suspend parent; on SIGCONT (fg): forward to child, re-install SIGTSTP handler
+- Context manager installs signal handlers in __enter__, restores in __exit__
+- Context manager also joins reader threads (stdout/stderr) for complete cleanup
+- Print informative messages during cleanup so user knows it's not hung
+- Exit with code 130 (Unix SIGINT convention)
+- Remove dead signal handling code from branch_lifecycle.py

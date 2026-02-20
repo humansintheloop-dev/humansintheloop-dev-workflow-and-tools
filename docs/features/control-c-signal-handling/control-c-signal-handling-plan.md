@@ -83,16 +83,16 @@ Proves the core context manager works end-to-end with mock Popen and Thread obje
     - [x] Implement `__enter__` to save original signal handlers and return self
     - [x] Implement `__exit__` to restore original signal handlers on normal exit (no exception)
 
-- [ ] **Task 1.2: ManagedSubprocess terminates child on KeyboardInterrupt with cleanup messages**
+- [x] **Task 1.2: ManagedSubprocess terminates child on KeyboardInterrupt with cleanup messages**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_managed_subprocess.py -k test_keyboard_interrupt`
   - Observable: On `KeyboardInterrupt`: `process.terminate()` called, all threads joined with timeout, `"\nInterrupted. Terminating <label> process..."` and `"Done."` printed to stderr, exception suppressed (`__exit__` returns `True`), `interrupted` property is `True`
   - Evidence: Test enters context manager, simulates `KeyboardInterrupt` via `__exit__(KeyboardInterrupt, ...)`, asserts `terminate()` called, mock threads' `join()` called, stderr contains expected messages, and `managed.interrupted` is `True`
   - Steps:
-    - [ ] Write test that calls `__exit__` with `KeyboardInterrupt` exc_type, mock process that exits promptly after `terminate()`, and mock threads
-    - [ ] Implement `__exit__` to detect `KeyboardInterrupt`, call `process.terminate()`, wait for process with timeout, join threads, print cleanup messages to stderr, set `self.interrupted = True`, and return `True` to suppress the exception
-    - [ ] Write test with mock threads to verify all threads are joined with a timeout
-    - [ ] Implement thread joining with timeout matching `terminate_timeout`
+    - [x] Write test that calls `__exit__` with `KeyboardInterrupt` exc_type, mock process that exits promptly after `terminate()`, and mock threads
+    - [x] Implement `__exit__` to detect `KeyboardInterrupt`, call `process.terminate()`, wait for process with timeout, join threads, print cleanup messages to stderr, set `self.interrupted = True`, and return `True` to suppress the exception
+    - [x] Write test with mock threads to verify all threads are joined with a timeout
+    - [x] Implement thread joining with timeout matching `terminate_timeout`
 
 - [ ] **Task 1.3: ManagedSubprocess escalates to SIGKILL when SIGTERM times out**
   - TaskType: OUTCOME
@@ -174,3 +174,9 @@ Wires ManagedSubprocess into `RealSubprocessRunner.run()` and removes superseded
     - [ ] Remove `cleanup_on_interrupt()` function
     - [ ] Remove any imports that become unused after removal (e.g., `signal`, `sys`)
     - [ ] Run full test suite to verify no regressions
+
+---
+
+## Change History
+### 2026-02-20 18:03 - mark-task-complete
+Implemented KeyboardInterrupt handling: __exit__ detects KeyboardInterrupt, calls process.terminate(), waits with timeout, joins threads with timeout, prints cleanup messages to stderr, sets interrupted=True, suppresses exception

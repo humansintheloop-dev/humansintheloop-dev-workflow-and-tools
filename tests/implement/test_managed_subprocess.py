@@ -42,3 +42,57 @@ class TestNormalExit:
 
         assert signal.getsignal(signal.SIGTSTP) == original_sigtstp
         assert signal.getsignal(signal.SIGCONT) == original_sigcont
+
+
+@pytest.mark.unit
+class TestKeyboardInterrupt:
+    """ManagedSubprocess terminates child on KeyboardInterrupt with cleanup messages."""
+
+    def test_keyboard_interrupt_terminates_process_and_prints_messages(self, capsys):
+        process = MagicMock()
+        process.returncode = None
+
+        managed = ManagedSubprocess(process, label="claude")
+        managed.__enter__()
+        result = managed.__exit__(KeyboardInterrupt, KeyboardInterrupt(), None)
+
+        process.terminate.assert_called_once()
+        process.wait.assert_called()
+
+        captured = capsys.readouterr()
+        assert "\nInterrupted. Terminating claude process..." in captured.err
+        assert "Done." in captured.err
+
+        assert result is True  # exception suppressed
+        assert managed.interrupted is True
+
+    def test_keyboard_interrupt_restores_signal_handlers(self):
+        process = MagicMock()
+        process.returncode = None
+
+        original_sigtstp = signal.getsignal(signal.SIGTSTP)
+        original_sigcont = signal.getsignal(signal.SIGCONT)
+
+        managed = ManagedSubprocess(process, label="test")
+        managed.__enter__()
+        managed.__exit__(KeyboardInterrupt, KeyboardInterrupt(), None)
+
+        assert signal.getsignal(signal.SIGTSTP) == original_sigtstp
+        assert signal.getsignal(signal.SIGCONT) == original_sigcont
+
+    def test_keyboard_interrupt_joins_all_threads_with_timeout(self):
+        process = MagicMock()
+        process.returncode = None
+
+        thread1 = MagicMock()
+        thread2 = MagicMock()
+        timeout = 3.0
+
+        managed = ManagedSubprocess(
+            process, label="test", threads=[thread1, thread2], terminate_timeout=timeout
+        )
+        managed.__enter__()
+        managed.__exit__(KeyboardInterrupt, KeyboardInterrupt(), None)
+
+        thread1.join.assert_called_once_with(timeout=timeout)
+        thread2.join.assert_called_once_with(timeout=timeout)

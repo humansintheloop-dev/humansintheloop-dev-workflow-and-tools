@@ -1,5 +1,6 @@
 import signal
 import subprocess
+import sys
 import threading
 from typing import List, Optional
 
@@ -32,6 +33,23 @@ class ManagedSubprocess:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
-        signal.signal(signal.SIGTSTP, self._original_sigtstp)
-        signal.signal(signal.SIGCONT, self._original_sigcont)
-        return False
+        try:
+            if exc_type is KeyboardInterrupt:
+                return self._handle_interrupt()
+            return False
+        finally:
+            signal.signal(signal.SIGTSTP, self._original_sigtstp)
+            signal.signal(signal.SIGCONT, self._original_sigcont)
+
+    def _handle_interrupt(self) -> bool:
+        print(
+            f"\nInterrupted. Terminating {self.label} process...",
+            file=sys.stderr,
+        )
+        self.process.terminate()
+        self.process.wait(timeout=self.terminate_timeout)
+        for thread in self.threads:
+            thread.join(timeout=self.terminate_timeout)
+        print("Done.", file=sys.stderr)
+        self.interrupted = True
+        return True

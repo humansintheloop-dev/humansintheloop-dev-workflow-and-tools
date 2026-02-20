@@ -1,3 +1,4 @@
+import os
 import signal
 import subprocess
 import sys
@@ -27,9 +28,20 @@ class ManagedSubprocess:
         self._original_sigtstp = None
         self._original_sigcont = None
 
+    def _handle_sigtstp(self, signum, frame):
+        os.killpg(self.process.pid, signal.SIGTSTP)
+        signal.signal(signal.SIGTSTP, signal.SIG_DFL)
+        os.kill(os.getpid(), signal.SIGTSTP)
+
+    def _handle_sigcont(self, signum, frame):
+        os.killpg(self.process.pid, signal.SIGCONT)
+        signal.signal(signal.SIGTSTP, self._handle_sigtstp)
+
     def __enter__(self) -> "ManagedSubprocess":
         self._original_sigtstp = signal.getsignal(signal.SIGTSTP)
         self._original_sigcont = signal.getsignal(signal.SIGCONT)
+        signal.signal(signal.SIGTSTP, self._handle_sigtstp)
+        signal.signal(signal.SIGCONT, self._handle_sigcont)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:

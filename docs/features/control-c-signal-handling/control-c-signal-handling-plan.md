@@ -109,20 +109,20 @@ Proves the core context manager works end-to-end with mock Popen and Thread obje
 
 Adds SIGTSTP and SIGCONT handler installation to `__enter__`, enabling Unix suspend/resume when the child process is running.
 
-- [ ] **Task 2.1: ManagedSubprocess forwards SIGTSTP and SIGCONT to child process group**
+- [x] **Task 2.1: ManagedSubprocess forwards SIGTSTP and SIGCONT to child process group**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_managed_subprocess.py -k test_signal_forwarding`
   - Observable: On `__enter__`, custom SIGTSTP and SIGCONT handlers are installed; SIGTSTP handler forwards signal to child process group via `os.killpg`; SIGCONT handler forwards to child and re-installs SIGTSTP handler; on `__exit__`, original SIGTSTP and SIGCONT handlers are restored (both normal and interrupt paths)
   - Evidence: Tests verify: (1) `signal.getsignal(SIGTSTP)` returns custom handler after `__enter__`, (2) SIGTSTP handler calls `os.killpg(process.pid, SIGTSTP)` (with mocked `os.killpg`), (3) SIGCONT handler calls `os.killpg(process.pid, SIGCONT)` and re-installs SIGTSTP handler, (4) after `__exit__`, signal handlers match originals
   - Steps:
-    - [ ] Write test that enters context manager and asserts custom SIGTSTP handler is installed (not `SIG_DFL`)
-    - [ ] Implement SIGTSTP handler installation in `__enter__`
-    - [ ] Write test that invokes the SIGTSTP handler directly (with mocked `os.killpg` and `os.kill`) and asserts it forwards SIGTSTP to child process group
-    - [ ] Implement SIGTSTP handler: forward to child group via `os.killpg`, reset to `SIG_DFL`, re-raise via `os.kill(os.getpid(), SIGTSTP)`
-    - [ ] Write test that invokes SIGCONT handler and asserts it forwards SIGCONT to child group and re-installs custom SIGTSTP handler
-    - [ ] Implement SIGCONT handler: forward to child group, re-install SIGTSTP handler
-    - [ ] Write test that verifies handlers are restored after `__exit__` on both normal exit and `KeyboardInterrupt`
-    - [ ] Verify all signal handler restoration works correctly on both exit paths
+    - [x] Write test that enters context manager and asserts custom SIGTSTP handler is installed (not `SIG_DFL`)
+    - [x] Implement SIGTSTP handler installation in `__enter__`
+    - [x] Write test that invokes the SIGTSTP handler directly (with mocked `os.killpg` and `os.kill`) and asserts it forwards SIGTSTP to child process group
+    - [x] Implement SIGTSTP handler: forward to child group via `os.killpg`, reset to `SIG_DFL`, re-raise via `os.kill(os.getpid(), SIGTSTP)`
+    - [x] Write test that invokes SIGCONT handler and asserts it forwards SIGCONT to child group and re-installs custom SIGTSTP handler
+    - [x] Implement SIGCONT handler: forward to child group, re-install SIGTSTP handler
+    - [x] Write test that verifies handlers are restored after `__exit__` on both normal exit and `KeyboardInterrupt`
+    - [x] Verify all signal handler restoration works correctly on both exit paths
 
 ---
 
@@ -180,3 +180,6 @@ Wires ManagedSubprocess into `RealSubprocessRunner.run()` and removes superseded
 ## Change History
 ### 2026-02-20 18:03 - mark-task-complete
 Implemented KeyboardInterrupt handling: __exit__ detects KeyboardInterrupt, calls process.terminate(), waits with timeout, joins threads with timeout, prints cleanup messages to stderr, sets interrupted=True, suppresses exception
+
+### 2026-02-20 18:14 - mark-task-complete
+Implemented SIGTSTP and SIGCONT forwarding to child process group with handler restoration on both exit paths

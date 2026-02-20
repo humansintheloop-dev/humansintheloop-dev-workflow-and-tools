@@ -1,6 +1,7 @@
+import os
 import signal
 import subprocess
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -127,3 +128,85 @@ class TestSigkillEscalation:
         assert "Done." in err
         # Force-killing must appear before Done.
         assert err.index("Force-killing claude process...") < err.index("Done.")
+
+
+@pytest.mark.unit
+class TestSignalForwarding:
+    """ManagedSubprocess forwards SIGTSTP and SIGCONT to child process group."""
+
+    def test_signal_forwarding_installs_custom_sigtstp_handler(self):
+        process = MagicMock()
+
+        original_sigtstp = signal.getsignal(signal.SIGTSTP)
+
+        with ManagedSubprocess(process, label="test"):
+            current_sigtstp = signal.getsignal(signal.SIGTSTP)
+            assert current_sigtstp != original_sigtstp
+            assert callable(current_sigtstp)
+
+    @patch("i2code.implement.managed_subprocess.os.kill")
+    @patch("i2code.implement.managed_subprocess.os.killpg")
+    def test_signal_forwarding_sigtstp_forwards_to_child_group(self, mock_killpg, mock_kill):
+        process = MagicMock()
+        process.pid = 12345
+
+        with ManagedSubprocess(process, label="test"):
+            handler = signal.getsignal(signal.SIGTSTP)
+            handler(signal.SIGTSTP, None)
+
+        mock_killpg.assert_called_once_with(12345, signal.SIGTSTP)
+        mock_kill.assert_called_once_with(os.getpid(), signal.SIGTSTP)
+
+    @patch("i2code.implement.managed_subprocess.os.killpg")
+    def test_signal_forwarding_sigcont_forwards_to_child_and_reinstalls_sigtstp(self, mock_killpg):
+        process = MagicMock()
+        process.pid = 12345
+
+        with ManagedSubprocess(process, label="test"):
+            # Get a reference to the custom SIGTSTP handler
+            custom_sigtstp = signal.getsignal(signal.SIGTSTP)
+
+            # Get and invoke the SIGCONT handler
+            sigcont_handler = signal.getsignal(signal.SIGCONT)
+            assert callable(sigcont_handler)
+            sigcont_handler(signal.SIGCONT, None)
+
+            # Verify SIGCONT was forwarded to child group
+            mock_killpg.assert_called_once_with(12345, signal.SIGCONT)
+
+            # Verify custom SIGTSTP handler was re-installed
+            assert signal.getsignal(signal.SIGTSTP) == custom_sigtstp
+
+    def test_signal_forwarding_restores_handlers_on_normal_exit(self):
+        process = MagicMock()
+
+        original_sigtstp = signal.getsignal(signal.SIGTSTP)
+        original_sigcont = signal.getsignal(signal.SIGCONT)
+
+        with ManagedSubprocess(process, label="test"):
+            # Handlers should be custom inside context
+            assert signal.getsignal(signal.SIGTSTP) != original_sigtstp
+            assert signal.getsignal(signal.SIGCONT) != original_sigcont
+
+        # After exit, handlers should be restored
+        assert signal.getsignal(signal.SIGTSTP) == original_sigtstp
+        assert signal.getsignal(signal.SIGCONT) == original_sigcont
+
+    def test_signal_forwarding_restores_handlers_on_keyboard_interrupt(self):
+        process = MagicMock()
+
+        original_sigtstp = signal.getsignal(signal.SIGTSTP)
+        original_sigcont = signal.getsignal(signal.SIGCONT)
+
+        managed = ManagedSubprocess(process, label="test")
+        managed.__enter__()
+
+        # Handlers should be custom inside context
+        assert signal.getsignal(signal.SIGTSTP) != original_sigtstp
+        assert signal.getsignal(signal.SIGCONT) != original_sigcont
+
+        managed.__exit__(KeyboardInterrupt, KeyboardInterrupt(), None)
+
+        # After exit via interrupt, handlers should be restored
+        assert signal.getsignal(signal.SIGTSTP) == original_sigtstp
+        assert signal.getsignal(signal.SIGCONT) == original_sigcont

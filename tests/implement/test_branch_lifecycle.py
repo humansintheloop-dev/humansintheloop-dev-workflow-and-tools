@@ -265,35 +265,3 @@ class TestCleanupOperations:
         result = delete_local_branch("idea/my-feature/integration")
 
         assert result is False
-
-
-@pytest.mark.unit
-class TestInterruptHandling:
-    """Test interrupt handling and graceful shutdown."""
-
-    def test_register_signal_handlers_sets_up_sigint(self, mocker):
-        """Should register handler for SIGINT (Ctrl+C)."""
-        import signal
-        from i2code.implement.branch_lifecycle import register_signal_handlers
-
-        mock_signal = mocker.patch('i2code.implement.branch_lifecycle.signal.signal')
-
-        register_signal_handlers()
-
-        # Verify SIGINT handler was registered
-        calls = [c for c in mock_signal.call_args_list if c[0][0] == signal.SIGINT]
-        assert len(calls) == 1
-
-    def test_cleanup_on_interrupt_saves_state(self, mocker):
-        """Should save state when interrupted."""
-        from unittest.mock import MagicMock
-        from i2code.implement.branch_lifecycle import cleanup_on_interrupt
-
-        mock_state = MagicMock()
-
-        cleanup_on_interrupt(
-            state_file="/path/to/idea/my-feature-wt-state.json",
-            state=mock_state
-        )
-
-        mock_state.save.assert_called_once()

@@ -150,17 +150,17 @@ Wires ManagedSubprocess into `run_claude_with_output_capture()` so that Ctrl+C d
 
 Wires ManagedSubprocess into `RealSubprocessRunner.run()` and removes superseded dead code.
 
-- [ ] **Task 4.1: RealSubprocessRunner.run uses ManagedSubprocess for clean interrupt handling**
+- [x] **Task 4.1: RealSubprocessRunner.run uses ManagedSubprocess for clean interrupt handling**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_isolate_mode.py`
   - Observable: `RealSubprocessRunner.run()` uses `subprocess.Popen` with `start_new_session=True` instead of `subprocess.run()`; `process.wait()` wrapped in `ManagedSubprocess` with `label="isolarium"`; returns 130 when interrupted
   - Evidence: Existing tests continue to pass; new test patches `subprocess.Popen` and `ManagedSubprocess`, verifies `start_new_session=True` and correct label; interrupt path test verifies return code 130
   - Steps:
-    - [ ] Write test that patches `subprocess.Popen` in `isolate_mode` and asserts `start_new_session=True` and `ManagedSubprocess` used with `label="isolarium"`
-    - [ ] Convert `RealSubprocessRunner.run()` from `subprocess.run(cmd)` to `subprocess.Popen(cmd, start_new_session=True)` + `ManagedSubprocess` context manager
-    - [ ] Write test for interrupt path: when `managed.interrupted` is `True`, `run()` returns 130
-    - [ ] Implement interrupt detection and return 130
-    - [ ] Run full test suite to verify no regressions
+    - [x] Write test that patches `subprocess.Popen` in `isolate_mode` and asserts `start_new_session=True` and `ManagedSubprocess` used with `label="isolarium"`
+    - [x] Convert `RealSubprocessRunner.run()` from `subprocess.run(cmd)` to `subprocess.Popen(cmd, start_new_session=True)` + `ManagedSubprocess` context manager
+    - [x] Write test for interrupt path: when `managed.interrupted` is `True`, `run()` returns 130
+    - [x] Implement interrupt detection and return 130
+    - [x] Run full test suite to verify no regressions
 
 - [ ] **Task 4.2: Remove unused signal handling code from branch_lifecycle.py**
   - TaskType: REFACTOR
@@ -186,3 +186,21 @@ Implemented SIGTSTP and SIGCONT forwarding to child process group with handler r
 
 ### 2026-02-20 18:22 - mark-task-complete
 Integrated ManagedSubprocess into run_claude_with_output_capture: start_new_session=True on Popen, ManagedSubprocess context manager wraps process.wait(), early return with returncode=130 on interrupt
+
+### 2026-02-20 18:26 - mark-step-complete
+Test patches Popen and ManagedSubprocess, verifies start_new_session=True and label='isolarium'
+
+### 2026-02-20 18:26 - mark-step-complete
+RealSubprocessRunner.run() now uses Popen with start_new_session=True and ManagedSubprocess context manager
+
+### 2026-02-20 18:27 - mark-step-complete
+Interrupt path test verifies return code 130 when managed.interrupted is True
+
+### 2026-02-20 18:27 - mark-step-complete
+Interrupt detection returns 130 via managed.interrupted check
+
+### 2026-02-20 18:27 - mark-step-complete
+Full test suite: 404 passed (1 pre-existing integration error unrelated to changes)
+
+### 2026-02-20 18:27 - mark-task-complete
+RealSubprocessRunner uses Popen+ManagedSubprocess with start_new_session=True and returns 130 on interrupt

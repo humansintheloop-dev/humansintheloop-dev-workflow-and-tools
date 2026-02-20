@@ -8,6 +8,18 @@ import pytest
 from i2code.implement.managed_subprocess import ManagedSubprocess
 
 
+@pytest.fixture
+def original_signal_handlers():
+    """Capture SIGTSTP and SIGCONT handlers before test runs."""
+    return signal.getsignal(signal.SIGTSTP), signal.getsignal(signal.SIGCONT)
+
+
+def assert_handlers_restored(original_signal_handlers):
+    sigtstp, sigcont = original_signal_handlers
+    assert signal.getsignal(signal.SIGTSTP) == sigtstp
+    assert signal.getsignal(signal.SIGCONT) == sigcont
+
+
 @pytest.mark.unit
 class TestNormalExit:
     """ManagedSubprocess has no effect on normal process exit."""
@@ -32,18 +44,14 @@ class TestNormalExit:
         captured = capsys.readouterr()
         assert captured.err == ""
 
-    def test_normal_exit_restores_signal_handlers(self):
+    def test_normal_exit_restores_signal_handlers(self, original_signal_handlers):
         process = MagicMock()
         process.returncode = 0
-
-        original_sigtstp = signal.getsignal(signal.SIGTSTP)
-        original_sigcont = signal.getsignal(signal.SIGCONT)
 
         with ManagedSubprocess(process, label="test"):
             pass
 
-        assert signal.getsignal(signal.SIGTSTP) == original_sigtstp
-        assert signal.getsignal(signal.SIGCONT) == original_sigcont
+        assert_handlers_restored(original_signal_handlers)
 
 
 @pytest.mark.unit
@@ -68,19 +76,15 @@ class TestKeyboardInterrupt:
         assert result is True  # exception suppressed
         assert managed.interrupted is True
 
-    def test_keyboard_interrupt_restores_signal_handlers(self):
+    def test_keyboard_interrupt_restores_signal_handlers(self, original_signal_handlers):
         process = MagicMock()
         process.returncode = None
-
-        original_sigtstp = signal.getsignal(signal.SIGTSTP)
-        original_sigcont = signal.getsignal(signal.SIGCONT)
 
         managed = ManagedSubprocess(process, label="test")
         managed.__enter__()
         managed.__exit__(KeyboardInterrupt, KeyboardInterrupt(), None)
 
-        assert signal.getsignal(signal.SIGTSTP) == original_sigtstp
-        assert signal.getsignal(signal.SIGCONT) == original_sigcont
+        assert_handlers_restored(original_signal_handlers)
 
     def test_keyboard_interrupt_joins_all_threads_with_timeout(self):
         process = MagicMock()
@@ -177,36 +181,26 @@ class TestSignalForwarding:
             # Verify custom SIGTSTP handler was re-installed
             assert signal.getsignal(signal.SIGTSTP) == custom_sigtstp
 
-    def test_signal_forwarding_restores_handlers_on_normal_exit(self):
+    def test_signal_forwarding_restores_handlers_on_normal_exit(self, original_signal_handlers):
         process = MagicMock()
-
-        original_sigtstp = signal.getsignal(signal.SIGTSTP)
-        original_sigcont = signal.getsignal(signal.SIGCONT)
+        sigtstp, sigcont = original_signal_handlers
 
         with ManagedSubprocess(process, label="test"):
-            # Handlers should be custom inside context
-            assert signal.getsignal(signal.SIGTSTP) != original_sigtstp
-            assert signal.getsignal(signal.SIGCONT) != original_sigcont
+            assert signal.getsignal(signal.SIGTSTP) != sigtstp
+            assert signal.getsignal(signal.SIGCONT) != sigcont
 
-        # After exit, handlers should be restored
-        assert signal.getsignal(signal.SIGTSTP) == original_sigtstp
-        assert signal.getsignal(signal.SIGCONT) == original_sigcont
+        assert_handlers_restored(original_signal_handlers)
 
-    def test_signal_forwarding_restores_handlers_on_keyboard_interrupt(self):
+    def test_signal_forwarding_restores_handlers_on_keyboard_interrupt(self, original_signal_handlers):
         process = MagicMock()
-
-        original_sigtstp = signal.getsignal(signal.SIGTSTP)
-        original_sigcont = signal.getsignal(signal.SIGCONT)
+        sigtstp, sigcont = original_signal_handlers
 
         managed = ManagedSubprocess(process, label="test")
         managed.__enter__()
 
-        # Handlers should be custom inside context
-        assert signal.getsignal(signal.SIGTSTP) != original_sigtstp
-        assert signal.getsignal(signal.SIGCONT) != original_sigcont
+        assert signal.getsignal(signal.SIGTSTP) != sigtstp
+        assert signal.getsignal(signal.SIGCONT) != sigcont
 
         managed.__exit__(KeyboardInterrupt, KeyboardInterrupt(), None)
 
-        # After exit via interrupt, handlers should be restored
-        assert signal.getsignal(signal.SIGTSTP) == original_sigtstp
-        assert signal.getsignal(signal.SIGCONT) == original_sigcont
+        assert_handlers_restored(original_signal_handlers)

@@ -1,7 +1,7 @@
 """ModeFactory creates execution mode instances with their dependencies."""
 
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
-from i2code.implement.isolate_mode import IsolateMode, RealSubprocessRunner
+from i2code.implement.isolate_mode import IsolateMode, SubprocessRunner
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.trunk_mode import TrunkMode
 from i2code.implement.worktree_mode import WorktreeMode
@@ -28,7 +28,7 @@ class ModeFactory:
             git_repo=git_repo,
             project=project,
             project_initializer=self._project_initializer,
-            subprocess_runner=RealSubprocessRunner(),
+            subprocess_runner=SubprocessRunner(),
         )
 
     def make_worktree_mode(self, git_repo, state, work_project):

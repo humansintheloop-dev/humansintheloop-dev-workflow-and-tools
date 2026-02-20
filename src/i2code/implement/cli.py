@@ -11,7 +11,7 @@ from i2code.implement.mode_factory import ModeFactory
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.implement_opts import ImplementOpts
-from i2code.implement.claude_runner import RealClaudeRunner
+from i2code.implement.claude_runner import ClaudeRunner
 from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.pr_helpers import push_branch_to_remote
 from i2code.implement.project_setup import ProjectInitializer
@@ -52,7 +52,7 @@ def implement_cmd(**kwargs):
     repo = Repo(project.directory, search_parent_directories=True)
     gh_client = GitHubClient()
     git_repo = GitRepository(repo, gh_client=gh_client)
-    claude_runner = RealClaudeRunner()
+    claude_runner = ClaudeRunner()
     build_fixer_factory = GithubActionsBuildFixerFactory(
         opts=opts,
         claude_runner=claude_runner,
@@ -90,7 +90,7 @@ def scaffold_cmd(ctx, idea_directory, non_interactive, mock_claude):
     repo = Repo(project.directory, search_parent_directories=True)
 
     initializer = (ctx.obj or {}).get("project_initializer") or ProjectInitializer(
-        claude_runner=RealClaudeRunner(),
+        claude_runner=ClaudeRunner(),
         command_builder=CommandBuilder(),
     )
     initializer.run_scaffolding(

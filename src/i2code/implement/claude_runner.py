@@ -211,7 +211,7 @@ def print_task_failure_diagnostics(
             _format_message(msg)
 
 
-class RealClaudeRunner:
+class ClaudeRunner:
     """Delegates to the module-level run functions."""
 
     def run_interactive(self, cmd: List[str], cwd: str) -> ClaudeResult:
@@ -219,41 +219,3 @@ class RealClaudeRunner:
 
     def run_with_capture(self, cmd: List[str], cwd: str) -> ClaudeResult:
         return run_claude_with_output_capture(cmd, cwd=cwd)
-
-
-class MockClaudeRunner:
-    """Wraps a mock shell script for integration testing.
-
-    Both run_interactive() and run_with_capture() delegate to the mock script,
-    which receives the original command as arguments.
-
-    Args:
-        script_path: Path to the mock shell script.
-    """
-
-    def __init__(self, script_path: str):
-        self._script_path = script_path
-
-    def run_interactive(self, cmd: List[str], cwd: str) -> ClaudeResult:
-        result = subprocess.run(
-            [self._script_path] + cmd,
-            cwd=cwd,
-        )
-        return ClaudeResult(
-            returncode=result.returncode,
-            stdout="",
-            stderr="",
-        )
-
-    def run_with_capture(self, cmd: List[str], cwd: str) -> ClaudeResult:
-        result = subprocess.run(
-            [self._script_path] + cmd,
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-        )
-        return ClaudeResult(
-            returncode=result.returncode,
-            stdout=result.stdout,
-            stderr=result.stderr,
-        )

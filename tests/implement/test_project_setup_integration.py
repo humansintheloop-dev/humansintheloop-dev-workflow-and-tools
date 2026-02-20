@@ -7,7 +7,7 @@ import tempfile
 import pytest
 from git import Repo
 
-from i2code.implement.claude_runner import RealClaudeRunner
+from i2code.implement.claude_runner import ClaudeRunner
 from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.git_repository import GitRepository
 from i2code.implement.pr_helpers import push_branch_to_remote
@@ -79,7 +79,7 @@ class TestEnsureProjectSetupWithMockClaude:
 
             git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
             initializer = ProjectInitializer(
-                claude_runner=RealClaudeRunner(),
+                claude_runner=ClaudeRunner(),
                 command_builder=CommandBuilder(),
                 git_repo=git_repo,
                 push_fn=push_branch_to_remote,
@@ -113,7 +113,7 @@ class TestEnsureProjectSetupWithMockClaude:
 
             git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
             initializer = ProjectInitializer(
-                claude_runner=RealClaudeRunner(),
+                claude_runner=ClaudeRunner(),
                 command_builder=CommandBuilder(),
                 git_repo=git_repo,
                 push_fn=push_branch_to_remote,

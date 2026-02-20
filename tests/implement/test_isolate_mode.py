@@ -220,12 +220,12 @@ class TestIsolateModeExecute:
 
 
 @pytest.mark.unit
-class TestRealSubprocessRunner:
-    """RealSubprocessRunner uses Popen + ManagedSubprocess for clean interrupt handling."""
+class TestSubprocessRunner:
+    """SubprocessRunner uses Popen + ManagedSubprocess for clean interrupt handling."""
 
     def test_uses_popen_with_start_new_session_and_managed_subprocess(self):
         from unittest.mock import patch, MagicMock
-        from i2code.implement.isolate_mode import RealSubprocessRunner
+        from i2code.implement.isolate_mode import SubprocessRunner
 
         mock_process = MagicMock()
         mock_process.wait.return_value = 0
@@ -238,7 +238,7 @@ class TestRealSubprocessRunner:
 
         with patch("i2code.implement.isolate_mode.subprocess.Popen", return_value=mock_process) as mock_popen, \
              patch("i2code.implement.isolate_mode.ManagedSubprocess", return_value=mock_managed) as mock_managed_cls:
-            runner = RealSubprocessRunner()
+            runner = SubprocessRunner()
             result = runner.run(["echo", "hello"])
 
         mock_popen.assert_called_once_with(["echo", "hello"], start_new_session=True)
@@ -247,7 +247,7 @@ class TestRealSubprocessRunner:
 
     def test_returns_130_when_interrupted(self):
         from unittest.mock import patch, MagicMock
-        from i2code.implement.isolate_mode import RealSubprocessRunner
+        from i2code.implement.isolate_mode import SubprocessRunner
 
         mock_process = MagicMock()
         mock_process.wait.return_value = 0
@@ -260,7 +260,7 @@ class TestRealSubprocessRunner:
 
         with patch("i2code.implement.isolate_mode.subprocess.Popen", return_value=mock_process), \
              patch("i2code.implement.isolate_mode.ManagedSubprocess", return_value=mock_managed):
-            runner = RealSubprocessRunner()
+            runner = SubprocessRunner()
             result = runner.run(["some", "command"])
 
         assert result == 130

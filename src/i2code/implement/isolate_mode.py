@@ -111,7 +111,7 @@ class IsolateMode:
         return cmd
 
 
-class RealSubprocessRunner:
+class SubprocessRunner:
     """Runs subprocess with ManagedSubprocess for clean interrupt handling."""
 
     def run(self, cmd):

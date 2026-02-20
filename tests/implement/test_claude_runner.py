@@ -1,8 +1,5 @@
 """Tests for ClaudeRunner strategy pattern."""
 
-import os
-import stat
-import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -58,52 +55,6 @@ class TestFakeClaudeRunner:
         r2 = fake.run_interactive(["claude", "t2"], cwd="/r")
         assert r1.returncode == 42
         assert r2.returncode == 0  # default
-
-
-@pytest.mark.unit
-class TestMockClaudeRunner:
-    """MockClaudeRunner wraps a mock shell script for integration testing."""
-
-    def test_run_interactive_invokes_mock_script(self):
-        from i2code.implement.claude_runner import MockClaudeRunner
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            script = os.path.join(tmpdir, "mock-claude.sh")
-            with open(script, "w") as f:
-                f.write("#!/bin/bash\nexit 0\n")
-            os.chmod(script, stat.S_IRWXU)
-
-            runner = MockClaudeRunner(script)
-            result = runner.run_interactive(["claude", "do task"], cwd=tmpdir)
-            assert isinstance(result, ClaudeResult)
-            assert result.returncode == 0
-
-    def test_run_with_capture_invokes_mock_script(self):
-        from i2code.implement.claude_runner import MockClaudeRunner
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            script = os.path.join(tmpdir, "mock-claude.sh")
-            with open(script, "w") as f:
-                f.write('#!/bin/bash\necho "captured output"\nexit 0\n')
-            os.chmod(script, stat.S_IRWXU)
-
-            runner = MockClaudeRunner(script)
-            result = runner.run_with_capture(["claude", "do task"], cwd=tmpdir)
-            assert isinstance(result, ClaudeResult)
-            assert result.returncode == 0
-
-    def test_run_interactive_returns_nonzero_on_script_failure(self):
-        from i2code.implement.claude_runner import MockClaudeRunner
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            script = os.path.join(tmpdir, "mock-claude.sh")
-            with open(script, "w") as f:
-                f.write("#!/bin/bash\nexit 1\n")
-            os.chmod(script, stat.S_IRWXU)
-
-            runner = MockClaudeRunner(script)
-            result = runner.run_interactive(["claude", "do task"], cwd=tmpdir)
-            assert result.returncode == 1
 
 
 @pytest.mark.unit

@@ -71,17 +71,17 @@ Existing CI (`.github/workflows/ci.yml`) already runs `./test-scripts/test-end-t
 
 Proves the core context manager works end-to-end with mock Popen and Thread objects: normal exit, interrupt termination, and SIGKILL escalation.
 
-- [ ] **Task 1.1: ManagedSubprocess has no effect on normal process exit**
+- [x] **Task 1.1: ManagedSubprocess has no effect on normal process exit**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_managed_subprocess.py -k test_normal_exit`
   - Observable: Context manager enters and exits without calling `process.terminate()` or `process.kill()`; no cleanup messages printed to stderr; original signal handlers restored after exit
   - Evidence: Test creates mock Popen (already finished), enters/exits context manager, asserts `terminate()` and `kill()` not called, stderr is empty, original signal handlers are restored
   - Steps:
-    - [ ] Create `src/i2code/implement/managed_subprocess.py` with `ManagedSubprocess` class — stub `__init__`, `__enter__`, `__exit__` with `raise NotImplementedError`
-    - [ ] Create `tests/implement/test_managed_subprocess.py` with a test that constructs `ManagedSubprocess` with a mock Popen, enters and exits the context manager normally, and asserts no termination methods called and no stderr output
-    - [ ] Implement `__init__` to store process, label, threads, and terminate_timeout
-    - [ ] Implement `__enter__` to save original signal handlers and return self
-    - [ ] Implement `__exit__` to restore original signal handlers on normal exit (no exception)
+    - [x] Create `src/i2code/implement/managed_subprocess.py` with `ManagedSubprocess` class — stub `__init__`, `__enter__`, `__exit__` with `raise NotImplementedError`
+    - [x] Create `tests/implement/test_managed_subprocess.py` with a test that constructs `ManagedSubprocess` with a mock Popen, enters and exits the context manager normally, and asserts no termination methods called and no stderr output
+    - [x] Implement `__init__` to store process, label, threads, and terminate_timeout
+    - [x] Implement `__enter__` to save original signal handlers and return self
+    - [x] Implement `__exit__` to restore original signal handlers on normal exit (no exception)
 
 - [ ] **Task 1.2: ManagedSubprocess terminates child on KeyboardInterrupt with cleanup messages**
   - TaskType: OUTCOME

@@ -162,18 +162,18 @@ Wires ManagedSubprocess into `RealSubprocessRunner.run()` and removes superseded
     - [x] Implement interrupt detection and return 130
     - [x] Run full test suite to verify no regressions
 
-- [ ] **Task 4.2: Remove unused signal handling code from branch_lifecycle.py**
+- [x] **Task 4.2: Remove unused signal handling code from branch_lifecycle.py**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --with pytest pytest tests/implement/`
   - Observable: No behavior change
   - Evidence: All existing tests continue to pass after dead code removal
   - Steps:
-    - [ ] Remove `_interrupt_state` module-level dict from `branch_lifecycle.py`
-    - [ ] Remove `register_signal_handlers()` function
-    - [ ] Remove `_handle_interrupt()` function
-    - [ ] Remove `cleanup_on_interrupt()` function
-    - [ ] Remove any imports that become unused after removal (e.g., `signal`, `sys`)
-    - [ ] Run full test suite to verify no regressions
+    - [x] Remove `_interrupt_state` module-level dict from `branch_lifecycle.py`
+    - [x] Remove `register_signal_handlers()` function
+    - [x] Remove `_handle_interrupt()` function
+    - [x] Remove `cleanup_on_interrupt()` function
+    - [x] Remove any imports that become unused after removal (e.g., `signal`, `sys`)
+    - [x] Run full test suite to verify no regressions
 
 ---
 
@@ -204,3 +204,6 @@ Full test suite: 404 passed (1 pre-existing integration error unrelated to chang
 
 ### 2026-02-20 18:27 - mark-task-complete
 RealSubprocessRunner uses Popen+ManagedSubprocess with start_new_session=True and returns 130 on interrupt
+
+### 2026-02-20 18:32 - mark-task-complete
+Removed _interrupt_state, register_signal_handlers(), _handle_interrupt(), cleanup_on_interrupt(), and unused signal/sys imports from branch_lifecycle.py. Removed corresponding TestInterruptHandling tests. 402 tests pass.

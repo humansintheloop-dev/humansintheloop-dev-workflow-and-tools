@@ -1,8 +1,6 @@
-"""Branch lifecycle: rebase, cleanup, interrupt handling."""
+"""Branch lifecycle: rebase and cleanup."""
 
-import signal
 import subprocess
-import sys
 
 
 # Main Branch Advancement Functions
@@ -92,33 +90,3 @@ def delete_local_branch(branch_name: str) -> bool:
         capture_output=True, text=True,
     )
     return result.returncode == 0
-
-
-# Interrupt Handling
-
-_interrupt_state = {
-    "state_file": None,
-    "state": None,
-}
-
-
-def register_signal_handlers():
-    """Register signal handlers for graceful shutdown."""
-    signal.signal(signal.SIGINT, _handle_interrupt)
-
-
-def _handle_interrupt(signum, frame):
-    """Internal handler for SIGINT signal."""
-    print("\nInterrupted! Saving state...")
-    if _interrupt_state["state_file"] and _interrupt_state["state"]:
-        cleanup_on_interrupt(
-            _interrupt_state["state_file"],
-            _interrupt_state["state"],
-        )
-    sys.exit(1)
-
-
-def cleanup_on_interrupt(state_file: str, state) -> None:
-    """Clean up and save state when interrupted."""
-    state.save()
-    print("State saved. You can resume by running the script again.")

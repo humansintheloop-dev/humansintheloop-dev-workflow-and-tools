@@ -94,14 +94,14 @@ Proves the core context manager works end-to-end with mock Popen and Thread obje
     - [x] Write test with mock threads to verify all threads are joined with a timeout
     - [x] Implement thread joining with timeout matching `terminate_timeout`
 
-- [ ] **Task 1.3: ManagedSubprocess escalates to SIGKILL when SIGTERM times out**
+- [x] **Task 1.3: ManagedSubprocess escalates to SIGKILL when SIGTERM times out**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/implement/test_managed_subprocess.py -k test_sigkill_escalation`
   - Observable: When child process does not exit within `terminate_timeout` after SIGTERM, `process.kill()` is called and `"Force-killing <label> process..."` printed to stderr before `"Done."`
   - Evidence: Test mocks `process.wait()` to raise `subprocess.TimeoutExpired` after `terminate()`, asserts `process.kill()` called, stderr contains `"Force-killing claude process..."` followed by `"Done."`
   - Steps:
-    - [ ] Write test where mock process raises `TimeoutExpired` on first `wait(timeout=...)` after `terminate()`, then returns on second `wait()`
-    - [ ] Implement SIGKILL escalation: after `process.terminate()`, call `process.wait(timeout=terminate_timeout)`; on `TimeoutExpired`, print escalation message, call `process.kill()`, then `process.wait()`
+    - [x] Write test where mock process raises `TimeoutExpired` on first `wait(timeout=...)` after `terminate()`, then returns on second `wait()`
+    - [x] Implement SIGKILL escalation: after `process.terminate()`, call `process.wait(timeout=terminate_timeout)`; on `TimeoutExpired`, print escalation message, call `process.kill()`, then `process.wait()`
 
 ---
 

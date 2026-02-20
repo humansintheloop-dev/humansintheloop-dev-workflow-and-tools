@@ -47,7 +47,15 @@ class ManagedSubprocess:
             file=sys.stderr,
         )
         self.process.terminate()
-        self.process.wait(timeout=self.terminate_timeout)
+        try:
+            self.process.wait(timeout=self.terminate_timeout)
+        except subprocess.TimeoutExpired:
+            print(
+                f"Force-killing {self.label} process...",
+                file=sys.stderr,
+            )
+            self.process.kill()
+            self.process.wait()
         for thread in self.threads:
             thread.join(timeout=self.terminate_timeout)
         print("Done.", file=sys.stderr)

@@ -1,4 +1,5 @@
 import signal
+import subprocess
 from unittest.mock import MagicMock
 
 import pytest
@@ -96,3 +97,33 @@ class TestKeyboardInterrupt:
 
         thread1.join.assert_called_once_with(timeout=timeout)
         thread2.join.assert_called_once_with(timeout=timeout)
+
+
+@pytest.mark.unit
+class TestSigkillEscalation:
+    """ManagedSubprocess escalates to SIGKILL when SIGTERM times out."""
+
+    def test_sigkill_escalation(self, capsys):
+        process = MagicMock()
+        process.returncode = None
+
+        # First wait(timeout=...) after terminate() raises TimeoutExpired,
+        # second wait() (after kill()) succeeds
+        process.wait.side_effect = [
+            subprocess.TimeoutExpired(cmd="test", timeout=5.0),
+            None,
+        ]
+
+        managed = ManagedSubprocess(process, label="claude")
+        managed.__enter__()
+        managed.__exit__(KeyboardInterrupt, KeyboardInterrupt(), None)
+
+        process.terminate.assert_called_once()
+        process.kill.assert_called_once()
+
+        captured = capsys.readouterr()
+        err = captured.err
+        assert "Force-killing claude process..." in err
+        assert "Done." in err
+        # Force-killing must appear before Done.
+        assert err.index("Force-killing claude process...") < err.index("Done.")

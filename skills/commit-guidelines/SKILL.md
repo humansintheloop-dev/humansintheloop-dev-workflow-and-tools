@@ -9,17 +9,19 @@ Before committing, complete these steps in order:
 
 1. On the final task of a Steel Thread, check for dead code and review findings.
 2. If the project has a configured linter, run it with auto-fix. Resolve any unfixable errors.
-3. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it.
+3. If any new or modified shell scripts will be committed, run `shellcheck` on them and fix any issues.
+4. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it.
    * If it fails with "Not inside a supported VCS root" (common in git worktrees), use `code_health_review` on each modified source file instead.
    * If Code Health regresses, refactor before committing.
    * Try to achieve a score of 10 for new code.
    * Try to achieve a score of at least 9.5 for modified files including fixing pre-existing issues (boy scout rule).
-4. If adding or modifying production code and coverage tooling is available, verify test coverage and check that new/modified lines are covered.
+5. If adding or modifying production code and coverage tooling is available, verify test coverage and check that new/modified lines are covered.
 
 NOTES:
 - **Python dead code (step 1):** `uvx vulture src`
 - **Python linter (step 2):** `uvx ruff check --fix`
-- **Python coverage (step 4):** `uv run --with pytest --with pytest-mock --with pytest-cov pytest -m "unit or integration" --cov=src/i2code --cov-report=term-missing`
+- **Shell script linting (step 3):** `uvx --from shellcheck-py shellcheck <file.sh>` on each new or modified `.sh` file
+- **Python coverage (step 5):** `uv run --with pytest --with pytest-mock --with pytest-cov pytest -m "unit or integration" --cov=src/i2code --cov-report=term-missing`
 
 # Running `git add` and `git commit`
 

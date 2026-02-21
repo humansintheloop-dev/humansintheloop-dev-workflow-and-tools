@@ -66,28 +66,28 @@ Modify `src/i2code/scripts/brainstorm-idea.sh` to resolve the editor using a pri
 
 When `code` is found on `$PATH` and no idea file exists, `brainstorm-idea.sh` creates a `.md` idea file with placeholder content and opens it with `code --wait`.
 
-- [ ] **Task 1.1: brainstorm-idea.sh opens idea file in VS Code as .md when code is on PATH**
+- [x] **Task 1.1: brainstorm-idea.sh opens idea file in VS Code as .md when code is on PATH**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-editor-resolution.sh`
   - Observable: When `code` is found on `$PATH` and no idea file exists, brainstorm-idea.sh creates `<name>-idea.md` (not `.txt`) with content `PLEASE DESCRIBE YOUR IDEA` and invokes `code --wait <file>`
   - Evidence: `test-editor-resolution.sh` creates mock `code` (records invocation args to a marker file) and mock `claude` (no-op), runs `brainstorm-idea.sh` with a temp idea directory, asserts: (1) idea file has `.md` extension, (2) file contains placeholder text, (3) mock `code` marker shows `--wait` was passed
   - Steps:
-    - [ ] Create `test-scripts/test-editor-resolution.sh` with a test case for the VS Code scenario: set up mock `code` and `claude` in a temp `mock-bin/`, prepend to `PATH`, run `brainstorm-idea.sh`, assert `.md` extension and `--wait` flag
-    - [ ] Add `test-editor-resolution.sh` to `test-scripts/test-end-to-end.sh`
-    - [ ] Modify `src/i2code/scripts/brainstorm-idea.sh`: inside the `if ! ls "$IDEA_FILE"` block, add editor resolution logic — detect `code` on `PATH` using `command -v code`, override `IDEA_FILE` to use `.md` extension, invoke `code --wait "$IDEA_FILE"` instead of `vi "$IDEA_FILE"`; preserve `vi` as the else fallback
+    - [x] Create `test-scripts/test-editor-resolution.sh` with a test case for the VS Code scenario: set up mock `code` and `claude` in a temp `mock-bin/`, prepend to `PATH`, run `brainstorm-idea.sh`, assert `.md` extension and `--wait` flag
+    - [x] Add `test-editor-resolution.sh` to `test-scripts/test-end-to-end.sh`
+    - [x] Modify `src/i2code/scripts/brainstorm-idea.sh`: inside the `if ! ls "$IDEA_FILE"` block, add editor resolution logic — detect `code` on `PATH` using `command -v code`, override `IDEA_FILE` to use `.md` extension, invoke `code --wait "$IDEA_FILE"` instead of `vi "$IDEA_FILE"`; preserve `vi` as the else fallback
 
 ## Steel Thread 2: Environment Variable Editor Fallback
 
 When `code` is not on `$PATH`, fall back to `$VISUAL` then `$EDITOR` with `.txt` extension, matching standard Unix editor conventions.
 
-- [ ] **Task 2.1: brainstorm-idea.sh uses $VISUAL editor when code is not on PATH**
+- [x] **Task 2.1: brainstorm-idea.sh uses $VISUAL editor when code is not on PATH**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-editor-resolution.sh`
   - Observable: When `code` is NOT on `$PATH` and `$VISUAL` is set, brainstorm-idea.sh creates `<name>-idea.txt` with placeholder content and invokes the `$VISUAL` command with the idea file path
   - Evidence: `test-editor-resolution.sh` includes a test case that uses a `PATH` with no `code` command, sets `VISUAL` to a mock editor script, runs `brainstorm-idea.sh`, asserts: (1) idea file has `.txt` extension, (2) mock `VISUAL` editor marker shows it was invoked with the file path
   - Steps:
-    - [ ] Add `$VISUAL` test case to `test-scripts/test-editor-resolution.sh`: create mock `VISUAL` editor script, exclude `code` from `PATH`, set `VISUAL` env var, run `brainstorm-idea.sh`, assert `.txt` and `VISUAL` editor invocation
-    - [ ] Add `$VISUAL` fallback to `src/i2code/scripts/brainstorm-idea.sh`: `elif` branch after `code` check that uses `$VISUAL` when set and non-empty
+    - [x] Add `$VISUAL` test case to `test-scripts/test-editor-resolution.sh`: create mock `VISUAL` editor script, exclude `code` from `PATH`, set `VISUAL` env var, run `brainstorm-idea.sh`, assert `.txt` and `VISUAL` editor invocation
+    - [x] Add `$VISUAL` fallback to `src/i2code/scripts/brainstorm-idea.sh`: `elif` branch after `code` check that uses `$VISUAL` when set and non-empty
 
 - [ ] **Task 2.2: brainstorm-idea.sh uses $EDITOR when code and $VISUAL are not available**
   - TaskType: OUTCOME
@@ -110,3 +110,15 @@ When no other editor is available (no `code`, no `$VISUAL`, no `$EDITOR`), fall 
   - Steps:
     - [ ] Add vi fallback test case to `test-scripts/test-editor-resolution.sh`: create sanitized `PATH` with only mock `vi` and `claude` (no `code`), unset `VISUAL` and `EDITOR`, run `brainstorm-idea.sh`, assert `.txt` extension and mock `vi` invocation
     - [ ] Verify `brainstorm-idea.sh` vi fallback is the final `else` branch (should already be correct from Thread 1)
+
+---
+
+## Change History
+### 2026-02-21 15:14 - mark-step-complete
+Added $VISUAL test case to test-editor-resolution.sh
+
+### 2026-02-21 15:14 - mark-step-complete
+Added elif branch for $VISUAL fallback in brainstorm-idea.sh
+
+### 2026-02-21 15:14 - mark-task-complete
+brainstorm-idea.sh uses $VISUAL editor when code is not on PATH — test passes

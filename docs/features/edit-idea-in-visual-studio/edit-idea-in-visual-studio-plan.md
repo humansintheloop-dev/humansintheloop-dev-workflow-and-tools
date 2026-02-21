@@ -102,14 +102,14 @@ When `code` is not on `$PATH`, fall back to `$VISUAL` then `$EDITOR` with `.txt`
 
 When no other editor is available (no `code`, no `$VISUAL`, no `$EDITOR`), fall back to `vi` with `.txt` extension — preserving identical behavior to today.
 
-- [ ] **Task 3.1: brainstorm-idea.sh falls back to vi when no editor preferences exist**
+- [x] **Task 3.1: brainstorm-idea.sh falls back to vi when no editor preferences exist**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-editor-resolution.sh`
   - Observable: When `code` is NOT on `$PATH`, `$VISUAL` is not set, and `$EDITOR` is not set, brainstorm-idea.sh creates `<name>-idea.txt` with placeholder content and invokes `vi`
   - Evidence: `test-editor-resolution.sh` includes a test case with no `code` on `PATH`, `VISUAL` unset, `EDITOR` unset, mock `vi` on `PATH`, asserts: (1) `.txt` extension, (2) file contains placeholder text, (3) mock `vi` marker shows it was invoked with the file path
   - Steps:
-    - [ ] Add vi fallback test case to `test-scripts/test-editor-resolution.sh`: create sanitized `PATH` with only mock `vi` and `claude` (no `code`), unset `VISUAL` and `EDITOR`, run `brainstorm-idea.sh`, assert `.txt` extension and mock `vi` invocation
-    - [ ] Verify `brainstorm-idea.sh` vi fallback is the final `else` branch (should already be correct from Thread 1)
+    - [x] Add vi fallback test case to `test-scripts/test-editor-resolution.sh`: create sanitized `PATH` with only mock `vi` and `claude` (no `code`), unset `VISUAL` and `EDITOR`, run `brainstorm-idea.sh`, assert `.txt` extension and mock `vi` invocation
+    - [x] Verify `brainstorm-idea.sh` vi fallback is the final `else` branch (should already be correct from Thread 1)
 
 ---
 
@@ -131,3 +131,6 @@ Added $EDITOR elif branch to brainstorm-idea.sh
 
 ### 2026-02-21 15:19 - mark-task-complete
 brainstorm-idea.sh falls back to $EDITOR when code and $VISUAL are not available; test passes
+
+### 2026-02-21 15:23 - mark-task-complete
+Added vi fallback test case; verified vi is the final else branch

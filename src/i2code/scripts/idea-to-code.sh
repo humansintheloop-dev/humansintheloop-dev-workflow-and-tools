@@ -7,8 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Function to detect current workflow state using _helper.sh variables
 detect_state() {
     # Check file existence in order of workflow progression
-    # IDEA_FILE can be either .txt or .md and may contain wildcards
-    if ! ls $IDEA_FILE >/dev/null 2>&1; then
+    if ! ls "$IDEA_FILE" >/dev/null 2>&1; then
         echo "no_idea"
     elif [[ ! -f "$SPEC_FILE" ]]; then
         echo "has_idea_no_spec"
@@ -69,7 +68,7 @@ get_user_choice() {
     prompt_text="$prompt_text: "
     
     while true; do
-        read -p "$prompt_text" choice || {
+        read -r -p "$prompt_text" choice || {
             # Handle EOF (e.g., when input is piped)
             echo "" >&2
             echo "Input closed. Exiting." >&2
@@ -91,9 +90,6 @@ get_user_choice() {
 
 # Function to handle errors with retry option
 handle_error() {
-    local script="$1"
-    local dir="$2"
-    
     echo ""
     echo "What would you like to do?"
     local choice
@@ -149,8 +145,9 @@ main() {
     
     # Source helper to set up environment variables
     # This sets IDEA_FILE, SPEC_FILE, STORY_FILE, PLAN_WITHOUT_STORIES_FILE, PLAN_WITH_STORIES_FILE, etc.
+    # shellcheck disable=SC1091
     source "$SCRIPT_DIR/_helper.sh" "$dir"
-    
+
     # Display initial status
     echo "================================================"
     echo "  Idea-to-Code Workflow Orchestrator"
@@ -162,7 +159,13 @@ main() {
     
     # Main workflow loop
     while true; do
-        local state=$(detect_state)
+        # Re-source helper to pick up files created by previous steps
+        # (e.g. brainstorm-idea.sh may create .md when IDEA_FILE defaulted to .txt)
+        # shellcheck disable=SC1091
+        source "$SCRIPT_DIR/_helper.sh" "$dir"
+
+        local state
+        state=$(detect_state)
         
         echo "Current state: $state"
         

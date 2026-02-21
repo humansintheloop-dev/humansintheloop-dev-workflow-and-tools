@@ -15,6 +15,9 @@ if ! ls "$IDEA_FILE" >/dev/null 2>&1; then
     elif [ -n "${VISUAL:-}" ]; then
         echo "PLEASE DESCRIBE YOUR IDEA" >> "$IDEA_FILE"
         $VISUAL "$IDEA_FILE"
+    elif [ -n "${EDITOR:-}" ]; then
+        echo "PLEASE DESCRIBE YOUR IDEA" >> "$IDEA_FILE"
+        $EDITOR "$IDEA_FILE"
     else
         echo "PLEASE DESCRIBE YOUR IDEA" >> "$IDEA_FILE"
         vi "$IDEA_FILE"

@@ -14,8 +14,8 @@ Before committing, complete these steps in order:
    * If it fails with "Not inside a supported VCS root" (common in git worktrees), use `code_health_review` on each modified source file instead.
    * **STOP if quality gates fail.** Do NOT commit until resolved. Do NOT dismiss findings as "pre-existing".
    * If Code Health regresses, refactor the flagged function before committing (boy scout rule).
-   * Try to achieve a score of 10 for new code.
-   * Try to achieve a score of at least 9.5 for modified files.
+   * Target a score of 10 for both new and modified files.
+   * Do NOT think in terms of red/yellow/green color bands. The target is always 10.
 5. If adding or modifying production code and coverage tooling is available, verify test coverage and check that new/modified lines are covered.
 
 NOTES:

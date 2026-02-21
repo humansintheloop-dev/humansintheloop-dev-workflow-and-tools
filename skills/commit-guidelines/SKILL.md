@@ -12,9 +12,10 @@ Before committing, complete these steps in order:
 3. If any new or modified shell scripts will be committed, run `shellcheck` on them and fix any issues.
 4. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it.
    * If it fails with "Not inside a supported VCS root" (common in git worktrees), use `code_health_review` on each modified source file instead.
-   * If Code Health regresses, refactor before committing.
+   * **STOP if quality gates fail.** Do NOT commit until resolved. Do NOT dismiss findings as "pre-existing".
+   * If Code Health regresses, refactor the flagged function before committing (boy scout rule).
    * Try to achieve a score of 10 for new code.
-   * Try to achieve a score of at least 9.5 for modified files including fixing pre-existing issues (boy scout rule).
+   * Try to achieve a score of at least 9.5 for modified files.
 5. If adding or modifying production code and coverage tooling is available, verify test coverage and check that new/modified lines are covered.
 
 NOTES:

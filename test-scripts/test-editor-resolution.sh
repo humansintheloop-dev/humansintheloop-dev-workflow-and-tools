@@ -21,7 +21,8 @@ echo "--- VS Code on PATH creates .md and uses code --wait ---"
 TMPDIR_VS=$(mktemp -d)
 TMPDIR_VISUAL=$(mktemp -d)
 TMPDIR_EDITOR=$(mktemp -d)
-trap 'rm -rf "$TMPDIR_VS" "$TMPDIR_VISUAL" "$TMPDIR_EDITOR"' EXIT
+TMPDIR_VI=$(mktemp -d)
+trap 'rm -rf "$TMPDIR_VS" "$TMPDIR_VISUAL" "$TMPDIR_EDITOR" "$TMPDIR_VI"' EXIT
 
 IDEA_DIR="$TMPDIR_VS/my-feature"
 MOCK_BIN="$TMPDIR_VS/mock-bin"
@@ -224,6 +225,72 @@ if [ -f "$TMPDIR_EDITOR/editor-marker.txt" ]; then
     fi
 else
     fail "\$EDITOR was never invoked (no marker file)"
+fi
+
+# --- Test: vi fallback when code is NOT on PATH, $VISUAL and $EDITOR are not set ---
+echo ""
+echo "--- vi fallback when code is NOT on PATH, \$VISUAL and \$EDITOR are not set ---"
+
+IDEA_DIR_VI="$TMPDIR_VI/my-feature"
+MOCK_BIN_VI="$TMPDIR_VI/mock-bin"
+mkdir -p "$MOCK_BIN_VI"
+
+# Mock 'vi' that records its arguments to a marker file
+cat > "$MOCK_BIN_VI/vi" <<'MOCK'
+#!/usr/bin/env bash
+echo "$@" > "$(dirname "$0")/../vi-marker.txt"
+MOCK
+chmod +x "$MOCK_BIN_VI/vi"
+
+# Mock 'claude' (no-op)
+cat > "$MOCK_BIN_VI/claude" <<'MOCK'
+#!/usr/bin/env bash
+exit 0
+MOCK
+chmod +x "$MOCK_BIN_VI/claude"
+
+# Mock 'uuidgen'
+cat > "$MOCK_BIN_VI/uuidgen" <<'MOCK'
+#!/usr/bin/env bash
+echo "test-uuid-3456"
+MOCK
+chmod +x "$MOCK_BIN_VI/uuidgen"
+
+# Mock 'envsubst'
+cat > "$MOCK_BIN_VI/envsubst" <<'MOCK'
+#!/usr/bin/env bash
+cat
+MOCK
+chmod +x "$MOCK_BIN_VI/envsubst"
+
+# NOTE: No mock 'code', VISUAL unset, EDITOR unset — vi fallback should be used
+PATH="$MOCK_BIN_VI:/usr/bin:/bin" "$BRAINSTORM_SCRIPT" "$IDEA_DIR_VI"
+
+# Assert 1: idea file has .txt extension
+if ls "$IDEA_DIR_VI"/my-feature-idea.txt >/dev/null 2>&1; then
+    pass "vi fallback: idea file has .txt extension"
+else
+    fail "vi fallback: idea file does not have .txt extension"
+    echo "  Files in idea dir: $(ls "$IDEA_DIR_VI"/ 2>/dev/null || echo '(empty)')"
+fi
+
+# Assert 2: idea file contains placeholder text
+if grep -q "PLEASE DESCRIBE YOUR IDEA" "$IDEA_DIR_VI"/my-feature-idea.txt 2>/dev/null; then
+    pass "vi fallback: idea file contains placeholder text"
+else
+    fail "vi fallback: idea file does not contain placeholder text"
+fi
+
+# Assert 3: mock vi marker shows it was invoked with the file path
+if [ -f "$TMPDIR_VI/vi-marker.txt" ]; then
+    VI_MARKER_CONTENT=$(cat "$TMPDIR_VI/vi-marker.txt")
+    if [[ "$VI_MARKER_CONTENT" == *"my-feature-idea.txt"* ]]; then
+        pass "vi fallback: vi was invoked with idea file path"
+    else
+        fail "vi fallback: vi was invoked with unexpected args: $VI_MARKER_CONTENT"
+    fi
+else
+    fail "vi fallback: vi was never invoked (no marker file)"
 fi
 
 echo ""

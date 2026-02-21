@@ -1,0 +1,12 @@
+Enhance i2code go to support editing idea file in Visual Studio Code
+
+When the idea file does not exist, resolve the editor using this priority order:
+1. code --wait (if `code` is found on $PATH) — open as .md file
+2. $VISUAL (if set)                         — open as .txt file
+3. $EDITOR (if set)                         — open as .txt file
+4. vi (final fallback)                      — open as .txt file
+
+After the user saves and closes the editor, auto-launch the Claude brainstorm
+session as it does today.
+
+No changes to the confirmation flow, menu structure, or brainstorm behavior.

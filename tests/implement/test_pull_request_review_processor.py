@@ -1,6 +1,7 @@
 """Tests for PullRequestReviewProcessor class."""
 
 import json
+import os
 
 import pytest
 
@@ -12,6 +13,10 @@ from fake_github_client import FakeGitHubClient
 from fake_workflow_state import FakeWorkflowState
 from fake_claude_runner import FakeClaudeRunner
 from i2code.implement.implement_opts import ImplementOpts
+
+FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
+PR6_FEEDBACK_FILE = os.path.join(FIXTURE_DIR, "pr6_feedback.json")
+PR6_TRIAGE_STDOUT_FILE = os.path.join(FIXTURE_DIR, "pr6_triage_stdout.txt")
 
 
 def _make_processor(
@@ -441,3 +446,99 @@ class TestDetermineCommentType:
         result = PullRequestReviewProcessor._determine_comment_type(200, review_comments, conversation_comments)
 
         assert result == "conversation"
+
+
+PR6_REPO = "humansintheloop-dev/humansintheloop-dev-workflow-and-tools"
+PR6_NUMBER = 6
+
+
+@pytest.mark.unit
+class TestTriageFeedbackLogging:
+    """Test that _triage_feedback logs prompt and response to file."""
+
+    @pytest.fixture
+    def pr6_feedback(self):
+        assert os.path.exists(PR6_FEEDBACK_FILE), (
+            f"Fixture not found: {PR6_FEEDBACK_FILE}\n"
+            f"Run: uv run --with pytest pytest tests/implement/test_triage_failure_logging.py -m gather_fixtures"
+        )
+        with open(PR6_FEEDBACK_FILE) as f:
+            return json.load(f)
+
+    @pytest.fixture
+    def home_dir(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("pathlib.Path.home", classmethod(lambda cls: tmp_path))
+        return tmp_path
+
+    def _make_triage_processor(self, claude_stdout):
+        worktree_name = "myrepo-wt-improve-modularity"
+
+        fake_gh = FakeGitHubClient()
+        fake_gh.set_pr_url(PR6_NUMBER, f"https://github.com/{PR6_REPO}/pull/{PR6_NUMBER}")
+
+        fake_repo = FakeGitRepository(
+            working_tree_dir=f"/worktrees/{worktree_name}",
+            gh_client=fake_gh,
+        )
+        fake_repo.pr_number = PR6_NUMBER
+        fake_repo.branch = "idea/improve-modularity/01-extract-ideaproject-class"
+        fake_repo.set_pushed(True)
+
+        fake_state = FakeWorkflowState()
+        fake_claude = FakeClaudeRunner()
+        fake_claude.set_result(ClaudeResult(returncode=0, stdout=claude_stdout, stderr=""))
+
+        opts = ImplementOpts(
+            idea_directory="/tmp/idea",
+            non_interactive=True,
+            skip_ci_wait=True,
+        )
+
+        processor = PullRequestReviewProcessor(
+            opts=opts, git_repo=fake_repo, state=fake_state, claude_runner=fake_claude,
+        )
+
+        return processor, worktree_name
+
+    def test_logs_feedback_content_on_triage_parse_failure(self, pr6_feedback, home_dir):
+        processor, worktree_name = self._make_triage_processor("not json at all")
+
+        review_comments = pr6_feedback["review_comments"]
+        feedback_content = PullRequestReviewProcessor._format_all_feedback(
+            review_comments, pr6_feedback["reviews"], pr6_feedback["conversation_comments"],
+        )
+
+        result = processor._triage_feedback(feedback_content, PR6_NUMBER)
+
+        assert result is None
+
+        log_file = home_dir / ".hitl" / worktree_name / "logs" / "log.log"
+        assert log_file.exists(), f"Expected log file at {log_file}"
+
+        log_content = log_file.read_text()
+        assert "--- prompt ---" in log_content
+        assert "--- claude response ---" in log_content
+        assert "not json at all" in log_content
+
+        for comment in review_comments:
+            body = comment.get("body", "").strip()
+            if body:
+                assert body in log_content, f"Expected review comment body in log: {body[:60]}..."
+                break
+
+    def test_parses_real_claude_triage_response(self, pr6_feedback, home_dir):
+        with open(PR6_TRIAGE_STDOUT_FILE) as f:
+            triage_stdout = f.read()
+
+        processor, _ = self._make_triage_processor(triage_stdout)
+
+        feedback_content = PullRequestReviewProcessor._format_all_feedback(
+            pr6_feedback["review_comments"], pr6_feedback["reviews"], pr6_feedback["conversation_comments"],
+        )
+
+        result = processor._triage_feedback(feedback_content, PR6_NUMBER)
+
+        assert result is not None, "Expected triage to parse successfully"
+        assert "will_fix" in result
+        assert "needs_clarification" in result
+        assert len(result["will_fix"]) > 0

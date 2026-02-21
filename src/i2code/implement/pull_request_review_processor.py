@@ -1,8 +1,11 @@
 """PullRequestReviewProcessor: processes PR review feedback."""
 
 import json
+import os
 import re
 import sys
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from i2code.implement.command_builder import CommandBuilder
@@ -43,68 +46,138 @@ class PullRequestReviewProcessor:
     def process_pr_feedback(self):
         """Process new PR feedback using triage-based approach.
 
-        Flow:
-        1. Fetch and filter new feedback
-        2. Invoke Claude to triage (categorize as will_fix or needs_clarification)
-        3. Reply to comments needing clarification
-        4. For each fix group: invoke Claude, push, reply with SHA, verify CI
-
         Returns:
             Tuple of (had_feedback, made_changes):
             - had_feedback: True if there was new feedback to process
             - made_changes: True if Claude made code changes (commits)
         """
         pr_number = self._git_repo.pr_number
-        pr_url = self._git_repo.gh_client.get_pr_url(pr_number)
+
+        new_review_comments, new_reviews, new_conversation = (
+            self._fetch_unprocessed_feedback(pr_number)
+        )
+
+        if not new_review_comments and not new_reviews and not new_conversation:
+            return (False, False)
+
+        return self._triage_and_apply_feedback(
+            new_review_comments, new_reviews, new_conversation, pr_number,
+        )
+
+    def _fetch_unprocessed_feedback(self, pr_number):
+        """Fetch PR feedback and filter to only unprocessed items."""
         gh_client = self._git_repo.gh_client
 
         review_comments = gh_client.fetch_pr_comments(pr_number)
         reviews = gh_client.fetch_pr_reviews(pr_number)
         conversation_comments = gh_client.fetch_pr_conversation_comments(pr_number)
 
-        new_review_comments = self._get_new_feedback(
-            review_comments, self._state.processed_comment_ids,
-        )
-        new_reviews = self._get_new_feedback(
-            reviews, self._state.processed_review_ids,
-        )
-        new_conversation = self._get_new_feedback(
-            conversation_comments, self._state.processed_conversation_ids,
+        return (
+            self._get_new_feedback(review_comments, self._state.processed_comment_ids),
+            self._get_new_feedback(reviews, self._state.processed_review_ids),
+            self._get_new_feedback(conversation_comments, self._state.processed_conversation_ids),
         )
 
-        if not new_review_comments and not new_reviews and not new_conversation:
-            return (False, False)
+    def _triage_and_apply_feedback(self, new_review_comments, new_reviews, new_conversation, pr_number):
+        """Triage feedback via Claude and apply the results.
 
+        Returns:
+            Tuple of (had_feedback=True, made_changes).
+        """
         print(f"Found new feedback: {len(new_reviews)} review(s), "
               f"{len(new_review_comments)} review comment(s), "
               f"{len(new_conversation)} general comment(s)")
 
-        all_new_feedback = new_review_comments + new_reviews + new_conversation
         feedback_content = self._format_all_feedback(
             new_review_comments, new_reviews, new_conversation,
         )
 
-        print("Triaging feedback...")
-        if self._opts.mock_claude:
-            triage_cmd = [self._opts.mock_claude, f"triage-{pr_number}"]
-        else:
-            triage_cmd = CommandBuilder().build_triage_command(feedback_content, interactive=False)
+        triage = self._triage_feedback(feedback_content, pr_number)
 
-        triage_result = self._claude_runner.run_with_capture(triage_cmd, cwd=self._git_repo.working_tree_dir)
+        if not triage:
+            self._mark_all_processed(new_review_comments, new_reviews, new_conversation)
+            return (True, False)
+
+        new_feedback = (new_review_comments, new_reviews, new_conversation)
+        made_changes = self._apply_feedback(triage, new_feedback, pr_number)
+
+        self._mark_all_processed(new_review_comments, new_reviews, new_conversation)
+        return (True, made_changes)
+
+    def _triage_feedback(self, feedback_content, pr_number):
+        """Run Claude triage and parse the result.
+
+        Returns:
+            Parsed triage dict, or None if parsing failed.
+        """
+        triage_cmd, triage_result = self._run_triage(feedback_content, pr_number)
+
+        prompt = self._extract_prompt_from_command(triage_cmd)
+        self._log_to_file(
+            f"=== Triage request ===\n"
+            f"--- prompt ---\n{prompt}\n"
+            f"--- claude response ---\n{triage_result.stdout}\n"
+        )
 
         triage = self._parse_triage_result(triage_result.stdout)
         if not triage:
             print("Warning: Could not parse triage result, marking all as processed")
-            self._state.mark_comments_processed([c["id"] for c in new_review_comments])
-            self._state.mark_reviews_processed([r["id"] for r in new_reviews])
-            self._state.mark_conversations_processed([c["id"] for c in new_conversation])
-            return (True, False)
+            return None
+
+        return triage
+
+    @staticmethod
+    def _extract_prompt_from_command(cmd):
+        """Extract the -p prompt argument from a Claude command list."""
+        try:
+            idx = cmd.index("-p")
+            return cmd[idx + 1]
+        except (ValueError, IndexError):
+            return " ".join(cmd)
+
+    def _apply_feedback(self, triage, new_feedback, pr_number):
+        """Apply a parsed triage result: clarifications then fixes.
+
+        Returns:
+            True if code changes were made, False otherwise.
+            Raises early (returns True) on push failure.
+        """
+        new_review_comments, _, new_conversation = new_feedback
 
         will_fix = triage.get("will_fix", [])
         needs_clarification = triage.get("needs_clarification", [])
 
         print(f"Triage result: {len(will_fix)} fix group(s), "
               f"{len(needs_clarification)} needing clarification")
+
+        self._reply_with_clarifications(
+            needs_clarification, pr_number, new_review_comments, new_conversation,
+        )
+
+        made_any_changes = self._apply_fix_groups(will_fix, new_feedback)
+        if made_any_changes is None:
+            return True
+
+        return made_any_changes
+
+    def _run_triage(self, feedback_content, pr_number):
+        """Build and run the triage command via Claude.
+
+        Returns:
+            Tuple of (command_list, ClaudeResult).
+        """
+        print("Triaging feedback...")
+        if self._opts.mock_claude:
+            triage_cmd = [self._opts.mock_claude, f"triage-{pr_number}"]
+        else:
+            triage_cmd = CommandBuilder().build_triage_command(feedback_content, interactive=False)
+
+        result = self._claude_runner.run_with_capture(triage_cmd, cwd=self._git_repo.working_tree_dir)
+        return triage_cmd, result
+
+    def _reply_with_clarifications(self, needs_clarification, pr_number, new_review_comments, new_conversation):
+        """Reply to comments needing clarification."""
+        gh_client = self._git_repo.gh_client
 
         for item in needs_clarification:
             comment_id = item.get("comment_id")
@@ -125,87 +198,134 @@ class PullRequestReviewProcessor:
             else:
                 print(f"  Warning: Failed to reply to comment {comment_id}")
 
-        interactive = not self._opts.non_interactive
+    def _apply_fix_groups(self, will_fix, new_feedback):
+        """Apply fix groups by invoking Claude, pushing, and replying.
+
+        Returns:
+            True/False for whether changes were made, or None if push failed.
+        """
         made_any_changes = False
 
         for fix_group in will_fix:
-            comment_ids = fix_group.get("comment_ids", [])
-            description = fix_group.get("description", "Address feedback")
+            result = self._process_fix_group(fix_group, new_feedback)
+            if result is None:
+                return None
+            if result:
+                made_any_changes = True
 
-            if not comment_ids:
-                continue
+        return made_any_changes
 
-            print(f"\nFixing: {description}")
-            print(f"  Comments: {comment_ids}")
+    def _process_fix_group(self, fix_group, new_feedback):
+        """Process a single fix group: invoke Claude, push, reply.
 
-            group_feedback = self._get_feedback_by_ids(all_new_feedback, comment_ids)
-            group_content = self._format_all_feedback(
-                [f for f in group_feedback if f in new_review_comments],
-                [f for f in group_feedback if f in new_reviews],
-                [f for f in group_feedback if f in new_conversation],
+        Returns:
+            True if changes were made, False if not, None if push failed.
+        """
+        new_review_comments, new_reviews, new_conversation = new_feedback
+        comment_ids = fix_group.get("comment_ids", [])
+        description = fix_group.get("description", "Address feedback")
+
+        if not comment_ids:
+            return False
+
+        print(f"\nFixing: {description}")
+        print(f"  Comments: {comment_ids}")
+
+        all_feedback = new_review_comments + new_reviews + new_conversation
+        group_feedback = self._get_feedback_by_ids(all_feedback, comment_ids)
+        group_content = self._format_all_feedback(
+            [f for f in group_feedback if f in new_review_comments],
+            [f for f in group_feedback if f in new_reviews],
+            [f for f in group_feedback if f in new_conversation],
+        )
+
+        commit_sha = self._invoke_fix(group_content, description, comment_ids)
+        if not commit_sha:
+            return False
+
+        if not self._push_and_reply(commit_sha, comment_ids, new_review_comments, new_conversation):
+            return None
+
+        self._wait_for_ci_if_needed(commit_sha)
+        return True
+
+    def _invoke_fix(self, group_content, description, comment_ids):
+        """Invoke Claude to fix a group. Returns short commit SHA or None."""
+        pr_number = self._git_repo.pr_number
+        pr_url = self._git_repo.gh_client.get_pr_url(pr_number)
+        interactive = not self._opts.non_interactive
+        head_before = self._git_repo.head_sha
+
+        if self._opts.mock_claude:
+            fix_cmd = [self._opts.mock_claude, f"fix-{pr_number}-{comment_ids[0]}"]
+        else:
+            fix_cmd = CommandBuilder().build_fix_command(pr_url, group_content, description, interactive=interactive)
+
+        print("  Invoking Claude to fix...")
+        if interactive:
+            self._claude_runner.run_interactive(fix_cmd, cwd=self._git_repo.working_tree_dir)
+        else:
+            self._claude_runner.run_with_capture(fix_cmd, cwd=self._git_repo.working_tree_dir)
+
+        head_after = self._git_repo.head_sha
+        if head_before == head_after:
+            print("  Warning: Claude did not make any commits for this fix")
+            return None
+
+        commit_sha = head_after[:8]
+        print(f"  Committed: {commit_sha}")
+        return commit_sha
+
+    def _push_and_reply(self, commit_sha, comment_ids, new_review_comments, new_conversation):
+        """Push changes and reply to comments. Returns False if push fails."""
+        pr_number = self._git_repo.pr_number
+        gh_client = self._git_repo.gh_client
+
+        print("  Pushing...")
+        if not self._git_repo.push():
+            print("  Error: Could not push fix", file=sys.stderr)
+            return False
+
+        for comment_id in comment_ids:
+            comment_type = self._determine_comment_type(
+                comment_id, new_review_comments, new_conversation,
             )
-
-            head_before = self._git_repo.head_sha
-
-            if self._opts.mock_claude:
-                fix_cmd = [self._opts.mock_claude, f"fix-{pr_number}-{comment_ids[0]}"]
+            reply_body = f"Fixed in {commit_sha}"
+            if comment_type == "review":
+                success = gh_client.reply_to_review_comment(pr_number, comment_id, reply_body)
             else:
-                fix_cmd = CommandBuilder().build_fix_command(pr_url, group_content, description, interactive=interactive)
+                success = gh_client.reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{reply_body}")
 
-            print("  Invoking Claude to fix...")
-            if interactive:
-                self._claude_runner.run_interactive(fix_cmd, cwd=self._git_repo.working_tree_dir)
+            if success:
+                print(f"  Replied to comment {comment_id}: {reply_body}")
             else:
-                self._claude_runner.run_with_capture(fix_cmd, cwd=self._git_repo.working_tree_dir)
+                print(f"  Warning: Failed to reply to comment {comment_id}")
 
-            head_after = self._git_repo.head_sha
+        return True
 
-            if head_before == head_after:
-                print("  Warning: Claude did not make any commits for this fix")
-                continue
+    def _wait_for_ci_if_needed(self, commit_sha):
+        """Wait for CI if configured to do so."""
+        if self._opts.skip_ci_wait:
+            return
 
-            made_any_changes = True
-            commit_sha = head_after[:8]
-            print(f"  Committed: {commit_sha}")
+        gh_client = self._git_repo.gh_client
+        head_sha = self._git_repo.head_sha
+        print("  Waiting for CI...")
+        ci_success, failing_run = gh_client.wait_for_workflow_completion(
+            self._git_repo.branch, head_sha, timeout_seconds=self._opts.ci_timeout,
+        )
 
-            print("  Pushing...")
-            if not self._git_repo.push():
-                print("  Error: Could not push fix", file=sys.stderr)
-                return (True, True)
+        if not ci_success and failing_run:
+            workflow_name = failing_run.get("name", "unknown")
+            print(f"  CI failed: {workflow_name}")
+        elif ci_success:
+            print("  CI passed!")
 
-            for comment_id in comment_ids:
-                comment_type = self._determine_comment_type(
-                    comment_id, new_review_comments, new_conversation,
-                )
-
-                reply_body = f"Fixed in {commit_sha}"
-                if comment_type == "review":
-                    success = gh_client.reply_to_review_comment(pr_number, comment_id, reply_body)
-                else:
-                    success = gh_client.reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{reply_body}")
-
-                if success:
-                    print(f"  Replied to comment {comment_id}: {reply_body}")
-                else:
-                    print(f"  Warning: Failed to reply to comment {comment_id}")
-
-            if not self._opts.skip_ci_wait:
-                print("  Waiting for CI...")
-                ci_success, failing_run = gh_client.wait_for_workflow_completion(
-                    self._git_repo.branch, head_after, timeout_seconds=self._opts.ci_timeout,
-                )
-
-                if not ci_success and failing_run:
-                    workflow_name = failing_run.get("name", "unknown")
-                    print(f"  CI failed: {workflow_name}")
-                elif ci_success:
-                    print("  CI passed!")
-
+    def _mark_all_processed(self, new_review_comments, new_reviews, new_conversation):
+        """Mark all feedback items as processed in workflow state."""
         self._state.mark_comments_processed([c["id"] for c in new_review_comments])
         self._state.mark_reviews_processed([r["id"] for r in new_reviews])
         self._state.mark_conversations_processed([c["id"] for c in new_conversation])
-
-        return (True, made_any_changes)
 
     @staticmethod
     def _get_new_feedback(
@@ -261,17 +381,34 @@ class PullRequestReviewProcessor:
     @staticmethod
     def _parse_triage_result(claude_output: str) -> Optional[Dict[str, Any]]:
         """Parse the JSON triage result from Claude's output."""
-        json_match = re.search(r'```json\s*(.*?)\s*```', claude_output, re.DOTALL)
+        text = PullRequestReviewProcessor._extract_result_text(claude_output)
+        json_match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL)
         if json_match:
             try:
                 return json.loads(json_match.group(1))
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as e:
+                print(f"Warning: Found ```json block but failed to parse: {e}", file=sys.stderr)
         try:
-            return json.loads(claude_output.strip())
-        except json.JSONDecodeError:
-            pass
+            return json.loads(text.strip())
+        except json.JSONDecodeError as e:
+            print(f"Warning: Failed to parse triage output as JSON: {e}", file=sys.stderr)
+            print(f"  Output: {text.strip()}", file=sys.stderr)
         return None
+
+    @staticmethod
+    def _extract_result_text(claude_output: str) -> str:
+        """Extract result text from stream-json output, or return as-is."""
+        for line in claude_output.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                msg = json.loads(line)
+                if msg.get('type') == 'result' and 'result' in msg:
+                    return msg['result']
+            except json.JSONDecodeError:
+                continue
+        return claude_output
 
     @staticmethod
     def _get_feedback_by_ids(
@@ -289,3 +426,11 @@ class PullRequestReviewProcessor:
             if c.get("id") == comment_id:
                 return "review"
         return "conversation"
+
+    def _log_to_file(self, message):
+        worktree_name = os.path.basename(self._git_repo.working_tree_dir)
+        log_dir = Path.home() / ".hitl" / worktree_name / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        with open(log_dir / "log.log", "a") as f:
+            timestamp = datetime.now(timezone.utc).isoformat()
+            f.write(f"[{timestamp}] {message}\n")

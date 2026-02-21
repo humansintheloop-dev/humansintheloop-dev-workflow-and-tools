@@ -1,5 +1,6 @@
 """Tests for ClaudeRunner strategy pattern."""
 
+import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -143,6 +144,7 @@ class TestRunClaudeWithOutputCaptureSignalHandling:
         mock_popen_cls.assert_called_once()
         call_kwargs = mock_popen_cls.call_args[1]
         assert call_kwargs.get("start_new_session") is True
+        assert call_kwargs.get("stdin") == subprocess.DEVNULL
 
     @patch("i2code.implement.claude_runner.ManagedSubprocess")
     @patch("i2code.implement.claude_runner.subprocess.Popen")

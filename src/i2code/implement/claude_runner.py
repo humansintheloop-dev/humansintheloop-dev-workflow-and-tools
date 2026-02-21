@@ -57,6 +57,7 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
     process = subprocess.Popen(
         cmd,
         cwd=cwd,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         start_new_session=True,

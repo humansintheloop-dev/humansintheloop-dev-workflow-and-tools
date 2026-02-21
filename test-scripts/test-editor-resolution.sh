@@ -20,7 +20,8 @@ echo "--- VS Code on PATH creates .md and uses code --wait ---"
 
 TMPDIR_VS=$(mktemp -d)
 TMPDIR_VISUAL=$(mktemp -d)
-trap 'rm -rf "$TMPDIR_VS" "$TMPDIR_VISUAL"' EXIT
+TMPDIR_EDITOR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR_VS" "$TMPDIR_VISUAL" "$TMPDIR_EDITOR"' EXIT
 
 IDEA_DIR="$TMPDIR_VS/my-feature"
 MOCK_BIN="$TMPDIR_VS/mock-bin"
@@ -157,6 +158,72 @@ if [ -f "$TMPDIR_VISUAL/visual-marker.txt" ]; then
     fi
 else
     fail "\$VISUAL editor was never invoked (no marker file)"
+fi
+
+# --- Test: $EDITOR fallback when code is NOT on PATH and $VISUAL is not set ---
+echo ""
+echo "--- \$EDITOR fallback when code is NOT on PATH and \$VISUAL is not set ---"
+
+IDEA_DIR_EDITOR="$TMPDIR_EDITOR/my-feature"
+MOCK_BIN_EDITOR="$TMPDIR_EDITOR/mock-bin"
+mkdir -p "$MOCK_BIN_EDITOR"
+
+# Mock EDITOR that records its arguments to a marker file
+cat > "$MOCK_BIN_EDITOR/my-editor" <<'MOCK'
+#!/usr/bin/env bash
+echo "$@" > "$(dirname "$0")/../editor-marker.txt"
+MOCK
+chmod +x "$MOCK_BIN_EDITOR/my-editor"
+
+# Mock 'claude' (no-op)
+cat > "$MOCK_BIN_EDITOR/claude" <<'MOCK'
+#!/usr/bin/env bash
+exit 0
+MOCK
+chmod +x "$MOCK_BIN_EDITOR/claude"
+
+# Mock 'uuidgen'
+cat > "$MOCK_BIN_EDITOR/uuidgen" <<'MOCK'
+#!/usr/bin/env bash
+echo "test-uuid-9012"
+MOCK
+chmod +x "$MOCK_BIN_EDITOR/uuidgen"
+
+# Mock 'vi' (fallback — should NOT be invoked in this test)
+cat > "$MOCK_BIN_EDITOR/vi" <<'MOCK'
+#!/usr/bin/env bash
+echo "$@" > "$(dirname "$0")/../vi-marker.txt"
+MOCK
+chmod +x "$MOCK_BIN_EDITOR/vi"
+
+# Mock 'envsubst'
+cat > "$MOCK_BIN_EDITOR/envsubst" <<'MOCK'
+#!/usr/bin/env bash
+cat
+MOCK
+chmod +x "$MOCK_BIN_EDITOR/envsubst"
+
+# NOTE: No mock 'code' and VISUAL is unset — so $EDITOR should be used
+EDITOR="$MOCK_BIN_EDITOR/my-editor" PATH="$MOCK_BIN_EDITOR:/usr/bin:/bin" "$BRAINSTORM_SCRIPT" "$IDEA_DIR_EDITOR"
+
+# Assert 1: idea file has .txt extension (not .md since code is not available)
+if ls "$IDEA_DIR_EDITOR"/my-feature-idea.txt >/dev/null 2>&1; then
+    pass "\$EDITOR: idea file has .txt extension"
+else
+    fail "\$EDITOR: idea file does not have .txt extension"
+    echo "  Files in idea dir: $(ls "$IDEA_DIR_EDITOR"/ 2>/dev/null || echo '(empty)')"
+fi
+
+# Assert 2: mock EDITOR marker shows it was invoked with the file path
+if [ -f "$TMPDIR_EDITOR/editor-marker.txt" ]; then
+    EDITOR_MARKER_CONTENT=$(cat "$TMPDIR_EDITOR/editor-marker.txt")
+    if [[ "$EDITOR_MARKER_CONTENT" == *"my-feature-idea.txt"* ]]; then
+        pass "\$EDITOR was invoked with idea file path"
+    else
+        fail "\$EDITOR was invoked with unexpected args: $EDITOR_MARKER_CONTENT"
+    fi
+else
+    fail "\$EDITOR was never invoked (no marker file)"
 fi
 
 echo ""

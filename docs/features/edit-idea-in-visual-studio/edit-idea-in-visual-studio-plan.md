@@ -89,14 +89,14 @@ When `code` is not on `$PATH`, fall back to `$VISUAL` then `$EDITOR` with `.txt`
     - [x] Add `$VISUAL` test case to `test-scripts/test-editor-resolution.sh`: create mock `VISUAL` editor script, exclude `code` from `PATH`, set `VISUAL` env var, run `brainstorm-idea.sh`, assert `.txt` and `VISUAL` editor invocation
     - [x] Add `$VISUAL` fallback to `src/i2code/scripts/brainstorm-idea.sh`: `elif` branch after `code` check that uses `$VISUAL` when set and non-empty
 
-- [ ] **Task 2.2: brainstorm-idea.sh uses $EDITOR when code and $VISUAL are not available**
+- [x] **Task 2.2: brainstorm-idea.sh uses $EDITOR when code and $VISUAL are not available**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-editor-resolution.sh`
   - Observable: When `code` is NOT on `$PATH`, `$VISUAL` is not set, and `$EDITOR` is set, brainstorm-idea.sh creates `<name>-idea.txt` with placeholder content and invokes the `$EDITOR` command with the idea file path
   - Evidence: `test-editor-resolution.sh` includes a test case with no `code` on `PATH`, `VISUAL` unset, `EDITOR` set to a mock editor script, asserts: (1) `.txt` extension, (2) mock `EDITOR` marker shows it was invoked
   - Steps:
-    - [ ] Add `$EDITOR` test case to `test-scripts/test-editor-resolution.sh`: exclude `code`, unset `VISUAL`, set `EDITOR` to mock, run `brainstorm-idea.sh`, assert `.txt` and `EDITOR` invocation
-    - [ ] Add `$EDITOR` fallback to `src/i2code/scripts/brainstorm-idea.sh`: `elif` branch after `$VISUAL` check that uses `$EDITOR` when set and non-empty
+    - [x] Add `$EDITOR` test case to `test-scripts/test-editor-resolution.sh`: exclude `code`, unset `VISUAL`, set `EDITOR` to mock, run `brainstorm-idea.sh`, assert `.txt` and `EDITOR` invocation
+    - [x] Add `$EDITOR` fallback to `src/i2code/scripts/brainstorm-idea.sh`: `elif` branch after `$VISUAL` check that uses `$EDITOR` when set and non-empty
 
 ## Steel Thread 3: vi Fallback Backward Compatibility
 
@@ -122,3 +122,12 @@ Added elif branch for $VISUAL fallback in brainstorm-idea.sh
 
 ### 2026-02-21 15:14 - mark-task-complete
 brainstorm-idea.sh uses $VISUAL editor when code is not on PATH — test passes
+
+### 2026-02-21 15:19 - mark-step-complete
+Added $EDITOR test case to test-editor-resolution.sh
+
+### 2026-02-21 15:19 - mark-step-complete
+Added $EDITOR elif branch to brainstorm-idea.sh
+
+### 2026-02-21 15:19 - mark-task-complete
+brainstorm-idea.sh falls back to $EDITOR when code and $VISUAL are not available; test passes

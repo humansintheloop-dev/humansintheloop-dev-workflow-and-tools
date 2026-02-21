@@ -116,10 +116,10 @@ class PullRequestReviewProcessor:
         self._log_to_file(
             f"=== Triage request ===\n"
             f"--- prompt ---\n{prompt}\n"
-            f"--- claude response ---\n{triage_result.stdout}\n"
+            f"--- claude response ---\n{triage_result.output.stdout}\n"
         )
 
-        triage = self._parse_triage_result(triage_result.stdout)
+        triage = self._parse_triage_result(triage_result.output.stdout)
         if not triage:
             print("Warning: Could not parse triage result, marking all as processed")
             return None

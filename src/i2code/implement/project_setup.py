@@ -69,15 +69,15 @@ class ProjectInitializer:
         else:
             result = self._claude_runner.run_with_capture(cmd, cwd=cwd)
 
-        if interactive or "<SUCCESS>" in result.stdout or "<NOTHING-TO-DO>" in result.stdout:
+        if interactive or "<SUCCESS>" in result.output.stdout or "<NOTHING-TO-DO>" in result.output.stdout:
             return
 
         print("Error: Scaffolding failed.", file=sys.stderr)
-        if result.error_message:
-            print(f"  {result.error_message}", file=sys.stderr)
-        if result.permission_denials:
-            print(f"  Permission denied for {len(result.permission_denials)} action(s)", file=sys.stderr)
-        for msg in result.last_messages:
+        if result.diagnostics.error_message:
+            print(f"  {result.diagnostics.error_message}", file=sys.stderr)
+        if result.diagnostics.permission_denials:
+            print(f"  Permission denied for {len(result.diagnostics.permission_denials)} action(s)", file=sys.stderr)
+        for msg in result.diagnostics.last_messages:
             msg_type = msg.get('type', 'unknown')
             if msg_type == 'assistant':
                 for item in msg.get('message', {}).get('content', []):

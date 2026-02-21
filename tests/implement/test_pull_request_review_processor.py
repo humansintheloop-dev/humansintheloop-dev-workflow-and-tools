@@ -6,7 +6,7 @@ import os
 import pytest
 
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
-from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
 
 from fake_git_repository import FakeGitRepository
 from fake_github_client import FakeGitHubClient
@@ -139,7 +139,7 @@ class TestProcessPrFeedbackTriage:
     def test_triage_uses_claude_runner_run_with_capture(self):
         """Triage invokes claude_runner.run_with_capture, not module-level function."""
         triage_json = json.dumps({"will_fix": [], "needs_clarification": []})
-        triage_result = ClaudeResult(returncode=0, stdout=triage_json, stderr="")
+        triage_result = ClaudeResult(returncode=0, output=CapturedOutput(triage_json))
 
         processor, _, fake_repo, _, fake_claude = _make_processor(
             comments=[{"id": 1, "body": "fix this", "user": {"login": "u"}}],
@@ -167,9 +167,9 @@ class TestProcessPrFeedbackFixGroup:
     def test_fix_uses_git_repo_head_sha_not_gitrepo(self):
         """HEAD tracking uses self._git_repo.head_sha, not GitRepo(worktree_path)."""
         triage_json = self._triage_with_fix([1])
-        triage_result = ClaudeResult(returncode=0, stdout=triage_json, stderr="")
+        triage_result = ClaudeResult(returncode=0, output=CapturedOutput(triage_json))
         # Claude "makes a commit" by advancing head_sha
-        fix_result = ClaudeResult(returncode=0, stdout="", stderr="")
+        fix_result = ClaudeResult(returncode=0)
 
         processor, _, fake_repo, _, fake_claude = _make_processor(
             comments=[{"id": 1, "body": "fix this", "user": {"login": "u"}}],
@@ -191,8 +191,8 @@ class TestProcessPrFeedbackFixGroup:
     def test_fix_uses_git_repo_push_not_push_branch_to_remote(self):
         """Push uses self._git_repo.push(), not push_branch_to_remote()."""
         triage_json = self._triage_with_fix([1])
-        triage_result = ClaudeResult(returncode=0, stdout=triage_json, stderr="")
-        fix_result = ClaudeResult(returncode=0, stdout="", stderr="")
+        triage_result = ClaudeResult(returncode=0, output=CapturedOutput(triage_json))
+        fix_result = ClaudeResult(returncode=0)
 
         processor, _, fake_repo, _, fake_claude = _make_processor(
             comments=[{"id": 1, "body": "fix this", "user": {"login": "u"}}],
@@ -214,8 +214,8 @@ class TestProcessPrFeedbackFixGroup:
     def test_fix_interactive_uses_run_interactive(self):
         """Interactive mode uses claude_runner.run_interactive for fix."""
         triage_json = self._triage_with_fix([1])
-        triage_result = ClaudeResult(returncode=0, stdout=triage_json, stderr="")
-        fix_result = ClaudeResult(returncode=0, stdout="", stderr="")
+        triage_result = ClaudeResult(returncode=0, output=CapturedOutput(triage_json))
+        fix_result = ClaudeResult(returncode=0)
 
         processor, _, fake_repo, _, fake_claude = _make_processor(
             comments=[{"id": 1, "body": "fix this", "user": {"login": "u"}}],
@@ -238,8 +238,8 @@ class TestProcessPrFeedbackFixGroup:
     def test_fix_marks_all_feedback_processed(self):
         """After processing, all feedback IDs are marked processed in state."""
         triage_json = self._triage_with_fix([1])
-        triage_result = ClaudeResult(returncode=0, stdout=triage_json, stderr="")
-        fix_result = ClaudeResult(returncode=0, stdout="", stderr="")
+        triage_result = ClaudeResult(returncode=0, output=CapturedOutput(triage_json))
+        fix_result = ClaudeResult(returncode=0)
 
         processor, _, fake_repo, fake_state, fake_claude = _make_processor(
             comments=[{"id": 1, "body": "fix this", "user": {"login": "u"}}],
@@ -486,7 +486,7 @@ class TestTriageFeedbackLogging:
 
         fake_state = FakeWorkflowState()
         fake_claude = FakeClaudeRunner()
-        fake_claude.set_result(ClaudeResult(returncode=0, stdout=claude_stdout, stderr=""))
+        fake_claude.set_result(ClaudeResult(returncode=0, output=CapturedOutput(claude_stdout)))
 
         opts = ImplementOpts(
             idea_directory="/tmp/idea",

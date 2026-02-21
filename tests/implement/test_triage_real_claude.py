@@ -53,19 +53,19 @@ def test_real_claude_triage_pr6(tmp_path):
     print("(2) CLAUDE'S RESPONSE")
     print("=" * 80)
     print(f"Return code: {result.returncode}")
-    print(f"Stdout:\n{result.stdout}")
-    if result.stderr:
-        print(f"Stderr:\n{result.stderr}")
+    print(f"Stdout:\n{result.output.stdout}")
+    if result.output.stderr:
+        print(f"Stderr:\n{result.output.stderr}")
 
     # Also write to a file for easy review
     log_file = tmp_path / "triage_debug.log"
     log_file.write_text(
         f"=== PROMPT ===\n{prompt}\n\n"
-        f"=== RESPONSE (stdout) ===\n{result.stdout}\n\n"
-        f"=== STDERR ===\n{result.stderr}\n"
+        f"=== RESPONSE (stdout) ===\n{result.output.stdout}\n\n"
+        f"=== STDERR ===\n{result.output.stderr}\n"
     )
     print(f"\nFull log written to: {log_file}")
 
     # Try to parse the triage result
-    triage = PullRequestReviewProcessor._parse_triage_result(result.stdout)
+    triage = PullRequestReviewProcessor._parse_triage_result(result.output.stdout)
     print(f"\nParsed triage result: {json.dumps(triage, indent=2) if triage else 'PARSE FAILED (None)'}")

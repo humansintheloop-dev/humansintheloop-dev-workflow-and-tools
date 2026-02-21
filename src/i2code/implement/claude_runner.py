@@ -10,24 +10,33 @@ import json
 import subprocess
 import sys
 import threading
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from i2code.implement.managed_subprocess import ManagedSubprocess
 
 
+@dataclass
+class CapturedOutput:
+    """Captured stdout and stderr from a Claude process."""
+    stdout: str = ""
+    stderr: str = ""
+
+
+@dataclass
+class DiagnosticInfo:
+    """Parsed diagnostic details from stream-json output."""
+    permission_denials: List[Dict[str, Any]] = field(default_factory=list)
+    error_message: Optional[str] = None
+    last_messages: List[Dict[str, Any]] = field(default_factory=list)
+
+
+@dataclass
 class ClaudeResult:
     """Result of running Claude with output capture."""
-
-    def __init__(self, returncode: int, stdout: str, stderr: str,
-                 permission_denials: Optional[List[Dict[str, Any]]] = None,
-                 error_message: Optional[str] = None,
-                 last_messages: Optional[List[Dict[str, Any]]] = None):
-        self.returncode = returncode
-        self.stdout = stdout
-        self.stderr = stderr
-        self.permission_denials = permission_denials or []
-        self.error_message = error_message
-        self.last_messages = last_messages or []
+    returncode: int
+    output: CapturedOutput = field(default_factory=CapturedOutput)
+    diagnostics: DiagnosticInfo = field(default_factory=DiagnosticInfo)
 
 
 def run_claude_interactive(cmd: List[str], cwd: str) -> ClaudeResult:
@@ -38,13 +47,80 @@ def run_claude_interactive(cmd: List[str], cwd: str) -> ClaudeResult:
     """
     result = subprocess.run(cmd, cwd=cwd)
 
-    return ClaudeResult(
-        returncode=result.returncode,
-        stdout="",
-        stderr="",
-        permission_denials=[],
-        error_message=None,
-        last_messages=[],
+    return ClaudeResult(returncode=result.returncode)
+
+
+def _print_dot_per_line(buffer: str) -> str:
+    """Print a progress dot for each complete line and return the remainder."""
+    while '\n' in buffer:
+        line, buffer = buffer.split('\n', 1)
+        if line.strip():
+            sys.stdout.write('.')
+            sys.stdout.flush()
+    return buffer
+
+
+def _read_pipe_chunks(pipe, chunks: List[str]):
+    """Read and decode pipe chunks, accumulating into chunks list."""
+    while True:
+        chunk = pipe.read1(4096) if hasattr(pipe, 'read1') else pipe.read(4096)
+        if not chunk:
+            break
+        text = chunk.decode('utf-8', errors='replace')
+        chunks.append(text)
+        yield text
+
+
+def _read_pipe_with_progress(pipe, chunks: List[str]):
+    """Read stdout pipe, printing a dot for each JSON message."""
+    buffer = ""
+    for text in _read_pipe_chunks(pipe, chunks):
+        buffer = _print_dot_per_line(buffer + text)
+
+
+def _read_pipe_to_stderr(pipe, chunks: List[str]):
+    """Read stderr pipe, forwarding output to stderr."""
+    for text in _read_pipe_chunks(pipe, chunks):
+        sys.stderr.write(text)
+        sys.stderr.flush()
+
+
+def _extract_result_from_message(msg: Dict[str, Any]):
+    """Extract permission denials and error from a result message.
+
+    Returns (permission_denials, error_message).
+    """
+    permission_denials = msg.get('permission_denials', [])
+    if msg.get('is_error'):
+        return permission_denials, msg.get('result', 'Unknown error')
+    if permission_denials:
+        return permission_denials, f"Permission denied for {len(permission_denials)} action(s)"
+    return permission_denials, None
+
+
+def _parse_stream_json_output(full_stdout: str) -> DiagnosticInfo:
+    """Parse stream-json output for errors and permission denials."""
+    permission_denials: List[Dict[str, Any]] = []
+    error_message = None
+    all_messages: List[Dict[str, Any]] = []
+
+    for line in full_stdout.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            msg = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        all_messages.append(msg)
+        if msg.get('type') == 'result':
+            permission_denials, error_message = _extract_result_from_message(msg)
+
+    last_messages = all_messages[-5:] if all_messages else []
+    return DiagnosticInfo(
+        permission_denials=permission_denials,
+        error_message=error_message,
+        last_messages=last_messages,
     )
 
 
@@ -66,38 +142,12 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
     stdout_chunks: List[str] = []
     stderr_chunks: List[str] = []
 
-    def read_stdout_stream_json(pipe, chunks: List[str]):
-        buffer = ""
-        while True:
-            chunk = pipe.read1(4096) if hasattr(pipe, 'read1') else pipe.read(4096)
-            if not chunk:
-                break
-            text = chunk.decode('utf-8', errors='replace')
-            chunks.append(text)
-            buffer += text
-
-            while '\n' in buffer:
-                line, buffer = buffer.split('\n', 1)
-                if line.strip():
-                    sys.stdout.write('.')
-                    sys.stdout.flush()
-
-    def read_stderr(pipe, chunks: List[str]):
-        while True:
-            chunk = pipe.read1(4096) if hasattr(pipe, 'read1') else pipe.read(4096)
-            if not chunk:
-                break
-            text = chunk.decode('utf-8', errors='replace')
-            chunks.append(text)
-            sys.stderr.write(text)
-            sys.stderr.flush()
-
     stdout_thread = threading.Thread(
-        target=read_stdout_stream_json,
+        target=_read_pipe_with_progress,
         args=(process.stdout, stdout_chunks),
     )
     stderr_thread = threading.Thread(
-        target=read_stderr,
+        target=_read_pipe_to_stderr,
         args=(process.stderr, stderr_chunks),
     )
 
@@ -114,8 +164,7 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
     if managed.interrupted:
         return ClaudeResult(
             returncode=130,
-            stdout=''.join(stdout_chunks),
-            stderr=''.join(stderr_chunks),
+            output=CapturedOutput(''.join(stdout_chunks), ''.join(stderr_chunks)),
         )
 
     stdout_thread.join()
@@ -125,35 +174,11 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
     sys.stdout.flush()
 
     full_stdout = ''.join(stdout_chunks)
-    permission_denials = []
-    error_message = None
-    all_messages: List[Dict[str, Any]] = []
-
-    for line in full_stdout.split('\n'):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            msg = json.loads(line)
-            all_messages.append(msg)
-            if msg.get('type') == 'result':
-                permission_denials = msg.get('permission_denials', [])
-                if msg.get('is_error'):
-                    error_message = msg.get('result', 'Unknown error')
-                elif permission_denials:
-                    error_message = f"Permission denied for {len(permission_denials)} action(s)"
-        except json.JSONDecodeError:
-            continue
-
-    last_messages = all_messages[-5:] if all_messages else []
 
     return ClaudeResult(
         returncode=process.returncode,
-        stdout=full_stdout,
-        stderr=''.join(stderr_chunks),
-        permission_denials=permission_denials,
-        error_message=error_message,
-        last_messages=last_messages,
+        output=CapturedOutput(full_stdout, ''.join(stderr_chunks)),
+        diagnostics=_parse_stream_json_output(full_stdout),
     )
 
 
@@ -200,15 +225,15 @@ def print_task_failure_diagnostics(
     print(f"  HEAD before: {head_before}", file=sys.stderr)
     print(f"  HEAD after: {head_after}", file=sys.stderr)
 
-    if claude_result.permission_denials:
-        _format_permission_denials(claude_result.permission_denials)
+    if claude_result.diagnostics.permission_denials:
+        _format_permission_denials(claude_result.diagnostics.permission_denials)
 
-    if claude_result.error_message:
-        print(f"\nClaude error: {claude_result.error_message}", file=sys.stderr)
+    if claude_result.diagnostics.error_message:
+        print(f"\nClaude error: {claude_result.diagnostics.error_message}", file=sys.stderr)
 
-    if claude_result.last_messages:
-        print(f"\nLast {len(claude_result.last_messages)} messages from Claude:", file=sys.stderr)
-        for msg in claude_result.last_messages:
+    if claude_result.diagnostics.last_messages:
+        print(f"\nLast {len(claude_result.diagnostics.last_messages)} messages from Claude:", file=sys.stderr)
+        for msg in claude_result.diagnostics.last_messages:
             _format_message(msg)
 
 

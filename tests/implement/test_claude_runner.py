@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from fake_claude_runner import FakeClaudeRunner
-from i2code.implement.claude_runner import ClaudeResult, run_claude_with_output_capture
+from i2code.implement.claude_runner import CapturedOutput, ClaudeResult, run_claude_with_output_capture
 
 
 @pytest.mark.unit
@@ -31,17 +31,17 @@ class TestFakeClaudeRunner:
     def test_returns_configured_result(self):
 
         fake = FakeClaudeRunner()
-        fake.set_result(ClaudeResult(returncode=1, stdout="error", stderr="fail"))
+        fake.set_result(ClaudeResult(returncode=1, output=CapturedOutput("error", "fail")))
         result = fake.run_interactive(["claude", "x"], cwd="/repo")
         assert result.returncode == 1
-        assert result.stdout == "error"
+        assert result.output.stdout == "error"
 
     def test_returns_sequence_of_results(self):
 
         fake = FakeClaudeRunner()
         fake.set_results([
-            ClaudeResult(returncode=0, stdout="ok1", stderr=""),
-            ClaudeResult(returncode=1, stdout="fail", stderr="err"),
+            ClaudeResult(returncode=0, output=CapturedOutput("ok1")),
+            ClaudeResult(returncode=1, output=CapturedOutput("fail", "err")),
         ])
         r1 = fake.run_interactive(["claude", "t1"], cwd="/r")
         r2 = fake.run_with_capture(["claude", "t2"], cwd="/r")
@@ -51,7 +51,7 @@ class TestFakeClaudeRunner:
     def test_falls_back_to_default_after_sequence_exhausted(self):
 
         fake = FakeClaudeRunner()
-        fake.set_results([ClaudeResult(returncode=42, stdout="", stderr="")])
+        fake.set_results([ClaudeResult(returncode=42)])
         r1 = fake.run_interactive(["claude", "t1"], cwd="/r")
         r2 = fake.run_interactive(["claude", "t2"], cwd="/r")
         assert r1.returncode == 42
@@ -64,9 +64,9 @@ class TestClaudeResultInModule:
 
     def test_claude_result_importable_from_claude_runner(self):
 
-        result = ClaudeResult(returncode=0, stdout="hi", stderr="")
+        result = ClaudeResult(returncode=0, output=CapturedOutput(stdout="hi"))
         assert result.returncode == 0
-        assert result.stdout == "hi"
+        assert result.output.stdout == "hi"
 
 
 @pytest.mark.unit
@@ -93,8 +93,8 @@ class TestRunClaudeWithOutputCapture:
 
         result = run_claude_with_output_capture(["claude", "test"], cwd="/tmp")
 
-        assert "line1" in result.stdout
-        assert "line2" in result.stdout
+        assert "line1" in result.output.stdout
+        assert "line2" in result.output.stdout
         assert result.returncode == 0
 
     def test_run_claude_captures_stderr(self, mocker):
@@ -116,7 +116,7 @@ class TestRunClaudeWithOutputCapture:
 
         result = run_claude_with_output_capture(["claude", "test"], cwd="/tmp")
 
-        assert "error1" in result.stderr
+        assert "error1" in result.output.stderr
         assert result.returncode == 1
 
 
@@ -181,8 +181,8 @@ class TestRunClaudeWithOutputCaptureSignalHandling:
         result = run_claude_with_output_capture(["claude", "-p", "task"], cwd="/tmp")
 
         assert result.returncode == 130
-        assert result.stdout == ""
-        assert result.stderr == ""
+        assert result.output.stdout == ""
+        assert result.output.stderr == ""
 
 
 @pytest.mark.unit

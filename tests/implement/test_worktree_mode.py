@@ -5,7 +5,7 @@ import tempfile
 
 import pytest
 
-from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
 from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.idea_project import IdeaProject
@@ -248,7 +248,7 @@ class TestWorktreeModeFailures:
 
             fake_runner = FakeClaudeRunner()
             fake_runner.set_result(ClaudeResult(
-                returncode=1, stdout="", stderr="error",
+                returncode=1, output=CapturedOutput(stderr="error"),
             ))
 
             mode, _, _, _, _ = _make_worktree_mode(
@@ -365,8 +365,7 @@ class TestWorktreeModeNonInteractive:
             fake_runner = FakeClaudeRunner()
             fake_runner.set_result(ClaudeResult(
                 returncode=0,
-                stdout="<SUCCESS>task implemented: bbb</SUCCESS>",
-                stderr="",
+                output=CapturedOutput("<SUCCESS>task implemented: bbb</SUCCESS>"),
             ))
             fake_runner.set_side_effect(
                 combined(
@@ -399,8 +398,7 @@ class TestWorktreeModeNonInteractive:
             fake_runner = FakeClaudeRunner()
             fake_runner.set_result(ClaudeResult(
                 returncode=0,
-                stdout="some output without success tag",
-                stderr="",
+                output=CapturedOutput("some output without success tag"),
             ))
             fake_runner.set_side_effect(
                 combined(

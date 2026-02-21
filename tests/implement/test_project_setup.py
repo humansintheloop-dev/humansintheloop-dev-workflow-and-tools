@@ -5,7 +5,7 @@ import tempfile
 
 import pytest
 
-from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.claude_runner import CapturedOutput, ClaudeResult, DiagnosticInfo
 
 
 @pytest.mark.unit
@@ -97,7 +97,7 @@ class TestRunScaffoldingFailure:
         from tests.implement.fake_claude_runner import FakeClaudeRunner
 
         fake = FakeClaudeRunner()
-        fake.set_result(ClaudeResult(returncode=1, stdout="", stderr="", error_message="Something broke"))
+        fake.set_result(ClaudeResult(returncode=1, diagnostics=DiagnosticInfo(error_message="Something broke")))
         initializer = self._make_initializer(fake)
 
         with pytest.raises(SystemExit) as exc_info:
@@ -109,7 +109,7 @@ class TestRunScaffoldingFailure:
         from tests.implement.fake_claude_runner import FakeClaudeRunner
 
         fake = FakeClaudeRunner()
-        fake.set_result(ClaudeResult(returncode=0, stdout="no tag here", stderr=""))
+        fake.set_result(ClaudeResult(returncode=0, output=CapturedOutput("no tag here")))
         initializer = self._make_initializer(fake)
 
         with pytest.raises(SystemExit) as exc_info:
@@ -122,8 +122,11 @@ class TestRunScaffoldingFailure:
 
         fake = FakeClaudeRunner()
         fake.set_result(ClaudeResult(
-            returncode=0, stdout="<FAILURE>no perms</FAILURE>", stderr="",
-            permission_denials=[{"tool_name": "Bash", "tool_input": {"command": "git commit"}}],
+            returncode=0,
+            output=CapturedOutput("<FAILURE>no perms</FAILURE>"),
+            diagnostics=DiagnosticInfo(
+                permission_denials=[{"tool_name": "Bash", "tool_input": {"command": "git commit"}}],
+            ),
         ))
         initializer = self._make_initializer(fake)
 
@@ -138,11 +141,11 @@ class TestRunScaffoldingFailure:
 
         fake = FakeClaudeRunner()
         fake.set_result(ClaudeResult(
-            returncode=1, stdout="", stderr="",
-            last_messages=[
+            returncode=1,
+            diagnostics=DiagnosticInfo(last_messages=[
                 {"type": "assistant", "message": {"content": [{"type": "text", "text": "I cannot write files"}]}},
                 {"type": "result", "result": "No permissions to complete task"},
-            ],
+            ]),
         ))
         initializer = self._make_initializer(fake)
 
@@ -158,7 +161,7 @@ class TestRunScaffoldingFailure:
 
         fake = FakeClaudeRunner()
         fake.set_result(ClaudeResult(
-            returncode=0, stdout="...<SUCCESS>Scaffold created</SUCCESS>...", stderr=""
+            returncode=0, output=CapturedOutput("...<SUCCESS>Scaffold created</SUCCESS>...")
         ))
         initializer = self._make_initializer(fake)
 
@@ -201,7 +204,7 @@ class TestRunScaffolding:
 
         fake = FakeClaudeRunner()
         fake.set_result(ClaudeResult(
-            returncode=0, stdout="<SUCCESS>Scaffold created</SUCCESS>", stderr=""
+            returncode=0, output=CapturedOutput("<SUCCESS>Scaffold created</SUCCESS>")
         ))
         initializer = ProjectInitializer(claude_runner=fake, command_builder=CommandBuilder())
 

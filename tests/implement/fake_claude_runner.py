@@ -12,7 +12,7 @@ class FakeClaudeRunner:
 
     Usage:
         fake = FakeClaudeRunner()
-        fake.set_result(ClaudeResult(returncode=0, stdout="", stderr=""))
+        fake.set_result(ClaudeResult(returncode=0))
         result = fake.run_interactive(["claude", "do task"], cwd="/repo")
         assert result.returncode == 0
         assert fake.calls == [("run_interactive", ["claude", "do task"], "/repo")]
@@ -20,7 +20,7 @@ class FakeClaudeRunner:
 
     def __init__(self):
         self._results = []
-        self._default_result = ClaudeResult(returncode=0, stdout="", stderr="")
+        self._default_result = ClaudeResult(returncode=0)
         self._side_effects = []
         self.calls = []
 

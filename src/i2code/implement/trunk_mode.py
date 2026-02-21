@@ -57,7 +57,7 @@ class TrunkMode:
                 sys.exit(1)
 
             if non_interactive:
-                if "<SUCCESS>" not in claude_result.stdout:
+                if "<SUCCESS>" not in claude_result.output.stdout:
                     print_task_failure_diagnostics(claude_result, head_before, head_after)
                     sys.exit(1)
 

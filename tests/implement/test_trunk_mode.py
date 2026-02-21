@@ -5,7 +5,7 @@ import tempfile
 
 import pytest
 
-from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.trunk_mode import TrunkMode
 
@@ -89,7 +89,7 @@ class TestTrunkModeExecute:
             fake_repo = FakeGitRepository()
             fake_runner = FakeClaudeRunner()
             fake_runner.set_result(ClaudeResult(
-                returncode=1, stdout="", stderr="error",
+                returncode=1, output=CapturedOutput(stderr="error"),
             ))
 
             mode = TrunkMode(
@@ -190,8 +190,7 @@ class TestTrunkModeExecute:
             )
             fake_runner.set_result(ClaudeResult(
                 returncode=0,
-                stdout="<SUCCESS>task implemented: bbb</SUCCESS>",
-                stderr="",
+                output=CapturedOutput("<SUCCESS>task implemented: bbb</SUCCESS>"),
             ))
 
             mode = TrunkMode(

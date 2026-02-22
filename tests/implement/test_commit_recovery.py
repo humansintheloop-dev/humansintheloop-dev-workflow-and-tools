@@ -46,6 +46,18 @@ PLAN_WITH_PARTIAL_STEPS = """\
     - [ ] Step two
 """
 
+PLAN_WITH_ALL_STEPS_COMPLETE = """\
+# Implementation Plan: Test Feature
+
+## Steel Thread 1: Basic Feature
+
+- [ ] **Task 1.1: Implement feature**
+  - TaskType: OUTCOME
+  - Steps:
+    - [x] Step one
+    - [x] Step two
+"""
+
 
 @pytest.fixture
 def make_recovery(tmp_path):
@@ -91,6 +103,24 @@ class TestCommitRecoveryNeedsRecovery:
     def test_partial_steps_only_returns_false(self, make_recovery):
         recovery, _, _ = make_recovery(
             plan_content=PLAN_WITH_PARTIAL_STEPS,
+            diff_output="some diff output",
+            head_content=PLAN_WITH_INCOMPLETE_TASK,
+        )
+        assert recovery.needs_recovery() is False
+
+    def test_all_steps_complete_but_task_header_incomplete_returns_false(self, make_recovery):
+        """When all step checkboxes changed to [x] but task header remains [ ], no recovery."""
+        recovery, _, _ = make_recovery(
+            plan_content=PLAN_WITH_ALL_STEPS_COMPLETE,
+            diff_output="some diff output",
+            head_content=PLAN_WITH_INCOMPLETE_TASK,
+        )
+        assert recovery.needs_recovery() is False
+
+    def test_no_changes_returns_false(self, make_recovery):
+        """When plan file has a diff but content is identical in both versions, no recovery."""
+        recovery, _, _ = make_recovery(
+            plan_content=PLAN_WITH_INCOMPLETE_TASK,
             diff_output="some diff output",
             head_content=PLAN_WITH_INCOMPLETE_TASK,
         )

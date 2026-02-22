@@ -4,8 +4,7 @@ import os
 
 import click
 
-from i2code.tracking.manage import migrate_tracking, link_tracking
-from i2code.tracking.model import TrackedWorkingDirectory
+from i2code.tracking.manage import setup_tracking
 
 
 @click.group("tracking")
@@ -21,19 +20,12 @@ def tracking():
 def setup_cmd(link_dir, dry_run):
     """Set up HITL tracking: migrate from .claude/ and optionally link to shared directory."""
     project_dir = os.getcwd()
-    twd = TrackedWorkingDirectory.scan(project_dir)
 
     if dry_run:
         click.echo("Dry run (no changes will be made)\n")
 
-    click.echo("Migrating .claude/{issues,sessions} -> .hitl/...")
-    migrate_tracking(twd, dry_run=dry_run)
-    click.echo()
-
-    if link_dir:
-        link_dir = os.path.abspath(link_dir)
-        click.echo(f"Linking .hitl/{{issues,sessions}} -> {link_dir}/...")
-        link_tracking(project_dir, link_dir, dry_run=dry_run)
-        click.echo()
+    click.echo("Setting up HITL tracking...")
+    target_link = os.path.abspath(link_dir) if link_dir else None
+    setup_tracking(project_dir, target_link=target_link, dry_run=dry_run)
 
     click.echo("Done.")

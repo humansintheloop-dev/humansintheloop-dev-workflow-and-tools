@@ -98,7 +98,7 @@ The CLI is organized into the following command groups (see link:./docs/i2code-c
 | link:./docs/i2code-cli/implement.adoc[`i2code scaffold <dir>`]
 | Generate project scaffolding for an idea directory
 
-| link:./docs/i2code-cli/manage-tracking.adoc[`i2code manage-tracking`]
+| link:./docs/i2code-cli/tracking.adoc[`i2code tracking setup`]
 | Manage HITL tracking directories for session and issue recording
 |===
 
@@ -145,7 +145,7 @@ To support continuous improvement, the `idea-to-code` Claude Code plugin provide
 
 In addition, there are the following `i2code` subcommands:
 
-* `i2code manage-tracking` - migrates and links HITL tracking directories (see link:./docs/i2code-cli/manage-tracking.adoc[manage-tracking])
+* `i2code tracking setup` - migrates and links HITL tracking directories (see link:./docs/i2code-cli/tracking.adoc[tracking])
 * `i2code improve analyze-sessions <tracking-dir>` - analyzes project tracking sessions
 * `i2code improve summary-reports <hitl-dir>` - generates summary reports from sessions
 * `i2code improve review-issues <hitl-dir>` - analyzes filed issues and updates the Claude Code plugin

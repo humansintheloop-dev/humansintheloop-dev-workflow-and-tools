@@ -84,18 +84,18 @@ This thread introduces the TrackedWorkingDirectory domain model and restructures
     - [x] Add LegacyTracking and HitlTracking classes to model.py: each contains sessions and issues TrackingDir instances, constructed from a base path (.claude or .hitl) — TDD
     - [x] Add TrackedDirectory class to model.py: has optional LegacyTracking and optional HitlTracking, status derived from which sub-elements exist — TDD
     - [x] Add TrackedWorkingDirectory class to model.py: contains root TrackedDirectory, scans filesystem to discover child TrackedDirectory instances in subdirectories — TDD
-- [ ] **Task 1.2: `i2code tracking setup` performs root migration by default and `manage-tracking` is removed**
+- [x] **Task 1.2: `i2code tracking setup` performs root migration by default and `manage-tracking` is removed**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code tracking setup`
   - Observable: `i2code tracking setup` creates .hitl/{sessions,issues} and updates .gitignore; migrates .claude/{sessions,issues} to .hitl/{sessions,issues} if present; `i2code tracking setup --dry-run` previews changes; `manage-tracking` is NOT listed in `i2code --help`; `tracking` group with `setup` subcommand IS listed
   - Evidence: `./test-scripts/test-end-to-end.sh passes — existing unit tests for migrate/link behavior updated to use new model, smoke tests verify CLI discoverability of `tracking setup` and absence of `manage-tracking``
   - Steps:
-    - [ ] Rewrite `src/i2code/tracking/cli.py`: create `tracking` Click group with `setup` subcommand; setup builds TrackedWorkingDirectory from cwd, then acts on it to transition root to target state; always migrates (no --migrate flag); preserve --link DIR and --dry-run flags
-    - [ ] Update `src/i2code/cli.py`: import and register the `tracking` group instead of `manage_tracking_cmd`
-    - [ ] Refactor `src/i2code/tracking/manage.py`: replace TrackingManager procedural logic with functions that operate on TrackedWorkingDirectory domain model
-    - [ ] Add smoke tests to `test-scripts/test-subcommands-smoke.sh`: verify `tracking` is listed in `i2code --help`, `setup` is listed in `i2code tracking --help`, `tracking setup --help` exits 0, and `manage-tracking` is NOT listed in `i2code --help`
-    - [ ] Rename `docs/i2code-cli/manage-tracking.adoc` to `docs/i2code-cli/tracking.adoc` using `git mv`; update content to reflect new command and domain model
-    - [ ] Update `docs/i2code-cli/i2code-cli.adoc` and `README.adoc`: change `manage-tracking` references to `tracking setup`
+    - [x] Rewrite `src/i2code/tracking/cli.py`: create `tracking` Click group with `setup` subcommand; setup builds TrackedWorkingDirectory from cwd, then acts on it to transition root to target state; always migrates (no --migrate flag); preserve --link DIR and --dry-run flags
+    - [x] Update `src/i2code/cli.py`: import and register the `tracking` group instead of `manage_tracking_cmd`
+    - [x] Refactor `src/i2code/tracking/manage.py`: replace TrackingManager procedural logic with functions that operate on TrackedWorkingDirectory domain model
+    - [x] Add smoke tests to `test-scripts/test-subcommands-smoke.sh`: verify `tracking` is listed in `i2code --help`, `setup` is listed in `i2code tracking --help`, `tracking setup --help` exits 0, and `manage-tracking` is NOT listed in `i2code --help`
+    - [x] Rename `docs/i2code-cli/manage-tracking.adoc` to `docs/i2code-cli/tracking.adoc` using `git mv`; update content to reflect new command and domain model
+    - [x] Update `docs/i2code-cli/i2code-cli.adoc` and `README.adoc`: change `manage-tracking` references to `tracking setup`
 ## Steel Thread 2: Subdirectory children consolidated into top-level
 When `i2code tracking setup` runs and subdirectories contain real `.claude/` or `.hitl/` tracking directories, the TrackedWorkingDirectory model discovers them as child TrackedDirectory instances. Each child is transitioned to the target state: contents merged into the root `.hitl/{sessions,issues}` and replaced with relative symlinks. LegacyLinked children (existing symlinks) have their symlinks replaced to point to the parent `.hitl/`.
 

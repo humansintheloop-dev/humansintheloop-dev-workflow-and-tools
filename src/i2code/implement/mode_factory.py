@@ -1,5 +1,6 @@
 """ModeFactory creates execution mode instances with their dependencies."""
 
+from i2code.implement.commit_recovery import CommitRecovery
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.isolate_mode import IsolateMode, SubprocessRunner
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
@@ -17,10 +18,16 @@ class ModeFactory:
         self._project_initializer = project_initializer
 
     def make_trunk_mode(self, git_repo, project):
+        commit_recovery = CommitRecovery(
+            git_repo=git_repo,
+            project=project,
+            claude_runner=self._claude_runner,
+        )
         return TrunkMode(
             git_repo=git_repo,
             project=project,
             claude_runner=self._claude_runner,
+            commit_recovery=commit_recovery,
         )
 
     def make_isolate_mode(self, git_repo, project):

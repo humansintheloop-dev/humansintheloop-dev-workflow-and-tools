@@ -75,20 +75,20 @@ All steps should be implemented using TDD.
     - [x] Add `show_file_at_head(file_path)` to `GitRepository` that runs `git show HEAD:<relative_path>` and returns the file content. Add the same to `FakeGitRepository` with a `set_file_at_head()` setter.
     - [x] Write unit tests in `tests/implement/test_commit_recovery.py` for: (a) no diff → returns `False`, (b) diff shows fully completed task → returns `True`, (c) diff shows only step changes (partial) → returns `False`.
 
-- [ ] **Task 1.2: Invoke Claude to commit recovered changes in TrunkMode**
+- [x] **Task 1.2: Invoke Claude to commit recovered changes in TrunkMode**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_trunk_mode.py tests/implement/test_commit_recovery.py -v -m unit`
   - Observable: When `TrunkMode.execute()` is called and `CommitRecovery.needs_recovery()` returns `True`, Claude is invoked with a recovery prompt before the main task loop. After successful recovery (HEAD advances), the main loop continues with the next incomplete task.
   - Evidence: Unit tests configure `FakeGitRepository` and `FakeClaudeRunner` to simulate recovery scenario. Assert: (1) Claude is called with recovery prompt first, (2) HEAD advances during recovery, (3) main loop starts after recovery and processes the next task.
   - Steps:
-    - [ ] Create the `commit_recovery.j2` Jinja2 template in `src/i2code/implement/templates/`. The template instructs Claude to: stage all uncommitted changes, generate an appropriate commit message for the recovered task, and commit. Include the plan file path and a summary of the uncommitted changes.
-    - [ ] Add `build_recovery_command(plan_file, diff_summary, interactive)` to `CommandBuilder` that renders `commit_recovery.j2` and applies `_with_mode()`.
-    - [ ] Add a `recover()` method to `CommitRecovery` that: (1) prints "Detected uncommitted changes from a previous run, attempting to commit...", (2) builds the recovery command via `CommandBuilder`, (3) invokes Claude using `claude_runner.run_interactive()` or `run_with_capture()`, (4) checks `check_claude_success()`, (5) returns `True` on success, `False` on failure.
-    - [ ] Add a `check_and_recover()` method to `CommitRecovery` that calls `needs_recovery()` and, if `True`, calls `recover()`.
-    - [ ] Modify `TrunkMode.__init__()` to accept an optional `commit_recovery` parameter (defaulting to `None`). At the top of `execute()`, before the `while True` loop, call `commit_recovery.check_and_recover()` if provided.
-    - [ ] Update `ModeFactory.make_trunk_mode()` to create a `CommitRecovery` instance and pass it to `TrunkMode`.
-    - [ ] Write unit tests for `CommitRecovery.recover()`: (a) Claude succeeds (HEAD advances, exit 0) → returns `True`, prints success message, (b) Claude fails → returns `False`.
-    - [ ] Write unit tests for `TrunkMode` with recovery: (a) recovery needed and succeeds → main loop continues with next task, (b) no recovery needed → main loop starts normally (existing tests should still pass).
+    - [x] Create the `commit_recovery.j2` Jinja2 template in `src/i2code/implement/templates/`. The template instructs Claude to: stage all uncommitted changes, generate an appropriate commit message for the recovered task, and commit. Include the plan file path and a summary of the uncommitted changes.
+    - [x] Add `build_recovery_command(plan_file, diff_summary, interactive)` to `CommandBuilder` that renders `commit_recovery.j2` and applies `_with_mode()`.
+    - [x] Add a `recover()` method to `CommitRecovery` that: (1) prints "Detected uncommitted changes from a previous run, attempting to commit...", (2) builds the recovery command via `CommandBuilder`, (3) invokes Claude using `claude_runner.run_interactive()` or `run_with_capture()`, (4) checks `check_claude_success()`, (5) returns `True` on success, `False` on failure.
+    - [x] Add a `check_and_recover()` method to `CommitRecovery` that calls `needs_recovery()` and, if `True`, calls `recover()`.
+    - [x] Modify `TrunkMode.__init__()` to accept an optional `commit_recovery` parameter (defaulting to `None`). At the top of `execute()`, before the `while True` loop, call `commit_recovery.check_and_recover()` if provided.
+    - [x] Update `ModeFactory.make_trunk_mode()` to create a `CommitRecovery` instance and pass it to `TrunkMode`.
+    - [x] Write unit tests for `CommitRecovery.recover()`: (a) Claude succeeds (HEAD advances, exit 0) → returns `True`, prints success message, (b) Claude fails → returns `False`.
+    - [x] Write unit tests for `TrunkMode` with recovery: (a) recovery needed and succeeds → main loop continues with next task, (b) no recovery needed → main loop starts normally (existing tests should still pass).
 
 - [ ] **Task 1.3: Retry on recovery failure, then exit with error**
   - TaskType: OUTCOME

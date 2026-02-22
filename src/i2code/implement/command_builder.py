@@ -42,6 +42,32 @@ class CommandBuilder:
                 "--verbose", "--output-format=stream-json", "-p", prompt
             ]
 
+    def build_recovery_command(
+        self,
+        plan_file: str,
+        diff_summary: str,
+        interactive: bool = True,
+    ) -> List[str]:
+        """Build command to invoke Claude for committing recovered changes.
+
+        Args:
+            plan_file: Path to the plan file.
+            diff_summary: Summary of uncommitted changes (git diff output).
+            interactive: If True, run Claude interactively.
+
+        Returns:
+            Command list suitable for subprocess.
+        """
+        prompt = render_template(
+            "commit_recovery.j2",
+            package="i2code.implement",
+            plan_file=plan_file,
+            diff_summary=diff_summary,
+            interactive=interactive,
+        )
+
+        return self._with_mode(prompt, interactive)
+
     def build_task_command(
         self,
         idea_directory: str,

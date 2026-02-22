@@ -110,6 +110,10 @@ Replace a thread's entire content (title, introduction, tasks) in place, then au
 
     i2code plan replace-thread <plan_file> --thread <N> --title <title> --introduction <text> --tasks <json> --rationale <text>
 
+    i2code plan replace-thread <plan_file> --thread <N> --title <title> --introduction <text> --tasks-file <path> --rationale <text>
+
+Use `--tasks-file` instead of `--tasks` when the JSON is large or contains characters that are difficult to escape in the shell. Write the JSON file to the idea directory (alongside the plan file) and delete it after use. `--tasks` and `--tasks-file` are mutually exclusive; exactly one is required.
+
 Errors if the thread does not exist.
 
 ## insert-task-before

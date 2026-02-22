@@ -113,15 +113,15 @@ When `i2code tracking setup` runs and subdirectories contain real `.claude/` or 
 ## Steel Thread 3: `--link` rejects conflicting symlinks
 When `--link DIR` is specified and the root HitlTracking sessions/issues TrackingDir instances are already symlinks pointing to a DIFFERENT directory than `DIR`, the command raises an error and makes no changes. This uses the TrackingDir.symlink_target property to detect conflicts before any mutations.
 
-- [ ] **Task 3.1: `--link DIR` raises error when root HitlTracking symlinks point to a different directory**
+- [x] **Task 3.1: `--link DIR` raises error when root HitlTracking symlinks point to a different directory**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code tracking setup --link /new/path (when .hitl/{sessions,issues} are symlinked to /old/path)`
   - Observable: Error message indicating the existing symlinks point to a different directory; exit code is non-zero; no changes are made to the filesystem
   - Evidence: `./test-scripts/test-end-to-end.sh passes — updated unit test verifies error is raised for conflicting symlinks; new test verifies no filesystem modifications occur on conflict`
   - Steps:
-    - [ ] Add link conflict detection: when root HitlTracking sessions/issues TrackingDir instances are symlinks pointing to a different target than the requested --link DIR, raise click.ClickException — TDD
-    - [ ] Update existing `test_replaces_incorrect_symlink` to assert error is raised instead of silent replacement
-    - [ ] Add `test_link_conflict_makes_no_changes` to verify no filesystem modifications occur when conflict detected
+    - [x] Add link conflict detection: when root HitlTracking sessions/issues TrackingDir instances are symlinks pointing to a different target than the requested --link DIR, raise click.ClickException — TDD
+    - [x] Update existing `test_replaces_incorrect_symlink` to assert error is raised instead of silent replacement
+    - [x] Add `test_link_conflict_makes_no_changes` to verify no filesystem modifications occur when conflict detected
 ## Change History
 
 | Date | Change | Rationale |
@@ -168,3 +168,15 @@ Added 8 new tests covering HitlTracking consolidation, LegacyLinked relinking, a
 
 ### 2026-02-22 12:09 - mark-task-complete
 Implemented child consolidation for HitlTracking real dirs and LegacyLinked symlinks with 8 new unit tests
+
+### 2026-02-22 12:19 - mark-step-complete
+Added _check_for_conflicting_symlinks to _LinkExecutor that raises click.ClickException when symlinks point to different target
+
+### 2026-02-22 12:19 - mark-step-complete
+Renamed test_replaces_incorrect_symlink to test_raises_error_for_conflicting_symlink, now asserts click.ClickException with conflict message
+
+### 2026-02-22 12:19 - mark-step-complete
+Added test_link_conflict_makes_no_changes verifying symlinks unchanged and target directories not created on conflict
+
+### 2026-02-22 12:19 - mark-task-complete
+Link conflict detection raises click.ClickException; tests verify error raised and no filesystem changes made

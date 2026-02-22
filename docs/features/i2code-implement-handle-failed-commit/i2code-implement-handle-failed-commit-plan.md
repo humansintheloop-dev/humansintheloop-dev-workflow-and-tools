@@ -115,14 +115,14 @@ This steel thread implements Scenario 2: when only steps are marked `[x]` but th
 
 All steps should be implemented using TDD.
 
-- [ ] **Task 2.1: Partial task completion skips recovery**
+- [x] **Task 2.1: Partial task completion skips recovery**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_commit_recovery.py -v -m unit`
   - Observable: When the plan file diff shows step checkboxes changed from `[ ]` to `[x]` but the task header remains `[ ]`, `needs_recovery()` returns `False` and no recovery commit is attempted
   - Evidence: Unit tests provide a plan file where steps are marked complete but the task header is still `[ ]`. Assert `needs_recovery()` returns `False`. A separate integration-style test verifies that `TrunkMode.execute()` proceeds directly to the main loop without a recovery call.
   - Steps:
-    - [ ] Verify and strengthen the existing `needs_recovery()` logic: the comparison must check task *headers* only (not steps). If only steps changed from `[ ]` to `[x]` but the task header remains `[ ]`, return `False`.
-    - [ ] Write unit tests for: (a) task header `[ ]` in both HEAD and working tree, but steps changed → returns `False`, (b) task header changed from `[ ]` to `[x]` → returns `True` (regression test for Task 1.1), (c) no changes at all → returns `False`.
+    - [x] Verify and strengthen the existing `needs_recovery()` logic: the comparison must check task *headers* only (not steps). If only steps changed from `[x]` to `[x]` but the task header remains `[ ]`, return `False`.
+    - [x] Write unit tests for: (a) task header `[x]` in both HEAD and working tree, but steps changed → returns `False`, (b) task header changed from `[ ]` to `[x]` → returns `True` (regression test for Task 1.1), (c) no changes at all → returns `False`.
 
 ---
 
@@ -143,3 +143,12 @@ Added TestWorktreeModeWithRecovery: (a) recovery needed and succeeds, (b) no rec
 
 ### 2026-02-22 12:23 - mark-task-complete
 WorktreeMode recovery integration complete with unit tests
+
+### 2026-02-22 12:28 - mark-step-complete
+Verified _has_newly_completed_task checks Task.is_completed which only inspects task header checkbox, not steps
+
+### 2026-02-22 12:28 - mark-step-complete
+Added test_all_steps_complete_but_task_header_incomplete_returns_false and test_no_changes_returns_false
+
+### 2026-02-22 12:28 - mark-task-complete
+All unit tests pass: needs_recovery returns False for step-only changes, True for task header changes, False for no changes

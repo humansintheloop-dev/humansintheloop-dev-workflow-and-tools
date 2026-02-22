@@ -74,16 +74,16 @@ All steps should be implemented using TDD.
 ## Steel Thread 1: Domain model + `i2code tracking setup` replaces `manage-tracking` with default migration
 This thread introduces the TrackedWorkingDirectory domain model and restructures the CLI from `i2code manage-tracking --migrate [--link DIR]` to `i2code tracking setup [--link DIR]`. The model follows a scan-then-act pattern: scan the filesystem to build a tree of TrackedDirectory instances (each with optional LegacyTracking and HitlTracking sub-elements containing TrackingDir instances for sessions and issues), then act on the tree to transition every node to the target state (HitlTracking only). Migration always runs (no `--migrate` flag). The old `manage-tracking` command is removed entirely.
 
-- [ ] **Task 1.1: Domain model classes: TrackingDir, LegacyTracking, HitlTracking, TrackedDirectory, TrackedWorkingDirectory**
+- [x] **Task 1.1: Domain model classes: TrackingDir, LegacyTracking, HitlTracking, TrackedDirectory, TrackedWorkingDirectory**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest pytest tests/tracking/`
   - Observable: Domain model classes exist with full behavior: TrackingDir wraps a path with exists/is_symlink/symlink_target/list_files/migrate_to methods; LegacyTracking and HitlTracking each contain sessions and issues TrackingDir instances; TrackedDirectory has optional LegacyTracking and optional HitlTracking with status derived from which sub-elements exist; TrackedWorkingDirectory contains a root TrackedDirectory and scans filesystem to discover child TrackedDirectory instances
   - Evidence: `./test-scripts/test-end-to-end.sh passes — unit tests verify TrackingDir behavior, LegacyTracking/HitlTracking composition, TrackedDirectory derived status, and TrackedWorkingDirectory filesystem scanning`
   - Steps:
-    - [ ] Create `src/i2code/tracking/model.py` with TrackingDir class: wraps a Path, provides exists, is_symlink, symlink_target, list_files, migrate_to(target) methods — TDD with unit tests
-    - [ ] Add LegacyTracking and HitlTracking classes to model.py: each contains sessions and issues TrackingDir instances, constructed from a base path (.claude or .hitl) — TDD
-    - [ ] Add TrackedDirectory class to model.py: has optional LegacyTracking and optional HitlTracking, status derived from which sub-elements exist — TDD
-    - [ ] Add TrackedWorkingDirectory class to model.py: contains root TrackedDirectory, scans filesystem to discover child TrackedDirectory instances in subdirectories — TDD
+    - [x] Create `src/i2code/tracking/model.py` with TrackingDir class: wraps a Path, provides exists, is_symlink, symlink_target, list_files, migrate_to(target) methods — TDD with unit tests
+    - [x] Add LegacyTracking and HitlTracking classes to model.py: each contains sessions and issues TrackingDir instances, constructed from a base path (.claude or .hitl) — TDD
+    - [x] Add TrackedDirectory class to model.py: has optional LegacyTracking and optional HitlTracking, status derived from which sub-elements exist — TDD
+    - [x] Add TrackedWorkingDirectory class to model.py: contains root TrackedDirectory, scans filesystem to discover child TrackedDirectory instances in subdirectories — TDD
 - [ ] **Task 1.2: `i2code tracking setup` performs root migration by default and `manage-tracking` is removed**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code tracking setup`
@@ -135,3 +135,18 @@ Updated to use TrackedWorkingDirectory domain model for child discovery and cons
 
 ### 2026-02-22 10:01 - replace-thread
 Updated to use TrackingDir domain model for conflict detection
+
+### 2026-02-22 11:44 - mark-step-complete
+TrackingDir class implemented with TDD: 13 tests for exists, is_symlink, symlink_target, list_files, migrate_to, path
+
+### 2026-02-22 11:44 - mark-step-complete
+LegacyTracking and HitlTracking classes implemented with TDD: 6 tests for sessions/issues TrackingDir composition
+
+### 2026-02-22 11:44 - mark-step-complete
+TrackedDirectory class implemented with TDD: 12 tests for from_path detection, status derivation, path attribute
+
+### 2026-02-22 11:44 - mark-step-complete
+TrackedWorkingDirectory class implemented with TDD: 9 tests for scan, child discovery, skip dirs, nested paths
+
+### 2026-02-22 11:44 - mark-task-complete
+All domain model classes implemented with TDD: TrackingDir, LegacyTracking, HitlTracking, TrackedDirectory, TrackedWorkingDirectory — 40 tests pass

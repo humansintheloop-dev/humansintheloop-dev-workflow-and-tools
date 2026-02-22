@@ -90,14 +90,14 @@ All steps should be implemented using TDD.
     - [x] Write unit tests for `CommitRecovery.recover()`: (a) Claude succeeds (HEAD advances, exit 0) → returns `True`, prints success message, (b) Claude fails → returns `False`.
     - [x] Write unit tests for `TrunkMode` with recovery: (a) recovery needed and succeeds → main loop continues with next task, (b) no recovery needed → main loop starts normally (existing tests should still pass).
 
-- [ ] **Task 1.3: Retry on recovery failure, then exit with error**
+- [x] **Task 1.3: Retry on recovery failure, then exit with error**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_commit_recovery.py -v -m unit`
   - Observable: When the first recovery attempt fails (Claude exits non-zero or HEAD unchanged), `CommitRecovery` retries once. If the retry also fails, it prints "Error: Could not commit recovered changes after 2 attempts. Please commit manually and rerun." and calls `sys.exit(1)`.
   - Evidence: Unit tests configure `FakeClaudeRunner` to fail twice, assert: (1) Claude is called twice, (2) error message is printed, (3) `sys.exit(1)` is raised.
   - Steps:
-    - [ ] Modify `CommitRecovery.check_and_recover()` to implement retry logic: attempt recovery up to 2 times. On first failure, print "Recovery attempt 1 failed, retrying..." and try again. On second failure, print the error message and call `sys.exit(1)`. On success at any attempt, print "Recovery commit successful." and return.
-    - [ ] Write unit tests for: (a) first attempt fails, second succeeds → prints retry message, then success, (b) both attempts fail → prints error and exits with code 1, (c) first attempt succeeds → no retry.
+    - [x] Modify `CommitRecovery.check_and_recover()` to implement retry logic: attempt recovery up to 2 times. On first failure, print "Recovery attempt 1 failed, retrying..." and try again. On second failure, print the error message and call `sys.exit(1)`. On success at any attempt, print "Recovery commit successful." and return.
+    - [x] Write unit tests for: (a) first attempt fails, second succeeds → prints retry message, then success, (b) both attempts fail → prints error and exits with code 1, (c) first attempt succeeds → no retry.
 
 - [ ] **Task 1.4: Invoke Claude to commit recovered changes in WorktreeMode**
   - TaskType: OUTCOME

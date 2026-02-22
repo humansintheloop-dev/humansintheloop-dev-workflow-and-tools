@@ -42,31 +42,32 @@ class TrunkMode:
                 print("All tasks completed!")
                 return
 
-            task_description = next_task.print()
-            print(f"Executing task: {task_description}")
+            self._execute_task(next_task, non_interactive, mock_claude, extra_prompt)
 
-            head_before = self._git_repo.head_sha
+    def _execute_task(self, task, non_interactive, mock_claude, extra_prompt):
+        task_description = task.print()
+        print(f"Executing task: {task_description}")
 
-            claude_cmd = self._build_command(
-                task_description, non_interactive, mock_claude, extra_prompt,
-            )
+        head_before = self._git_repo.head_sha
 
-            claude_result = self._run_claude(claude_cmd, non_interactive)
+        claude_cmd = self._build_command(
+            task_description, non_interactive, mock_claude, extra_prompt,
+        )
+        claude_result = self._run_claude(claude_cmd, non_interactive)
 
-            head_after = self._git_repo.head_sha
+        head_after = self._git_repo.head_sha
 
-            if not check_claude_success(claude_result.returncode, head_before, head_after):
-                print_task_failure_diagnostics(claude_result, head_before, head_after)
-                sys.exit(1)
+        if not check_claude_success(claude_result.returncode, head_before, head_after):
+            print_task_failure_diagnostics(claude_result, head_before, head_after)
+            sys.exit(1)
 
-            if non_interactive:
-                if "<SUCCESS>" not in claude_result.output.stdout:
-                    print_task_failure_diagnostics(claude_result, head_before, head_after)
-                    sys.exit(1)
+        if non_interactive and "<SUCCESS>" not in claude_result.output.stdout:
+            print_task_failure_diagnostics(claude_result, head_before, head_after)
+            sys.exit(1)
 
-            if not self._project.is_task_completed(next_task.number.thread, next_task.number.task):
-                print("Error: Task was not marked complete in plan file.", file=sys.stderr)
-                sys.exit(1)
+        if not self._project.is_task_completed(task.number.thread, task.number.task):
+            print("Error: Task was not marked complete in plan file.", file=sys.stderr)
+            sys.exit(1)
 
     def _build_command(self, task_description, non_interactive, mock_claude, extra_prompt):
         if mock_claude:

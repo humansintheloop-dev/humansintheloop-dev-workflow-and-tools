@@ -151,26 +151,19 @@ class TestTaskCommitRecoveryRecover:
         captured = capsys.readouterr()
         assert "Detected uncommitted changes" in captured.out
 
-    def test_recover_without_success_tag_returns_false(self, make_recovery):
-        """When HEAD advances but no <SUCCESS> tag, returns False."""
+    @pytest.mark.parametrize("returncode,advance_head_to", [
+        pytest.param(0, "bbb", id="HEAD advances but no SUCCESS tag"),
+        pytest.param(1, None, id="Claude fails with non-zero exit"),
+    ])
+    def test_recover_returns_false_on_failure(self, make_recovery, returncode, advance_head_to):
+        """commit_uncommitted_changes() returns False when recovery fails."""
         recovery, git_repo, runner = make_recovery(
             plan_content=PLAN_WITH_COMPLETED_TASK,
             diff_output="some diff output",
         )
-        runner.set_result(ClaudeResult(returncode=0))
-        runner.set_side_effect(advance_head(git_repo, "bbb"))
-
-        result = recovery.commit_uncommitted_changes()
-
-        assert result is False
-
-    def test_recover_failure_returns_false(self, make_recovery):
-        """When Claude fails (non-zero exit), returns False."""
-        recovery, _, runner = make_recovery(
-            plan_content=PLAN_WITH_COMPLETED_TASK,
-            diff_output="some diff output",
-        )
-        runner.set_result(ClaudeResult(returncode=1))
+        runner.set_result(ClaudeResult(returncode=returncode))
+        if advance_head_to:
+            runner.set_side_effect(advance_head(git_repo, advance_head_to))
 
         result = recovery.commit_uncommitted_changes()
 

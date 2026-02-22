@@ -5,7 +5,7 @@ from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.isolate_mode import IsolateMode, SubprocessRunner
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.trunk_mode import TrunkMode
-from i2code.implement.worktree_mode import WorktreeMode
+from i2code.implement.worktree_mode import LoopSteps, WorktreeMode
 
 
 class ModeFactory:
@@ -56,14 +56,17 @@ class ModeFactory:
             project=work_project,
             claude_runner=self._claude_runner,
         )
-        return WorktreeMode(
-            opts=self._opts,
-            git_repo=git_repo,
-            state=state,
+        loop_steps = LoopSteps(
             claude_runner=self._claude_runner,
-            work_project=work_project,
+            state=state,
             ci_monitor=ci_monitor,
             build_fixer=build_fixer,
             review_processor=review_processor,
             commit_recovery=commit_recovery,
+        )
+        return WorktreeMode(
+            opts=self._opts,
+            git_repo=git_repo,
+            work_project=work_project,
+            loop_steps=loop_steps,
         )

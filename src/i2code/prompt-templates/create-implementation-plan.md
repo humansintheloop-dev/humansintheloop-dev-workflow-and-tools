@@ -286,6 +286,12 @@ Rules:
 - If you cannot define Entrypoint, Observable, and Evidence for a task,
   that task must not exist.
 
+## Code reference formatting in steps
+
+- File references: use relative path with suffix, wrapped in backticks — e.g., `src/i2code/implement/cli.py`
+- Location references: use relative path:linenumber, wrapped in backticks — e.g., `src/i2code/implement/cli.py:55`
+- Do NOT use bare filenames (e.g., `cli.py`) or separate "(line N)" annotations
+
 ## Evidence requirements (IMPORTANT)
 
 Evidence is not a description of a test; it is a concrete command or test that proves

@@ -6,13 +6,19 @@ import tempfile
 import pytest
 
 from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
-from i2code.implement.commit_recovery import CommitRecovery
+from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.trunk_mode import TrunkMode
 
 from conftest import write_plan_file, mark_task_complete, advance_head, combined
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
+
+
+def _noop_commit_recovery(project, fake_runner):
+    """Create a TaskCommitRecovery that finds nothing to recover."""
+    fake_repo = FakeGitRepository()
+    return TaskCommitRecovery(git_repo=fake_repo, project=project, claude_runner=fake_runner)
 
 
 @pytest.mark.unit
@@ -36,6 +42,7 @@ class TestTrunkModeExecute:
                 git_repo=fake_repo,
                 project=project,
                 claude_runner=fake_runner,
+                commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
             mode.execute()
 
@@ -68,6 +75,7 @@ class TestTrunkModeExecute:
                 git_repo=fake_repo,
                 project=project,
                 claude_runner=fake_runner,
+                commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
             mode.execute()
 
@@ -97,6 +105,7 @@ class TestTrunkModeExecute:
                 git_repo=fake_repo,
                 project=project,
                 claude_runner=fake_runner,
+                commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
 
             with pytest.raises(SystemExit) as exc_info:
@@ -134,6 +143,7 @@ class TestTrunkModeExecute:
                 git_repo=fake_repo,
                 project=project,
                 claude_runner=fake_runner,
+                commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
             mode.execute()
 
@@ -163,6 +173,7 @@ class TestTrunkModeExecute:
                 git_repo=fake_repo,
                 project=project,
                 claude_runner=fake_runner,
+                commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
 
             with pytest.raises(SystemExit) as exc_info:
@@ -198,6 +209,7 @@ class TestTrunkModeExecute:
                 git_repo=fake_repo,
                 project=project,
                 claude_runner=fake_runner,
+                commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
             mode.execute(non_interactive=True, mock_claude="/mock")
 
@@ -230,6 +242,7 @@ class TestTrunkModeExecute:
                 git_repo=fake_repo,
                 project=project,
                 claude_runner=fake_runner,
+                commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
             mode.execute(mock_claude="/path/to/mock-script")
 
@@ -284,18 +297,22 @@ class TestTrunkModeWithRecovery:
             fake_repo = FakeGitRepository()
             fake_runner = FakeClaudeRunner()
 
-            # Set up CommitRecovery to detect recovery is needed
+            # Set up TaskCommitRecovery to detect recovery is needed
             fake_repo.set_diff_output("some diff output")
             fake_repo.set_file_at_head(
                 project.plan_file,
                 PLAN_WITH_INCOMPLETE_TASK,
             )
 
-            commit_recovery = CommitRecovery(
+            commit_recovery = TaskCommitRecovery(
                 git_repo=fake_repo, project=project, claude_runner=fake_runner,
             )
 
-            # Two Claude calls: (1) recovery commit, (2) execute task 1.2
+            # Two Claude calls: (1) recovery commit (non-interactive), (2) execute task 1.2
+            fake_runner.set_results([
+                ClaudeResult(returncode=0, output=CapturedOutput("<SUCCESS>recovery commit: bbb</SUCCESS>")),
+                ClaudeResult(returncode=0),
+            ])
             fake_runner.set_side_effects([
                 advance_head(fake_repo, "bbb"),  # recovery advances HEAD
                 combined(
@@ -312,8 +329,10 @@ class TestTrunkModeWithRecovery:
             )
             mode.execute()
 
-            # Claude called twice: first for recovery, then for task 1.2
+            # Claude called twice: first for recovery (non-interactive), then for task 1.2
             assert len(fake_runner.calls) == 2
+            assert fake_runner.calls[0][0] == "run_with_capture"
+            assert fake_runner.calls[1][0] == "run_interactive"
             captured = capsys.readouterr()
             assert "Detected uncommitted changes" in captured.out
             assert "All tasks completed!" in captured.out
@@ -335,7 +354,7 @@ class TestTrunkModeWithRecovery:
             # No diff = no recovery needed
             fake_repo.set_diff_output("")
 
-            commit_recovery = CommitRecovery(
+            commit_recovery = TaskCommitRecovery(
                 git_repo=fake_repo, project=project, claude_runner=fake_runner,
             )
 

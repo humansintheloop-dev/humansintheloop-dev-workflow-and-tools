@@ -1,4 +1,4 @@
-"""CommitRecovery: detects and recovers from failed commits during task execution."""
+"""TaskCommitRecovery: detects and recovers from failed commits during task execution."""
 
 import sys
 
@@ -7,7 +7,7 @@ from i2code.implement.command_builder import CommandBuilder
 from i2code.plan_domain.parser import parse
 
 
-class CommitRecovery:
+class TaskCommitRecovery:
     """Detects uncommitted plan-file changes showing a fully completed task.
 
     Args:
@@ -21,7 +21,7 @@ class CommitRecovery:
         self._project = project
         self._claude_runner = claude_runner
 
-    def needs_recovery(self):
+    def has_uncommitted_completed_task(self):
         plan_file = self._project.plan_file
         diff = self._git_repo.diff_file_against_head(plan_file)
         if not diff:
@@ -35,11 +35,12 @@ class CommitRecovery:
 
         return self._has_newly_completed_task(head_plan, working_tree_plan)
 
-    def recover(self):
-        """Attempt to commit recovered changes via Claude.
+    def commit_uncommitted_changes(self):
+        """Attempt to commit recovered changes via Claude (non-interactive).
 
         Returns:
-            True if recovery succeeded (HEAD advanced), False otherwise.
+            True if recovery succeeded (HEAD advanced and <SUCCESS> tag present),
+            False otherwise.
         """
         print("Detected uncommitted changes from a previous run, attempting to commit...")
 
@@ -47,29 +48,31 @@ class CommitRecovery:
         cmd = CommandBuilder().build_recovery_command(
             plan_file=self._project.plan_file,
             diff_summary=diff_summary,
-            interactive=True,
+            interactive=False,
         )
 
         head_before = self._git_repo.head_sha
-        claude_result = self._claude_runner.run_interactive(
+        claude_result = self._claude_runner.run_with_capture(
             cmd, cwd=self._git_repo.working_tree_dir,
         )
         head_after = self._git_repo.head_sha
 
-        return check_claude_success(claude_result.returncode, head_before, head_after)
+        if not check_claude_success(claude_result.returncode, head_before, head_after):
+            return False
+        return "<SUCCESS>" in claude_result.output.stdout
 
-    def check_and_recover(self):
+    def commit_if_needed(self):
         """Check if recovery is needed and attempt it with retry.
 
         Attempts recovery up to 2 times. On success, prints a success message
         and returns. On double failure, prints an error message and exits.
         """
-        if not self.needs_recovery():
+        if not self.has_uncommitted_completed_task():
             return False
 
         max_attempts = 2
         for attempt in range(1, max_attempts + 1):
-            if self.recover():
+            if self.commit_uncommitted_changes():
                 print("Recovery commit successful.")
                 return True
             if attempt < max_attempts:

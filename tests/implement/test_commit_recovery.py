@@ -1,9 +1,9 @@
-"""Tests for CommitRecovery detection and recovery logic."""
+"""Tests for TaskCommitRecovery detection and recovery logic."""
 
 import pytest
 
-from i2code.implement.claude_runner import ClaudeResult
-from i2code.implement.commit_recovery import CommitRecovery
+from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.commit_recovery import TaskCommitRecovery
 from conftest import advance_head
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
@@ -61,7 +61,7 @@ PLAN_WITH_ALL_STEPS_COMPLETE = """\
 
 @pytest.fixture
 def make_recovery(tmp_path):
-    """Factory fixture that builds a CommitRecovery with common test scaffolding.
+    """Factory fixture that builds a TaskCommitRecovery with common test scaffolding.
 
     Returns (recovery, git_repo, runner) so tests can configure
     runner side-effects and inspect git_repo state after the call.
@@ -78,7 +78,7 @@ def make_recovery(tmp_path):
             git_repo.set_file_at_head(project.plan_file, head_content)
 
         runner = FakeClaudeRunner()
-        recovery = CommitRecovery(
+        recovery = TaskCommitRecovery(
             git_repo=git_repo, project=project, claude_runner=runner,
         )
         return recovery, git_repo, runner
@@ -86,11 +86,11 @@ def make_recovery(tmp_path):
 
 
 @pytest.mark.unit
-class TestCommitRecoveryNeedsRecovery:
+class TestTaskCommitRecoveryNeedsRecovery:
 
     def test_no_diff_returns_false(self, make_recovery):
         recovery, _, _ = make_recovery(plan_content=PLAN_WITH_INCOMPLETE_TASK)
-        assert recovery.needs_recovery() is False
+        assert recovery.has_uncommitted_completed_task() is False
 
     def test_completed_task_returns_true(self, make_recovery):
         recovery, _, _ = make_recovery(
@@ -98,7 +98,7 @@ class TestCommitRecoveryNeedsRecovery:
             diff_output="some diff output",
             head_content=PLAN_WITH_INCOMPLETE_TASK,
         )
-        assert recovery.needs_recovery() is True
+        assert recovery.has_uncommitted_completed_task() is True
 
     def test_partial_steps_only_returns_false(self, make_recovery):
         recovery, _, _ = make_recovery(
@@ -106,7 +106,7 @@ class TestCommitRecoveryNeedsRecovery:
             diff_output="some diff output",
             head_content=PLAN_WITH_INCOMPLETE_TASK,
         )
-        assert recovery.needs_recovery() is False
+        assert recovery.has_uncommitted_completed_task() is False
 
     def test_all_steps_complete_but_task_header_incomplete_returns_false(self, make_recovery):
         """When all step checkboxes changed to [x] but task header remains [ ], no recovery."""
@@ -115,7 +115,7 @@ class TestCommitRecoveryNeedsRecovery:
             diff_output="some diff output",
             head_content=PLAN_WITH_INCOMPLETE_TASK,
         )
-        assert recovery.needs_recovery() is False
+        assert recovery.has_uncommitted_completed_task() is False
 
     def test_no_changes_returns_false(self, make_recovery):
         """When plan file has a diff but content is identical in both versions, no recovery."""
@@ -124,53 +124,70 @@ class TestCommitRecoveryNeedsRecovery:
             diff_output="some diff output",
             head_content=PLAN_WITH_INCOMPLETE_TASK,
         )
-        assert recovery.needs_recovery() is False
+        assert recovery.has_uncommitted_completed_task() is False
 
 
 @pytest.mark.unit
-class TestCommitRecoveryRecover:
+class TestTaskCommitRecoveryRecover:
 
     def test_recover_success_returns_true(self, make_recovery, capsys):
-        """When Claude succeeds (exit 0, HEAD advances), recover() returns True."""
+        """When Claude succeeds (exit 0, HEAD advances, <SUCCESS> tag), returns True."""
         recovery, git_repo, runner = make_recovery(
             plan_content=PLAN_WITH_COMPLETED_TASK,
             diff_output="some diff output",
         )
+        runner.set_result(ClaudeResult(
+            returncode=0,
+            output=CapturedOutput("<SUCCESS>recovery commit: bbb</SUCCESS>"),
+        ))
         runner.set_side_effect(advance_head(git_repo, "bbb"))
 
-        result = recovery.recover()
+        result = recovery.commit_uncommitted_changes()
 
         assert result is True
         assert len(runner.calls) == 1
         method, cmd, cwd = runner.calls[0]
-        assert method == "run_interactive"
+        assert method == "run_with_capture"
         captured = capsys.readouterr()
         assert "Detected uncommitted changes" in captured.out
 
-    def test_recover_failure_returns_false(self, make_recovery, capsys):
-        """When Claude fails (non-zero exit), recover() returns False."""
+    def test_recover_without_success_tag_returns_false(self, make_recovery):
+        """When HEAD advances but no <SUCCESS> tag, returns False."""
+        recovery, git_repo, runner = make_recovery(
+            plan_content=PLAN_WITH_COMPLETED_TASK,
+            diff_output="some diff output",
+        )
+        runner.set_result(ClaudeResult(returncode=0))
+        runner.set_side_effect(advance_head(git_repo, "bbb"))
+
+        result = recovery.commit_uncommitted_changes()
+
+        assert result is False
+
+    def test_recover_failure_returns_false(self, make_recovery):
+        """When Claude fails (non-zero exit), returns False."""
         recovery, _, runner = make_recovery(
             plan_content=PLAN_WITH_COMPLETED_TASK,
             diff_output="some diff output",
         )
         runner.set_result(ClaudeResult(returncode=1))
 
-        result = recovery.recover()
+        result = recovery.commit_uncommitted_changes()
 
         assert result is False
         assert len(runner.calls) == 1
 
 
 @pytest.mark.unit
-class TestCommitRecoveryCheckAndRecover:
+class TestTaskCommitRecoveryCheckAndRecover:
 
-    def test_check_and_recover_when_no_recovery_needed(self, make_recovery):
-        """When needs_recovery() is False, does not call recover()."""
+    def test_commit_if_needed_when_no_recovery_needed(self, make_recovery):
+        """When has_uncommitted_completed_task() is False, does not call recover()."""
         recovery, _, runner = make_recovery(
             plan_content=PLAN_WITH_INCOMPLETE_TASK,
         )
 
-        result = recovery.check_and_recover()
+        result = recovery.commit_if_needed()
 
         assert result is False
         assert len(runner.calls) == 0
@@ -182,9 +199,13 @@ class TestCommitRecoveryCheckAndRecover:
             diff_output="some diff output",
             head_content=PLAN_WITH_INCOMPLETE_TASK,
         )
+        runner.set_result(ClaudeResult(
+            returncode=0,
+            output=CapturedOutput("<SUCCESS>recovery commit: bbb</SUCCESS>"),
+        ))
         runner.set_side_effect(advance_head(git_repo, "bbb"))
 
-        recovery.check_and_recover()
+        recovery.commit_if_needed()
 
         assert len(runner.calls) == 1
         captured = capsys.readouterr()
@@ -199,14 +220,14 @@ class TestCommitRecoveryCheckAndRecover:
         )
         runner.set_results([
             ClaudeResult(returncode=1),
-            ClaudeResult(returncode=0),
+            ClaudeResult(returncode=0, output=CapturedOutput("<SUCCESS>recovery commit: ccc</SUCCESS>")),
         ])
         runner.set_side_effects([
             lambda: None,  # first call: no HEAD advance (failure)
             advance_head(git_repo, "ccc"),  # second call: HEAD advances (success)
         ])
 
-        recovery.check_and_recover()
+        recovery.commit_if_needed()
 
         assert len(runner.calls) == 2
         captured = capsys.readouterr()
@@ -226,7 +247,7 @@ class TestCommitRecoveryCheckAndRecover:
         ])
 
         with pytest.raises(SystemExit) as exc_info:
-            recovery.check_and_recover()
+            recovery.commit_if_needed()
 
         assert exc_info.value.code == 1
         assert len(runner.calls) == 2

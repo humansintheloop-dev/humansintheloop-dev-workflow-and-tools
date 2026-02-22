@@ -6,7 +6,7 @@ import tempfile
 import pytest
 
 from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
-from i2code.implement.commit_recovery import CommitRecovery
+from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.idea_project import IdeaProject
@@ -68,7 +68,12 @@ def _make_worktree_mode(
         claude_runner=fake_runner,
     )
 
-    mode_kwargs = dict(
+    if commit_recovery is None:
+        noop_repo = FakeGitRepository()
+        commit_recovery = TaskCommitRecovery(
+            git_repo=noop_repo, project=project, claude_runner=fake_runner,
+        )
+    mode = WorktreeMode(
         opts=opts,
         git_repo=fake_repo,
         state=fake_state,
@@ -77,10 +82,8 @@ def _make_worktree_mode(
         ci_monitor=ci_monitor,
         build_fixer=build_fixer,
         review_processor=review_processor,
+        commit_recovery=commit_recovery,
     )
-    if commit_recovery is not None:
-        mode_kwargs["commit_recovery"] = commit_recovery
-    mode = WorktreeMode(**mode_kwargs)
     return mode, fake_repo, fake_runner, fake_gh, fake_state
 
 
@@ -459,18 +462,22 @@ class TestWorktreeModeWithRecovery:
 
             project = IdeaProject(idea_dir)
 
-            # Set up CommitRecovery to detect recovery is needed
+            # Set up TaskCommitRecovery to detect recovery is needed
             fake_repo.set_diff_output("some diff output")
             fake_repo.set_file_at_head(
                 project.plan_file,
                 PLAN_WITH_INCOMPLETE_TASK,
             )
 
-            commit_recovery = CommitRecovery(
+            commit_recovery = TaskCommitRecovery(
                 git_repo=fake_repo, project=project, claude_runner=fake_runner,
             )
 
-            # Two Claude calls: (1) recovery commit, (2) execute task 1.2
+            # Two Claude calls: (1) recovery commit (non-interactive), (2) execute task 1.2
+            fake_runner.set_results([
+                ClaudeResult(returncode=0, output=CapturedOutput("<SUCCESS>recovery commit: bbb</SUCCESS>")),
+                ClaudeResult(returncode=0),
+            ])
             fake_runner.set_side_effects([
                 advance_head(fake_repo, "bbb"),  # recovery advances HEAD
                 combined(
@@ -487,9 +494,9 @@ class TestWorktreeModeWithRecovery:
             )
             mode.execute()
 
-            # Recovery Claude call happens before task-loop Claude call
+            # Recovery Claude call (non-interactive) happens before task-loop call
             assert len(fake_runner.calls) == 2
-            assert fake_runner.calls[0][0] == "run_interactive"  # recovery
+            assert fake_runner.calls[0][0] == "run_with_capture"  # recovery
             assert fake_runner.calls[1][0] == "run_interactive"  # task execution
 
             captured = capsys.readouterr()
@@ -516,7 +523,7 @@ class TestWorktreeModeWithRecovery:
             # No diff = no recovery needed
             fake_repo.set_diff_output("")
 
-            commit_recovery = CommitRecovery(
+            commit_recovery = TaskCommitRecovery(
                 git_repo=fake_repo, project=project, claude_runner=fake_runner,
             )
 

@@ -223,6 +223,129 @@ class TestMigrate:
         sub_hitl = project / "hooks" / ".hitl" / "issues"
         assert sub_hitl.is_symlink()
 
+    def test_consolidates_subdirectory_hitl_real_dirs(self, project):
+        """Subdirectory .hitl/sessions real dirs merge into root .hitl/sessions,
+        and subdirectory .hitl/sessions becomes symlink to root."""
+        _make_claude_dirs(project)
+        # Create a subdirectory with a real .hitl/sessions directory
+        sub_hitl_sessions = project / "service" / ".hitl" / "sessions"
+        sub_hitl_sessions.mkdir(parents=True)
+        (sub_hitl_sessions / "child-session.md").write_text("child data")
+        _scan_and_migrate(project)
+        # Child file merged into root .hitl/sessions
+        assert (project / ".hitl" / "sessions" / "child-session.md").read_text() == "child data"
+        # Subdirectory .hitl/sessions is now a symlink to root
+        sub_link = project / "service" / ".hitl" / "sessions"
+        assert sub_link.is_symlink()
+        rel_target = os.path.relpath(
+            str(project / ".hitl" / "sessions"),
+            str(project / "service" / ".hitl"),
+        )
+        assert os.readlink(str(sub_link)) == rel_target
+
+    def test_consolidates_subdirectory_hitl_issues(self, project):
+        """Subdirectory .hitl/issues real dirs merge into root .hitl/issues."""
+        _make_claude_dirs(project)
+        sub_hitl_issues = project / "service" / ".hitl" / "issues"
+        sub_hitl_issues.mkdir(parents=True)
+        (sub_hitl_issues / "bug.md").write_text("bug report")
+        _scan_and_migrate(project)
+        assert (project / ".hitl" / "issues" / "bug.md").read_text() == "bug report"
+        sub_link = project / "service" / ".hitl" / "issues"
+        assert sub_link.is_symlink()
+
+    def test_legacy_linked_child_replaced_with_hitl_symlink(self, project):
+        """When a child's .claude/sessions is already a symlink (LegacyLinked),
+        create .hitl/sessions symlink pointing to root .hitl/sessions instead."""
+        _make_claude_dirs(project)
+        # Create a subdirectory with .claude/sessions as a symlink to some old target
+        sub_claude = project / "hooks" / ".claude"
+        sub_claude.mkdir(parents=True)
+        old_target = project / "old-tracking" / "sessions"
+        old_target.mkdir(parents=True)
+        os.symlink(str(old_target), str(sub_claude / "sessions"))
+        _scan_and_migrate(project)
+        # hooks/.hitl/sessions should be a symlink to root .hitl/sessions
+        sub_hitl = project / "hooks" / ".hitl" / "sessions"
+        assert sub_hitl.is_symlink()
+        rel_target = os.path.relpath(
+            str(project / ".hitl" / "sessions"),
+            str(project / "hooks" / ".hitl"),
+        )
+        assert os.readlink(str(sub_hitl)) == rel_target
+
+    def test_hitl_child_already_correct_symlink_skipped(self, project):
+        """When child .hitl/sessions is already the correct symlink, skip it."""
+        _make_claude_dirs(project)
+        # Pre-create the correct symlink at service/.hitl/sessions
+        sub_hitl = project / "service" / ".hitl"
+        sub_hitl.mkdir(parents=True)
+        rel_target = os.path.relpath(
+            str(project / ".hitl" / "sessions"),
+            str(sub_hitl),
+        )
+        os.symlink(rel_target, str(sub_hitl / "sessions"))
+        # Also create a real .hitl/issues to make child discoverable
+        (project / "service" / ".hitl" / "issues").mkdir(parents=True)
+        (project / "service" / ".hitl" / "issues" / "f.md").write_text("data")
+        _scan_and_migrate(project)
+        # Symlink unchanged — already correct, so skipped
+        assert sub_hitl / "sessions" == sub_hitl / "sessions"
+        assert os.path.islink(str(sub_hitl / "sessions"))
+        assert os.readlink(str(sub_hitl / "sessions")) == rel_target
+
+    def test_hitl_child_dry_run_skips_consolidation(self, project):
+        """Dry run does not merge child .hitl/ files or create symlinks."""
+        _make_claude_dirs(project)
+        sub_hitl_sessions = project / "service" / ".hitl" / "sessions"
+        sub_hitl_sessions.mkdir(parents=True)
+        (sub_hitl_sessions / "file.md").write_text("data")
+        _scan_and_migrate(project, dry_run=True)
+        # File not merged into root
+        assert not (project / ".hitl").exists()
+        # Subdirectory still intact
+        assert sub_hitl_sessions.exists()
+        assert (sub_hitl_sessions / "file.md").exists()
+
+    def test_hitl_child_multiple_subdirectories(self, project):
+        """Multiple subdirectories with real .hitl/ dirs all merge and get symlinks."""
+        _make_claude_dirs(project)
+        for name in ("svc-a", "svc-b"):
+            d = project / name / ".hitl" / "sessions"
+            d.mkdir(parents=True)
+            (d / f"{name}.md").write_text(name)
+        _scan_and_migrate(project)
+        # Both files merged into root
+        assert (project / ".hitl" / "sessions" / "svc-a.md").read_text() == "svc-a"
+        assert (project / ".hitl" / "sessions" / "svc-b.md").read_text() == "svc-b"
+        # Both get symlinks
+        for name in ("svc-a", "svc-b"):
+            sub_hitl = project / name / ".hitl" / "sessions"
+            assert sub_hitl.is_symlink()
+
+    def test_hitl_child_conflict_keeps_root_version(self, project):
+        """When root .hitl/ already has a file with the same name as a child, root wins."""
+        _make_claude_dirs(project)
+        sub_hitl_sessions = project / "service" / ".hitl" / "sessions"
+        sub_hitl_sessions.mkdir(parents=True)
+        (sub_hitl_sessions / "sample.md").write_text("from child")
+        _scan_and_migrate(project)
+        # Root .claude/sessions/sample.md was moved first, so root version wins
+        assert (project / ".hitl" / "sessions" / "sample.md").read_text() == "sample"
+
+    def test_hitl_child_idempotent_second_run(self, project):
+        """Running twice is idempotent — second run skips already-consolidated children."""
+        _make_claude_dirs(project)
+        sub_hitl_sessions = project / "service" / ".hitl" / "sessions"
+        sub_hitl_sessions.mkdir(parents=True)
+        (sub_hitl_sessions / "child.md").write_text("child data")
+        _scan_and_migrate(project)
+        # Run again — should not raise or change anything
+        _scan_and_migrate(project)
+        assert (project / ".hitl" / "sessions" / "child.md").read_text() == "child data"
+        sub_link = project / "service" / ".hitl" / "sessions"
+        assert sub_link.is_symlink()
+
     def test_no_subdirectory_output_when_none_exist(self, project, capsys):
         """No subdirectory migration output when no subdirectories have .claude/."""
         _make_claude_dirs(project)

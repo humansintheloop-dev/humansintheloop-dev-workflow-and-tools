@@ -99,17 +99,17 @@ This thread introduces the TrackedWorkingDirectory domain model and restructures
 ## Steel Thread 2: Subdirectory children consolidated into top-level
 When `i2code tracking setup` runs and subdirectories contain real `.claude/` or `.hitl/` tracking directories, the TrackedWorkingDirectory model discovers them as child TrackedDirectory instances. Each child is transitioned to the target state: contents merged into the root `.hitl/{sessions,issues}` and replaced with relative symlinks. LegacyLinked children (existing symlinks) have their symlinks replaced to point to the parent `.hitl/`.
 
-- [ ] **Task 2.1: Subdirectory children with .claude or .hitl real directories are consolidated into root and replaced with symlinks**
+- [x] **Task 2.1: Subdirectory children with .claude or .hitl real directories are consolidated into root and replaced with symlinks**
   - TaskType: OUTCOME
   - Entrypoint: `uv run i2code tracking setup (run in a project where subdirectories have real .claude/ or .hitl/ tracking directories)`
   - Observable: Child TrackedDirectory instances with LegacyTracking or HitlTracking real directories have their contents merged into root .hitl/{sessions,issues}; subdirectory tracking dirs are replaced with relative symlinks pointing to the top-level; LegacyLinked children (existing symlinks) have their symlinks replaced to point to parent .hitl; existing correct symlinks are skipped; running twice is idempotent
   - Evidence: `./test-scripts/test-end-to-end.sh passes — unit tests verify child TrackedDirectory consolidation for all child states (LegacyTracking real dirs, LegacyTracking symlinks, HitlTracking real dirs), including merge, symlink creation, already-correct skip, dry-run skip, multiple subdirectories, and filename conflict behavior`
   - Steps:
-    - [ ] Extend TrackedWorkingDirectory scanning to discover child TrackedDirectory instances with LegacyTracking and/or HitlTracking in subdirectories — TDD
-    - [ ] Add consolidation action for children with LegacyTracking real dirs: migrate contents to root HitlTracking, replace with relative symlinks to root .hitl — TDD
-    - [ ] Add consolidation action for children with HitlTracking real dirs: merge contents to root HitlTracking, replace with relative symlinks to root .hitl — TDD
-    - [ ] Handle LegacyLinked children: replace existing symlinks to point to parent .hitl rather than moving files — TDD
-    - [ ] Add unit tests for edge cases: already-correct symlink skip, dry-run skip, multiple subdirectories, filename conflict keeps root version
+    - [x] Extend TrackedWorkingDirectory scanning to discover child TrackedDirectory instances with LegacyTracking and/or HitlTracking in subdirectories — TDD
+    - [x] Add consolidation action for children with LegacyTracking real dirs: migrate contents to root HitlTracking, replace with relative symlinks to root .hitl — TDD
+    - [x] Add consolidation action for children with HitlTracking real dirs: merge contents to root HitlTracking, replace with relative symlinks to root .hitl — TDD
+    - [x] Handle LegacyLinked children: replace existing symlinks to point to parent .hitl rather than moving files — TDD
+    - [x] Add unit tests for edge cases: already-correct symlink skip, dry-run skip, multiple subdirectories, filename conflict keeps root version
 ## Steel Thread 3: `--link` rejects conflicting symlinks
 When `--link DIR` is specified and the root HitlTracking sessions/issues TrackingDir instances are already symlinks pointing to a DIFFERENT directory than `DIR`, the command raises an error and makes no changes. This uses the TrackingDir.symlink_target property to detect conflicts before any mutations.
 
@@ -150,3 +150,21 @@ TrackedWorkingDirectory class implemented with TDD: 9 tests for scan, child disc
 
 ### 2026-02-22 11:44 - mark-task-complete
 All domain model classes implemented with TDD: TrackingDir, LegacyTracking, HitlTracking, TrackedDirectory, TrackedWorkingDirectory — 40 tests pass
+
+### 2026-02-22 12:09 - mark-step-complete
+Scanning already discovers children with LegacyTracking and HitlTracking - existing tests verify this
+
+### 2026-02-22 12:09 - mark-step-complete
+Consolidation for LegacyTracking real dirs already implemented and tested
+
+### 2026-02-22 12:09 - mark-step-complete
+Added _consolidate_child_subdir for HitlTracking real dirs with merge and symlink creation
+
+### 2026-02-22 12:09 - mark-step-complete
+Added _relink_legacy_symlink to create .hitl symlinks for LegacyLinked children
+
+### 2026-02-22 12:09 - mark-step-complete
+Added 8 new tests covering HitlTracking consolidation, LegacyLinked relinking, already-correct skip, dry-run, multiple subdirs, conflict, and idempotency
+
+### 2026-02-22 12:09 - mark-task-complete
+Implemented child consolidation for HitlTracking real dirs and LegacyLinked symlinks with 8 new unit tests

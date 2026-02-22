@@ -67,18 +67,34 @@ class _MigrateExecutor:
     def migrate_children(self, children):
         """Migrate tracking from child directories into root .hitl/."""
         for child in children:
-            if child.legacy is None:
-                continue
-            claude_dir = str(child.legacy.base_path)
             parent_dir = str(child.path)
-            for subdir in SUBDIRS:
-                self._merge_and_link_child_subdir(claude_dir, parent_dir, subdir)
+            link_base = os.path.join(parent_dir, ".hitl")
+            if child.legacy is not None:
+                src_base = str(child.legacy.base_path)
+                for subdir in SUBDIRS:
+                    self._consolidate_child_subdir(src_base, link_base, subdir)
+                    self._relink_legacy_symlink(src_base, link_base, subdir)
+            if child.hitl is not None:
+                src_base = str(child.hitl.base_path)
+                for subdir in SUBDIRS:
+                    self._consolidate_child_subdir(src_base, link_base, subdir)
 
     # -- migrate helpers --
 
-    def _merge_and_link_child_subdir(self, claude_dir, parent_dir, subdir):
+    def _relink_legacy_symlink(self, src_base, link_base, subdir):
+        """When a child's legacy subdir is a symlink, create .hitl symlink to root instead."""
+        src = os.path.join(src_base, subdir)
+        if not os.path.islink(src):
+            return
+
+        dst = os.path.join(self.hitl_dir, subdir)
+        link_path = os.path.join(link_base, subdir)
+        rel_target = os.path.relpath(dst, link_base)
+        self._ensure_symlink(link_path, rel_target)
+
+    def _consolidate_child_subdir(self, src_base, link_base, subdir):
         """Merge a child's tracking subdir into root .hitl/ and create symlink back."""
-        src = os.path.join(claude_dir, subdir)
+        src = os.path.join(src_base, subdir)
         if not os.path.isdir(src) or os.path.islink(src):
             return
 
@@ -87,9 +103,8 @@ class _MigrateExecutor:
             os.makedirs(dst, exist_ok=True)
         self._merge_into_existing(src, dst)
 
-        sub_hitl_dir = os.path.join(parent_dir, ".hitl")
-        link_path = os.path.join(sub_hitl_dir, subdir)
-        rel_target = os.path.relpath(dst, sub_hitl_dir)
+        link_path = os.path.join(link_base, subdir)
+        rel_target = os.path.relpath(dst, link_base)
         self._ensure_symlink(link_path, rel_target)
 
     def _migrate_symlink(self, src, dst):

@@ -291,6 +291,68 @@ class TestEnsurePr:
 
 
 @pytest.mark.unit
+class TestDiffFileAgainstHead:
+
+    def test_returns_diff_output(self, test_git_repo_with_commit, mocker):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+
+        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0,
+            stdout="diff --git a/plan.md b/plan.md\n-old\n+new\n",
+            stderr="",
+        )
+
+        result = git_repo.diff_file_against_head("/some/path/plan.md")
+
+        assert result == "diff --git a/plan.md b/plan.md\n-old\n+new\n"
+        mock_run.assert_called_once_with(
+            ["git", "diff", "HEAD", "--", "/some/path/plan.md"],
+            capture_output=True, text=True,
+            cwd=repo.working_tree_dir,
+        )
+
+    def test_returns_empty_string_when_no_changes(self, test_git_repo_with_commit, mocker):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+
+        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="", stderr="",
+        )
+
+        result = git_repo.diff_file_against_head("/some/path/plan.md")
+
+        assert result == ""
+
+
+@pytest.mark.unit
+class TestShowFileAtHead:
+
+    def test_returns_file_content(self, test_git_repo_with_commit, mocker):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        file_path = os.path.join(tmpdir, "docs", "plan.md")
+
+        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0,
+            stdout="# Plan\n- [ ] Task 1\n",
+            stderr="",
+        )
+
+        result = git_repo.show_file_at_head(file_path)
+
+        assert result == "# Plan\n- [ ] Task 1\n"
+        mock_run.assert_called_once_with(
+            ["git", "show", "HEAD:docs/plan.md"],
+            capture_output=True, text=True,
+            cwd=repo.working_tree_dir,
+        )
+
+
+@pytest.mark.unit
 class TestBranchHasBeenPushed:
 
     def test_returns_false_when_branch_not_on_remote(self, test_git_repo_with_commit, mocker):

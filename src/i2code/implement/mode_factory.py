@@ -1,10 +1,11 @@
 """ModeFactory creates execution mode instances with their dependencies."""
 
+from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.isolate_mode import IsolateMode, SubprocessRunner
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.trunk_mode import TrunkMode
-from i2code.implement.worktree_mode import WorktreeMode
+from i2code.implement.worktree_mode import LoopSteps, WorktreeMode
 
 
 class ModeFactory:
@@ -17,10 +18,16 @@ class ModeFactory:
         self._project_initializer = project_initializer
 
     def make_trunk_mode(self, git_repo, project):
+        commit_recovery = TaskCommitRecovery(
+            git_repo=git_repo,
+            project=project,
+            claude_runner=self._claude_runner,
+        )
         return TrunkMode(
             git_repo=git_repo,
             project=project,
             claude_runner=self._claude_runner,
+            commit_recovery=commit_recovery,
         )
 
     def make_isolate_mode(self, git_repo, project):
@@ -44,13 +51,22 @@ class ModeFactory:
             state=state,
             claude_runner=self._claude_runner,
         )
-        return WorktreeMode(
-            opts=self._opts,
+        commit_recovery = TaskCommitRecovery(
             git_repo=git_repo,
-            state=state,
+            project=work_project,
             claude_runner=self._claude_runner,
-            work_project=work_project,
+        )
+        loop_steps = LoopSteps(
+            claude_runner=self._claude_runner,
+            state=state,
             ci_monitor=ci_monitor,
             build_fixer=build_fixer,
             review_processor=review_processor,
+            commit_recovery=commit_recovery,
+        )
+        return WorktreeMode(
+            opts=self._opts,
+            git_repo=git_repo,
+            work_project=work_project,
+            loop_steps=loop_steps,
         )

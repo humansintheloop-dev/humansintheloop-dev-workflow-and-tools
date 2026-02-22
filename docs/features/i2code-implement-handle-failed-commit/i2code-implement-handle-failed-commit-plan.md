@@ -64,50 +64,50 @@ This steel thread implements the primary end-to-end flow: detecting that a fully
 
 All steps should be implemented using TDD.
 
-- [ ] **Task 1.1: Detect uncommitted plan-file changes showing a fully completed task**
+- [x] **Task 1.1: Detect uncommitted plan-file changes showing a fully completed task**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_commit_recovery.py -v -m unit`
   - Observable: `CommitRecovery.needs_recovery()` returns `True` when git diff shows a task changed from `[ ]` to `[x]` in the working tree vs HEAD; returns `False` when no such diff exists
   - Evidence: Unit tests create a `FakeGitRepository` with controlled `diff_file_against_head()` return values, and assert `needs_recovery()` returns the correct boolean
   - Steps:
-    - [ ] Add `diff_file_against_head(file_path)` method to `GitRepository` (`src/i2code/implement/git_repository.py`) that runs `git diff HEAD -- <file_path>` and returns the diff output as a string (empty string if no diff). Add the same method to `FakeGitRepository` with a `set_diff_output()` setter for test control.
-    - [ ] Create `src/i2code/implement/commit_recovery.py` with a `CommitRecovery` class. Constructor takes `git_repo`, `project` (IdeaProject), and `claude_runner`. Add a `needs_recovery()` method that: (1) gets the plan file path from `project.plan_file`, (2) calls `git_repo.diff_file_against_head(plan_file)`, (3) if diff is empty, returns `False`, (4) parses the working-tree plan file using the plan domain parser, (5) parses the HEAD version by reading the committed content via a new `show_file_at_head()` method on `GitRepository`, (6) compares tasks: if any task header changed from `[ ]` (HEAD) to `[x]` (working tree), returns `True`, otherwise returns `False`.
-    - [ ] Add `show_file_at_head(file_path)` to `GitRepository` that runs `git show HEAD:<relative_path>` and returns the file content. Add the same to `FakeGitRepository` with a `set_file_at_head()` setter.
-    - [ ] Write unit tests in `tests/implement/test_commit_recovery.py` for: (a) no diff → returns `False`, (b) diff shows fully completed task → returns `True`, (c) diff shows only step changes (partial) → returns `False`.
+    - [x] Add `diff_file_against_head(file_path)` method to `GitRepository` (`src/i2code/implement/git_repository.py`) that runs `git diff HEAD -- <file_path>` and returns the diff output as a string (empty string if no diff). Add the same method to `FakeGitRepository` with a `set_diff_output()` setter for test control.
+    - [x] Create `src/i2code/implement/commit_recovery.py` with a `CommitRecovery` class. Constructor takes `git_repo`, `project` (IdeaProject), and `claude_runner`. Add a `needs_recovery()` method that: (1) gets the plan file path from `project.plan_file`, (2) calls `git_repo.diff_file_against_head(plan_file)`, (3) if diff is empty, returns `False`, (4) parses the working-tree plan file using the plan domain parser, (5) parses the HEAD version by reading the committed content via a new `show_file_at_head()` method on `GitRepository`, (6) compares tasks: if any task header changed from `[ ]` (HEAD) to `[x]` (working tree), returns `True`, otherwise returns `False`.
+    - [x] Add `show_file_at_head(file_path)` to `GitRepository` that runs `git show HEAD:<relative_path>` and returns the file content. Add the same to `FakeGitRepository` with a `set_file_at_head()` setter.
+    - [x] Write unit tests in `tests/implement/test_commit_recovery.py` for: (a) no diff → returns `False`, (b) diff shows fully completed task → returns `True`, (c) diff shows only step changes (partial) → returns `False`.
 
-- [ ] **Task 1.2: Invoke Claude to commit recovered changes in TrunkMode**
+- [x] **Task 1.2: Invoke Claude to commit recovered changes in TrunkMode**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_trunk_mode.py tests/implement/test_commit_recovery.py -v -m unit`
   - Observable: When `TrunkMode.execute()` is called and `CommitRecovery.needs_recovery()` returns `True`, Claude is invoked with a recovery prompt before the main task loop. After successful recovery (HEAD advances), the main loop continues with the next incomplete task.
   - Evidence: Unit tests configure `FakeGitRepository` and `FakeClaudeRunner` to simulate recovery scenario. Assert: (1) Claude is called with recovery prompt first, (2) HEAD advances during recovery, (3) main loop starts after recovery and processes the next task.
   - Steps:
-    - [ ] Create the `commit_recovery.j2` Jinja2 template in `src/i2code/implement/templates/`. The template instructs Claude to: stage all uncommitted changes, generate an appropriate commit message for the recovered task, and commit. Include the plan file path and a summary of the uncommitted changes.
-    - [ ] Add `build_recovery_command(plan_file, diff_summary, interactive)` to `CommandBuilder` that renders `commit_recovery.j2` and applies `_with_mode()`.
-    - [ ] Add a `recover()` method to `CommitRecovery` that: (1) prints "Detected uncommitted changes from a previous run, attempting to commit...", (2) builds the recovery command via `CommandBuilder`, (3) invokes Claude using `claude_runner.run_interactive()` or `run_with_capture()`, (4) checks `check_claude_success()`, (5) returns `True` on success, `False` on failure.
-    - [ ] Add a `check_and_recover()` method to `CommitRecovery` that calls `needs_recovery()` and, if `True`, calls `recover()`.
-    - [ ] Modify `TrunkMode.__init__()` to accept an optional `commit_recovery` parameter (defaulting to `None`). At the top of `execute()`, before the `while True` loop, call `commit_recovery.check_and_recover()` if provided.
-    - [ ] Update `ModeFactory.make_trunk_mode()` to create a `CommitRecovery` instance and pass it to `TrunkMode`.
-    - [ ] Write unit tests for `CommitRecovery.recover()`: (a) Claude succeeds (HEAD advances, exit 0) → returns `True`, prints success message, (b) Claude fails → returns `False`.
-    - [ ] Write unit tests for `TrunkMode` with recovery: (a) recovery needed and succeeds → main loop continues with next task, (b) no recovery needed → main loop starts normally (existing tests should still pass).
+    - [x] Create the `commit_recovery.j2` Jinja2 template in `src/i2code/implement/templates/`. The template instructs Claude to: stage all uncommitted changes, generate an appropriate commit message for the recovered task, and commit. Include the plan file path and a summary of the uncommitted changes.
+    - [x] Add `build_recovery_command(plan_file, diff_summary, interactive)` to `CommandBuilder` that renders `commit_recovery.j2` and applies `_with_mode()`.
+    - [x] Add a `recover()` method to `CommitRecovery` that: (1) prints "Detected uncommitted changes from a previous run, attempting to commit...", (2) builds the recovery command via `CommandBuilder`, (3) invokes Claude using `claude_runner.run_interactive()` or `run_with_capture()`, (4) checks `check_claude_success()`, (5) returns `True` on success, `False` on failure.
+    - [x] Add a `check_and_recover()` method to `CommitRecovery` that calls `needs_recovery()` and, if `True`, calls `recover()`.
+    - [x] Modify `TrunkMode.__init__()` to accept an optional `commit_recovery` parameter (defaulting to `None`). At the top of `execute()`, before the `while True` loop, call `commit_recovery.check_and_recover()` if provided.
+    - [x] Update `ModeFactory.make_trunk_mode()` to create a `CommitRecovery` instance and pass it to `TrunkMode`.
+    - [x] Write unit tests for `CommitRecovery.recover()`: (a) Claude succeeds (HEAD advances, exit 0) → returns `True`, prints success message, (b) Claude fails → returns `False`.
+    - [x] Write unit tests for `TrunkMode` with recovery: (a) recovery needed and succeeds → main loop continues with next task, (b) no recovery needed → main loop starts normally (existing tests should still pass).
 
-- [ ] **Task 1.3: Retry on recovery failure, then exit with error**
+- [x] **Task 1.3: Retry on recovery failure, then exit with error**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_commit_recovery.py -v -m unit`
   - Observable: When the first recovery attempt fails (Claude exits non-zero or HEAD unchanged), `CommitRecovery` retries once. If the retry also fails, it prints "Error: Could not commit recovered changes after 2 attempts. Please commit manually and rerun." and calls `sys.exit(1)`.
   - Evidence: Unit tests configure `FakeClaudeRunner` to fail twice, assert: (1) Claude is called twice, (2) error message is printed, (3) `sys.exit(1)` is raised.
   - Steps:
-    - [ ] Modify `CommitRecovery.check_and_recover()` to implement retry logic: attempt recovery up to 2 times. On first failure, print "Recovery attempt 1 failed, retrying..." and try again. On second failure, print the error message and call `sys.exit(1)`. On success at any attempt, print "Recovery commit successful." and return.
-    - [ ] Write unit tests for: (a) first attempt fails, second succeeds → prints retry message, then success, (b) both attempts fail → prints error and exits with code 1, (c) first attempt succeeds → no retry.
+    - [x] Modify `CommitRecovery.check_and_recover()` to implement retry logic: attempt recovery up to 2 times. On first failure, print "Recovery attempt 1 failed, retrying..." and try again. On second failure, print the error message and call `sys.exit(1)`. On success at any attempt, print "Recovery commit successful." and return.
+    - [x] Write unit tests for: (a) first attempt fails, second succeeds → prints retry message, then success, (b) both attempts fail → prints error and exits with code 1, (c) first attempt succeeds → no retry.
 
-- [ ] **Task 1.4: Invoke Claude to commit recovered changes in WorktreeMode**
+- [x] **Task 1.4: Invoke Claude to commit recovered changes in WorktreeMode**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_worktree_mode.py -v -m unit`
   - Observable: When `WorktreeMode.execute()` is called and `CommitRecovery.needs_recovery()` returns `True`, recovery is attempted before the main task loop (before `check_and_fix_ci` and `process_feedback`). After successful recovery, the main loop continues normally.
   - Evidence: Unit tests configure `FakeGitRepository` and `FakeClaudeRunner` to simulate recovery in worktree mode. Assert: (1) recovery Claude call happens before any task-loop Claude call, (2) main loop starts after recovery.
   - Steps:
-    - [ ] Modify `WorktreeMode.__init__()` to accept an optional `commit_recovery` parameter (defaulting to `None`). At the top of `execute()`, before the `while True` loop, call `commit_recovery.check_and_recover()` if provided.
-    - [ ] Update `ModeFactory.make_worktree_mode()` to create a `CommitRecovery` instance and pass it to `WorktreeMode`.
-    - [ ] Write unit tests for `WorktreeMode` with recovery: (a) recovery needed and succeeds → main loop continues, (b) no recovery needed → main loop starts normally (existing tests should still pass).
+    - [x] Modify `WorktreeMode.__init__()` to accept an optional `commit_recovery` parameter (defaulting to `None`). At the top of `execute()`, before the `while True` loop, call `commit_recovery.check_and_recover()` if provided.
+    - [x] Update `ModeFactory.make_worktree_mode()` to create a `CommitRecovery` instance and pass it to `WorktreeMode`.
+    - [x] Write unit tests for `WorktreeMode` with recovery: (a) recovery needed and succeeds → main loop continues, (b) no recovery needed → main loop starts normally (existing tests should still pass).
 
 ## Steel Thread 2: Skip Recovery for Partially Completed Tasks
 
@@ -115,14 +115,14 @@ This steel thread implements Scenario 2: when only steps are marked `[x]` but th
 
 All steps should be implemented using TDD.
 
-- [ ] **Task 2.1: Partial task completion skips recovery**
+- [x] **Task 2.1: Partial task completion skips recovery**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_commit_recovery.py -v -m unit`
   - Observable: When the plan file diff shows step checkboxes changed from `[ ]` to `[x]` but the task header remains `[ ]`, `needs_recovery()` returns `False` and no recovery commit is attempted
   - Evidence: Unit tests provide a plan file where steps are marked complete but the task header is still `[ ]`. Assert `needs_recovery()` returns `False`. A separate integration-style test verifies that `TrunkMode.execute()` proceeds directly to the main loop without a recovery call.
   - Steps:
-    - [ ] Verify and strengthen the existing `needs_recovery()` logic: the comparison must check task *headers* only (not steps). If only steps changed from `[ ]` to `[x]` but the task header remains `[ ]`, return `False`.
-    - [ ] Write unit tests for: (a) task header `[ ]` in both HEAD and working tree, but steps changed → returns `False`, (b) task header changed from `[ ]` to `[x]` → returns `True` (regression test for Task 1.1), (c) no changes at all → returns `False`.
+    - [x] Verify and strengthen the existing `needs_recovery()` logic: the comparison must check task *headers* only (not steps). If only steps changed from `[x]` to `[x]` but the task header remains `[ ]`, return `False`.
+    - [x] Write unit tests for: (a) task header `[x]` in both HEAD and working tree, but steps changed → returns `False`, (b) task header changed from `[ ]` to `[x]` → returns `True` (regression test for Task 1.1), (c) no changes at all → returns `False`.
 
 ---
 
@@ -131,3 +131,24 @@ All steps should be implemented using TDD.
 ### 2026-02-22: Initial plan
 
 Created implementation plan based on the specification. Four tasks in Steel Thread 1 cover detection, TrunkMode integration, retry logic, and WorktreeMode integration. Steel Thread 2 covers the partial-task skip scenario. All tasks follow TDD using the existing fake infrastructure.
+
+### 2026-02-22 12:23 - mark-step-complete
+Added commit_recovery parameter to WorktreeMode.__init__() and check_and_recover() call at top of execute()
+
+### 2026-02-22 12:23 - mark-step-complete
+Updated ModeFactory.make_worktree_mode() to create CommitRecovery and pass it to WorktreeMode
+
+### 2026-02-22 12:23 - mark-step-complete
+Added TestWorktreeModeWithRecovery: (a) recovery needed and succeeds, (b) no recovery needed
+
+### 2026-02-22 12:23 - mark-task-complete
+WorktreeMode recovery integration complete with unit tests
+
+### 2026-02-22 12:28 - mark-step-complete
+Verified _has_newly_completed_task checks Task.is_completed which only inspects task header checkbox, not steps
+
+### 2026-02-22 12:28 - mark-step-complete
+Added test_all_steps_complete_but_task_header_incomplete_returns_false and test_no_changes_returns_false
+
+### 2026-02-22 12:28 - mark-task-complete
+All unit tests pass: needs_recovery returns False for step-only changes, True for task header changes, False for no changes

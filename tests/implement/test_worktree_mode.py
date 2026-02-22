@@ -6,12 +6,13 @@ import tempfile
 import pytest
 
 from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
-from i2code.implement.worktree_mode import WorktreeMode
+from i2code.implement.worktree_mode import LoopSteps, WorktreeMode
 
 from conftest import write_plan_file, mark_task_complete, advance_head, combined
 from fake_claude_runner import FakeClaudeRunner
@@ -31,7 +32,7 @@ def _write_ci_workflow(work_dir):
 def _make_worktree_mode(
     plan_path, idea_dir, work_dir,
     fake_repo=None, fake_runner=None, fake_gh=None, fake_state=None,
-    opts=None,
+    opts=None, commit_recovery=None,
 ):
     """Create a WorktreeMode with fakes wired up."""
     project = IdeaProject(idea_dir)
@@ -67,15 +68,24 @@ def _make_worktree_mode(
         claude_runner=fake_runner,
     )
 
-    mode = WorktreeMode(
-        opts=opts,
-        git_repo=fake_repo,
-        state=fake_state,
+    if commit_recovery is None:
+        noop_repo = FakeGitRepository()
+        commit_recovery = TaskCommitRecovery(
+            git_repo=noop_repo, project=project, claude_runner=fake_runner,
+        )
+    loop_steps = LoopSteps(
         claude_runner=fake_runner,
-        work_project=project,
+        state=fake_state,
         ci_monitor=ci_monitor,
         build_fixer=build_fixer,
         review_processor=review_processor,
+        commit_recovery=commit_recovery,
+    )
+    mode = WorktreeMode(
+        opts=opts,
+        git_repo=fake_repo,
+        work_project=project,
+        loop_steps=loop_steps,
     )
     return mode, fake_repo, fake_runner, fake_gh, fake_state
 
@@ -417,3 +427,129 @@ class TestWorktreeModeNonInteractive:
                 mode.execute()
 
             assert exc_info.value.code == 1
+
+
+PLAN_WITH_INCOMPLETE_TASK = """\
+# Implementation Plan: Test Feature
+
+## Steel Thread 1: Basic Feature
+
+- [ ] **Task 1.1: Implement feature**
+  - TaskType: OUTCOME
+  - Steps:
+    - [ ] Step one
+    - [ ] Step two
+"""
+
+
+@pytest.mark.unit
+class TestWorktreeModeWithRecovery:
+    """WorktreeMode.execute() runs recovery before the task loop when needed."""
+
+    def test_recovery_needed_and_succeeds_then_main_loop_continues(self, capsys):
+        """When recovery is needed and succeeds, recovery call happens before task-loop call."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_name = "test-feature"
+            idea_dir = os.path.join(tmpdir, idea_name)
+            os.makedirs(idea_dir)
+
+            # Task 1.1 already completed (recovered), task 1.2 pending
+            plan_path = write_plan_file(idea_dir, idea_name, [
+                (1, 1, "Already recovered", True),
+                (1, 2, "Next task", False),
+            ])
+            _write_ci_workflow(tmpdir)
+
+            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
+            fake_runner = FakeClaudeRunner()
+
+            project = IdeaProject(idea_dir)
+
+            # Set up TaskCommitRecovery to detect recovery is needed
+            fake_repo.set_diff_output("some diff output")
+            fake_repo.set_file_at_head(
+                project.plan_file,
+                PLAN_WITH_INCOMPLETE_TASK,
+            )
+
+            commit_recovery = TaskCommitRecovery(
+                git_repo=fake_repo, project=project, claude_runner=fake_runner,
+            )
+
+            # Two Claude calls: (1) recovery commit (non-interactive), (2) execute task 1.2
+            fake_runner.set_results([
+                ClaudeResult(returncode=0, output=CapturedOutput("<SUCCESS>recovery commit: bbb</SUCCESS>")),
+                ClaudeResult(returncode=0),
+            ])
+            fake_runner.set_side_effects([
+                advance_head(fake_repo, "bbb"),  # recovery advances HEAD
+                combined(
+                    advance_head(fake_repo, "ccc"),
+                    mark_task_complete(plan_path, 1, 2, "Next task"),
+                ),
+            ])
+
+            mode, _, _, _, _ = _make_worktree_mode(
+                plan_path, idea_dir, tmpdir,
+                fake_repo=fake_repo, fake_runner=fake_runner,
+                commit_recovery=commit_recovery,
+                opts=ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True),
+            )
+            mode.execute()
+
+            # Recovery Claude call (non-interactive) happens before task-loop call
+            assert len(fake_runner.calls) == 2
+            assert fake_runner.calls[0][0] == "run_with_capture"  # recovery
+            assert fake_runner.calls[1][0] == "run_interactive"  # task execution
+
+            captured = capsys.readouterr()
+            assert "Detected uncommitted changes" in captured.out
+            assert "All tasks completed!" in captured.out
+
+    def test_no_recovery_needed_main_loop_starts_normally(self, capsys):
+        """When no recovery is needed, the main loop starts without recovery call."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_name = "test-feature"
+            idea_dir = os.path.join(tmpdir, idea_name)
+            os.makedirs(idea_dir)
+
+            plan_path = write_plan_file(idea_dir, idea_name, [
+                (1, 1, "Set up project", False),
+            ])
+            _write_ci_workflow(tmpdir)
+
+            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
+            fake_runner = FakeClaudeRunner()
+
+            project = IdeaProject(idea_dir)
+
+            # No diff = no recovery needed
+            fake_repo.set_diff_output("")
+
+            commit_recovery = TaskCommitRecovery(
+                git_repo=fake_repo, project=project, claude_runner=fake_runner,
+            )
+
+            fake_runner.set_side_effect(
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up project"),
+                )
+            )
+
+            mode, _, _, _, _ = _make_worktree_mode(
+                plan_path, idea_dir, tmpdir,
+                fake_repo=fake_repo, fake_runner=fake_runner,
+                commit_recovery=commit_recovery,
+                opts=ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True),
+            )
+            mode.execute()
+
+            # Only one Claude call for task execution, no recovery
+            assert len(fake_runner.calls) == 1
+            method, cmd, cwd = fake_runner.calls[0]
+            assert method == "run_interactive"
+
+            captured = capsys.readouterr()
+            assert "Detected uncommitted changes" not in captured.out
+            assert "All tasks completed!" in captured.out

@@ -67,17 +67,26 @@ class _MigrateExecutor:
     def migrate_children(self, children):
         """Migrate tracking from child directories into root .hitl/."""
         for child in children:
-            parent_dir = str(child.path)
-            link_base = os.path.join(parent_dir, ".hitl")
-            if child.legacy is not None:
-                src_base = str(child.legacy.base_path)
-                for subdir in SUBDIRS:
-                    self._consolidate_child_subdir(src_base, link_base, subdir)
-                    self._relink_legacy_symlink(src_base, link_base, subdir)
-            if child.hitl is not None:
-                src_base = str(child.hitl.base_path)
-                for subdir in SUBDIRS:
-                    self._consolidate_child_subdir(src_base, link_base, subdir)
+            link_base = os.path.join(str(child.path), ".hitl")
+            self._migrate_child_legacy(child, link_base)
+            self._consolidate_child_hitl(child, link_base)
+
+    def _migrate_child_legacy(self, child, link_base):
+        """Consolidate a child's legacy (.claude) tracking into root and relink."""
+        if child.legacy is None:
+            return
+        src_base = str(child.legacy.base_path)
+        for subdir in SUBDIRS:
+            self._consolidate_child_subdir(src_base, link_base, subdir)
+            self._relink_legacy_symlink(src_base, link_base, subdir)
+
+    def _consolidate_child_hitl(self, child, link_base):
+        """Consolidate a child's .hitl tracking into root."""
+        if child.hitl is None:
+            return
+        src_base = str(child.hitl.base_path)
+        for subdir in SUBDIRS:
+            self._consolidate_child_subdir(src_base, link_base, subdir)
 
     # -- migrate helpers --
 

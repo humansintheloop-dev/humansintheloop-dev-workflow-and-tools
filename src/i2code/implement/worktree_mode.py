@@ -1,6 +1,7 @@
 """WorktreeMode: execute plan tasks using worktree + PR + CI loop."""
 
 import sys
+from dataclasses import dataclass
 
 from i2code.implement.git_setup import (
     has_ci_workflow_files,
@@ -12,43 +13,42 @@ from i2code.implement.claude_runner import (
 from i2code.implement.command_builder import CommandBuilder
 
 
+@dataclass
+class LoopSteps:
+    """Pipeline collaborators used during the worktree task loop."""
+    claude_runner: object
+    state: object
+    ci_monitor: object
+    build_fixer: object
+    review_processor: object
+    commit_recovery: object
+
+
 class WorktreeMode:
     """Execution mode that runs tasks with worktree, PR creation, and CI integration.
 
     Args:
         opts: ImplementOpts with execution parameters.
         git_repo: GitRepository (or FakeGitRepository) for branch/push/PR/CI operations.
-        state: WorkflowState (or FakeWorkflowState) for tracking processed feedback.
-        claude_runner: ClaudeRunner (or FakeClaudeRunner) for invoking Claude.
         work_project: IdeaProject for the working directory (may differ from project in worktree mode).
-        ci_monitor: GithubActionsMonitor for waiting on CI completion.
-        build_fixer: GithubActionsBuildFixer for detecting and fixing CI failures.
-        review_processor: PullRequestReviewProcessor for handling PR feedback.
-        commit_recovery: TaskCommitRecovery for recovering uncommitted changes before the task loop.
+        loop_steps: LoopSteps grouping claude_runner, state, ci_monitor, build_fixer, review_processor, and commit_recovery.
     """
 
-    def __init__(self, opts, git_repo, state, claude_runner,
-                 work_project, ci_monitor, build_fixer, review_processor,
-                 commit_recovery):
+    def __init__(self, opts, git_repo, work_project, loop_steps):
         self._opts = opts
         self._git_repo = git_repo
-        self._state = state
-        self._claude_runner = claude_runner
         self._work_project = work_project
-        self._ci_monitor = ci_monitor
-        self._build_fixer = build_fixer
-        self._review_processor = review_processor
-        self._commit_recovery = commit_recovery
+        self._loop_steps = loop_steps
 
     def execute(self):
         """Run the worktree task loop until all tasks are complete."""
-        self._commit_recovery.commit_if_needed()
+        self._loop_steps.commit_recovery.commit_if_needed()
 
         while True:
-            if self._build_fixer.check_and_fix_ci():
+            if self._loop_steps.build_fixer.check_and_fix_ci():
                 continue
 
-            if self._review_processor.process_feedback():
+            if self._loop_steps.review_processor.process_feedback():
                 continue
 
             next_task = self._work_project.get_next_task()
@@ -65,7 +65,7 @@ class WorktreeMode:
 
         self._run_claude_and_validate(next_task, task_description)
         self._push_and_ensure_pr()
-        self._ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)
+        self._loop_steps.ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)
 
     def _run_claude_and_validate(self, next_task, task_description):
         """Run Claude on the task and validate the result."""
@@ -80,10 +80,9 @@ class WorktreeMode:
             print_task_failure_diagnostics(claude_result, head_before, head_after)
             sys.exit(1)
 
-        if self._opts.non_interactive:
-            if "<SUCCESS>" not in claude_result.output.stdout:
-                print_task_failure_diagnostics(claude_result, head_before, head_after)
-                sys.exit(1)
+        if self._opts.non_interactive and "<SUCCESS>" not in claude_result.output.stdout:
+            print_task_failure_diagnostics(claude_result, head_before, head_after)
+            sys.exit(1)
 
         if not self._work_project.is_task_completed(next_task.number.thread, next_task.number.task):
             print("Error: Task was not marked complete in plan file.", file=sys.stderr)
@@ -105,7 +104,7 @@ class WorktreeMode:
         if self._git_repo.pr_number is None:
             self._git_repo.ensure_pr(
                 self._work_project.directory, self._work_project.name,
-                self._state.slice_number,
+                self._loop_steps.state.slice_number,
             )
             print(f"Created Draft PR #{self._git_repo.pr_number}")
 
@@ -131,6 +130,6 @@ class WorktreeMode:
     def _run_claude(self, claude_cmd):
         work_dir = self._git_repo.working_tree_dir
         if self._opts.non_interactive:
-            return self._claude_runner.run_with_capture(claude_cmd, cwd=work_dir)
+            return self._loop_steps.claude_runner.run_with_capture(claude_cmd, cwd=work_dir)
         else:
-            return self._claude_runner.run_interactive(claude_cmd, cwd=work_dir)
+            return self._loop_steps.claude_runner.run_interactive(claude_cmd, cwd=work_dir)

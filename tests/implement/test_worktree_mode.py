@@ -12,7 +12,7 @@ from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
-from i2code.implement.worktree_mode import WorktreeMode
+from i2code.implement.worktree_mode import LoopSteps, WorktreeMode
 
 from conftest import write_plan_file, mark_task_complete, advance_head, combined
 from fake_claude_runner import FakeClaudeRunner
@@ -73,16 +73,19 @@ def _make_worktree_mode(
         commit_recovery = TaskCommitRecovery(
             git_repo=noop_repo, project=project, claude_runner=fake_runner,
         )
-    mode = WorktreeMode(
-        opts=opts,
-        git_repo=fake_repo,
-        state=fake_state,
+    loop_steps = LoopSteps(
         claude_runner=fake_runner,
-        work_project=project,
+        state=fake_state,
         ci_monitor=ci_monitor,
         build_fixer=build_fixer,
         review_processor=review_processor,
         commit_recovery=commit_recovery,
+    )
+    mode = WorktreeMode(
+        opts=opts,
+        git_repo=fake_repo,
+        work_project=project,
+        loop_steps=loop_steps,
     )
     return mode, fake_repo, fake_runner, fake_gh, fake_state
 

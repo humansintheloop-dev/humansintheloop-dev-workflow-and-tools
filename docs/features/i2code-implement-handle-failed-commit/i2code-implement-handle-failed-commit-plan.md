@@ -64,16 +64,16 @@ This steel thread implements the primary end-to-end flow: detecting that a fully
 
 All steps should be implemented using TDD.
 
-- [ ] **Task 1.1: Detect uncommitted plan-file changes showing a fully completed task**
+- [x] **Task 1.1: Detect uncommitted plan-file changes showing a fully completed task**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_commit_recovery.py -v -m unit`
   - Observable: `CommitRecovery.needs_recovery()` returns `True` when git diff shows a task changed from `[ ]` to `[x]` in the working tree vs HEAD; returns `False` when no such diff exists
   - Evidence: Unit tests create a `FakeGitRepository` with controlled `diff_file_against_head()` return values, and assert `needs_recovery()` returns the correct boolean
   - Steps:
-    - [ ] Add `diff_file_against_head(file_path)` method to `GitRepository` (`src/i2code/implement/git_repository.py`) that runs `git diff HEAD -- <file_path>` and returns the diff output as a string (empty string if no diff). Add the same method to `FakeGitRepository` with a `set_diff_output()` setter for test control.
-    - [ ] Create `src/i2code/implement/commit_recovery.py` with a `CommitRecovery` class. Constructor takes `git_repo`, `project` (IdeaProject), and `claude_runner`. Add a `needs_recovery()` method that: (1) gets the plan file path from `project.plan_file`, (2) calls `git_repo.diff_file_against_head(plan_file)`, (3) if diff is empty, returns `False`, (4) parses the working-tree plan file using the plan domain parser, (5) parses the HEAD version by reading the committed content via a new `show_file_at_head()` method on `GitRepository`, (6) compares tasks: if any task header changed from `[ ]` (HEAD) to `[x]` (working tree), returns `True`, otherwise returns `False`.
-    - [ ] Add `show_file_at_head(file_path)` to `GitRepository` that runs `git show HEAD:<relative_path>` and returns the file content. Add the same to `FakeGitRepository` with a `set_file_at_head()` setter.
-    - [ ] Write unit tests in `tests/implement/test_commit_recovery.py` for: (a) no diff → returns `False`, (b) diff shows fully completed task → returns `True`, (c) diff shows only step changes (partial) → returns `False`.
+    - [x] Add `diff_file_against_head(file_path)` method to `GitRepository` (`src/i2code/implement/git_repository.py`) that runs `git diff HEAD -- <file_path>` and returns the diff output as a string (empty string if no diff). Add the same method to `FakeGitRepository` with a `set_diff_output()` setter for test control.
+    - [x] Create `src/i2code/implement/commit_recovery.py` with a `CommitRecovery` class. Constructor takes `git_repo`, `project` (IdeaProject), and `claude_runner`. Add a `needs_recovery()` method that: (1) gets the plan file path from `project.plan_file`, (2) calls `git_repo.diff_file_against_head(plan_file)`, (3) if diff is empty, returns `False`, (4) parses the working-tree plan file using the plan domain parser, (5) parses the HEAD version by reading the committed content via a new `show_file_at_head()` method on `GitRepository`, (6) compares tasks: if any task header changed from `[ ]` (HEAD) to `[x]` (working tree), returns `True`, otherwise returns `False`.
+    - [x] Add `show_file_at_head(file_path)` to `GitRepository` that runs `git show HEAD:<relative_path>` and returns the file content. Add the same to `FakeGitRepository` with a `set_file_at_head()` setter.
+    - [x] Write unit tests in `tests/implement/test_commit_recovery.py` for: (a) no diff → returns `False`, (b) diff shows fully completed task → returns `True`, (c) diff shows only step changes (partial) → returns `False`.
 
 - [ ] **Task 1.2: Invoke Claude to commit recovered changes in TrunkMode**
   - TaskType: OUTCOME

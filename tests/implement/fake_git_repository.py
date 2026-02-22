@@ -22,6 +22,9 @@ class FakeGitRepository:
         self._checked_out = None
         self._worktrees = {}
         self._pushed = False
+        self._default_diff_output = ""
+        self._diff_outputs = {}
+        self._files_at_head = {}
         self.branch = None
         self.pr_number = None
         self.calls = []
@@ -87,6 +90,25 @@ class FakeGitRepository:
 
     def set_user_config(self, name, email):
         self.calls.append(("set_user_config", name, email))
+
+    def diff_file_against_head(self, file_path):
+        self.calls.append(("diff_file_against_head", file_path))
+        if file_path in self._diff_outputs:
+            return self._diff_outputs[file_path]
+        return self._default_diff_output
+
+    def set_diff_output(self, diff_output, file_path=None):
+        if file_path is None:
+            self._default_diff_output = diff_output
+        else:
+            self._diff_outputs[file_path] = diff_output
+
+    def show_file_at_head(self, file_path):
+        self.calls.append(("show_file_at_head", file_path))
+        return self._files_at_head.get(file_path, "")
+
+    def set_file_at_head(self, file_path, content):
+        self._files_at_head[file_path] = content
 
     def ensure_pr(self, idea_directory, idea_name, slice_number):
         self.calls.append(("ensure_pr", idea_directory, idea_name, slice_number))

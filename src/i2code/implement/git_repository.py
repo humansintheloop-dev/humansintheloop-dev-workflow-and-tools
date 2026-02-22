@@ -188,6 +188,35 @@ class GitRepository:
             return False
         return True
 
+    def diff_file_against_head(self, file_path):
+        """Return the diff of a file against HEAD.
+
+        Returns:
+            The diff output as a string, or empty string if no diff.
+        """
+        result = subprocess.run(
+            ["git", "diff", "HEAD", "--", file_path],
+            capture_output=True,
+            text=True,
+            cwd=self._repo.working_tree_dir,
+        )
+        return result.stdout
+
+    def show_file_at_head(self, file_path):
+        """Return the content of a file at HEAD.
+
+        Returns:
+            The file content as a string.
+        """
+        rel_path = os.path.relpath(file_path, self._repo.working_tree_dir)
+        result = subprocess.run(
+            ["git", "show", f"HEAD:{rel_path}"],
+            capture_output=True,
+            text=True,
+            cwd=self._repo.working_tree_dir,
+        )
+        return result.stdout
+
     def ensure_pr(self, idea_directory, idea_name, slice_number):
         """Ensure a Draft PR exists for the tracked branch.
 

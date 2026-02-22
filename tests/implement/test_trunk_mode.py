@@ -6,6 +6,7 @@ import tempfile
 import pytest
 
 from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.commit_recovery import CommitRecovery
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.trunk_mode import TrunkMode
 
@@ -235,3 +236,128 @@ class TestTrunkModeExecute:
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
             assert cmd[0] == "/path/to/mock-script"
+
+
+PLAN_WITH_INCOMPLETE_TASK = """\
+# Implementation Plan: Test Feature
+
+## Steel Thread 1: Basic Feature
+
+- [ ] **Task 1.1: Implement feature**
+  - TaskType: OUTCOME
+  - Steps:
+    - [ ] Step one
+    - [ ] Step two
+"""
+
+PLAN_WITH_COMPLETED_TASK_1 = """\
+# Implementation Plan: Test Feature
+
+## Steel Thread 1: Basic Feature
+
+- [x] **Task 1.1: Implement feature**
+  - TaskType: OUTCOME
+  - Steps:
+    - [x] Step one
+    - [x] Step two
+"""
+
+
+@pytest.mark.unit
+class TestTrunkModeWithRecovery:
+    """TrunkMode.execute() runs recovery before the task loop when needed."""
+
+    def test_recovery_needed_and_succeeds_then_main_loop_continues(self, capsys):
+        """When recovery is needed and succeeds, the main loop continues with next task."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_name = "test-feature"
+            idea_dir = os.path.join(tmpdir, idea_name)
+            os.makedirs(idea_dir)
+
+            # Write plan with task 1.1 already completed (recovered) and 1.2 pending
+            plan_path = write_plan_file(idea_dir, idea_name, [
+                (1, 1, "Already recovered", True),
+                (1, 2, "Next task", False),
+            ])
+
+            project = IdeaProject(idea_dir)
+            fake_repo = FakeGitRepository()
+            fake_runner = FakeClaudeRunner()
+
+            # Set up CommitRecovery to detect recovery is needed
+            fake_repo.set_diff_output("some diff output")
+            fake_repo.set_file_at_head(
+                project.plan_file,
+                PLAN_WITH_INCOMPLETE_TASK,
+            )
+
+            commit_recovery = CommitRecovery(
+                git_repo=fake_repo, project=project, claude_runner=fake_runner,
+            )
+
+            # Two Claude calls: (1) recovery commit, (2) execute task 1.2
+            fake_runner.set_side_effects([
+                advance_head(fake_repo, "bbb"),  # recovery advances HEAD
+                combined(
+                    advance_head(fake_repo, "ccc"),
+                    mark_task_complete(plan_path, 1, 2, "Next task"),
+                ),
+            ])
+
+            mode = TrunkMode(
+                git_repo=fake_repo,
+                project=project,
+                claude_runner=fake_runner,
+                commit_recovery=commit_recovery,
+            )
+            mode.execute()
+
+            # Claude called twice: first for recovery, then for task 1.2
+            assert len(fake_runner.calls) == 2
+            captured = capsys.readouterr()
+            assert "Detected uncommitted changes" in captured.out
+            assert "All tasks completed!" in captured.out
+
+    def test_no_recovery_needed_main_loop_starts_normally(self, capsys):
+        """When no recovery is needed, the main loop starts normally."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_name = "test-feature"
+            idea_dir = os.path.join(tmpdir, idea_name)
+            os.makedirs(idea_dir)
+            plan_path = write_plan_file(idea_dir, idea_name, [
+                (1, 1, "Set up project", False),
+            ])
+
+            project = IdeaProject(idea_dir)
+            fake_repo = FakeGitRepository()
+            fake_runner = FakeClaudeRunner()
+
+            # No diff = no recovery needed
+            fake_repo.set_diff_output("")
+
+            commit_recovery = CommitRecovery(
+                git_repo=fake_repo, project=project, claude_runner=fake_runner,
+            )
+
+            fake_runner.set_side_effect(
+                combined(
+                    advance_head(fake_repo, "bbb"),
+                    mark_task_complete(plan_path, 1, 1, "Set up project"),
+                )
+            )
+
+            mode = TrunkMode(
+                git_repo=fake_repo,
+                project=project,
+                claude_runner=fake_runner,
+                commit_recovery=commit_recovery,
+            )
+            mode.execute()
+
+            # Claude called once for the task (no recovery call)
+            assert len(fake_runner.calls) == 1
+            method, cmd, cwd = fake_runner.calls[0]
+            assert method == "run_interactive"
+            captured = capsys.readouterr()
+            assert "Detected uncommitted changes" not in captured.out
+            assert "All tasks completed!" in captured.out

@@ -51,6 +51,11 @@ class ModeFactory:
             state=state,
             claude_runner=self._claude_runner,
         )
+        commit_recovery = CommitRecovery(
+            git_repo=git_repo,
+            project=work_project,
+            claude_runner=self._claude_runner,
+        )
         return WorktreeMode(
             opts=self._opts,
             git_repo=git_repo,
@@ -60,4 +65,5 @@ class ModeFactory:
             ci_monitor=ci_monitor,
             build_fixer=build_fixer,
             review_processor=review_processor,
+            commit_recovery=commit_recovery,
         )

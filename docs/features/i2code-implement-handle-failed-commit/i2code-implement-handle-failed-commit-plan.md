@@ -99,15 +99,15 @@ All steps should be implemented using TDD.
     - [x] Modify `CommitRecovery.check_and_recover()` to implement retry logic: attempt recovery up to 2 times. On first failure, print "Recovery attempt 1 failed, retrying..." and try again. On second failure, print the error message and call `sys.exit(1)`. On success at any attempt, print "Recovery commit successful." and return.
     - [x] Write unit tests for: (a) first attempt fails, second succeeds → prints retry message, then success, (b) both attempts fail → prints error and exits with code 1, (c) first attempt succeeds → no retry.
 
-- [ ] **Task 1.4: Invoke Claude to commit recovered changes in WorktreeMode**
+- [x] **Task 1.4: Invoke Claude to commit recovered changes in WorktreeMode**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_worktree_mode.py -v -m unit`
   - Observable: When `WorktreeMode.execute()` is called and `CommitRecovery.needs_recovery()` returns `True`, recovery is attempted before the main task loop (before `check_and_fix_ci` and `process_feedback`). After successful recovery, the main loop continues normally.
   - Evidence: Unit tests configure `FakeGitRepository` and `FakeClaudeRunner` to simulate recovery in worktree mode. Assert: (1) recovery Claude call happens before any task-loop Claude call, (2) main loop starts after recovery.
   - Steps:
-    - [ ] Modify `WorktreeMode.__init__()` to accept an optional `commit_recovery` parameter (defaulting to `None`). At the top of `execute()`, before the `while True` loop, call `commit_recovery.check_and_recover()` if provided.
-    - [ ] Update `ModeFactory.make_worktree_mode()` to create a `CommitRecovery` instance and pass it to `WorktreeMode`.
-    - [ ] Write unit tests for `WorktreeMode` with recovery: (a) recovery needed and succeeds → main loop continues, (b) no recovery needed → main loop starts normally (existing tests should still pass).
+    - [x] Modify `WorktreeMode.__init__()` to accept an optional `commit_recovery` parameter (defaulting to `None`). At the top of `execute()`, before the `while True` loop, call `commit_recovery.check_and_recover()` if provided.
+    - [x] Update `ModeFactory.make_worktree_mode()` to create a `CommitRecovery` instance and pass it to `WorktreeMode`.
+    - [x] Write unit tests for `WorktreeMode` with recovery: (a) recovery needed and succeeds → main loop continues, (b) no recovery needed → main loop starts normally (existing tests should still pass).
 
 ## Steel Thread 2: Skip Recovery for Partially Completed Tasks
 
@@ -131,3 +131,15 @@ All steps should be implemented using TDD.
 ### 2026-02-22: Initial plan
 
 Created implementation plan based on the specification. Four tasks in Steel Thread 1 cover detection, TrunkMode integration, retry logic, and WorktreeMode integration. Steel Thread 2 covers the partial-task skip scenario. All tasks follow TDD using the existing fake infrastructure.
+
+### 2026-02-22 12:23 - mark-step-complete
+Added commit_recovery parameter to WorktreeMode.__init__() and check_and_recover() call at top of execute()
+
+### 2026-02-22 12:23 - mark-step-complete
+Updated ModeFactory.make_worktree_mode() to create CommitRecovery and pass it to WorktreeMode
+
+### 2026-02-22 12:23 - mark-step-complete
+Added TestWorktreeModeWithRecovery: (a) recovery needed and succeeds, (b) no recovery needed
+
+### 2026-02-22 12:23 - mark-task-complete
+WorktreeMode recovery integration complete with unit tests

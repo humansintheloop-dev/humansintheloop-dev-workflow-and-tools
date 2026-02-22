@@ -1,6 +1,7 @@
 """Tests for i2code.tracking.manage module."""
 
 import os
+import click
 import pytest
 
 from i2code.tracking.manage import migrate_tracking, link_tracking
@@ -378,12 +379,28 @@ class TestLink:
         assert (target_base / "sessions" / "old.md").read_text() == "old data"
         assert os.path.islink(str(project / ".hitl" / "sessions"))
 
-    def test_replaces_incorrect_symlink(self, project):
+    def test_raises_error_for_conflicting_symlink(self, project):
         (project / ".hitl").mkdir(parents=True)
         os.symlink("/old/target", str(project / ".hitl" / "sessions"))
         target_base = project / "tracking" / "my-project"
-        link_tracking(str(project), str(target_base))
-        assert os.readlink(str(project / ".hitl" / "sessions")) == str(target_base / "sessions")
+        with pytest.raises(click.ClickException) as exc_info:
+            link_tracking(str(project), str(target_base))
+        assert "/old/target" in exc_info.value.message
+        assert "different directory" in exc_info.value.message
+
+    def test_link_conflict_makes_no_changes(self, project):
+        """When symlinks conflict, no filesystem modifications occur."""
+        (project / ".hitl").mkdir(parents=True)
+        os.symlink("/old/target/sessions", str(project / ".hitl" / "sessions"))
+        os.symlink("/old/target/issues", str(project / ".hitl" / "issues"))
+        target_base = project / "tracking" / "my-project"
+        with pytest.raises(click.ClickException):
+            link_tracking(str(project), str(target_base))
+        # Symlinks unchanged
+        assert os.readlink(str(project / ".hitl" / "sessions")) == "/old/target/sessions"
+        assert os.readlink(str(project / ".hitl" / "issues")) == "/old/target/issues"
+        # Target directories not created
+        assert not target_base.exists()
 
     def test_skips_correct_symlink(self, project):
         target_base = project / "tracking" / "my-project"

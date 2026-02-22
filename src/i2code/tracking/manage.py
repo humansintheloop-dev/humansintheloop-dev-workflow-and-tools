@@ -3,6 +3,8 @@
 import os
 import shutil
 
+import click
+
 from i2code.tracking.model import TrackedWorkingDirectory
 
 
@@ -258,6 +260,8 @@ class _LinkExecutor:
 
     def link(self, target_base):
         """Create symlinks from .hitl/issues and .hitl/sessions to target_base."""
+        self._check_for_conflicting_symlinks(target_base)
+
         for subdir in SUBDIRS:
             src = os.path.join(self.hitl_dir, subdir)
             target = os.path.join(target_base, subdir)
@@ -270,6 +274,17 @@ class _LinkExecutor:
 
             self._clear_existing_path(src, target)
             self._create_symlink(src, target)
+
+    def _check_for_conflicting_symlinks(self, target_base):
+        for subdir in SUBDIRS:
+            src = os.path.join(self.hitl_dir, subdir)
+            target = os.path.join(target_base, subdir)
+            if os.path.islink(src) and os.readlink(src) != target:
+                existing_target = os.readlink(src)
+                raise click.ClickException(
+                    f".hitl/{subdir} is already linked to {existing_target} "
+                    f"which is a different directory than {target}"
+                )
 
     def _clear_existing_path(self, src, target):
         if not os.path.exists(src) and not os.path.islink(src):

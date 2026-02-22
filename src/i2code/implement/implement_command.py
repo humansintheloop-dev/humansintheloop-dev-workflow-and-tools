@@ -7,6 +7,7 @@ from i2code.implement.git_setup import (
     validate_idea_files_committed,
     ensure_claude_permissions,
 )
+from i2code.implement.worktree_setup import setup_project
 
 
 class ImplementCommand:
@@ -24,15 +25,7 @@ class ImplementCommand:
         self.project.validate_files()
 
         if self.opts.dry_run:
-            if self.opts.trunk:
-                mode = "trunk"
-            elif self.opts.isolate:
-                mode = "isolate"
-            else:
-                mode = "worktree"
-            print(f"Mode: {mode}")
-            print(f"Idea: {self.project.name}")
-            print(f"Directory: {self.project.directory}")
+            self._print_dry_run()
             return
 
         if not self.opts.isolated and not self.opts.ignore_uncommitted_idea_changes:
@@ -44,6 +37,18 @@ class ImplementCommand:
             self._isolate_mode()
         else:
             self._worktree_mode()
+
+    def _print_dry_run(self):
+        """Print configuration summary without executing."""
+        if self.opts.trunk:
+            mode = "trunk"
+        elif self.opts.isolate:
+            mode = "isolate"
+        else:
+            mode = "worktree"
+        print(f"Mode: {mode}")
+        print(f"Idea: {self.project.name}")
+        print(f"Directory: {self.project.directory}")
 
     def _trunk_mode(self):
         """Execute tasks locally on the current branch."""
@@ -104,6 +109,7 @@ class ImplementCommand:
             self.git_repo = self.git_repo.ensure_worktree(self.project.name, integration_branch)
             print(f"Worktree: {self.git_repo.working_tree_dir}")
             ensure_claude_permissions(self.git_repo.working_tree_dir)
+            setup_project(main_repo_dir, self.git_repo.working_tree_dir)
             work_project = self.project.worktree_idea_project(
                 self.git_repo.working_tree_dir, main_repo_dir
             )

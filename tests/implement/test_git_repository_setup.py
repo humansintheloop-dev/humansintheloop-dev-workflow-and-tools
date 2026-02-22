@@ -268,45 +268,6 @@ class TestWorktree:
             expected_path = os.path.join(tmpdir, "genai-development-workflow-wt-wt-pr-based-development")
             assert wt_repo.working_tree_dir == expected_path
 
-    def test_copies_settings_local_json_to_worktree(self):
-        """Should copy .claude/settings.local.json to worktree if it exists."""
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create main repo
-            repo_path = os.path.join(tmpdir, "my-repo")
-            os.makedirs(repo_path)
-            repo = Repo.init(repo_path)
-            repo.config_writer().set_value("user", "email", "test@test.com").release()
-            repo.config_writer().set_value("user", "name", "Test").release()
-
-            # Create .claude/settings.local.json in main repo
-            claude_dir = os.path.join(repo_path, ".claude")
-            os.makedirs(claude_dir)
-            settings_file = os.path.join(claude_dir, "settings.local.json")
-            with open(settings_file, "w") as f:
-                f.write('{"permissions": {"allow": ["Bash(*)"]}}')
-
-            # Create an initial commit
-            test_file = os.path.join(repo_path, "README.md")
-            with open(test_file, "w") as f:
-                f.write("# Test")
-            repo.index.add(["README.md"])
-            repo.index.commit("Initial commit")
-
-            # Create integration branch and worktree
-            integration_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_integration_branch("my-feature")
-            wt_repo = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_worktree("my-feature", integration_branch)
-
-            # Check that settings.local.json was copied to worktree
-            worktree_settings = os.path.join(wt_repo.working_tree_dir, ".claude", "settings.local.json")
-            assert os.path.isfile(worktree_settings), \
-                f"settings.local.json should be copied to worktree at {worktree_settings}"
-
-            # Verify content matches
-            with open(worktree_settings, "r") as f:
-                content = f.read()
-            assert '"permissions"' in content
-
     def test_does_not_fail_if_settings_local_json_missing(self):
         """Should not fail if .claude/settings.local.json does not exist."""
 

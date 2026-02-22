@@ -5,7 +5,6 @@ FakeGitRepository in tests without unittest.mock.patch.
 """
 
 import os
-import shutil
 import subprocess
 import sys
 
@@ -148,14 +147,6 @@ class GitRepository:
 
         if not os.path.isdir(worktree_path):
             self._repo.git.worktree("add", worktree_path, branch_name)
-
-        # Copy .claude/settings.local.json if it exists
-        source_settings = os.path.join(repo_root, ".claude", "settings.local.json")
-        if os.path.isfile(source_settings):
-            dest_claude_dir = os.path.join(worktree_path, ".claude")
-            os.makedirs(dest_claude_dir, exist_ok=True)
-            dest_settings = os.path.join(dest_claude_dir, "settings.local.json")
-            shutil.copy2(source_settings, dest_settings)
 
         return GitRepository(Repo(worktree_path), gh_client=self._gh_client)
 

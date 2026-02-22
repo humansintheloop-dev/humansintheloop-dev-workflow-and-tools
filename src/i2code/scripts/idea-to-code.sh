@@ -167,7 +167,7 @@ main() {
         local state
         state=$(detect_state)
         
-        echo "Current state: $state"
+        echo "Current state: $state ($dir)"
         
         case "$state" in
             no_idea)

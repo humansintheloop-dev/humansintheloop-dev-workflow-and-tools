@@ -3,7 +3,8 @@
 import os
 import pytest
 
-from i2code.tracking.manage import migrate, link
+from i2code.tracking.manage import migrate_tracking, link_tracking
+from i2code.tracking.model import TrackedWorkingDirectory
 
 
 @pytest.fixture
@@ -22,11 +23,17 @@ def _make_claude_dirs(project):
         (d / "sample.md").write_text("sample")
 
 
+def _scan_and_migrate(project, dry_run=False):
+    """Scan project and run migration."""
+    twd = TrackedWorkingDirectory.scan(project)
+    migrate_tracking(twd, dry_run=dry_run)
+
+
 @pytest.mark.unit
 class TestMigrate:
     def test_moves_directories(self, project):
         _make_claude_dirs(project)
-        migrate(str(project))
+        _scan_and_migrate(project)
         assert (project / ".hitl" / "sessions" / "sample.md").exists()
         assert (project / ".hitl" / "issues" / "active" / "sample.md").exists()
         assert not (project / ".claude" / "sessions").exists()
@@ -34,7 +41,7 @@ class TestMigrate:
 
     def test_updates_gitignore(self, project):
         _make_claude_dirs(project)
-        migrate(str(project))
+        _scan_and_migrate(project)
         content = (project / ".gitignore").read_text()
         assert "**/.hitl" in content
         assert ".claude/sessions" not in content
@@ -42,7 +49,7 @@ class TestMigrate:
 
     def test_dry_run_does_not_change_files(self, project):
         _make_claude_dirs(project)
-        migrate(str(project), dry_run=True)
+        _scan_and_migrate(project, dry_run=True)
         assert (project / ".claude" / "sessions" / "sample.md").exists()
         assert not (project / ".hitl").exists()
         content = (project / ".gitignore").read_text()
@@ -50,7 +57,7 @@ class TestMigrate:
 
     def test_skips_when_nothing_to_migrate(self, project):
         # No .claude/issues or .claude/sessions
-        migrate(str(project))  # should not raise
+        _scan_and_migrate(project)  # should not raise
 
     def test_migrates_symlink_to_hitl(self, project):
         """When .claude/sessions is a symlink, recreate it at .hitl/sessions and remove the old one."""
@@ -58,7 +65,7 @@ class TestMigrate:
         target.mkdir(parents=True)
         (project / ".claude").mkdir(parents=True, exist_ok=True)
         os.symlink(str(target), str(project / ".claude" / "sessions"))
-        migrate(str(project))
+        _scan_and_migrate(project)
         # .claude/sessions symlink removed
         assert not os.path.exists(str(project / ".claude" / "sessions"))
         # .hitl/sessions is now a symlink to the same target
@@ -76,7 +83,7 @@ class TestMigrate:
         # Also have a real .hitl/sessions directory with files
         (project / ".hitl" / "sessions").mkdir(parents=True)
         (project / ".hitl" / "sessions" / "local.md").write_text("local data")
-        migrate(str(project))
+        _scan_and_migrate(project)
         # local.md moved to target
         assert (target / "local.md").read_text() == "local data"
         # old.md still there
@@ -92,7 +99,7 @@ class TestMigrate:
         target.mkdir(parents=True)
         (project / ".claude").mkdir(parents=True, exist_ok=True)
         os.symlink(str(target), str(project / ".claude" / "sessions"))
-        migrate(str(project), dry_run=True)
+        _scan_and_migrate(project, dry_run=True)
         # Nothing changed
         assert os.path.islink(str(project / ".claude" / "sessions"))
         assert not (project / ".hitl" / "sessions").exists()
@@ -105,7 +112,7 @@ class TestMigrate:
         (project / ".hitl" / "sessions" / "existing.md").write_text("keep")
         (project / ".hitl" / "issues" / "active").mkdir(parents=True)
         (project / ".claude" / "sessions" / "debug.log").write_text("debug stuff")
-        migrate(str(project))
+        _scan_and_migrate(project)
         # session files merged into .hitl
         assert (project / ".hitl" / "sessions" / "sample.md").exists()
         assert (project / ".hitl" / "sessions" / "existing.md").read_text() == "keep"
@@ -127,7 +134,7 @@ class TestMigrate:
         sub_sessions.mkdir(parents=True)
         (sub_sessions / "old-session.md").write_text("stale")
         (sub_sessions / "debug.log").write_text("debug stuff")
-        migrate(str(project))
+        _scan_and_migrate(project)
         # Subdirectory file merged into root .hitl/sessions
         assert (project / ".hitl" / "sessions" / "old-session.md").read_text() == "stale"
         # debug.log not merged
@@ -158,7 +165,7 @@ class TestMigrate:
         sub_sessions = project / "hooks" / ".claude" / "sessions"
         sub_sessions.mkdir(parents=True)
         (sub_sessions / "file.md").write_text("data")
-        migrate(str(project))
+        _scan_and_migrate(project)
         output = capsys.readouterr().out
         assert "already linked" in output
         # Symlink unchanged
@@ -170,7 +177,7 @@ class TestMigrate:
         sub_sessions = project / "hooks" / ".claude" / "sessions"
         sub_sessions.mkdir(parents=True)
         (sub_sessions / "file.md").write_text("data")
-        migrate(str(project), dry_run=True)
+        _scan_and_migrate(project, dry_run=True)
         # File not merged
         assert not (project / ".hitl").exists()
         # Subdirectory still intact
@@ -185,7 +192,7 @@ class TestMigrate:
             d = project / name / ".claude" / "sessions"
             d.mkdir(parents=True)
             (d / f"{name}.md").write_text(name)
-        migrate(str(project))
+        _scan_and_migrate(project)
         # Both files merged into root
         assert (project / ".hitl" / "sessions" / "app-a.md").read_text() == "app-a"
         assert (project / ".hitl" / "sessions" / "app-b.md").read_text() == "app-b"
@@ -200,7 +207,7 @@ class TestMigrate:
         sub_sessions = project / "hooks" / ".claude" / "sessions"
         sub_sessions.mkdir(parents=True)
         (sub_sessions / "sample.md").write_text("from subdirectory")
-        migrate(str(project))
+        _scan_and_migrate(project)
         # Root .claude/sessions/sample.md was moved first, so root version wins
         assert (project / ".hitl" / "sessions" / "sample.md").read_text() == "sample"
 
@@ -210,7 +217,7 @@ class TestMigrate:
         sub_issues = project / "hooks" / ".claude" / "issues"
         sub_issues.mkdir(parents=True)
         (sub_issues / "bug.md").write_text("bug report")
-        migrate(str(project))
+        _scan_and_migrate(project)
         assert (project / ".hitl" / "issues" / "bug.md").read_text() == "bug report"
         assert not sub_issues.exists()
         sub_hitl = project / "hooks" / ".hitl" / "issues"
@@ -219,7 +226,7 @@ class TestMigrate:
     def test_no_subdirectory_output_when_none_exist(self, project, capsys):
         """No subdirectory migration output when no subdirectories have .claude/."""
         _make_claude_dirs(project)
-        migrate(str(project))
+        _scan_and_migrate(project)
         output = capsys.readouterr().out
         assert "Symlink" not in output or "hooks" not in output
 
@@ -228,7 +235,7 @@ class TestMigrate:
 class TestLink:
     def test_creates_symlinks(self, project):
         target_base = project / "tracking" / "my-project"
-        link(str(project), str(target_base))
+        link_tracking(str(project), str(target_base))
         assert os.path.islink(str(project / ".hitl" / "sessions"))
         assert os.path.islink(str(project / ".hitl" / "issues"))
         assert os.readlink(str(project / ".hitl" / "sessions")) == str(target_base / "sessions")
@@ -236,7 +243,7 @@ class TestLink:
 
     def test_creates_target_directories(self, project):
         target_base = project / "tracking" / "my-project"
-        link(str(project), str(target_base))
+        link_tracking(str(project), str(target_base))
         assert (target_base / "sessions").is_dir()
         assert (target_base / "issues").is_dir()
 
@@ -244,7 +251,7 @@ class TestLink:
         (project / ".hitl" / "sessions").mkdir(parents=True)
         (project / ".hitl" / "sessions" / "old.md").write_text("old data")
         target_base = project / "tracking" / "my-project"
-        link(str(project), str(target_base))
+        link_tracking(str(project), str(target_base))
         assert (target_base / "sessions" / "old.md").read_text() == "old data"
         assert os.path.islink(str(project / ".hitl" / "sessions"))
 
@@ -252,7 +259,7 @@ class TestLink:
         (project / ".hitl").mkdir(parents=True)
         os.symlink("/old/target", str(project / ".hitl" / "sessions"))
         target_base = project / "tracking" / "my-project"
-        link(str(project), str(target_base))
+        link_tracking(str(project), str(target_base))
         assert os.readlink(str(project / ".hitl" / "sessions")) == str(target_base / "sessions")
 
     def test_skips_correct_symlink(self, project):
@@ -262,12 +269,12 @@ class TestLink:
         (project / ".hitl").mkdir(parents=True)
         os.symlink(str(target_base / "sessions"), str(project / ".hitl" / "sessions"))
         os.symlink(str(target_base / "issues"), str(project / ".hitl" / "issues"))
-        link(str(project), str(target_base))  # should not raise
+        link_tracking(str(project), str(target_base))  # should not raise
         assert os.readlink(str(project / ".hitl" / "sessions")) == str(target_base / "sessions")
 
     def test_dry_run_does_not_change_files(self, project):
         target_base = project / "tracking" / "my-project"
-        link(str(project), str(target_base), dry_run=True)
+        link_tracking(str(project), str(target_base), dry_run=True)
         assert not (project / ".hitl" / "sessions").exists()
         assert not (target_base / "sessions").exists()
 
@@ -277,8 +284,8 @@ class TestMigrateAndLink:
     def test_migrate_then_link(self, project):
         _make_claude_dirs(project)
         target_base = project / "tracking" / "my-project"
-        migrate(str(project))
-        link(str(project), str(target_base))
+        _scan_and_migrate(project)
+        link_tracking(str(project), str(target_base))
         # Files should end up in target
         assert (target_base / "sessions" / "sample.md").exists()
         assert (target_base / "issues" / "active" / "sample.md").exists()

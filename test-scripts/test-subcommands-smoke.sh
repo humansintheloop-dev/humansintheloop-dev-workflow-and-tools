@@ -234,5 +234,44 @@ echo "--- i2code setup update-project --help exits 0 ---"
 uv run i2code setup update-project --help
 echo "PASS: setup update-project --help exits 0"
 
+# --- tracking group is listed in i2code --help ---
+echo ""
+echo "--- i2code --help lists tracking (as standalone command) ---"
+OUTPUT=$(uv run i2code --help 2>&1)
+echo "$OUTPUT"
+if ! echo "$OUTPUT" | grep -qE '^\s+tracking\s'; then
+    echo "FAIL: i2code --help does not list tracking as standalone command"
+    exit 1
+fi
+echo "PASS: tracking listed in i2code --help"
+
+# --- setup is listed in tracking --help ---
+echo ""
+echo "--- i2code tracking --help lists setup ---"
+OUTPUT=$(uv run i2code tracking --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"setup"* ]]; then
+    echo "FAIL: tracking --help does not list setup"
+    exit 1
+fi
+echo "PASS: setup listed in tracking --help"
+
+# --- tracking setup --help exits 0 ---
+echo ""
+echo "--- i2code tracking setup --help exits 0 ---"
+uv run i2code tracking setup --help
+echo "PASS: tracking setup --help exits 0"
+
+# --- manage-tracking is NOT listed in i2code --help ---
+echo ""
+echo "--- i2code --help does NOT list manage-tracking ---"
+OUTPUT=$(uv run i2code --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" == *"manage-tracking"* ]]; then
+    echo "FAIL: i2code --help still lists manage-tracking"
+    exit 1
+fi
+echo "PASS: manage-tracking no longer listed in i2code --help"
+
 echo ""
 echo "=== All Subcommand Smoke Tests Passed ==="

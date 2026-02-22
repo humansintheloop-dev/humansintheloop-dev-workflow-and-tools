@@ -61,9 +61,9 @@ idea brainstorm
 | Generate project scaffolding for an idea directory
 | link:implement.adoc#_i2code_scaffold_project_scaffolding[scaffold]
 
-| `i2code manage-tracking`
+| `i2code tracking setup`
 | Manage HITL tracking directories for session and issue recording
-| link:manage-tracking.adoc[manage-tracking]
+| link:tracking.adoc[tracking]
 |===
 
 NOTE: The `plan` group also includes plan-file-management subcommands used by the `plan-file-management` skill.

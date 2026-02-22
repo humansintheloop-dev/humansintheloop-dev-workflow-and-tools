@@ -3,22 +3,39 @@
 import os
 import shutil
 
+import click
+
+from i2code.tracking.model import TrackedWorkingDirectory
+
 
 SUBDIRS = ("issues", "sessions")
 
 
 def migrate(project_dir, dry_run=False):
     """Move .claude/issues and .claude/sessions to .hitl/, update .gitignore."""
-    TrackingManager(project_dir, dry_run).migrate()
+    twd = TrackedWorkingDirectory.scan(project_dir)
+    migrate_tracking(twd, dry_run)
 
 
 def link(project_dir, target_base, dry_run=False):
     """Create symlinks from .hitl/issues and .hitl/sessions to target_base subdirectories."""
-    TrackingManager(project_dir, dry_run).link(target_base)
+    _LinkExecutor(project_dir, dry_run).link(target_base)
 
 
-class TrackingManager:
-    """Manages migration from .claude to .hitl tracking directories."""
+def migrate_tracking(twd, dry_run=False):
+    """Migrate root and children from legacy (.claude) to HITL (.hitl) tracking."""
+    executor = _MigrateExecutor(str(twd.root.path), dry_run)
+    executor.migrate_root()
+    executor.migrate_children(twd.children)
+
+
+def link_tracking(project_dir, target_base, dry_run=False):
+    """Create symlinks from .hitl/issues and .hitl/sessions to target_base subdirectories."""
+    _LinkExecutor(project_dir, dry_run).link(target_base)
+
+
+class _MigrateExecutor:
+    """Executes migration from .claude to .hitl tracking directories."""
 
     def __init__(self, project_dir, dry_run=False):
         self.project_dir = project_dir
@@ -26,7 +43,7 @@ class TrackingManager:
         self.claude_dir = os.path.join(project_dir, ".claude")
         self.hitl_dir = os.path.join(project_dir, ".hitl")
 
-    def migrate(self):
+    def migrate_root(self):
         """Move .claude/issues and .claude/sessions to .hitl/, update .gitignore."""
         moved_any = False
         for subdir in SUBDIRS:
@@ -49,24 +66,57 @@ class TrackingManager:
         if not moved_any:
             print("  Nothing to migrate")
 
-        self._migrate_subdirectories()
+    def migrate_children(self, children):
+        """Migrate tracking from child directories into root .hitl/."""
+        for child in children:
+            link_base = os.path.join(str(child.path), ".hitl")
+            self._migrate_child_legacy(child, link_base)
+            self._consolidate_child_hitl(child, link_base)
 
-    def link(self, target_base):
-        """Create symlinks from .hitl/issues and .hitl/sessions to target_base."""
+    def _migrate_child_legacy(self, child, link_base):
+        """Consolidate a child's legacy (.claude) tracking into root and relink."""
+        if child.legacy is None:
+            return
+        src_base = str(child.legacy.base_path)
         for subdir in SUBDIRS:
-            src = os.path.join(self.hitl_dir, subdir)
-            target = os.path.join(target_base, subdir)
+            self._consolidate_child_subdir(src_base, link_base, subdir)
+            self._relink_legacy_symlink(src_base, link_base, subdir)
 
-            self._ensure_directory(target)
-
-            if _symlink_already_correct(src, target):
-                print(f"  {self._rel(src)} already linked to {target}")
-                continue
-
-            self._clear_existing_path(src, target)
-            self._create_symlink(src, target)
+    def _consolidate_child_hitl(self, child, link_base):
+        """Consolidate a child's .hitl tracking into root."""
+        if child.hitl is None:
+            return
+        src_base = str(child.hitl.base_path)
+        for subdir in SUBDIRS:
+            self._consolidate_child_subdir(src_base, link_base, subdir)
 
     # -- migrate helpers --
+
+    def _relink_legacy_symlink(self, src_base, link_base, subdir):
+        """When a child's legacy subdir is a symlink, create .hitl symlink to root instead."""
+        src = os.path.join(src_base, subdir)
+        if not os.path.islink(src):
+            return
+
+        dst = os.path.join(self.hitl_dir, subdir)
+        link_path = os.path.join(link_base, subdir)
+        rel_target = os.path.relpath(dst, link_base)
+        self._ensure_symlink(link_path, rel_target)
+
+    def _consolidate_child_subdir(self, src_base, link_base, subdir):
+        """Merge a child's tracking subdir into root .hitl/ and create symlink back."""
+        src = os.path.join(src_base, subdir)
+        if not os.path.isdir(src) or os.path.islink(src):
+            return
+
+        dst = os.path.join(self.hitl_dir, subdir)
+        if not self.dry_run:
+            os.makedirs(dst, exist_ok=True)
+        self._merge_into_existing(src, dst)
+
+        link_path = os.path.join(link_base, subdir)
+        rel_target = os.path.relpath(dst, link_base)
+        self._ensure_symlink(link_path, rel_target)
 
     def _migrate_symlink(self, src, dst):
         link_target = os.readlink(src)
@@ -161,25 +211,80 @@ class TrackingManager:
             with open(gitignore, "w") as f:
                 f.writelines(new_lines)
 
-    def _migrate_subdirectories(self):
-        for claude_dir in _find_subdirectory_claude_dirs(self.project_dir):
-            parent_dir = os.path.dirname(claude_dir)
-            for subdir in SUBDIRS:
-                src = os.path.join(claude_dir, subdir)
-                if not os.path.isdir(src) or os.path.islink(src):
-                    continue
+    # -- shared helpers --
 
-                dst = os.path.join(self.hitl_dir, subdir)
-                if not self.dry_run:
-                    os.makedirs(dst, exist_ok=True)
-                self._merge_into_existing(src, dst)
+    def _create_symlink(self, path, target):
+        if not self.dry_run:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+        print(f"  Symlink {self._rel(path)} -> {target}")
+        if not self.dry_run:
+            os.symlink(target, path)
 
-                sub_hitl_dir = os.path.join(parent_dir, ".hitl")
-                link_path = os.path.join(sub_hitl_dir, subdir)
-                rel_target = os.path.relpath(dst, sub_hitl_dir)
-                self._ensure_symlink(link_path, rel_target)
+    def _remove_path(self, path):
+        print(f"  Remove {self._rel(path)}")
+        if not self.dry_run:
+            os.remove(path)
 
-    # -- link helpers --
+    def _ensure_symlink(self, link_path, rel_target):
+        if _symlink_already_correct(link_path, rel_target):
+            print(f"  {self._rel(link_path)} already linked to {rel_target}")
+            return
+        print(f"  Symlink {self._rel(link_path)} -> {rel_target}")
+        if not self.dry_run:
+            os.makedirs(os.path.dirname(link_path), exist_ok=True)
+            os.symlink(rel_target, link_path)
+
+    def _move_filtered_entries(self, src_dir, target_dir):
+        entries = [e for e in os.listdir(src_dir) if e != "debug.log"]
+        if not entries:
+            return
+        print(f"  Move {len(entries)} file(s) from {self._rel(src_dir)} "
+              f"to {target_dir}")
+        if not self.dry_run:
+            for entry in entries:
+                entry_dst = os.path.join(target_dir, entry)
+                if not os.path.exists(entry_dst):
+                    shutil.move(os.path.join(src_dir, entry), entry_dst)
+
+    def _rel(self, path):
+        return os.path.relpath(path, self.project_dir)
+
+
+class _LinkExecutor:
+    """Executes symlink creation from .hitl to target directories."""
+
+    def __init__(self, project_dir, dry_run=False):
+        self.project_dir = project_dir
+        self.dry_run = dry_run
+        self.hitl_dir = os.path.join(project_dir, ".hitl")
+
+    def link(self, target_base):
+        """Create symlinks from .hitl/issues and .hitl/sessions to target_base."""
+        self._check_for_conflicting_symlinks(target_base)
+
+        for subdir in SUBDIRS:
+            src = os.path.join(self.hitl_dir, subdir)
+            target = os.path.join(target_base, subdir)
+
+            self._ensure_directory(target)
+
+            if _symlink_already_correct(src, target):
+                print(f"  {self._rel(src)} already linked to {target}")
+                continue
+
+            self._clear_existing_path(src, target)
+            self._create_symlink(src, target)
+
+    def _check_for_conflicting_symlinks(self, target_base):
+        for subdir in SUBDIRS:
+            src = os.path.join(self.hitl_dir, subdir)
+            target = os.path.join(target_base, subdir)
+            if os.path.islink(src) and os.readlink(src) != target:
+                existing_target = os.readlink(src)
+                raise click.ClickException(
+                    f".hitl/{subdir} is already linked to {existing_target} "
+                    f"which is a different directory than {target}"
+                )
 
     def _clear_existing_path(self, src, target):
         if not os.path.exists(src) and not os.path.islink(src):
@@ -213,8 +318,6 @@ class TrackingManager:
                 if not os.path.exists(entry_dst):
                     shutil.move(os.path.join(src_dir, entry), entry_dst)
 
-    # -- shared helpers --
-
     def _create_symlink(self, path, target):
         if not self.dry_run:
             os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -228,32 +331,6 @@ class TrackingManager:
         print(f"  Create directory {path}")
         if not self.dry_run:
             os.makedirs(path, exist_ok=True)
-
-    def _remove_path(self, path):
-        print(f"  Remove {self._rel(path)}")
-        if not self.dry_run:
-            os.remove(path)
-
-    def _ensure_symlink(self, link_path, rel_target):
-        if _symlink_already_correct(link_path, rel_target):
-            print(f"  {self._rel(link_path)} already linked to {rel_target}")
-            return
-        print(f"  Symlink {self._rel(link_path)} -> {rel_target}")
-        if not self.dry_run:
-            os.makedirs(os.path.dirname(link_path), exist_ok=True)
-            os.symlink(rel_target, link_path)
-
-    def _move_filtered_entries(self, src_dir, target_dir):
-        entries = [e for e in os.listdir(src_dir) if e != "debug.log"]
-        if not entries:
-            return
-        print(f"  Move {len(entries)} file(s) from {self._rel(src_dir)} "
-              f"to {target_dir}")
-        if not self.dry_run:
-            for entry in entries:
-                entry_dst = os.path.join(target_dir, entry)
-                if not os.path.exists(entry_dst):
-                    shutil.move(os.path.join(src_dir, entry), entry_dst)
 
     def _rel(self, path):
         return os.path.relpath(path, self.project_dir)
@@ -304,12 +381,3 @@ def _find_gitignore_insert_position(lines):
         if stripped and not stripped.startswith("#"):
             return i
     return len(lines)
-
-
-def _find_subdirectory_claude_dirs(project_dir):
-    root_claude = os.path.join(project_dir, ".claude")
-    for dirpath, dirnames, _ in os.walk(project_dir):
-        dirnames[:] = [d for d in dirnames
-                       if d not in (".git", "node_modules", ".hitl")]
-        if os.path.basename(dirpath) == ".claude" and dirpath != root_claude:
-            yield dirpath

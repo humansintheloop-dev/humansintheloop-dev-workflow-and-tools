@@ -1,0 +1,53 @@
+= `i2code tracking` -- HITL Tracking Management
+:toc:
+:toclevels: 2
+
+== Overview
+
+The `tracking` command group manages HITL tracking directories used for session and issue recording.
+
+== Commands
+
+=== `i2code tracking setup`
+
+Sets up HITL tracking by migrating from `.claude/` to `.hitl/` and optionally linking to a shared directory.
+
+[source,shell]
+----
+i2code tracking setup [OPTIONS]
+----
+
+==== Options
+
+`--link DIR`::
+Symlink `.hitl/issues` and `.hitl/sessions` to `DIR/issues` and `DIR/sessions`.
+This allows sharing tracking data across projects or storing it in a central location.
+
+`--dry-run`::
+Show what would be done without making changes.
+
+==== What setup does
+
+1. Creates `.hitl/sessions` and `.hitl/issues` directories
+2. Migrates any existing `.claude/sessions` and `.claude/issues` to `.hitl/`
+3. Updates `.gitignore` to ignore `.hitl/` instead of `.claude/sessions` and `.claude/issues`
+4. Migrates subdirectory `.claude/` tracking into root `.hitl/` with symlinks back
+5. If `--link DIR` is specified, symlinks `.hitl/` subdirectories to the shared directory
+
+== Examples
+
+[source,shell]
+----
+# Set up tracking (migrate from .claude/ to .hitl/)
+i2code tracking setup
+
+# Preview setup without making changes
+i2code tracking setup --dry-run
+
+# Set up and link to a shared tracking directory
+i2code tracking setup --link ~/hitl-tracking
+----
+
+== See Also
+
+* link:improve.adoc[`i2code improve`] -- analyzes sessions and issues from the tracking directories

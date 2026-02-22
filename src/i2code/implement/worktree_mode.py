@@ -24,10 +24,12 @@ class WorktreeMode:
         ci_monitor: GithubActionsMonitor for waiting on CI completion.
         build_fixer: GithubActionsBuildFixer for detecting and fixing CI failures.
         review_processor: PullRequestReviewProcessor for handling PR feedback.
+        commit_recovery: Optional CommitRecovery for recovering uncommitted changes before the task loop.
     """
 
     def __init__(self, opts, git_repo, state, claude_runner,
-                 work_project, ci_monitor, build_fixer, review_processor):
+                 work_project, ci_monitor, build_fixer, review_processor,
+                 commit_recovery=None):
         self._opts = opts
         self._git_repo = git_repo
         self._state = state
@@ -36,9 +38,13 @@ class WorktreeMode:
         self._ci_monitor = ci_monitor
         self._build_fixer = build_fixer
         self._review_processor = review_processor
+        self._commit_recovery = commit_recovery
 
     def execute(self):
         """Run the worktree task loop until all tasks are complete."""
+        if self._commit_recovery is not None:
+            self._commit_recovery.check_and_recover()
+
         while True:
             if self._build_fixer.check_and_fix_ci():
                 continue

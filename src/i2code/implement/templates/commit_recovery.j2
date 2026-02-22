@@ -1,0 +1,21 @@
+You are recovering from a failed commit during automated task execution.
+
+The previous run completed a task but failed to commit the changes. Your job is to:
+1. Stage all uncommitted changes (including the plan file updates)
+2. Generate an appropriate commit message describing the completed task
+3. Commit the changes
+
+Plan file: {{ plan_file }}
+
+Summary of uncommitted changes:
+```
+{{ diff_summary }}
+```
+
+IMPORTANT:
+- Do NOT modify any code or files — only stage and commit
+- Use `git add` and `git commit` only
+- The commit message should describe the task that was completed
+{% if not interactive %}
+- If you don't have permission to perform an action, print an informative error message and exit
+{% endif %}

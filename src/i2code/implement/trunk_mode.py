@@ -21,10 +21,11 @@ class TrunkMode:
         claude_runner: ClaudeRunner (or FakeClaudeRunner) for invoking Claude.
     """
 
-    def __init__(self, git_repo, project, claude_runner):
+    def __init__(self, git_repo, project, claude_runner, commit_recovery=None):
         self._git_repo = git_repo
         self._project = project
         self._claude_runner = claude_runner
+        self._commit_recovery = commit_recovery
 
     def execute(
         self,
@@ -33,6 +34,9 @@ class TrunkMode:
         extra_prompt=None,
     ):
         """Run the task loop until all tasks are complete."""
+        if self._commit_recovery is not None:
+            self._commit_recovery.check_and_recover()
+
         while True:
             next_task = self._project.get_next_task()
             if next_task is None:

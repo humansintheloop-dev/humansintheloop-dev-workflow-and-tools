@@ -1,5 +1,7 @@
 """CommitRecovery: detects and recovers from failed commits during task execution."""
 
+import sys
+
 from i2code.implement.claude_runner import check_claude_success
 from i2code.implement.command_builder import CommandBuilder
 from i2code.plan_domain.parser import parse
@@ -57,14 +59,24 @@ class CommitRecovery:
         return check_claude_success(claude_result.returncode, head_before, head_after)
 
     def check_and_recover(self):
-        """Check if recovery is needed and attempt it.
+        """Check if recovery is needed and attempt it with retry.
 
-        Returns:
-            True if recovery was needed and succeeded, False otherwise.
+        Attempts recovery up to 2 times. On success, prints a success message
+        and returns. On double failure, prints an error message and exits.
         """
-        if self.needs_recovery():
-            return self.recover()
-        return False
+        if not self.needs_recovery():
+            return False
+
+        max_attempts = 2
+        for attempt in range(1, max_attempts + 1):
+            if self.recover():
+                print("Recovery commit successful.")
+                return True
+            if attempt < max_attempts:
+                print(f"Recovery attempt {attempt} failed, retrying...")
+
+        print("Error: Could not commit recovered changes after 2 attempts. Please commit manually and rerun.")
+        sys.exit(1)
 
     def _has_newly_completed_task(self, head_plan, working_tree_plan):
         for head_thread, wt_thread in zip(head_plan.threads, working_tree_plan.threads):

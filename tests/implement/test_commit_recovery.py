@@ -134,20 +134,6 @@ class TestCommitRecoveryRecover:
 @pytest.mark.unit
 class TestCommitRecoveryCheckAndRecover:
 
-    def test_check_and_recover_when_recovery_needed(self, make_recovery, capsys):
-        """When needs_recovery() is True, calls recover() and returns its result."""
-        recovery, git_repo, runner = make_recovery(
-            plan_content=PLAN_WITH_COMPLETED_TASK,
-            diff_output="some diff output",
-            head_content=PLAN_WITH_INCOMPLETE_TASK,
-        )
-        runner.set_side_effect(advance_head(git_repo, "bbb"))
-
-        result = recovery.check_and_recover()
-
-        assert result is True
-        assert len(runner.calls) == 1
-
     def test_check_and_recover_when_no_recovery_needed(self, make_recovery):
         """When needs_recovery() is False, does not call recover()."""
         recovery, _, runner = make_recovery(
@@ -158,3 +144,62 @@ class TestCommitRecoveryCheckAndRecover:
 
         assert result is False
         assert len(runner.calls) == 0
+
+    def test_first_attempt_succeeds_no_retry(self, make_recovery, capsys):
+        """When first recovery attempt succeeds, no retry and prints success."""
+        recovery, git_repo, runner = make_recovery(
+            plan_content=PLAN_WITH_COMPLETED_TASK,
+            diff_output="some diff output",
+            head_content=PLAN_WITH_INCOMPLETE_TASK,
+        )
+        runner.set_side_effect(advance_head(git_repo, "bbb"))
+
+        recovery.check_and_recover()
+
+        assert len(runner.calls) == 1
+        captured = capsys.readouterr()
+        assert "Recovery commit successful." in captured.out
+
+    def test_first_attempt_fails_second_succeeds(self, make_recovery, capsys):
+        """When first attempt fails and second succeeds, prints retry then success."""
+        recovery, git_repo, runner = make_recovery(
+            plan_content=PLAN_WITH_COMPLETED_TASK,
+            diff_output="some diff output",
+            head_content=PLAN_WITH_INCOMPLETE_TASK,
+        )
+        runner.set_results([
+            ClaudeResult(returncode=1),
+            ClaudeResult(returncode=0),
+        ])
+        runner.set_side_effects([
+            lambda: None,  # first call: no HEAD advance (failure)
+            advance_head(git_repo, "ccc"),  # second call: HEAD advances (success)
+        ])
+
+        recovery.check_and_recover()
+
+        assert len(runner.calls) == 2
+        captured = capsys.readouterr()
+        assert "Recovery attempt 1 failed, retrying..." in captured.out
+        assert "Recovery commit successful." in captured.out
+
+    def test_both_attempts_fail_exits_with_error(self, make_recovery, capsys):
+        """When both attempts fail, prints error and calls sys.exit(1)."""
+        recovery, _, runner = make_recovery(
+            plan_content=PLAN_WITH_COMPLETED_TASK,
+            diff_output="some diff output",
+            head_content=PLAN_WITH_INCOMPLETE_TASK,
+        )
+        runner.set_results([
+            ClaudeResult(returncode=1),
+            ClaudeResult(returncode=1),
+        ])
+
+        with pytest.raises(SystemExit) as exc_info:
+            recovery.check_and_recover()
+
+        assert exc_info.value.code == 1
+        assert len(runner.calls) == 2
+        captured = capsys.readouterr()
+        assert "Recovery attempt 1 failed, retrying..." in captured.out
+        assert "Error: Could not commit recovered changes after 2 attempts. Please commit manually and rerun." in captured.out

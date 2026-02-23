@@ -59,13 +59,13 @@ This plan fixes a bug where `i2code implement` creates a wrong branch when all t
 
 This thread fixes the essential bug: `_worktree_mode()` must exit with an error when `get_next_task()` returns `None`, before creating any branches or modifying the worktree.
 
-- [ ] **Task 1.1: Integration test: implement exits with error when all tasks are complete**
+- [x] **Task 1.1: Integration test: implement exits with error when all tasks are complete**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/implement/test_all_tasks_complete_integration.py -v -m integration`
   - Observable: Running i2code implement on an idea where all plan tasks are marked complete exits with a non-zero status, stderr contains "all tasks", and no new branches, worktrees, or Claude invocations occur.
   - Evidence: `Integration test creates a test git repo, commits idea files with all tasks marked [x] complete, creates a mock Claude script that writes a sentinel file when invoked, runs run_script(idea_dir, cwd=tmpdir, mock_claude=script_path), and asserts: (a) non-zero returncode, (b) stderr contains "all tasks", (c) no idea/* branches created, (d) no worktree directory created, (e) mock Claude script was never invoked (sentinel file absent).`
   - Steps:
-    - [ ] Add a new integration test file tests/implement/test_all_tasks_complete_integration.py with a test class TestAllTasksCompleteExitsWithError marked @pytest.mark.integration. The test uses the test_git_repo_with_commit fixture, creates a valid idea directory with all plan tasks marked [x] complete (using write_plan_file with completed=True), creates a mock Claude script that writes a sentinel file when invoked, runs run_script(idea_dir, cwd=tmpdir, mock_claude=script_path), and asserts: (a) non-zero returncode, (b) stderr contains "all tasks", (c) no idea/* branches created beyond master, (d) no worktree directory created, (e) sentinel file does not exist (Claude was never invoked). Verify the test fails.
+    - [x] Add a new integration test file tests/implement/test_all_tasks_complete_integration.py with a test class TestAllTasksCompleteExitsWithError marked @pytest.mark.integration. The test uses the test_git_repo_with_commit fixture, creates a valid idea directory with all plan tasks marked [x] complete (using write_plan_file with completed=True), creates a mock Claude script that writes a sentinel file when invoked, runs run_script(idea_dir, cwd=tmpdir, mock_claude=script_path), and asserts: (a) non-zero returncode, (b) stderr contains "all tasks", (c) no idea/* branches created beyond master, (d) no worktree directory created, (e) sentinel file does not exist (Claude was never invoked). Verify the test fails.
 - [ ] **Task 1.2: `_worktree_mode()` exits with error when all tasks are complete**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/implement/test_implement_command.py -v -m unit`
@@ -105,3 +105,9 @@ Outside-in TDD: start with an integration test that exercises the real command f
 
 ### 2026-02-24 07:57 - delete-task
 Existing test test_worktree_mode_delegates_to_mode_factory already covers the regression guard. The set_next_task() addition is handled in Task 2.2.
+
+### 2026-02-24 08:27 - mark-step-complete
+Integration test written and verified to fail (RED state)
+
+### 2026-02-24 08:27 - mark-task-complete
+Integration test written and verified to fail — confirms the bug: exit code 0, no error message, creates wrong branch and worktree

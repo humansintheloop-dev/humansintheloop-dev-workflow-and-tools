@@ -128,6 +128,10 @@ test('detects python -m pytest with flags', () => {
   assert.strictEqual(isPythonMPytest('python -m pytest -v tests/'), true);
 });
 
+test('detects python3 -m pytest', () => {
+  assert.strictEqual(isPythonMPytest('python3 -m pytest tests/'), true);
+});
+
 test('allows uv run pytest', () => {
   assert.strictEqual(isPythonMPytest('uv run pytest tests/'), false);
 });

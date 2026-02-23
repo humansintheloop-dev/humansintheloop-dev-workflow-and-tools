@@ -24,7 +24,7 @@ const GIT_DASH_C_MESSAGE =
   'Do not use `git -C directory` - cd to the top-level directory and run git commands from there';
 
 function isPythonMPytest(command) {
-  return /\bpython\s+-m\s+pytest\b/.test(command);
+  return /\bpython3?\s+-m\s+pytest\b/.test(command);
 }
 
 const PYTHON_M_PYTEST_MESSAGE =

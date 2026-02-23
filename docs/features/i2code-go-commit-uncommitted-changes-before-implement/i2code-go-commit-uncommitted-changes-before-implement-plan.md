@@ -100,15 +100,15 @@ This steel thread implements the primary scenario (S-1): when the user has a pla
 
 This steel thread implements scenario S-4: when the `git add`/`git commit` fails, the user is offered "Retry" or "Abort workflow" via the existing `handle_error` pattern.
 
-- [ ] **Task 2.1: Commit failure triggers retry/abort prompt via `handle_error`**
+- [x] **Task 2.1: Commit failure triggers retry/abort prompt via `handle_error`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <test-idea-directory>` (simulated via automated input to `idea-to-code.sh`)
   - Observable: When the user selects "Commit changes" and the `git commit` exits non-zero, the script calls `handle_error` which presents "Retry" or "Abort workflow". Selecting "Abort workflow" exits with code 1.
   - Evidence: Shell test script `test-scripts/test-go-commit-failure.sh` creates a temp git repo with uncommitted idea files, stubs `git` to fail on `commit` subcommand, pipes input selecting "Commit changes" then "Abort workflow", and asserts the script exits with code 1 and the output contains "Retry" and "Abort workflow".
   - Steps:
-    - [ ] Create `test-scripts/test-go-commit-failure.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; stubs `git` to exit 1 on `commit` subcommand (pass-through for other subcommands); pipes input "2" (Commit changes) then "2" (Abort workflow from `handle_error` menu) into `idea-to-code.sh`; asserts exit code is 1; asserts output contains "Retry" and "Abort workflow"
-    - [ ] Add `test-scripts/test-go-commit-failure.sh` to `test-scripts/test-end-to-end.sh`
-    - [ ] In the `has_plan)` case, wrap the `commit_idea_changes` call with the existing `handle_error` pattern: if the command fails, call `handle_error` and if the user selects Retry, `continue` the loop; if Abort, exit. Follow the same pattern used by other steps (e.g., lines 176-182 in `src/i2code/scripts/idea-to-code.sh`)
+    - [x] Create `test-scripts/test-go-commit-failure.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; stubs `git` to exit 1 on `commit` subcommand (pass-through for other subcommands); pipes input "2" (Commit changes) then "2" (Abort workflow from `handle_error` menu) into `idea-to-code.sh`; asserts exit code is 1; asserts output contains "Retry" and "Abort workflow"
+    - [x] Add `test-scripts/test-go-commit-failure.sh` to `test-scripts/test-end-to-end.sh`
+    - [x] In the `has_plan)` case, wrap the `commit_idea_changes` call with the existing `handle_error` pattern: if the command fails, call `handle_error` and if the user selects Retry, `continue` the loop; if Abort, exit. Follow the same pattern used by other steps (e.g., lines 176-182 in `src/i2code/scripts/idea-to-code.sh`)
 
 ## Change History
 
@@ -143,3 +143,6 @@ Verified option 3 in 4-option menu maps to implement at idea-to-code.sh:296-297;
 
 ### 2026-02-23 11:50 - mark-task-complete
 Test verifies skip-commit-and-implement behavior; all assertions pass
+
+### 2026-02-23 12:02 - mark-task-complete
+Test verifies commit failure triggers handle_error with Retry/Abort; handle_error was already implemented in prior commit

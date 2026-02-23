@@ -32,8 +32,8 @@ def _write_ci_workflow(work_dir):
 def _make_worktree_mode(
     plan_path, idea_dir, work_dir,
     fake_repo=None, fake_runner=None, fake_gh=None, fake_state=None,
-    opts=None, commit_recovery=None,
-):
+    opts=None, commit_recovery=None, clock=None,
+):  # noqa: PLR0913
     """Create a WorktreeMode with fakes wired up."""
     project = IdeaProject(idea_dir)
     if fake_runner is None:
@@ -80,6 +80,7 @@ def _make_worktree_mode(
         build_fixer=build_fixer,
         review_processor=review_processor,
         commit_recovery=commit_recovery,
+        clock=clock,
     )
     mode = WorktreeMode(
         opts=opts,
@@ -241,6 +242,51 @@ class TestWorktreeModeTaskExecution:
             # ensure_pr was called
             ensure_pr_calls = [c for c in fake_repo.calls if c[0] == "ensure_pr"]
             assert len(ensure_pr_calls) == 1
+
+
+def _run_with_fake_clock(capsys, start, end):
+    """Run a single task with a fake clock and return captured stdout."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        idea_name = "test-feature"
+        idea_dir = os.path.join(tmpdir, idea_name)
+        os.makedirs(idea_dir)
+        plan_path = write_plan_file(idea_dir, idea_name, [
+            (1, 1, "Set up project", False),
+        ])
+        _write_ci_workflow(tmpdir)
+
+        fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
+        fake_runner = FakeClaudeRunner()
+
+        fake_runner.set_side_effect(
+            combined(
+                advance_head(fake_repo, "bbb"),
+                mark_task_complete(plan_path, 1, 1, "Set up project"),
+            )
+        )
+
+        clock_values = iter([start, end])
+        mode, _, _, _, _ = _make_worktree_mode(
+            plan_path, idea_dir, tmpdir,
+            fake_repo=fake_repo, fake_runner=fake_runner,
+            opts=ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True),
+            clock=lambda: next(clock_values),
+        )
+        mode.execute()
+
+        return capsys.readouterr().out
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("start,end,expected_duration", [
+    (100.0, 145.0, "45 seconds"),
+    (100.0, 101.0, "1 second"),
+    (100.0, 280.0, "3 minutes"),
+    (100.0, 160.0, "1 minute"),
+])
+def test_prints_task_duration(capsys, start, end, expected_duration):
+    output = _run_with_fake_clock(capsys, start, end)
+    assert f"Task completed successfully in {expected_duration}." in output
 
 
 @pytest.mark.unit

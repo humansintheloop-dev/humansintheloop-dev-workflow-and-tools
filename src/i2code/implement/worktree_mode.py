@@ -1,6 +1,7 @@
 """WorktreeMode: execute plan tasks using worktree + PR + CI loop."""
 
 import sys
+import time
 from dataclasses import dataclass
 
 from i2code.implement.git_setup import (
@@ -13,6 +14,16 @@ from i2code.implement.claude_runner import (
 from i2code.implement.command_builder import CommandBuilder
 
 
+def _format_duration(seconds):
+    rounded = int(seconds)
+    if rounded < 60:
+        unit = "second" if rounded == 1 else "seconds"
+        return f"{rounded} {unit}"
+    minutes = rounded // 60
+    unit = "minute" if minutes == 1 else "minutes"
+    return f"{minutes} {unit}"
+
+
 @dataclass
 class LoopSteps:
     """Pipeline collaborators used during the worktree task loop."""
@@ -22,6 +33,7 @@ class LoopSteps:
     build_fixer: object
     review_processor: object
     commit_recovery: object
+    clock: object = None
 
 
 class WorktreeMode:
@@ -39,6 +51,7 @@ class WorktreeMode:
         self._git_repo = git_repo
         self._work_project = work_project
         self._loop_steps = loop_steps
+        self._clock = loop_steps.clock or time.monotonic
 
     def execute(self):
         """Run the worktree task loop until all tasks are complete."""
@@ -63,8 +76,10 @@ class WorktreeMode:
         task_description = next_task.print()
         print(f"Executing task: {task_description}")
 
+        start = self._clock()
         self._run_claude_and_validate(next_task, task_description)
-        self._push_and_ensure_pr()
+        elapsed = self._clock() - start
+        self._push_and_ensure_pr(elapsed)
         self._loop_steps.ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)
 
     def _run_claude_and_validate(self, next_task, task_description):
@@ -93,9 +108,10 @@ class WorktreeMode:
             print("Tasks must create a CI workflow (e.g., .github/workflows/ci.yml) before pushing.", file=sys.stderr)
             sys.exit(1)
 
-    def _push_and_ensure_pr(self):
+    def _push_and_ensure_pr(self, elapsed_seconds):
         """Push changes and create a Draft PR if one doesn't exist."""
-        print("Task completed successfully. Pushing changes...")
+        duration = _format_duration(elapsed_seconds)
+        print(f"Task completed successfully in {duration}. Pushing changes...")
 
         if not self._git_repo.push():
             print("Error: Could not push commit to slice branch", file=sys.stderr)

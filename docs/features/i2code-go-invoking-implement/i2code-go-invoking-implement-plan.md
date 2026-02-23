@@ -108,16 +108,16 @@ When a user selects "Implement the entire plan" and no config file exists, they 
     - [x] Add test case `test_config_with_non_interactive_trunk_passes_flags`: manually create config file with `interactive: false` and `trunk: true`, pipe `printf '%s\n' 2 3` (Implement, Exit), assert mock args file contains `implement --non-interactive --trunk`
     - [x] Add test case `test_config_with_defaults_passes_no_extra_flags`: manually create config file with `interactive: true` and `trunk: false`, pipe `printf '%s\n' 2 3` (Implement, Exit), assert mock args file contains `implement <idea-dir>` with no `--non-interactive` or `--trunk` flags
 
-- [ ] **Task 1.4: Active config displayed before implementation and prompting skipped when config exists**
+- [x] **Task 1.4: Active config displayed before implementation and prompting skipped when config exists**
   - TaskType: OUTCOME
   - Entrypoint: `printf '%s\n' 2 3 | src/i2code/scripts/idea-to-code.sh <idea-dir>` (Implement → Exit) with pre-existing config file
   - Observable: stderr output contains "Implementation options:", "Mode: non-interactive", and "Branch: trunk"; stderr does NOT contain "How should Claude run?"
   - Evidence: `test-scripts/test-implement-config.sh` test cases create config, capture stderr, assert display lines present and prompt lines absent
   - Steps:
-    - [ ] Add `display_implement_config` function to `src/i2code/scripts/idea-to-code.sh` that prints to stderr: `"Implementation options:"`, `"  Mode: interactive"` or `"  Mode: non-interactive"` based on `IMPLEMENT_INTERACTIVE`, `"  Branch: worktree"` or `"  Branch: trunk"` based on `IMPLEMENT_TRUNK`
-    - [ ] Call `display_implement_config` after `read_implement_config` and before the `run_step` invocation of `i2code implement`
-    - [ ] Add test case `test_config_display_shown`: create config with `interactive: false` and `trunk: true`, capture stderr from the piped run, assert stderr contains "Implementation options:", "Mode: non-interactive", "Branch: trunk"
-    - [ ] Add test case `test_no_prompting_when_config_exists`: create config with defaults, capture stderr from the piped run, assert stderr does NOT contain "How should Claude run?" or "Where should implementation happen?"
+    - [x] Add `display_implement_config` function to `src/i2code/scripts/idea-to-code.sh` that prints to stderr: `"Implementation options:"`, `"  Mode: interactive"` or `"  Mode: non-interactive"` based on `IMPLEMENT_INTERACTIVE`, `"  Branch: worktree"` or `"  Branch: trunk"` based on `IMPLEMENT_TRUNK`
+    - [x] Call `display_implement_config` after `read_implement_config` and before the `run_step` invocation of `i2code implement`
+    - [x] Add test case `test_config_display_shown`: create config with `interactive: false` and `trunk: true`, capture stderr from the piped run, assert stderr contains "Implementation options:", "Mode: non-interactive", "Branch: trunk"
+    - [x] Add test case `test_no_prompting_when_config_exists`: create config with defaults, capture stderr from the piped run, assert stderr does NOT contain "How should Claude run?" or "Where should implementation happen?"
 
 ## Steel Thread 2: Reconfiguring Options
 
@@ -183,3 +183,6 @@ Added test_config_with_defaults_passes_no_extra_flags - passes
 
 ### 2026-02-23 17:13 - mark-task-complete
 Config-driven invocation passes correct flags: --non-interactive when interactive:false, --trunk when trunk:true, no extra flags for defaults
+
+### 2026-02-23 17:19 - mark-task-complete
+Added display_implement_config function, called it before implement invocation, and added tests verifying display output and prompting skipped

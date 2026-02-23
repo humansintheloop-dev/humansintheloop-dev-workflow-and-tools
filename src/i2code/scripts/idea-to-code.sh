@@ -157,6 +157,21 @@ read_implement_config() {
     IMPLEMENT_TRUNK="${IMPLEMENT_TRUNK:-false}"
 }
 
+# Function to display active implement configuration
+display_implement_config() {
+    echo "Implementation options:" >&2
+    if [ "$IMPLEMENT_INTERACTIVE" = "true" ]; then
+        echo "  Mode: interactive" >&2
+    else
+        echo "  Mode: non-interactive" >&2
+    fi
+    if [ "$IMPLEMENT_TRUNK" = "true" ]; then
+        echo "  Branch: trunk" >&2
+    else
+        echo "  Branch: worktree" >&2
+    fi
+}
+
 # Function to build flags for i2code implement based on config
 build_implement_flags() {
     IMPLEMENT_FLAGS=()
@@ -342,6 +357,7 @@ main() {
                                 write_implement_config
                             fi
                             read_implement_config
+                            display_implement_config
                             build_implement_flags
                             if run_step "Implementing plan" i2code implement "${IMPLEMENT_FLAGS[@]}" "$dir"; then
                                 echo "Implementation completed successfully!"
@@ -390,6 +406,7 @@ main() {
                                 write_implement_config
                             fi
                             read_implement_config
+                            display_implement_config
                             build_implement_flags
                             if run_step "Implementing plan" i2code implement "${IMPLEMENT_FLAGS[@]}" "$dir"; then
                                 echo "Implementation completed successfully!"

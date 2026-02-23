@@ -176,6 +176,83 @@ else
 fi
 
 # ---------------------------------------------------------------
+# Test 5: Config display shown when config exists
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 5: Config display shown when config exists ---"
+
+TEST5_DIR="$TMPDIR_ROOT/test5-idea"
+mkdir -p "$TEST5_DIR"
+echo "My idea" > "$TEST5_DIR/test5-idea-idea.txt"
+echo "# Spec" > "$TEST5_DIR/test5-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST5_DIR/test5-idea-plan.md"
+
+# Pre-create config file with non-interactive and trunk
+printf 'interactive: false\ntrunk: true\n' > "$TEST5_DIR/test5-idea-implement-config.yaml"
+
+create_mock_i2code
+
+# Capture stderr from the piped run
+STDERR5="$TMPDIR_ROOT/test5-stderr"
+printf '%s\n' 2 3 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST5_DIR" > /dev/null 2>"$STDERR5" || true
+
+if grep -q 'Implementation options:' "$STDERR5"; then
+    pass "stderr contains 'Implementation options:'"
+else
+    fail "stderr does not contain 'Implementation options:'"
+    echo "  Captured stderr:" && cat "$STDERR5"
+fi
+
+if grep -q 'Mode: non-interactive' "$STDERR5"; then
+    pass "stderr contains 'Mode: non-interactive'"
+else
+    fail "stderr does not contain 'Mode: non-interactive'"
+    echo "  Captured stderr:" && cat "$STDERR5"
+fi
+
+if grep -q 'Branch: trunk' "$STDERR5"; then
+    pass "stderr contains 'Branch: trunk'"
+else
+    fail "stderr does not contain 'Branch: trunk'"
+    echo "  Captured stderr:" && cat "$STDERR5"
+fi
+
+# ---------------------------------------------------------------
+# Test 6: No prompting when config exists
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 6: No prompting when config exists ---"
+
+TEST6_DIR="$TMPDIR_ROOT/test6-idea"
+mkdir -p "$TEST6_DIR"
+echo "My idea" > "$TEST6_DIR/test6-idea-idea.txt"
+echo "# Spec" > "$TEST6_DIR/test6-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST6_DIR/test6-idea-plan.md"
+
+# Pre-create config file with default values
+printf 'interactive: true\ntrunk: false\n' > "$TEST6_DIR/test6-idea-implement-config.yaml"
+
+create_mock_i2code
+
+# Capture stderr from the piped run
+STDERR6="$TMPDIR_ROOT/test6-stderr"
+printf '%s\n' 2 3 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST6_DIR" > /dev/null 2>"$STDERR6" || true
+
+if grep -q 'How should Claude run?' "$STDERR6"; then
+    fail "stderr should NOT contain 'How should Claude run?' when config exists"
+    echo "  Captured stderr:" && cat "$STDERR6"
+else
+    pass "stderr does not contain 'How should Claude run?' (prompting skipped)"
+fi
+
+if grep -q 'Where should implementation happen?' "$STDERR6"; then
+    fail "stderr should NOT contain 'Where should implementation happen?' when config exists"
+    echo "  Captured stderr:" && cat "$STDERR6"
+else
+    pass "stderr does not contain 'Where should implementation happen?' (prompting skipped)"
+fi
+
+# ---------------------------------------------------------------
 # Results
 # ---------------------------------------------------------------
 echo ""

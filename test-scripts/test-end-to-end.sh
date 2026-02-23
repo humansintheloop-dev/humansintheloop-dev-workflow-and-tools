@@ -38,6 +38,10 @@ echo ""
 echo "--- Go skip commit tests ---"
 "$SCRIPT_DIR/test-go-skip-commit.sh"
 
+echo ""
+echo "--- Implement config tests ---"
+"$SCRIPT_DIR/test-implement-config.sh"
+
 "$SCRIPT_DIR/test-integration.sh"
 
 "$SCRIPT_DIR/test-integration-gh.sh"

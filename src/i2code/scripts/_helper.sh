@@ -1,4 +1,4 @@
-# shellcheck disable=SC2148
+# shellcheck disable=SC2148,SC2034
 
 
 IDEA_DIR=${1}
@@ -12,10 +12,10 @@ fi
 
 IDEA_NAME=$(basename "$IDEA_DIR")
 
-if ! ls "$IDEA_DIR"/${IDEA_NAME}-idea.* >/dev/null 2>&1; then
+if ! ls "$IDEA_DIR"/"${IDEA_NAME}"-idea.* >/dev/null 2>&1; then
     IDEA_FILE="$IDEA_DIR/${IDEA_NAME}-idea.txt"
 else
-    IDEA_FILE="$(ls "$IDEA_DIR"/${IDEA_NAME}-idea.*)"
+    IDEA_FILE="$(ls "$IDEA_DIR"/"${IDEA_NAME}"-idea.*)"
 fi
 
 DISCUSSION_FILE="$IDEA_DIR/${IDEA_NAME}-discussion.md"
@@ -32,10 +32,12 @@ PLAN_WITHOUT_STORIES_FILE="$IDEA_DIR/${IDEA_NAME}-plan.md"
 
 PLAN_WITH_STORIES_FILE="$IDEA_DIR/${IDEA_NAME}-story-plan.md"
 
+IMPLEMENT_CONFIG_FILE="$IDEA_DIR/${IDEA_NAME}-implement-config.yaml"
+
 # Validation functions
 _validate_idea() {
     # Use ls to check if any file matching the pattern exists
-    if ! ls $IDEA_FILE >/dev/null 2>&1; then
+    if ! ls "$IDEA_FILE" >/dev/null 2>&1; then
         echo "Error: Idea file not found: $IDEA_FILE" >&2
         exit 1
     fi

@@ -139,17 +139,17 @@ A new "Configure implement options" menu item in the `has_plan` state allows the
 
 When the config file exists but contains unrecognizable content (neither `interactive:` nor `trunk:` can be parsed), `i2code go` falls back to prompting the user and saves a new valid config file. This ensures the workflow doesn't break if the config is accidentally corrupted.
 
-- [ ] **Task 3.1: Corrupt config file triggers fallback to re-prompting**
+- [x] **Task 3.1: Corrupt config file triggers fallback to re-prompting**
   - TaskType: OUTCOME
   - Entrypoint: `printf '%s\n' 2 1 1 4 | src/i2code/scripts/idea-to-code.sh <idea-dir>` (Implement → Interactive → Worktree → Exit) with corrupt config file
   - Observable: Prompting occurs (stderr contains "How should Claude run?"); new valid config file saved with `interactive: true` and `trunk: false`
   - Evidence: `test-scripts/test-implement-config.sh` test cases write corrupt content to config, pipe choices, assert prompting occurred and valid config was created
   - Steps:
-    - [ ] Modify the config-exists check in the Implement handler at `src/i2code/scripts/idea-to-code.sh`: instead of just `[ -f "$IMPLEMENT_CONFIG_FILE" ]`, also validate the file is parseable by checking that `read_implement_config` can extract at least one recognized field (`interactive:` or `trunk:`); if the file exists but is unparseable, treat it the same as a missing file (trigger prompting)
-    - [ ] Implement the validation by having `read_implement_config` return a non-zero exit code when neither `interactive:` nor `trunk:` is found in the file; the caller checks this return code
-    - [ ] Add test case `test_corrupt_config_triggers_reprompting`: write `"not yaml garbage"` to the config file, pipe `printf '%s\n' 2 1 1 4` (Implement, Interactive, Worktree, Exit), capture stderr, assert stderr contains "How should Claude run?", assert config file now has `interactive: true` and `trunk: false`
-    - [ ] Add test case `test_empty_config_triggers_reprompting`: write empty file as config, pipe same input, assert prompting occurred and valid config saved
-    - [ ] Verify that a config with only one valid field (e.g., `trunk: true` but no `interactive:` line) does NOT trigger re-prompting — instead, `read_implement_config` should use the default for the missing field (this validates the spec requirement: "If a config value is missing from the file, use the default for that value")
+    - [x] Modify the config-exists check in the Implement handler at `src/i2code/scripts/idea-to-code.sh`: instead of just `[ -f "$IMPLEMENT_CONFIG_FILE" ]`, also validate the file is parseable by checking that `read_implement_config` can extract at least one recognized field (`interactive:` or `trunk:`); if the file exists but is unparseable, treat it the same as a missing file (trigger prompting)
+    - [x] Implement the validation by having `read_implement_config` return a non-zero exit code when neither `interactive:` nor `trunk:` is found in the file; the caller checks this return code
+    - [x] Add test case `test_corrupt_config_triggers_reprompting`: write `"not yaml garbage"` to the config file, pipe `printf '%s\n' 2 1 1 4` (Implement, Interactive, Worktree, Exit), capture stderr, assert stderr contains "How should Claude run?", assert config file now has `interactive: true` and `trunk: false`
+    - [x] Add test case `test_empty_config_triggers_reprompting`: write empty file as config, pipe same input, assert prompting occurred and valid config saved
+    - [x] Verify that a config with only one valid field (e.g., `trunk: true` but no `interactive:` line) does NOT trigger re-prompting — instead, `read_implement_config` should use the default for the missing field (this validates the spec requirement: "If a config value is missing from the file, use the default for that value")
 
 ---
 

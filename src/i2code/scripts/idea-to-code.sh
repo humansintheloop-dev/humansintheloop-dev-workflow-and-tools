@@ -150,9 +150,13 @@ write_implement_config() {
 }
 
 # Function to read implement configuration from file
+# Returns non-zero if the file contains no recognized fields
 read_implement_config() {
     IMPLEMENT_INTERACTIVE=$(sed -n 's/^interactive: *//p' "$IMPLEMENT_CONFIG_FILE")
     IMPLEMENT_TRUNK=$(sed -n 's/^trunk: *//p' "$IMPLEMENT_CONFIG_FILE")
+    if [ -z "$IMPLEMENT_INTERACTIVE" ] && [ -z "$IMPLEMENT_TRUNK" ]; then
+        return 1
+    fi
     IMPLEMENT_INTERACTIVE="${IMPLEMENT_INTERACTIVE:-true}"
     IMPLEMENT_TRUNK="${IMPLEMENT_TRUNK:-false}"
 }
@@ -352,7 +356,7 @@ main() {
                             fi
                             ;;
                         3)
-                            if [ ! -f "$IMPLEMENT_CONFIG_FILE" ]; then
+                            if [ ! -f "$IMPLEMENT_CONFIG_FILE" ] || ! read_implement_config; then
                                 prompt_implement_config
                                 write_implement_config
                             fi
@@ -402,7 +406,7 @@ main() {
                             fi
                             ;;
                         2)
-                            if [ ! -f "$IMPLEMENT_CONFIG_FILE" ]; then
+                            if [ ! -f "$IMPLEMENT_CONFIG_FILE" ] || ! read_implement_config; then
                                 prompt_implement_config
                                 write_implement_config
                             fi

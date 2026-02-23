@@ -28,6 +28,10 @@ class ImplementCommand:
         if not self.opts.isolated and not self.opts.ignore_uncommitted_idea_changes:
             validate_idea_files_committed(self.project)
 
+        if self.project.get_next_task() is None:
+            print("Error: all tasks are already complete.", file=sys.stderr)
+            sys.exit(1)
+
         if self.opts.trunk:
             self._trunk_mode()
         elif self.opts.isolate:

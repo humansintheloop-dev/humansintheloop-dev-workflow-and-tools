@@ -79,14 +79,14 @@ This thread fixes the essential bug: `_worktree_mode()` must exit with an error 
 
 This thread adds a mode-independent guard in `execute()` that catches the all-tasks-complete condition before dispatching to any mode.
 
-- [ ] **Task 2.1: `execute()` exits with error when all tasks are complete before dispatching to any mode**
+- [x] **Task 2.1: `execute()` exits with error when all tasks are complete before dispatching to any mode**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/implement/test_implement_command.py -v -m unit`
   - Observable: When `get_next_task()` returns `None`, `execute()` prints an error message to stderr indicating all tasks are complete and exits with `sys.exit(1)` — without dispatching to `_worktree_mode()`, `_trunk_mode()`, or `_isolate_mode()`.
   - Evidence: Unit tests for each mode (worktree, trunk, isolate) configure `FakeIdeaProject` to return `None` from `get_next_task()`, call `execute()`, assert `SystemExit` with code 1, assert stderr contains "all tasks", and assert that `_worktree_mode()` / `_trunk_mode()` / `_isolate_mode()` were NOT called.
   - Steps:
-    - [ ] Add a new test class `TestExecuteAllTasksComplete` in `tests/implement/test_implement_command.py` with three tests: (a) worktree mode — `FakeIdeaProject` returns `None`, `execute()` raises `SystemExit(1)`, stderr contains "all tasks", `_worktree_mode` not called; (b) trunk mode — same assertions with `trunk=True`; (c) isolate mode — same assertions with `isolate=True`. Verify all three tests fail.
-    - [ ] In `src/i2code/implement/implement_command.py`, add a guard in `execute()` after `validate_idea_files_committed` (and the `dry_run` check) but before the mode dispatch `if/elif/else` block. The guard calls `self.project.get_next_task()` and, if it returns `None`, prints an error to stderr and calls `sys.exit(1)`. Verify the tests pass.
+    - [x] Add a new test class `TestExecuteAllTasksComplete` in `tests/implement/test_implement_command.py` with three tests: (a) worktree mode — `FakeIdeaProject` returns `None`, `execute()` raises `SystemExit(1)`, stderr contains "all tasks", `_worktree_mode` not called; (b) trunk mode — same assertions with `trunk=True`; (c) isolate mode — same assertions with `isolate=True`. Verify all three tests fail.
+    - [x] In `src/i2code/implement/implement_command.py`, add a guard in `execute()` after `validate_idea_files_committed` (and the `dry_run` check) but before the mode dispatch `if/elif/else` block. The guard calls `self.project.get_next_task()` and, if it returns `None`, prints an error to stderr and calls `sys.exit(1)`. Verify the tests pass.
 
 - [ ] **Task 2.2: `execute()` proceeds normally when tasks remain (regression guard)**
   - TaskType: OUTCOME
@@ -114,3 +114,12 @@ Integration test written and verified to fail — confirms the bug: exit code 0,
 
 ### 2026-02-24 08:33 - mark-task-complete
 Guard added to _worktree_mode() that exits with error when all tasks complete; unit and integration tests pass
+
+### 2026-02-24 08:40 - mark-step-complete
+Tests written and verified to fail (RED state): all 3 tests fail with DID NOT RAISE SystemExit
+
+### 2026-02-24 08:40 - mark-step-complete
+Guard added in execute() before mode dispatch; all 3 new tests pass
+
+### 2026-02-24 08:40 - mark-task-complete
+Guard in execute() exits with error before mode dispatch when all tasks complete; 3 unit tests pass

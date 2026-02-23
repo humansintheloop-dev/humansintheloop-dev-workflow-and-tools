@@ -17,9 +17,16 @@ def _make_opts(**overrides):
     return ImplementOpts(**defaults)
 
 
+_DEFAULT_TASK = NumberedTask(
+    number=TaskNumber(thread=1, task=1),
+    task=Task(_lines=["- [ ] **Task 1.1: default-task**"]),
+)
+
+
 def _make_command(**opt_overrides):
     opts = _make_opts(**opt_overrides)
     project = FakeIdeaProject()
+    project.set_next_task(_DEFAULT_TASK)
     git_repo = MagicMock()
     mode_factory = MagicMock()
     cmd = ImplementCommand(opts, project, git_repo, mode_factory)
@@ -160,6 +167,28 @@ class TestImplementCommandIsolateMode:
 
 
 @pytest.mark.unit
+class TestExecuteAllTasksComplete:
+    """execute() exits with error when all tasks complete, before dispatching to any mode."""
+
+    @pytest.mark.parametrize("opts,mode_method", [
+        (dict(), "_worktree_mode"),
+        (dict(trunk=True), "_trunk_mode"),
+        (dict(isolate=True), "_isolate_mode"),
+    ], ids=["worktree", "trunk", "isolate"])
+    def test_mode_not_called(self, capsys, opts, mode_method):
+        cmd, project, git_repo = _make_command(
+            ignore_uncommitted_idea_changes=True, **opts
+        )
+        project.set_next_task(None)
+        with patch.object(cmd, mode_method) as mock_mode:
+            with pytest.raises(SystemExit) as exc_info:
+                cmd.execute()
+            assert exc_info.value.code == 1
+            assert "all tasks" in capsys.readouterr().err.lower()
+            mock_mode.assert_not_called()
+
+
+@pytest.mark.unit
 class TestWorktreeModeAllTasksComplete:
     """_worktree_mode() exits with error when all tasks are complete."""
 
@@ -167,6 +196,7 @@ class TestWorktreeModeAllTasksComplete:
         cmd, project, git_repo = _make_command(
             ignore_uncommitted_idea_changes=True
         )
+        project.set_next_task(None)
 
         with pytest.raises(SystemExit) as exc_info:
             cmd.execute()

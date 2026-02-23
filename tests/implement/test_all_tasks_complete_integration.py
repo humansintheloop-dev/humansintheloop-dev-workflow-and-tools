@@ -19,7 +19,6 @@ from conftest import run_script, write_plan_file
 class TestAllTasksCompleteExitsWithError:
     """i2code implement should exit with error when all plan tasks are complete."""
 
-    @pytest.mark.xfail(reason="Bug: implement creates wrong branch when all tasks complete (fix in Task 1.2)")
     def test_exits_with_error_and_no_side_effects(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
         idea_name = "test-feature"

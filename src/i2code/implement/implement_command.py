@@ -81,6 +81,10 @@ class ImplementCommand:
 
     def _worktree_mode(self):
         """Execute tasks using worktree + PR + CI loop."""
+        if self.project.get_next_task() is None:
+            print("Error: all tasks are already complete.", file=sys.stderr)
+            sys.exit(1)
+
         state = WorkflowState.load(self.project.state_file)
 
         integration_branch = self.git_repo.ensure_integration_branch(

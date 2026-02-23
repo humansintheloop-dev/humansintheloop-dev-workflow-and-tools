@@ -523,7 +523,7 @@ echo "--- Test 14: Configure option shown in uncommitted-changes menu when confi
 TEST14_REPO="$TMPDIR_ROOT/test14-repo"
 mkdir -p "$TEST14_REPO"
 git init "$TEST14_REPO" > /dev/null 2>&1
-(cd "$TEST14_REPO" && git commit --allow-empty -m "init" > /dev/null 2>&1)
+(cd "$TEST14_REPO" && git config user.email "test@test" && git config user.name "test" && git commit --allow-empty -m "init" > /dev/null 2>&1)
 TEST14_IDEA="$TEST14_REPO/test14-idea"
 mkdir -p "$TEST14_IDEA"
 echo "My idea" > "$TEST14_IDEA/test14-idea-idea.txt"

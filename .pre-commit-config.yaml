@@ -22,4 +22,4 @@ repos:
         entry: ./test-scripts/test-precommit.sh
         language: script
         pass_filenames: false
-        always_run: true
+        files: ^(src/|test-scripts/|tests/)

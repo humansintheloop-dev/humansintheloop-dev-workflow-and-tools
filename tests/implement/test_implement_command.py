@@ -166,9 +166,9 @@ class TestImplementCommandWorktreeMode:
     """_worktree_mode() delegates to mode_factory.make_worktree_mode()."""
 
     @patch("i2code.implement.implement_command.WorkflowState.load")
-    @patch("i2code.implement.implement_command.ensure_claude_permissions")
+    @patch("i2code.implement.implement_command.setup_project")
     def test_worktree_mode_delegates_to_mode_factory(
-        self, mock_perms, mock_load_state,
+        self, mock_setup, mock_load_state,
     ):
         mock_load_state.return_value = MagicMock(slice_number=1)
 
@@ -265,7 +265,7 @@ class TestDeferredPRCreation:
         mock_git_repo = MagicMock()
         mock_git_repo.ensure_pr = MagicMock(return_value=123)
         monkeypatch.setattr("i2code.implement.cli.GitRepository", lambda *a, **kw: mock_git_repo)
-        monkeypatch.setattr("i2code.implement.implement_command.ensure_claude_permissions", lambda x: None)
+        monkeypatch.setattr("i2code.implement.implement_command.setup_project", lambda *a, **kw: None)
 
         # Run via Click test runner
         runner = CliRunner(catch_exceptions=False)

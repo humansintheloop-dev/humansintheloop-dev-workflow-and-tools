@@ -4,10 +4,14 @@ import os
 import shutil
 import subprocess
 
+from i2code.implement.git_setup import ensure_claude_permissions
 
-def setup_project(source_root, dest_root):
-    """Set up a worktree project by copying configuration from the source repo."""
-    _copy_settings_local_json(source_root, dest_root)
+
+def setup_project(dest_root, source_root=None):
+    """Set up a project by copying configuration, ensuring permissions, and running setup scripts."""
+    if source_root is not None:
+        _copy_settings_local_json(source_root, dest_root)
+    ensure_claude_permissions(dest_root)
     _run_setup_project_script(dest_root)
 
 

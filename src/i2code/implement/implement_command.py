@@ -3,10 +3,7 @@
 import sys
 
 from i2code.implement.workflow_state import WorkflowState
-from i2code.implement.git_setup import (
-    validate_idea_files_committed,
-    ensure_claude_permissions,
-)
+from i2code.implement.git_setup import validate_idea_files_committed
 from i2code.implement.worktree_setup import setup_project
 
 
@@ -101,15 +98,14 @@ class ImplementCommand:
 
         if self.opts.isolated:
             self.git_repo.set_user_config("Test User", "test@test.com")
-            ensure_claude_permissions(self.git_repo.working_tree_dir)
+            setup_project(self.git_repo.working_tree_dir)
             work_project = self.project
             self.git_repo.checkout(slice_branch)
         else:
             main_repo_dir = self.git_repo.working_tree_dir
             self.git_repo = self.git_repo.ensure_worktree(self.project.name, integration_branch)
             print(f"Worktree: {self.git_repo.working_tree_dir}")
-            ensure_claude_permissions(self.git_repo.working_tree_dir)
-            setup_project(main_repo_dir, self.git_repo.working_tree_dir)
+            setup_project(self.git_repo.working_tree_dir, source_root=main_repo_dir)
             work_project = self.project.worktree_idea_project(
                 self.git_repo.working_tree_dir, main_repo_dir
             )

@@ -149,6 +149,25 @@ write_implement_config() {
     printf 'interactive: %s\ntrunk: %s\n' "$IMPLEMENT_INTERACTIVE" "$IMPLEMENT_TRUNK" > "$IMPLEMENT_CONFIG_FILE"
 }
 
+# Function to read implement configuration from file
+read_implement_config() {
+    IMPLEMENT_INTERACTIVE=$(sed -n 's/^interactive: *//p' "$IMPLEMENT_CONFIG_FILE")
+    IMPLEMENT_TRUNK=$(sed -n 's/^trunk: *//p' "$IMPLEMENT_CONFIG_FILE")
+    IMPLEMENT_INTERACTIVE="${IMPLEMENT_INTERACTIVE:-true}"
+    IMPLEMENT_TRUNK="${IMPLEMENT_TRUNK:-false}"
+}
+
+# Function to build flags for i2code implement based on config
+build_implement_flags() {
+    IMPLEMENT_FLAGS=()
+    if [ "$IMPLEMENT_INTERACTIVE" = "false" ]; then
+        IMPLEMENT_FLAGS+=(--non-interactive)
+    fi
+    if [ "$IMPLEMENT_TRUNK" = "true" ]; then
+        IMPLEMENT_FLAGS+=(--trunk)
+    fi
+}
+
 # Main function
 main() {
     local dir="$1"
@@ -322,7 +341,9 @@ main() {
                                 prompt_implement_config
                                 write_implement_config
                             fi
-                            if run_step "Implementing plan" i2code implement "$dir"; then
+                            read_implement_config
+                            build_implement_flags
+                            if run_step "Implementing plan" i2code implement "${IMPLEMENT_FLAGS[@]}" "$dir"; then
                                 echo "Implementation completed successfully!"
                                 echo ""
                                 if grep -q '\[ \]' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null; then
@@ -368,7 +389,9 @@ main() {
                                 prompt_implement_config
                                 write_implement_config
                             fi
-                            if run_step "Implementing plan" i2code implement "$dir"; then
+                            read_implement_config
+                            build_implement_flags
+                            if run_step "Implementing plan" i2code implement "${IMPLEMENT_FLAGS[@]}" "$dir"; then
                                 echo "Implementation completed successfully!"
                                 echo ""
                                 if grep -q '\[ \]' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null; then

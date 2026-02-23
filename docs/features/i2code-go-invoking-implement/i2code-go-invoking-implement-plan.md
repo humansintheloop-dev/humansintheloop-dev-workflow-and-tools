@@ -96,17 +96,17 @@ When a user selects "Implement the entire plan" and no config file exists, they 
     - [x] Add a helper function `create_mock_i2code` to `test-scripts/test-implement-config.sh` that creates a temp directory with a mock `i2code` script; the mock checks if `$1` is `implement`, and if so writes all arguments to `$MOCK_ARGS_FILE` and exits 0
     - [x] Add test case `test_first_run_prompting_saves_config`: set up has_plan directory, create mock, prepend mock to PATH, pipe `printf '%s\n' 2 2 2 3` (Implement, Non-interactive, Trunk, Exit) to `idea-to-code.sh`, assert config file exists, assert it contains `interactive: false`, assert it contains `trunk: true`
 
-- [ ] **Task 1.3: Config-driven invocation passes correct flags to i2code implement**
+- [x] **Task 1.3: Config-driven invocation passes correct flags to i2code implement**
   - TaskType: OUTCOME
   - Entrypoint: `printf '%s\n' 2 3 | src/i2code/scripts/idea-to-code.sh <idea-dir>` (Implement → Exit) with pre-existing config file
   - Observable: `i2code implement` invoked with `--non-interactive --trunk <idea-dir>` when config has `interactive: false` and `trunk: true`; invoked with just `<idea-dir>` when config has default values
   - Evidence: `test-scripts/test-implement-config.sh` test cases create config files with specific values, pipe "Implement → Exit", and assert mock `i2code` received the correct arguments
   - Steps:
-    - [ ] Add `read_implement_config` function to `src/i2code/scripts/idea-to-code.sh` that reads `$IMPLEMENT_CONFIG_FILE` using `grep`/`sed` to extract `interactive` and `trunk` values into `IMPLEMENT_INTERACTIVE` and `IMPLEMENT_TRUNK` variables; default to `true` for `interactive` and `false` for `trunk` when a value is missing
-    - [ ] Add `build_implement_flags` function to `src/i2code/scripts/idea-to-code.sh` that echoes `--non-interactive` if `IMPLEMENT_INTERACTIVE` is `false` and `--trunk` if `IMPLEMENT_TRUNK` is `true`
-    - [ ] In the Implement handler, after the config check/prompting from Task 1.2, call `read_implement_config`; change the invocation at `src/i2code/scripts/idea-to-code.sh:269` from `i2code implement "$dir"` to `i2code implement $(build_implement_flags) "$dir"`
-    - [ ] Add test case `test_config_with_non_interactive_trunk_passes_flags`: manually create config file with `interactive: false` and `trunk: true`, pipe `printf '%s\n' 2 3` (Implement, Exit), assert mock args file contains `implement --non-interactive --trunk`
-    - [ ] Add test case `test_config_with_defaults_passes_no_extra_flags`: manually create config file with `interactive: true` and `trunk: false`, pipe `printf '%s\n' 2 3` (Implement, Exit), assert mock args file contains `implement <idea-dir>` with no `--non-interactive` or `--trunk` flags
+    - [x] Add `read_implement_config` function to `src/i2code/scripts/idea-to-code.sh` that reads `$IMPLEMENT_CONFIG_FILE` using `grep`/`sed` to extract `interactive` and `trunk` values into `IMPLEMENT_INTERACTIVE` and `IMPLEMENT_TRUNK` variables; default to `true` for `interactive` and `false` for `trunk` when a value is missing
+    - [x] Add `build_implement_flags` function to `src/i2code/scripts/idea-to-code.sh` that echoes `--non-interactive` if `IMPLEMENT_INTERACTIVE` is `false` and `--trunk` if `IMPLEMENT_TRUNK` is `true`
+    - [x] In the Implement handler, after the config check/prompting from Task 1.2, call `read_implement_config`; change the invocation at `src/i2code/scripts/idea-to-code.sh:269` from `i2code implement "$dir"` to `i2code implement $(build_implement_flags) "$dir"`
+    - [x] Add test case `test_config_with_non_interactive_trunk_passes_flags`: manually create config file with `interactive: false` and `trunk: true`, pipe `printf '%s\n' 2 3` (Implement, Exit), assert mock args file contains `implement --non-interactive --trunk`
+    - [x] Add test case `test_config_with_defaults_passes_no_extra_flags`: manually create config file with `interactive: true` and `trunk: false`, pipe `printf '%s\n' 2 3` (Implement, Exit), assert mock args file contains `implement <idea-dir>` with no `--non-interactive` or `--trunk` flags
 
 - [ ] **Task 1.4: Active config displayed before implementation and prompting skipped when config exists**
   - TaskType: OUTCOME
@@ -165,3 +165,21 @@ Added test-implement-config.sh to test-end-to-end.sh before integration tests
 
 ### 2026-02-23 17:02 - mark-task-complete
 IMPLEMENT_CONFIG_FILE defined, test created, wired to CI
+
+### 2026-02-23 17:13 - mark-step-complete
+Added read_implement_config function using sed to extract values from IMPLEMENT_CONFIG_FILE
+
+### 2026-02-23 17:13 - mark-step-complete
+Added build_implement_flags function that echoes --non-interactive and --trunk based on config values
+
+### 2026-02-23 17:13 - mark-step-complete
+Wired read_implement_config and build_implement_flags into both Implement handler locations
+
+### 2026-02-23 17:13 - mark-step-complete
+Added test_config_with_non_interactive_trunk_passes_flags - passes
+
+### 2026-02-23 17:13 - mark-step-complete
+Added test_config_with_defaults_passes_no_extra_flags - passes
+
+### 2026-02-23 17:13 - mark-task-complete
+Config-driven invocation passes correct flags: --non-interactive when interactive:false, --trunk when trunk:true, no extra flags for defaults

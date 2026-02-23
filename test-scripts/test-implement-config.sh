@@ -76,8 +76,8 @@ echo "- [ ] Task 1" > "$TEST2_DIR/test2-idea-plan.md"
 
 create_mock_i2code
 
-# Pipe: 2 (Implement) → 2 (Non-interactive) → 2 (Trunk) → 3 (Exit)
-printf '%s\n' 2 2 2 3 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST2_DIR" > /dev/null 2>&1 || true
+# Pipe: 2 (Implement) → 2 (Non-interactive) → 2 (Trunk) → 4 (Exit)
+printf '%s\n' 2 2 2 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST2_DIR" > /dev/null 2>&1 || true
 
 CONFIG_FILE="$TEST2_DIR/test2-idea-implement-config.yaml"
 
@@ -116,8 +116,8 @@ printf 'interactive: false\ntrunk: true\n' > "$TEST3_DIR/test3-idea-implement-co
 
 create_mock_i2code
 
-# Pipe: 2 (Implement) → 3 (Exit)
-printf '%s\n' 2 3 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST3_DIR" > /dev/null 2>&1 || true
+# Pipe: 2 (Implement) → 4 (Exit)
+printf '%s\n' 2 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST3_DIR" > /dev/null 2>&1 || true
 
 if [ -f "$MOCK_ARGS_FILE" ] && grep -q '^--non-interactive$' "$MOCK_ARGS_FILE"; then
     pass "Mock i2code received --non-interactive flag"
@@ -150,8 +150,8 @@ printf 'interactive: true\ntrunk: false\n' > "$TEST4_DIR/test4-idea-implement-co
 
 create_mock_i2code
 
-# Pipe: 2 (Implement) → 3 (Exit)
-printf '%s\n' 2 3 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST4_DIR" > /dev/null 2>&1 || true
+# Pipe: 2 (Implement) → 4 (Exit)
+printf '%s\n' 2 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST4_DIR" > /dev/null 2>&1 || true
 
 if [ -f "$MOCK_ARGS_FILE" ] && grep -q '\-\-non-interactive' "$MOCK_ARGS_FILE"; then
     fail "Mock i2code should NOT have --non-interactive flag with default config"
@@ -194,7 +194,7 @@ create_mock_i2code
 
 # Capture stderr from the piped run
 STDERR5="$TMPDIR_ROOT/test5-stderr"
-printf '%s\n' 2 3 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST5_DIR" > /dev/null 2>"$STDERR5" || true
+printf '%s\n' 2 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST5_DIR" > /dev/null 2>"$STDERR5" || true
 
 if grep -q 'Implementation options:' "$STDERR5"; then
     pass "stderr contains 'Implementation options:'"
@@ -236,7 +236,7 @@ create_mock_i2code
 
 # Capture stderr from the piped run
 STDERR6="$TMPDIR_ROOT/test6-stderr"
-printf '%s\n' 2 3 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST6_DIR" > /dev/null 2>"$STDERR6" || true
+printf '%s\n' 2 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST6_DIR" > /dev/null 2>"$STDERR6" || true
 
 if grep -q 'How should Claude run?' "$STDERR6"; then
     fail "stderr should NOT contain 'How should Claude run?' when config exists"
@@ -250,6 +250,42 @@ if grep -q 'Where should implementation happen?' "$STDERR6"; then
     echo "  Captured stderr:" && cat "$STDERR6"
 else
     pass "stderr does not contain 'Where should implementation happen?' (prompting skipped)"
+fi
+
+# ---------------------------------------------------------------
+# Test 7: Configure menu overwrites config
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 7: Configure menu overwrites config ---"
+
+TEST7_DIR="$TMPDIR_ROOT/test7-idea"
+mkdir -p "$TEST7_DIR"
+echo "My idea" > "$TEST7_DIR/test7-idea-idea.txt"
+echo "# Spec" > "$TEST7_DIR/test7-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST7_DIR/test7-idea-plan.md"
+
+# Pre-create config file with default values (interactive: true, trunk: false)
+printf 'interactive: true\ntrunk: false\n' > "$TEST7_DIR/test7-idea-implement-config.yaml"
+
+create_mock_i2code
+
+# Pipe: 3 (Configure) → 2 (Non-interactive) → 2 (Trunk) → 4 (Exit)
+printf '%s\n' 3 2 2 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST7_DIR" > /dev/null 2>&1 || true
+
+CONFIG7_FILE="$TEST7_DIR/test7-idea-implement-config.yaml"
+
+if [ -f "$CONFIG7_FILE" ] && grep -q 'interactive: false' "$CONFIG7_FILE"; then
+    pass "Config file overwritten with 'interactive: false'"
+else
+    fail "Config file does not contain 'interactive: false'"
+    [ -f "$CONFIG7_FILE" ] && echo "  Actual config:" && cat "$CONFIG7_FILE"
+fi
+
+if [ -f "$CONFIG7_FILE" ] && grep -q 'trunk: true' "$CONFIG7_FILE"; then
+    pass "Config file overwritten with 'trunk: true'"
+else
+    fail "Config file does not contain 'trunk: true'"
+    [ -f "$CONFIG7_FILE" ] && echo "  Actual config:" && cat "$CONFIG7_FILE"
 fi
 
 # ---------------------------------------------------------------

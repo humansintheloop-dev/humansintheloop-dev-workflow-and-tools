@@ -38,16 +38,16 @@ echo "# Plan" > "$IDEA_DIR/my-idea-plan.md"
 # Files are untracked = uncommitted changes
 
 # ---------------------------------------------------------------
-# Test: Select "Commit changes" (option 2), then "Exit" (option 3
-# on the next iteration which shows the normal 3-option menu)
+# Test: Select "Commit changes" (option 2), then "Exit" (option 4
+# on the next iteration which shows the normal 4-option menu)
 # ---------------------------------------------------------------
 echo ""
 echo "--- Test: Commit changes action ---"
 
-# Pipe "2" (Commit changes on 4-option menu) then "3" (Exit on 3-option menu)
+# Pipe "2" (Commit changes on 4-option menu) then "4" (Exit on 4-option menu)
 STDERR_OUTPUT=$(
     cd "$TMPDIR_COMMIT" || exit 1
-    printf '2\n3\n' | "$I2CODE_SCRIPT" "$IDEA_DIR" 2>&1 >/dev/null || true
+    printf '2\n4\n' | "$I2CODE_SCRIPT" "$IDEA_DIR" 2>&1 >/dev/null || true
 )
 
 # Assert 1: Files are committed (git status is clean for idea dir)

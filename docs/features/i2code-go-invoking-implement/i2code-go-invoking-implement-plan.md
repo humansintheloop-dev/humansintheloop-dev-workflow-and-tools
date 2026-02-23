@@ -123,17 +123,17 @@ When a user selects "Implement the entire plan" and no config file exists, they 
 
 A new "Configure implement options" menu item in the `has_plan` state allows the user to re-enter implementation options and overwrite the existing config file without editing YAML manually.
 
-- [ ] **Task 2.1: "Configure implement options" menu item re-prompts and overwrites config**
+- [x] **Task 2.1: "Configure implement options" menu item re-prompts and overwrites config**
   - TaskType: OUTCOME
   - Entrypoint: `printf '%s\n' 3 2 2 4 | src/i2code/scripts/idea-to-code.sh <idea-dir>` (Configure → Non-interactive → Trunk → Exit) with pre-existing default config
   - Observable: Config file overwritten with `interactive: false` and `trunk: true`; `has_plan` menu shows 4 options: "Revise the plan", "Implement the entire plan", "Configure implement options", "Exit" with default on option 2
   - Evidence: `test-scripts/test-implement-config.sh` test case creates config with defaults, pipes "Configure → choices → Exit", asserts config file overwritten with new values
   - Steps:
-    - [ ] Change the `get_user_choice` call in the `has_plan` case at `src/i2code/scripts/idea-to-code.sh:253` to include 4 options: `"Revise the plan" "Implement the entire plan" "Configure implement options" "Exit"` (default remains 2)
-    - [ ] Add `case 3)` handler that calls `prompt_implement_config` then `write_implement_config`, then continues the loop (the user returns to the menu to select Implement or Exit)
-    - [ ] Change the Exit handler from `case 3)` to `case 4)` at `src/i2code/scripts/idea-to-code.sh:291`
-    - [ ] Add test case `test_configure_menu_overwrites_config`: create config with `interactive: true` and `trunk: false`, pipe `printf '%s\n' 3 2 2 4` (Configure, Non-interactive, Trunk, Exit), assert config now has `interactive: false` and `trunk: true`
-    - [ ] Update ALL existing test cases in `test-scripts/test-implement-config.sh` that pipe "3" for Exit to pipe "4" instead (since Exit moved from option 3 to option 4)
+    - [x] Change the `get_user_choice` call in the `has_plan` case at `src/i2code/scripts/idea-to-code.sh:253` to include 4 options: `"Revise the plan" "Implement the entire plan" "Configure implement options" "Exit"` (default remains 2)
+    - [x] Add `case 3)` handler that calls `prompt_implement_config` then `write_implement_config`, then continues the loop (the user returns to the menu to select Implement or Exit)
+    - [x] Change the Exit handler from `case 3)` to `case 4)` at `src/i2code/scripts/idea-to-code.sh:291`
+    - [x] Add test case `test_configure_menu_overwrites_config`: create config with `interactive: true` and `trunk: false`, pipe `printf '%s\n' 3 2 2 4` (Configure, Non-interactive, Trunk, Exit), assert config now has `interactive: false` and `trunk: true`
+    - [x] Update ALL existing test cases in `test-scripts/test-implement-config.sh` that pipe "3" for Exit to pipe "4" instead (since Exit moved from option 3 to option 4)
 
 ## Steel Thread 3: Fallback for Corrupt or Missing Config
 

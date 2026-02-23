@@ -100,6 +100,82 @@ else
 fi
 
 # ---------------------------------------------------------------
+# Test 3: Config with non-interactive and trunk passes flags
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 3: Config with non-interactive and trunk passes flags ---"
+
+TEST3_DIR="$TMPDIR_ROOT/test3-idea"
+mkdir -p "$TEST3_DIR"
+echo "My idea" > "$TEST3_DIR/test3-idea-idea.txt"
+echo "# Spec" > "$TEST3_DIR/test3-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST3_DIR/test3-idea-plan.md"
+
+# Pre-create config file with non-interactive and trunk
+printf 'interactive: false\ntrunk: true\n' > "$TEST3_DIR/test3-idea-implement-config.yaml"
+
+create_mock_i2code
+
+# Pipe: 2 (Implement) → 3 (Exit)
+printf '%s\n' 2 3 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST3_DIR" > /dev/null 2>&1 || true
+
+if [ -f "$MOCK_ARGS_FILE" ] && grep -q '^--non-interactive$' "$MOCK_ARGS_FILE"; then
+    pass "Mock i2code received --non-interactive flag"
+else
+    fail "Mock i2code did not receive --non-interactive flag"
+    [ -f "$MOCK_ARGS_FILE" ] && echo "  Actual args:" && cat "$MOCK_ARGS_FILE"
+fi
+
+if [ -f "$MOCK_ARGS_FILE" ] && grep -q '^--trunk$' "$MOCK_ARGS_FILE"; then
+    pass "Mock i2code received --trunk flag"
+else
+    fail "Mock i2code did not receive --trunk flag"
+    [ -f "$MOCK_ARGS_FILE" ] && echo "  Actual args:" && cat "$MOCK_ARGS_FILE"
+fi
+
+# ---------------------------------------------------------------
+# Test 4: Config with defaults passes no extra flags
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 4: Config with defaults passes no extra flags ---"
+
+TEST4_DIR="$TMPDIR_ROOT/test4-idea"
+mkdir -p "$TEST4_DIR"
+echo "My idea" > "$TEST4_DIR/test4-idea-idea.txt"
+echo "# Spec" > "$TEST4_DIR/test4-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST4_DIR/test4-idea-plan.md"
+
+# Pre-create config file with default values
+printf 'interactive: true\ntrunk: false\n' > "$TEST4_DIR/test4-idea-implement-config.yaml"
+
+create_mock_i2code
+
+# Pipe: 2 (Implement) → 3 (Exit)
+printf '%s\n' 2 3 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST4_DIR" > /dev/null 2>&1 || true
+
+if [ -f "$MOCK_ARGS_FILE" ] && grep -q '\-\-non-interactive' "$MOCK_ARGS_FILE"; then
+    fail "Mock i2code should NOT have --non-interactive flag with default config"
+    echo "  Actual args:" && cat "$MOCK_ARGS_FILE"
+else
+    pass "Mock i2code did not receive --non-interactive flag (correct for defaults)"
+fi
+
+if [ -f "$MOCK_ARGS_FILE" ] && grep -q '\-\-trunk' "$MOCK_ARGS_FILE"; then
+    fail "Mock i2code should NOT have --trunk flag with default config"
+    echo "  Actual args:" && cat "$MOCK_ARGS_FILE"
+else
+    pass "Mock i2code did not receive --trunk flag (correct for defaults)"
+fi
+
+# Verify i2code was called with implement and the idea dir
+if [ -f "$MOCK_ARGS_FILE" ] && grep -q '^implement$' "$MOCK_ARGS_FILE"; then
+    pass "Mock i2code received 'implement' subcommand"
+else
+    fail "Mock i2code did not receive 'implement' subcommand"
+    [ -f "$MOCK_ARGS_FILE" ] && echo "  Actual args:" && cat "$MOCK_ARGS_FILE"
+fi
+
+# ---------------------------------------------------------------
 # Results
 # ---------------------------------------------------------------
 echo ""

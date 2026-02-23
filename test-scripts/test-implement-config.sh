@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests that IMPLEMENT_CONFIG_FILE is set correctly when _helper.sh is sourced.
+# Tests for implement config: variable definition, prompting, and persistence.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -39,6 +39,64 @@ if [ "$ACTUAL" = "$EXPECTED" ]; then
     pass "IMPLEMENT_CONFIG_FILE equals $EXPECTED"
 else
     fail "IMPLEMENT_CONFIG_FILE expected '$EXPECTED' but got '$ACTUAL'"
+fi
+
+# ---------------------------------------------------------------
+# Helper: create_mock_i2code
+# ---------------------------------------------------------------
+MOCK_DIR="$TMPDIR_ROOT/mock-bin"
+MOCK_ARGS_FILE="$TMPDIR_ROOT/mock-i2code-args"
+
+create_mock_i2code() {
+    mkdir -p "$MOCK_DIR"
+    cat > "$MOCK_DIR/i2code" <<'MOCK_SCRIPT'
+#!/usr/bin/env bash
+if [ "$1" = "implement" ]; then
+    printf '%s\n' "$@" > "${MOCK_ARGS_FILE}"
+fi
+exit 0
+MOCK_SCRIPT
+    chmod +x "$MOCK_DIR/i2code"
+    # Export so subshells can see it
+    export MOCK_ARGS_FILE
+}
+
+# ---------------------------------------------------------------
+# Test 2: First run prompting saves config file
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 2: First run prompting saves config file ---"
+
+# Set up a fresh idea directory for this test
+TEST2_DIR="$TMPDIR_ROOT/test2-idea"
+mkdir -p "$TEST2_DIR"
+echo "My idea" > "$TEST2_DIR/test2-idea-idea.txt"
+echo "# Spec" > "$TEST2_DIR/test2-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST2_DIR/test2-idea-plan.md"
+
+create_mock_i2code
+
+# Pipe: 2 (Implement) → 2 (Non-interactive) → 2 (Trunk) → 3 (Exit)
+printf '%s\n' 2 2 2 3 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST2_DIR" > /dev/null 2>&1 || true
+
+CONFIG_FILE="$TEST2_DIR/test2-idea-implement-config.yaml"
+
+if [ -f "$CONFIG_FILE" ]; then
+    pass "Config file exists at $CONFIG_FILE"
+else
+    fail "Config file does not exist at $CONFIG_FILE"
+fi
+
+if [ -f "$CONFIG_FILE" ] && grep -q 'interactive: false' "$CONFIG_FILE"; then
+    pass "Config file contains 'interactive: false'"
+else
+    fail "Config file does not contain 'interactive: false'"
+fi
+
+if [ -f "$CONFIG_FILE" ] && grep -q 'trunk: true' "$CONFIG_FILE"; then
+    pass "Config file contains 'trunk: true'"
+else
+    fail "Config file does not contain 'trunk: true'"
 fi
 
 # ---------------------------------------------------------------

@@ -1,11 +1,11 @@
 /**
- * Tests for block-git-dash-c.js
- * Run with: node hooks/block-git-dash-c.test.js
+ * Tests for enforce-bash-conventions.js
+ * Run with: node hooks/enforce-bash-conventions.test.js
  */
 
 const assert = require('assert');
 
-const { isGitDashC, handlePreToolUse, BLOCK_MESSAGE } = require('./block-git-dash-c.js');
+const { isGitDashC, isPythonMPytest, handlePreToolUse, GIT_DASH_C_MESSAGE, PYTHON_M_PYTEST_MESSAGE } = require('./enforce-bash-conventions.js');
 
 // Test suite
 const tests = [];
@@ -84,7 +84,7 @@ test('blocks Bash tool with git -C command', () => {
     tool_input: { command: 'git -C /some/dir status' }
   });
   assert.strictEqual(result.blocked, true);
-  assert.strictEqual(result.message, BLOCK_MESSAGE);
+  assert.strictEqual(result.message, GIT_DASH_C_MESSAGE);
 });
 
 test('allows Bash tool with plain git command', () => {
@@ -114,6 +114,41 @@ test('handles missing command gracefully', () => {
   const result = handlePreToolUse({
     tool_name: 'Bash',
     tool_input: {}
+  });
+  assert.strictEqual(result.blocked, false);
+});
+
+// --- Tests for isPythonMPytest ---
+
+test('detects python -m pytest', () => {
+  assert.strictEqual(isPythonMPytest('python -m pytest tests/'), true);
+});
+
+test('detects python -m pytest with flags', () => {
+  assert.strictEqual(isPythonMPytest('python -m pytest -v tests/'), true);
+});
+
+test('allows uv run pytest', () => {
+  assert.strictEqual(isPythonMPytest('uv run pytest tests/'), false);
+});
+
+test('allows plain pytest', () => {
+  assert.strictEqual(isPythonMPytest('pytest tests/'), false);
+});
+
+test('blocks Bash tool with python -m pytest command', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'python -m pytest tests/ -v' }
+  });
+  assert.strictEqual(result.blocked, true);
+  assert.strictEqual(result.message, PYTHON_M_PYTEST_MESSAGE);
+});
+
+test('allows Bash tool with uv run pytest command', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'uv run pytest tests/ -v' }
   });
   assert.strictEqual(result.blocked, false);
 });

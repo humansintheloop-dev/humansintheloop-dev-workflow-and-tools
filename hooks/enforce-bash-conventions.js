@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 /**
- * PreToolUse hook that blocks `git -C <directory>` commands.
- *
- * Responds with a message telling Claude to cd to the directory
- * and run git commands from there instead.
+ * PreToolUse hook that blocks certain Bash command patterns:
+ * - `git -C <directory>` — use cd + git instead
+ * - `python -m pytest` — use uv run pytest instead
  *
  * Exit codes:
  *   0 - allow the command
@@ -19,10 +18,17 @@ function isGitDashC(command) {
   return /\bgit\s+-C\b/.test(command);
 }
 
-const BLOCK_MESSAGE =
+const GIT_DASH_C_MESSAGE =
   'IMPORTANT: Use simple commands that you have permission to execute. ' +
   'Avoid complex commands that may fail due to permission issues. ' +
   'Do not use `git -C directory` - cd to the top-level directory and run git commands from there';
+
+function isPythonMPytest(command) {
+  return /\bpython\s+-m\s+pytest\b/.test(command);
+}
+
+const PYTHON_M_PYTEST_MESSAGE =
+  'Do not use `python -m pytest` - use `uv run pytest` instead';
 
 /**
  * Handles a PreToolUse hook event for the Bash tool.
@@ -39,7 +45,11 @@ function handlePreToolUse(hookInput) {
   const command = tool_input?.command || '';
 
   if (isGitDashC(command)) {
-    return { blocked: true, message: BLOCK_MESSAGE };
+    return { blocked: true, message: GIT_DASH_C_MESSAGE };
+  }
+
+  if (isPythonMPytest(command)) {
+    return { blocked: true, message: PYTHON_M_PYTEST_MESSAGE };
   }
 
   return { blocked: false };
@@ -48,8 +58,10 @@ function handlePreToolUse(hookInput) {
 // Export for testing
 module.exports = {
   isGitDashC,
+  isPythonMPytest,
   handlePreToolUse,
-  BLOCK_MESSAGE
+  GIT_DASH_C_MESSAGE,
+  PYTHON_M_PYTEST_MESSAGE
 };
 
 // Main entry point when run as a script

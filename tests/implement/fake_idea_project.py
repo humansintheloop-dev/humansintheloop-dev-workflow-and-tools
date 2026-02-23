@@ -15,6 +15,7 @@ class FakeIdeaProject:
         self._directory = directory
         self._idea_files = []
         self._worktree_project = None
+        self._next_task = None
 
     @property
     def name(self):
@@ -59,5 +60,8 @@ class FakeIdeaProject:
     def set_worktree_project(self, project):
         self._worktree_project = project
 
+    def set_next_task(self, task):
+        self._next_task = task
+
     def get_next_task(self):
-        return None
+        return self._next_task

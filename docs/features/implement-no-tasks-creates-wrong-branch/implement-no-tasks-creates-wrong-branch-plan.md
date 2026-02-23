@@ -66,14 +66,14 @@ This thread fixes the essential bug: `_worktree_mode()` must exit with an error 
   - Evidence: `Integration test creates a test git repo, commits idea files with all tasks marked [x] complete, creates a mock Claude script that writes a sentinel file when invoked, runs run_script(idea_dir, cwd=tmpdir, mock_claude=script_path), and asserts: (a) non-zero returncode, (b) stderr contains "all tasks", (c) no idea/* branches created, (d) no worktree directory created, (e) mock Claude script was never invoked (sentinel file absent).`
   - Steps:
     - [x] Add a new integration test file tests/implement/test_all_tasks_complete_integration.py with a test class TestAllTasksCompleteExitsWithError marked @pytest.mark.integration. The test uses the test_git_repo_with_commit fixture, creates a valid idea directory with all plan tasks marked [x] complete (using write_plan_file with completed=True), creates a mock Claude script that writes a sentinel file when invoked, runs run_script(idea_dir, cwd=tmpdir, mock_claude=script_path), and asserts: (a) non-zero returncode, (b) stderr contains "all tasks", (c) no idea/* branches created beyond master, (d) no worktree directory created, (e) sentinel file does not exist (Claude was never invoked). Verify the test fails.
-- [ ] **Task 1.2: `_worktree_mode()` exits with error when all tasks are complete**
+- [x] **Task 1.2: `_worktree_mode()` exits with error when all tasks are complete**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/implement/test_implement_command.py -v -m unit`
   - Observable: When `get_next_task()` returns `None`, `_worktree_mode()` prints an error message to stderr containing "all tasks" and exits with `sys.exit(1)`. It does NOT call `ensure_integration_branch`, `ensure_slice_branch`, `ensure_worktree`, or `checkout` on the git repository.
   - Evidence: Unit test invokes `_worktree_mode()` via `execute()` with `FakeIdeaProject` (which returns `None` from `get_next_task()` by default), asserts `SystemExit` with code 1, asserts stderr contains "all tasks", and asserts that `git_repo.ensure_integration_branch`, `git_repo.ensure_slice_branch`, `git_repo.ensure_worktree`, and `git_repo.checkout` were NOT called.
   - Steps:
-    - [ ] Add a new test class `TestWorktreeModeAllTasksComplete` in `tests/implement/test_implement_command.py` with a test that creates an `ImplementCommand` using `FakeIdeaProject` (which returns `None` from `get_next_task()` by default), calls `execute()`, and asserts: (a) `SystemExit` with code 1, (b) stderr contains "all tasks", (c) `git_repo.ensure_integration_branch` was not called, (d) `git_repo.ensure_slice_branch` was not called, (e) `git_repo.ensure_worktree` was not called, (f) `git_repo.checkout` was not called. Verify the test fails.
-    - [ ] In `src/i2code/implement/implement_command.py`, add a guard at the top of `_worktree_mode()` that calls `self.project.get_next_task()`, and if it returns `None`, prints an error message to stderr and calls `sys.exit(1)` — before the existing `WorkflowState.load()` call. Verify the test passes.
+    - [x] Add a new test class `TestWorktreeModeAllTasksComplete` in `tests/implement/test_implement_command.py` with a test that creates an `ImplementCommand` using `FakeIdeaProject` (which returns `None` from `get_next_task()` by default), calls `execute()`, and asserts: (a) `SystemExit` with code 1, (b) stderr contains "all tasks", (c) `git_repo.ensure_integration_branch` was not called, (d) `git_repo.ensure_slice_branch` was not called, (e) `git_repo.ensure_worktree` was not called, (f) `git_repo.checkout` was not called. Verify the test fails.
+    - [x] In `src/i2code/implement/implement_command.py`, add a guard at the top of `_worktree_mode()` that calls `self.project.get_next_task()`, and if it returns `None`, prints an error message to stderr and calls `sys.exit(1)` — before the existing `WorkflowState.load()` call. Verify the test passes.
 
 ## Steel Thread 2: Earlier check in `execute()` before mode dispatch
 
@@ -111,3 +111,6 @@ Integration test written and verified to fail (RED state)
 
 ### 2026-02-24 08:27 - mark-task-complete
 Integration test written and verified to fail — confirms the bug: exit code 0, no error message, creates wrong branch and worktree
+
+### 2026-02-24 08:33 - mark-task-complete
+Guard added to _worktree_mode() that exits with error when all tasks complete; unit and integration tests pass

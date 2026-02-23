@@ -160,6 +160,26 @@ class TestImplementCommandIsolateMode:
 
 
 @pytest.mark.unit
+class TestWorktreeModeAllTasksComplete:
+    """_worktree_mode() exits with error when all tasks are complete."""
+
+    def test_exits_with_error_when_all_tasks_complete(self, capsys):
+        cmd, project, git_repo = _make_command(
+            ignore_uncommitted_idea_changes=True
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            cmd.execute()
+
+        assert exc_info.value.code == 1
+        assert "all tasks" in capsys.readouterr().err.lower()
+        git_repo.ensure_integration_branch.assert_not_called()
+        git_repo.ensure_slice_branch.assert_not_called()
+        git_repo.ensure_worktree.assert_not_called()
+        git_repo.checkout.assert_not_called()
+
+
+@pytest.mark.unit
 class TestImplementCommandWorktreeMode:
     """_worktree_mode() delegates to mode_factory.make_worktree_mode()."""
 
@@ -173,6 +193,10 @@ class TestImplementCommandWorktreeMode:
         cmd, project, git_repo = _make_command(
             ignore_uncommitted_idea_changes=True
         )
+        project.set_next_task(NumberedTask(
+            number=TaskNumber(thread=1, task=1),
+            task=Task(_lines=["- [ ] **Task 1.1: test-task**"]),
+        ))
         git_repo.working_tree_dir = "/tmp/fake-repo"
         mock_wt_git_repo = MagicMock()
         mock_wt_git_repo.working_tree_dir = "/tmp/wt"

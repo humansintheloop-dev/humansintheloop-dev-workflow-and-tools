@@ -8,7 +8,7 @@ import os
 import pytest
 from git import Repo
 
-from conftest import run_script
+from conftest import run_script, write_plan_file
 
 
 def create_valid_idea_directory(tmpdir, repo, idea_name="test-feature"):
@@ -16,11 +16,16 @@ def create_valid_idea_directory(tmpdir, repo, idea_name="test-feature"):
     idea_dir = os.path.join(tmpdir, idea_name)
     os.makedirs(idea_dir)
 
-    # Create all required files
-    for suffix in ["idea.md", "discussion.md", "spec.md", "plan.md"]:
+    # Create non-plan files
+    for suffix in ["idea.md", "discussion.md", "spec.md"]:
         filepath = os.path.join(idea_dir, f"{idea_name}-{suffix}")
         with open(filepath, "w") as f:
-            f.write(f"# {suffix}\n\n- [ ] **Task 1.1: Test task**")
+            f.write(f"# {suffix}\n")
+
+    # Create plan file with proper thread/task structure
+    write_plan_file(idea_dir, idea_name, [
+        (1, 1, "Test task", False),
+    ])
 
     # Commit all files
     for suffix in ["idea.md", "discussion.md", "spec.md", "plan.md"]:

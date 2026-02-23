@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-from conftest import run_script
+from conftest import run_script, write_plan_file
 
 
 @pytest.mark.integration
@@ -93,11 +93,16 @@ class TestValidIdeaDirectory:
         idea_dir = os.path.join(tmpdir, "test-feature")
         os.makedirs(idea_dir)
 
-        # Create all required files
-        for suffix in ["idea.md", "spec.md", "plan.md"]:
+        # Create non-plan files
+        for suffix in ["idea.md", "spec.md"]:
             filepath = os.path.join(idea_dir, f"test-feature-{suffix}")
             with open(filepath, "w") as f:
                 f.write(f"# {suffix}")
+
+        # Create plan file with proper thread/task structure
+        write_plan_file(idea_dir, "test-feature", [
+            (1, 1, "Test task", False),
+        ])
 
         # Commit all files
         for suffix in ["idea.md", "spec.md", "plan.md"]:

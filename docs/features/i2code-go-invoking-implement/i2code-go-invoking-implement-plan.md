@@ -74,15 +74,15 @@ Tests invoke `src/i2code/scripts/idea-to-code.sh` directly with piped input to s
 
 When a user selects "Implement the entire plan" and no config file exists, they are prompted for implementation options (interactive/non-interactive and worktree/trunk). Their choices are saved to `<idea-name>-implement-config.yaml` and used to invoke `i2code implement` with the corresponding CLI flags. The active configuration is displayed before implementation starts. On subsequent runs where the config already exists, prompting is skipped.
 
-- [ ] **Task 1.1: IMPLEMENT_CONFIG_FILE variable defined and test infrastructure wired to CI**
+- [x] **Task 1.1: IMPLEMENT_CONFIG_FILE variable defined and test infrastructure wired to CI**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `test-implement-config.sh` runs as part of end-to-end tests and exits 0; `IMPLEMENT_CONFIG_FILE` is set to `<idea-dir>/<idea-name>-implement-config.yaml` when `_helper.sh` is sourced
   - Evidence: `./test-scripts/test-end-to-end.sh` includes and runs `test-implement-config.sh`, which sources `_helper.sh` with a test directory and asserts `IMPLEMENT_CONFIG_FILE` matches the expected path
   - Steps:
-    - [ ] Add `IMPLEMENT_CONFIG_FILE="$IDEA_DIR/${IDEA_NAME}-implement-config.yaml"` to `src/i2code/scripts/_helper.sh` after the `PLAN_WITH_STORIES_FILE` definition (after `src/i2code/scripts/_helper.sh:33`)
-    - [ ] Create `test-scripts/test-implement-config.sh` with: setup function that creates a temp idea directory (e.g., `/tmp/test-idea-XXXX/my-idea`) with `my-idea-idea.txt`, `my-idea-spec.md`, `my-idea-plan.md` (containing `- [ ] Task 1`); teardown function that removes the temp directory; a test case that sources `src/i2code/scripts/_helper.sh` with the temp idea directory and asserts `IMPLEMENT_CONFIG_FILE` equals `<temp-dir>/my-idea/my-idea-implement-config.yaml`
-    - [ ] Add `"$SCRIPT_DIR/test-implement-config.sh"` to `test-scripts/test-end-to-end.sh` before the integration tests
+    - [x] Add `IMPLEMENT_CONFIG_FILE="$IDEA_DIR/${IDEA_NAME}-implement-config.yaml"` to `src/i2code/scripts/_helper.sh` after the `PLAN_WITH_STORIES_FILE` definition (after `src/i2code/scripts/_helper.sh:33`)
+    - [x] Create `test-scripts/test-implement-config.sh` with: setup function that creates a temp idea directory (e.g., `/tmp/test-idea-XXXX/my-idea`) with `my-idea-idea.txt`, `my-idea-spec.md`, `my-idea-plan.md` (containing `- [x] Task 1`); teardown function that removes the temp directory; a test case that sources `src/i2code/scripts/_helper.sh` with the temp idea directory and asserts `IMPLEMENT_CONFIG_FILE` equals `<temp-dir>/my-idea/my-idea-implement-config.yaml`
+    - [x] Add `"$SCRIPT_DIR/test-implement-config.sh"` to `test-scripts/test-end-to-end.sh` before the integration tests
 
 - [ ] **Task 1.2: Selecting "Implement" when no config exists prompts for options and saves config file**
   - TaskType: OUTCOME
@@ -150,3 +150,18 @@ When the config file exists but contains unrecognizable content (neither `intera
     - [ ] Add test case `test_corrupt_config_triggers_reprompting`: write `"not yaml garbage"` to the config file, pipe `printf '%s\n' 2 1 1 4` (Implement, Interactive, Worktree, Exit), capture stderr, assert stderr contains "How should Claude run?", assert config file now has `interactive: true` and `trunk: false`
     - [ ] Add test case `test_empty_config_triggers_reprompting`: write empty file as config, pipe same input, assert prompting occurred and valid config saved
     - [ ] Verify that a config with only one valid field (e.g., `trunk: true` but no `interactive:` line) does NOT trigger re-prompting — instead, `read_implement_config` should use the default for the missing field (this validates the spec requirement: "If a config value is missing from the file, use the default for that value")
+
+---
+
+## Change History
+### 2026-02-23 17:01 - mark-step-complete
+Added IMPLEMENT_CONFIG_FILE to _helper.sh after PLAN_WITH_STORIES_FILE
+
+### 2026-02-23 17:02 - mark-step-complete
+Created test-implement-config.sh with setup, teardown, and assertion
+
+### 2026-02-23 17:02 - mark-step-complete
+Added test-implement-config.sh to test-end-to-end.sh before integration tests
+
+### 2026-02-23 17:02 - mark-task-complete
+IMPLEMENT_CONFIG_FILE defined, test created, wired to CI

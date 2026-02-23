@@ -88,6 +88,14 @@ get_user_choice() {
     done
 }
 
+# Function to check for uncommitted changes in a directory
+has_uncommitted_changes() {
+    local dir="$1"
+    local status_output
+    status_output=$(git status --porcelain -- "$dir")
+    [ -n "$status_output" ]
+}
+
 # Function to handle errors with retry option
 handle_error() {
     echo ""
@@ -250,49 +258,103 @@ main() {
                 
             has_plan)
                 local choice
-                choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
-                    "Revise the plan" \
-                    "Implement the entire plan" \
-                    "Exit")
+                if has_uncommitted_changes "$dir"; then
+                    choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
+                        "Revise the plan" \
+                        "Commit changes" \
+                        "Implement the entire plan" \
+                        "Exit")
 
-                case "$choice" in
-                    1)
-                        if run_step "Revising plan" "$SCRIPT_DIR/revise-plan.sh" "$dir"; then
-                            echo "Plan revised successfully!"
-                        else
-                            if handle_error "$SCRIPT_DIR/revise-plan.sh" "$dir"; then
-                                continue  # Retry
-                            fi
-                        fi
-                        ;;
-                    2)
-                        if run_step "Implementing plan" i2code implement "$dir"; then
-                            echo "Implementation completed successfully!"
-                            echo ""
-                            # Check if plan has uncompleted tasks
-                            if grep -q '\[ \]' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null; then
-                                echo "================================================"
-                                echo "  Plan has uncompleted tasks"
-                                echo "================================================"
-                                echo ""
-                                # Continue the loop to show options again
+                    case "$choice" in
+                        1)
+                            if run_step "Revising plan" "$SCRIPT_DIR/revise-plan.sh" "$dir"; then
+                                echo "Plan revised successfully!"
                             else
-                                echo "================================================"
-                                echo "  Workflow Complete!"
-                                echo "================================================"
-                                exit 0
+                                if handle_error "$SCRIPT_DIR/revise-plan.sh" "$dir"; then
+                                    continue  # Retry
+                                fi
                             fi
-                        else
-                            if handle_error "i2code implement" "$dir"; then
-                                continue  # Retry
+                            ;;
+                        2)
+                            echo "Committing idea changes..."
+                            git add "$dir"
+                            if git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"; then
+                                echo "Changes committed successfully!"
+                            else
+                                if handle_error "git commit" "$dir"; then
+                                    continue  # Retry
+                                fi
                             fi
-                        fi
-                        ;;
-                    3)
-                        echo "Exiting workflow."
-                        exit 0
-                        ;;
-                esac
+                            ;;
+                        3)
+                            if run_step "Implementing plan" i2code implement "$dir"; then
+                                echo "Implementation completed successfully!"
+                                echo ""
+                                if grep -q '\[ \]' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null; then
+                                    echo "================================================"
+                                    echo "  Plan has uncompleted tasks"
+                                    echo "================================================"
+                                    echo ""
+                                else
+                                    echo "================================================"
+                                    echo "  Workflow Complete!"
+                                    echo "================================================"
+                                    exit 0
+                                fi
+                            else
+                                if handle_error "i2code implement" "$dir"; then
+                                    continue  # Retry
+                                fi
+                            fi
+                            ;;
+                        4)
+                            echo "Exiting workflow."
+                            exit 0
+                            ;;
+                    esac
+                else
+                    choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
+                        "Revise the plan" \
+                        "Implement the entire plan" \
+                        "Exit")
+
+                    case "$choice" in
+                        1)
+                            if run_step "Revising plan" "$SCRIPT_DIR/revise-plan.sh" "$dir"; then
+                                echo "Plan revised successfully!"
+                            else
+                                if handle_error "$SCRIPT_DIR/revise-plan.sh" "$dir"; then
+                                    continue  # Retry
+                                fi
+                            fi
+                            ;;
+                        2)
+                            if run_step "Implementing plan" i2code implement "$dir"; then
+                                echo "Implementation completed successfully!"
+                                echo ""
+                                if grep -q '\[ \]' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null; then
+                                    echo "================================================"
+                                    echo "  Plan has uncompleted tasks"
+                                    echo "================================================"
+                                    echo ""
+                                else
+                                    echo "================================================"
+                                    echo "  Workflow Complete!"
+                                    echo "================================================"
+                                    exit 0
+                                fi
+                            else
+                                if handle_error "i2code implement" "$dir"; then
+                                    continue  # Retry
+                                fi
+                            fi
+                            ;;
+                        3)
+                            echo "Exiting workflow."
+                            exit 0
+                            ;;
+                    esac
+                fi
                 ;;
                 
             complete)

@@ -64,16 +64,16 @@ This feature modifies `src/i2code/scripts/idea-to-code.sh` to detect uncommitted
 
 This steel thread implements the primary scenario (S-1): when the user has a plan and uncommitted changes exist, the menu shows "Commit changes" as the default. After committing, the next iteration shows "Implement" as the default.
 
-- [ ] **Task 1.1: `has_plan` menu shows "Commit changes" as default when idea directory has uncommitted changes**
+- [x] **Task 1.1: `has_plan` menu shows "Commit changes" as default when idea directory has uncommitted changes**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <test-idea-directory>` (simulated via automated input to `idea-to-code.sh`)
   - Observable: When the idea directory has a plan file and uncommitted changes (staged, unstaged, or untracked), the menu displays four options: "Revise the plan", "Commit changes [default]", "Implement the entire plan", "Exit". When there are no uncommitted changes, the menu displays the original three options with "Implement the entire plan [default]".
   - Evidence: Shell test script `test-scripts/test-go-commit-menu.sh` creates a temporary git repo, sets up an idea directory in `has_plan` state with uncommitted changes, runs `idea-to-code.sh` with piped input selecting "Exit", and asserts the menu output contains "Commit changes [default]". A second test case with all files committed asserts the menu output contains "Implement the entire plan [default]" and does NOT contain "Commit changes".
   - Steps:
-    - [ ] Create `test-scripts/test-go-commit-menu.sh` with two test cases: (1) uncommitted changes present — asserts "Commit changes [default]" appears in menu output; (2) no uncommitted changes — asserts "Implement the entire plan [default]" appears and "Commit changes" does NOT appear. Each test case sets up a temp git repo with an idea directory containing `*-idea.md`, `*-spec.md`, `*-plan.md` files, then pipes the "Exit" choice number into `idea-to-code.sh` and captures stderr output (menus are written to stderr).
-    - [ ] Add `test-scripts/test-go-commit-menu.sh` to `test-scripts/test-end-to-end.sh`
-    - [ ] Add a `has_uncommitted_changes()` function to `src/i2code/scripts/idea-to-code.sh` that runs `git status --porcelain -- "$1"` and returns 0 if output is non-empty (changes exist), 1 otherwise
-    - [ ] Modify the `has_plan)` case in `src/i2code/scripts/idea-to-code.sh` (starting at line 251): check `has_uncommitted_changes "$dir"` and conditionally show either the 4-option menu (with "Commit changes [default]" at position 2) or the original 3-option menu (with "Implement the entire plan [default]" at position 2)
+    - [x] Create `test-scripts/test-go-commit-menu.sh` with two test cases: (1) uncommitted changes present — asserts "Commit changes [default]" appears in menu output; (2) no uncommitted changes — asserts "Implement the entire plan [default]" appears and "Commit changes" does NOT appear. Each test case sets up a temp git repo with an idea directory containing `*-idea.md`, `*-spec.md`, `*-plan.md` files, then pipes the "Exit" choice number into `idea-to-code.sh` and captures stderr output (menus are written to stderr).
+    - [x] Add `test-scripts/test-go-commit-menu.sh` to `test-scripts/test-end-to-end.sh`
+    - [x] Add a `has_uncommitted_changes()` function to `src/i2code/scripts/idea-to-code.sh` that runs `git status --porcelain -- "$1"` and returns 0 if output is non-empty (changes exist), 1 otherwise
+    - [x] Modify the `has_plan)` case in `src/i2code/scripts/idea-to-code.sh` (starting at line 251): check `has_uncommitted_changes "$dir"` and conditionally show either the 4-option menu (with "Commit changes [default]" at position 2) or the original 3-option menu (with "Implement the entire plan [default]" at position 2)
 
 - [ ] **Task 1.2: Selecting "Commit changes" runs `git add`/`git commit` and loops back**
   - TaskType: OUTCOME
@@ -113,3 +113,18 @@ This steel thread implements scenario S-4: when the `git add`/`git commit` fails
 ## Change History
 
 - **2026-02-22**: Replaced `claude -p "Commit the changes in the <idea-directory>"` with direct `git add "$dir"` + `git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"`. Updated spec (FR-3, FR-5, S-1, S-4) and plan (overview, approach, tasks 1.2, 1.3, 2.1) to remove all `claude -p` references. Rationale: simpler, no dependency on Claude for a straightforward git operation.
+
+### 2026-02-23 11:37 - mark-step-complete
+Created test-scripts/test-go-commit-menu.sh with two test cases
+
+### 2026-02-23 11:37 - mark-step-complete
+Added test-go-commit-menu.sh to test-end-to-end.sh
+
+### 2026-02-23 11:37 - mark-step-complete
+Added has_uncommitted_changes() function
+
+### 2026-02-23 11:37 - mark-step-complete
+Modified has_plan case with conditional 4-option/3-option menu
+
+### 2026-02-23 11:38 - mark-task-complete
+Menu shows Commit changes [default] when uncommitted changes exist, original menu when clean

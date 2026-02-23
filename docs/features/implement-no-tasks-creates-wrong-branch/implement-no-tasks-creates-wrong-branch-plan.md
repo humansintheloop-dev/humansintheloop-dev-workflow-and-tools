@@ -59,7 +59,14 @@ This plan fixes a bug where `i2code implement` creates a wrong branch when all t
 
 This thread fixes the essential bug: `_worktree_mode()` must exit with an error when `get_next_task()` returns `None`, before creating any branches or modifying the worktree.
 
-- [ ] **Task 1.1: `_worktree_mode()` exits with error when all tasks are complete**
+- [ ] **Task 1.1: Integration test: implement exits with error when all tasks are complete**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run python3 -m pytest tests/implement/test_all_tasks_complete_integration.py -v -m integration`
+  - Observable: Running i2code implement on an idea where all plan tasks are marked complete exits with a non-zero status, stderr contains "all tasks", and no new branches, worktrees, or Claude invocations occur.
+  - Evidence: `Integration test creates a test git repo, commits idea files with all tasks marked [x] complete, creates a mock Claude script that writes a sentinel file when invoked, runs run_script(idea_dir, cwd=tmpdir, mock_claude=script_path), and asserts: (a) non-zero returncode, (b) stderr contains "all tasks", (c) no idea/* branches created, (d) no worktree directory created, (e) mock Claude script was never invoked (sentinel file absent).`
+  - Steps:
+    - [ ] Add a new integration test file tests/implement/test_all_tasks_complete_integration.py with a test class TestAllTasksCompleteExitsWithError marked @pytest.mark.integration. The test uses the test_git_repo_with_commit fixture, creates a valid idea directory with all plan tasks marked [x] complete (using write_plan_file with completed=True), creates a mock Claude script that writes a sentinel file when invoked, runs run_script(idea_dir, cwd=tmpdir, mock_claude=script_path), and asserts: (a) non-zero returncode, (b) stderr contains "all tasks", (c) no idea/* branches created beyond master, (d) no worktree directory created, (e) sentinel file does not exist (Claude was never invoked). Verify the test fails.
+- [ ] **Task 1.2: `_worktree_mode()` exits with error when all tasks are complete**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/implement/test_implement_command.py -v -m unit`
   - Observable: When `get_next_task()` returns `None`, `_worktree_mode()` prints an error message to stderr containing "all tasks" and exits with `sys.exit(1)`. It does NOT call `ensure_integration_branch`, `ensure_slice_branch`, `ensure_worktree`, or `checkout` on the git repository.
@@ -67,15 +74,6 @@ This thread fixes the essential bug: `_worktree_mode()` must exit with an error 
   - Steps:
     - [ ] Add a new test class `TestWorktreeModeAllTasksComplete` in `tests/implement/test_implement_command.py` with a test that creates an `ImplementCommand` using `FakeIdeaProject` (which returns `None` from `get_next_task()` by default), calls `execute()`, and asserts: (a) `SystemExit` with code 1, (b) stderr contains "all tasks", (c) `git_repo.ensure_integration_branch` was not called, (d) `git_repo.ensure_slice_branch` was not called, (e) `git_repo.ensure_worktree` was not called, (f) `git_repo.checkout` was not called. Verify the test fails.
     - [ ] In `src/i2code/implement/implement_command.py`, add a guard at the top of `_worktree_mode()` that calls `self.project.get_next_task()`, and if it returns `None`, prints an error message to stderr and calls `sys.exit(1)` — before the existing `WorkflowState.load()` call. Verify the test passes.
-
-- [ ] **Task 1.2: `_worktree_mode()` proceeds normally when tasks remain (regression guard)**
-  - TaskType: OUTCOME
-  - Entrypoint: `uv run python3 -m pytest tests/implement/test_implement_command.py -v -m unit`
-  - Observable: When `get_next_task()` returns a valid `NumberedTask`, `_worktree_mode()` proceeds to call `ensure_integration_branch`, `ensure_slice_branch`, and delegates to `make_worktree_mode().execute()` as before.
-  - Evidence: The existing test `TestImplementCommandWorktreeMode.test_worktree_mode_delegates_to_mode_factory` still passes. Additionally, a new test verifies that when `FakeIdeaProject` is configured with a next task, `_worktree_mode()` does NOT exit with `SystemExit` and does call `ensure_integration_branch`.
-  - Steps:
-    - [ ] Add a `set_next_task(task)` method to `FakeIdeaProject` in `tests/implement/fake_idea_project.py` that allows tests to configure the return value of `get_next_task()`.
-    - [ ] Add a test in `TestWorktreeModeAllTasksComplete` (or a new class `TestWorktreeModeTasksRemain`) that configures `FakeIdeaProject` with a `NumberedTask` via `set_next_task()`, then calls `execute()` via the worktree path, and asserts that `git_repo.ensure_integration_branch` WAS called (i.e., no premature exit). This test should use the same setup as the existing `test_worktree_mode_delegates_to_mode_factory` test. Verify it passes.
 
 ## Steel Thread 2: Earlier check in `execute()` before mode dispatch
 
@@ -98,3 +96,12 @@ This thread adds a mode-independent guard in `execute()` that catches the all-ta
   - Steps:
     - [ ] Update `_make_command()` in `tests/implement/test_implement_command.py` to configure `FakeIdeaProject` with a default `NumberedTask` (so `get_next_task()` returns a task instead of `None`). This ensures all existing dispatch tests pass through the new `execute()` guard.
     - [ ] Verify all existing tests still pass: `TestImplementCommandDryRun`, `TestImplementCommandTrunkDispatch`, `TestImplementCommandIsolateDispatch`, `TestImplementCommandWorktreeDispatch`, `TestImplementCommandValidation`, `TestImplementCommandTrunkMode`, `TestImplementCommandIsolateMode`, `TestImplementCommandWorktreeMode`.
+
+---
+
+## Change History
+### 2026-02-24 07:54 - insert-task-before
+Outside-in TDD: start with an integration test that exercises the real command flow before drilling down to unit tests in _worktree_mode()
+
+### 2026-02-24 07:57 - delete-task
+Existing test test_worktree_mode_delegates_to_mode_factory already covers the regression guard. The set_next_task() addition is handled in Task 2.2.

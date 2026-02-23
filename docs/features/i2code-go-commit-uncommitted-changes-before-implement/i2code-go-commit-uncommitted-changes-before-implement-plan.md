@@ -42,7 +42,7 @@ Use these skills by invoking them before the relevant action:
 
 ## Overview
 
-This feature modifies `src/i2code/scripts/idea-to-code.sh` to detect uncommitted changes in the idea directory when the workflow reaches the `has_plan` state, and to offer a "Commit changes" menu option (as the default) before proceeding to implementation. The commit is performed via `claude -p "Commit the changes in the <idea-directory>"`.
+This feature modifies `src/i2code/scripts/idea-to-code.sh` to detect uncommitted changes in the idea directory when the workflow reaches the `has_plan` state, and to offer a "Commit changes" menu option (as the default) before proceeding to implementation. The commit is performed via `git add` and `git commit` on the idea directory.
 
 **Key files:**
 - `src/i2code/scripts/idea-to-code.sh` — the main orchestrator script (lines 251-296 handle the `has_plan` state)
@@ -56,7 +56,7 @@ This feature modifies `src/i2code/scripts/idea-to-code.sh` to detect uncommitted
 **Approach:**
 - Extract a `has_uncommitted_changes()` function in `idea-to-code.sh` that runs `git status --porcelain -- "$dir"` and returns 0 (true) when changes exist
 - Modify the `has_plan` case to conditionally show different menus based on `has_uncommitted_changes`
-- Extract a `commit_idea_changes()` function that invokes `claude -p "Commit the changes in the $dir"`
+- Extract a `commit_idea_changes()` function that runs `git add "$dir"` followed by `git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"`
 - Use the existing `handle_error` pattern for commit failures
 - Steps should be implemented using TDD
 
@@ -75,37 +75,41 @@ This steel thread implements the primary scenario (S-1): when the user has a pla
     - [ ] Add a `has_uncommitted_changes()` function to `src/i2code/scripts/idea-to-code.sh` that runs `git status --porcelain -- "$1"` and returns 0 if output is non-empty (changes exist), 1 otherwise
     - [ ] Modify the `has_plan)` case in `src/i2code/scripts/idea-to-code.sh` (starting at line 251): check `has_uncommitted_changes "$dir"` and conditionally show either the 4-option menu (with "Commit changes [default]" at position 2) or the original 3-option menu (with "Implement the entire plan [default]" at position 2)
 
-- [ ] **Task 1.2: Selecting "Commit changes" invokes `claude -p` and loops back**
+- [ ] **Task 1.2: Selecting "Commit changes" runs `git add`/`git commit` and loops back**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <test-idea-directory>` (simulated via automated input to `idea-to-code.sh`)
-  - Observable: When the user selects "Commit changes", the script invokes `claude -p "Commit the changes in the <idea-directory>"`. After a successful commit, the workflow loops back and on the next iteration (if no more uncommitted changes remain) shows the normal menu with "Implement" as default.
-  - Evidence: Shell test script `test-scripts/test-go-commit-action.sh` creates a temporary git repo with uncommitted idea files, stubs `claude` as a script that stages and commits the files, pipes input selecting "Commit changes" then "Exit" on the next iteration, and asserts: (1) the stubbed `claude` was called with the expected `-p` argument containing the idea directory path, (2) the second iteration's menu output shows "Implement the entire plan [default]" (not "Commit changes").
+  - Observable: When the user selects "Commit changes", the script runs `git add "$dir"` followed by `git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"`. After a successful commit, the workflow loops back and on the next iteration (if no more uncommitted changes remain) shows the normal menu with "Implement" as default.
+  - Evidence: Shell test script `test-scripts/test-go-commit-action.sh` creates a temporary git repo with uncommitted idea files, pipes input selecting "Commit changes" then "Exit" on the next iteration, and asserts: (1) the idea files are committed (verified via `git status`), (2) the commit message follows the expected format, (3) the second iteration's menu output shows "Implement the entire plan [default]" (not "Commit changes").
   - Steps:
-    - [ ] Create `test-scripts/test-go-commit-action.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; creates a stub `claude` script on PATH that records its arguments to a file and performs `git add` + `git commit` on the idea directory; pipes input "2" (Commit changes) followed by "4" (Exit on next iteration which should now be "3" = Exit) into `idea-to-code.sh`; asserts the recorded `claude` arguments contain `-p` and the idea directory path; asserts the second menu iteration shows "Implement the entire plan [default]"
+    - [ ] Create `test-scripts/test-go-commit-action.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; pipes input "2" (Commit changes) followed by "3" (Exit on next iteration) into `idea-to-code.sh`; asserts the idea files are committed via `git log` and `git status`; asserts the commit message matches the expected format; asserts the second menu iteration shows "Implement the entire plan [default]"
     - [ ] Add `test-scripts/test-go-commit-action.sh` to `test-scripts/test-end-to-end.sh`
-    - [ ] Add a `commit_idea_changes()` function to `src/i2code/scripts/idea-to-code.sh` that runs `claude -p "Commit the changes in the $1"`
+    - [ ] Add a `commit_idea_changes()` function to `src/i2code/scripts/idea-to-code.sh` that runs `git add "$1"` followed by `git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"`
     - [ ] In the `has_plan)` case, when uncommitted changes exist and the user selects option 2, call `commit_idea_changes "$dir"` and if successful, `continue` the loop (which triggers re-detection and a fresh menu)
 
 - [ ] **Task 1.3: User can skip commit and implement directly when uncommitted changes exist**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <test-idea-directory>` (simulated via automated input to `idea-to-code.sh`)
   - Observable: When uncommitted changes exist and the user selects option 3 ("Implement the entire plan") instead of option 2 ("Commit changes"), implementation proceeds without committing idea files. The `i2code implement` command is invoked.
-  - Evidence: Shell test script `test-scripts/test-go-skip-commit.sh` creates a temp git repo with uncommitted idea files in `has_plan` state, stubs `i2code` to record calls, pipes input "3" (Implement) into `idea-to-code.sh`, and asserts that `i2code implement` was invoked (not `claude -p`).
+  - Evidence: Shell test script `test-scripts/test-go-skip-commit.sh` creates a temp git repo with uncommitted idea files in `has_plan` state, stubs `i2code` to record calls, pipes input "3" (Implement) into `idea-to-code.sh`, and asserts that `i2code implement` was invoked and idea files remain uncommitted.
   - Steps:
-    - [ ] Create `test-scripts/test-go-skip-commit.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; stubs `i2code` command on PATH to record arguments and exit 0; pipes input "3" (Implement the entire plan) into `idea-to-code.sh`; asserts the stub recorded an `implement` invocation; asserts `claude` was NOT called
+    - [ ] Create `test-scripts/test-go-skip-commit.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; stubs `i2code` command on PATH to record arguments and exit 0; pipes input "3" (Implement the entire plan) into `idea-to-code.sh`; asserts the stub recorded an `implement` invocation; asserts idea files are still uncommitted
     - [ ] Add `test-scripts/test-go-skip-commit.sh` to `test-scripts/test-end-to-end.sh`
     - [ ] Verify the `has_plan)` case with uncommitted changes handles option 3 as "Implement the entire plan" — this should already work from Task 1.1's menu restructuring, but confirm the case numbering maps correctly (option 3 in the 4-option menu maps to implement)
 
 ## Steel Thread 2: Commit Failure Handling
 
-This steel thread implements scenario S-4: when the `claude -p` commit command fails, the user is offered "Retry" or "Abort workflow" via the existing `handle_error` pattern.
+This steel thread implements scenario S-4: when the `git add`/`git commit` fails, the user is offered "Retry" or "Abort workflow" via the existing `handle_error` pattern.
 
 - [ ] **Task 2.1: Commit failure triggers retry/abort prompt via `handle_error`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <test-idea-directory>` (simulated via automated input to `idea-to-code.sh`)
-  - Observable: When the user selects "Commit changes" and `claude -p` exits non-zero, the script calls `handle_error` which presents "Retry" or "Abort workflow". Selecting "Abort workflow" exits with code 1.
-  - Evidence: Shell test script `test-scripts/test-go-commit-failure.sh` creates a temp git repo with uncommitted idea files, stubs `claude` to exit with code 1, pipes input selecting "Commit changes" then "Abort workflow", and asserts the script exits with code 1 and the output contains "Retry" and "Abort workflow".
+  - Observable: When the user selects "Commit changes" and the `git commit` exits non-zero, the script calls `handle_error` which presents "Retry" or "Abort workflow". Selecting "Abort workflow" exits with code 1.
+  - Evidence: Shell test script `test-scripts/test-go-commit-failure.sh` creates a temp git repo with uncommitted idea files, stubs `git` to fail on `commit` subcommand, pipes input selecting "Commit changes" then "Abort workflow", and asserts the script exits with code 1 and the output contains "Retry" and "Abort workflow".
   - Steps:
-    - [ ] Create `test-scripts/test-go-commit-failure.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; stubs `claude` to exit 1; pipes input "2" (Commit changes) then "2" (Abort workflow from `handle_error` menu) into `idea-to-code.sh`; asserts exit code is 1; asserts output contains "Retry" and "Abort workflow"
+    - [ ] Create `test-scripts/test-go-commit-failure.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; stubs `git` to exit 1 on `commit` subcommand (pass-through for other subcommands); pipes input "2" (Commit changes) then "2" (Abort workflow from `handle_error` menu) into `idea-to-code.sh`; asserts exit code is 1; asserts output contains "Retry" and "Abort workflow"
     - [ ] Add `test-scripts/test-go-commit-failure.sh` to `test-scripts/test-end-to-end.sh`
     - [ ] In the `has_plan)` case, wrap the `commit_idea_changes` call with the existing `handle_error` pattern: if the command fails, call `handle_error` and if the user selects Retry, `continue` the loop; if Abort, exit. Follow the same pattern used by other steps (e.g., lines 176-182 in `src/i2code/scripts/idea-to-code.sh`)
+
+## Change History
+
+- **2026-02-22**: Replaced `claude -p "Commit the changes in the <idea-directory>"` with direct `git add "$dir"` + `git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"`. Updated spec (FR-3, FR-5, S-1, S-4) and plan (overview, approach, tasks 1.2, 1.3, 2.1) to remove all `claude -p` references. Rationale: simpler, no dependency on Claude for a straightforward git operation.

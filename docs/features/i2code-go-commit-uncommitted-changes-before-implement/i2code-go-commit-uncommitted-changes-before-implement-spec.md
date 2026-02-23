@@ -24,13 +24,12 @@ When the user reaches the `has_plan` state in `i2code go`, the idea directory ty
 
 - Detecting uncommitted changes (staged, unstaged, untracked) within the idea directory.
 - Adding a "Commit changes" menu option in the `has_plan` state.
-- Invoking `claude -p "Commit the changes in the <idea-directory>"` to perform the commit.
+- Running `git add` and `git commit` scoped to the idea directory to perform the commit.
 
 ## Out of Scope
 
 - Detecting or committing changes outside the idea directory.
 - Adding commit checks to states other than `has_plan`.
-- Modifying the `commit-changes` slash command itself.
 - Changing the `i2code implement` command behavior.
 
 ## Functional Requirements
@@ -60,15 +59,16 @@ Implementation plan exists. What would you like to do?
   3) Exit
 ```
 
-### FR-3: Commit via Claude
+### FR-3: Commit via git
 
-When the user selects "Commit changes", invoke:
+When the user selects "Commit changes", run:
 
 ```bash
-claude -p "Commit the changes in the <idea-directory>"
+git add <idea-directory>
+git commit -m "Add idea docs for <idea-name>" -- <idea-directory>
 ```
 
-Where `<idea-directory>` is the absolute or relative path to the idea directory (the `$dir` variable in `idea-to-code.sh`).
+Where `<idea-directory>` is the path to the idea directory (the `$dir` variable in `idea-to-code.sh`) and `<idea-name>` is the idea name (the `$IDEA_NAME` variable).
 
 ### FR-4: Loop back after commit
 
@@ -76,7 +76,7 @@ After a successful commit, continue the main workflow loop. On the next iteratio
 
 ### FR-5: Handle commit failure
 
-If the `claude -p` command fails (non-zero exit), use the existing `handle_error` pattern to offer "Retry" or "Abort workflow".
+If the `git commit` command fails (non-zero exit), use the existing `handle_error` pattern to offer "Retry" or "Abort workflow".
 
 ## Non-Functional Requirements
 
@@ -113,7 +113,7 @@ The git status check should add negligible latency (< 1 second) to the menu disp
 4. Git status check finds uncommitted changes in the idea directory.
 5. Menu shows "Commit changes" as option 2 (default).
 6. User presses Enter (accepts default).
-7. `claude -p "Commit the changes in the <idea-directory>"` runs and succeeds.
+7. `git add <idea-directory>` and `git commit -m "Add idea docs for <idea-name>" -- <idea-directory>` run and succeed.
 8. Workflow loops back. State is still `has_plan`.
 9. Git status check finds no uncommitted changes.
 10. Menu shows "Implement the entire plan" as option 2 (default).
@@ -138,5 +138,5 @@ The git status check should add negligible latency (< 1 second) to the menu disp
 
 1. State is `has_plan` with uncommitted changes.
 2. User selects "Commit changes".
-3. `claude -p` command fails.
+3. `git commit` command fails.
 4. User is offered "Retry" or "Abort workflow" via `handle_error`.

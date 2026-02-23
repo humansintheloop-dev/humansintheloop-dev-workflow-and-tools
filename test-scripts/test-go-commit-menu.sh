@@ -61,7 +61,7 @@ else
 fi
 
 # ---------------------------------------------------------------
-# Test 2: No uncommitted changes → menu shows "Implement the entire plan [default]"
+# Test 2: No uncommitted changes → menu shows "Implement the entire plan: i2code implement [default]"
 # ---------------------------------------------------------------
 echo ""
 echo "--- Test 2: no uncommitted changes ---"
@@ -96,10 +96,10 @@ STDERR_OUTPUT_2=$(
     printf '4\n' | "$I2CODE_SCRIPT" "$IDEA_DIR_2" 2>&1 >/dev/null || true
 )
 
-if echo "$STDERR_OUTPUT_2" | grep -q "Implement the entire plan \[default\]"; then
-    pass "menu shows 'Implement the entire plan [default]' when no uncommitted changes"
+if echo "$STDERR_OUTPUT_2" | grep -q "Implement the entire plan: i2code implement.*\[default\]"; then
+    pass "menu shows 'Implement the entire plan: i2code implement [default]' when no uncommitted changes"
 else
-    fail "menu does NOT show 'Implement the entire plan [default]' when no uncommitted changes"
+    fail "menu does NOT show 'Implement the entire plan: i2code implement [default]' when no uncommitted changes"
     echo "  stderr output: $STDERR_OUTPUT_2"
 fi
 

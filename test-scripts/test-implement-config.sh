@@ -418,6 +418,143 @@ else
 fi
 
 # ---------------------------------------------------------------
+# Test 11: Menu option shows invocation when config exists
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 11: Menu option shows invocation when config exists ---"
+
+TEST11_DIR="$TMPDIR_ROOT/test11-idea"
+mkdir -p "$TEST11_DIR"
+echo "My idea" > "$TEST11_DIR/test11-idea-idea.txt"
+echo "# Spec" > "$TEST11_DIR/test11-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST11_DIR/test11-idea-plan.md"
+
+# Pre-create config with non-interactive and trunk
+printf 'interactive: false\ntrunk: true\n' > "$TEST11_DIR/test11-idea-implement-config.yaml"
+
+create_mock_i2code
+
+# Capture stderr; pipe: 2 (Implement) → 4 (Exit)
+STDERR11="$TMPDIR_ROOT/test11-stderr"
+printf '%s\n' 2 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST11_DIR" > /dev/null 2>"$STDERR11" || true
+
+if grep -q 'i2code implement --non-interactive --trunk' "$STDERR11"; then
+    pass "Menu option shows 'i2code implement --non-interactive --trunk'"
+else
+    fail "Menu option does not show 'i2code implement --non-interactive --trunk'"
+    echo "  Captured stderr:" && cat "$STDERR11"
+fi
+
+# ---------------------------------------------------------------
+# Test 12: Menu option shows invocation with no flags for default config
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 12: Menu option shows invocation with no flags for default config ---"
+
+TEST12_DIR="$TMPDIR_ROOT/test12-idea"
+mkdir -p "$TEST12_DIR"
+echo "My idea" > "$TEST12_DIR/test12-idea-idea.txt"
+echo "# Spec" > "$TEST12_DIR/test12-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST12_DIR/test12-idea-plan.md"
+
+# Pre-create config with defaults
+printf 'interactive: true\ntrunk: false\n' > "$TEST12_DIR/test12-idea-implement-config.yaml"
+
+create_mock_i2code
+
+# Capture stderr; pipe: 2 (Implement) → 4 (Exit)
+STDERR12="$TMPDIR_ROOT/test12-stderr"
+printf '%s\n' 2 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST12_DIR" > /dev/null 2>"$STDERR12" || true
+
+# Should show "i2code implement" in the menu (no extra flags)
+if grep -q 'Implement the entire plan: i2code implement' "$STDERR12"; then
+    pass "Menu option shows 'i2code implement' for default config"
+else
+    fail "Menu option does not show 'i2code implement' for default config"
+    echo "  Captured stderr:" && cat "$STDERR12"
+fi
+
+# Should NOT show --non-interactive or --trunk in the menu line
+if grep 'Implement the entire plan:' "$STDERR12" | grep -q '\-\-non-interactive\|--trunk'; then
+    fail "Menu option should NOT show flags for default config"
+    echo "  Captured stderr:" && cat "$STDERR12"
+else
+    pass "Menu option correctly omits flags for default config"
+fi
+
+# ---------------------------------------------------------------
+# Test 13: First menu shows invocation even when no config file exists
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 13: First menu shows invocation even when no config file exists ---"
+
+TEST13_DIR="$TMPDIR_ROOT/test13-idea"
+mkdir -p "$TEST13_DIR"
+echo "My idea" > "$TEST13_DIR/test13-idea-idea.txt"
+echo "# Spec" > "$TEST13_DIR/test13-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST13_DIR/test13-idea-plan.md"
+# No config file created
+
+create_mock_i2code
+
+# Capture stderr; pipe: 2 (Implement) → 1 (Interactive) → 1 (Worktree) → 4 (Exit)
+STDERR13="$TMPDIR_ROOT/test13-stderr"
+printf '%s\n' 2 1 1 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST13_DIR" > /dev/null 2>"$STDERR13" || true
+
+# Extract only the FIRST menu block (lines before "How should Claude run?")
+FIRST_MENU13="$TMPDIR_ROOT/test13-first-menu"
+sed '/How should Claude run/q' "$STDERR13" > "$FIRST_MENU13"
+
+# First menu should show "i2code implement" even without config (defaults = no flags)
+if grep -q 'Implement the entire plan: i2code implement' "$FIRST_MENU13"; then
+    pass "First menu shows 'i2code implement' even without config file"
+else
+    fail "First menu does not show 'i2code implement' without config file"
+    echo "  First menu output:" && cat "$FIRST_MENU13"
+fi
+
+# ---------------------------------------------------------------
+# Test 14: Configure option shown in uncommitted-changes menu when config exists
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 14: Configure option shown in uncommitted-changes menu when config exists ---"
+
+# Set up idea dir inside a temporary git repo with uncommitted changes
+TEST14_REPO="$TMPDIR_ROOT/test14-repo"
+mkdir -p "$TEST14_REPO"
+git init "$TEST14_REPO" > /dev/null 2>&1
+(cd "$TEST14_REPO" && git commit --allow-empty -m "init" > /dev/null 2>&1)
+TEST14_IDEA="$TEST14_REPO/test14-idea"
+mkdir -p "$TEST14_IDEA"
+echo "My idea" > "$TEST14_IDEA/test14-idea-idea.txt"
+echo "# Spec" > "$TEST14_IDEA/test14-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST14_IDEA/test14-idea-plan.md"
+printf 'interactive: false\ntrunk: true\n' > "$TEST14_IDEA/test14-idea-implement-config.yaml"
+# Stage a file so git status shows uncommitted changes
+(cd "$TEST14_REPO" && git add "$TEST14_IDEA/test14-idea-idea.txt")
+
+create_mock_i2code
+
+# Run from INSIDE the test repo so has_uncommitted_changes detects staged files
+STDERR14="$TMPDIR_ROOT/test14-stderr"
+(cd "$TEST14_REPO" && printf '%s\n' 5 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST14_IDEA" > /dev/null 2>"$STDERR14") || true
+
+# Verify we actually hit the uncommitted-changes branch (should see "Commit changes")
+if grep -q 'Commit changes' "$STDERR14"; then
+    pass "Uncommitted-changes menu branch detected"
+else
+    fail "Did NOT hit uncommitted-changes menu branch"
+    echo "  Captured stderr:" && cat "$STDERR14"
+fi
+
+if grep -q 'Configure implement options' "$STDERR14"; then
+    pass "Configure option shown in uncommitted-changes menu when config exists"
+else
+    fail "Configure option NOT shown in uncommitted-changes menu when config exists"
+    echo "  Captured stderr:" && cat "$STDERR14"
+fi
+
+# ---------------------------------------------------------------
 # Results
 # ---------------------------------------------------------------
 echo ""

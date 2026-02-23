@@ -187,6 +187,17 @@ build_implement_flags() {
     fi
 }
 
+# Function to build the menu label for "Implement the entire plan"
+# Always includes the invocation command; uses config flags when available, defaults otherwise
+build_implement_label() {
+    if [ -f "$IMPLEMENT_CONFIG_FILE" ] && read_implement_config; then
+        build_implement_flags
+    else
+        IMPLEMENT_FLAGS=()
+    fi
+    echo "Implement the entire plan: i2code implement${IMPLEMENT_FLAGS:+ ${IMPLEMENT_FLAGS[*]}}"
+}
+
 # Main function
 main() {
     local dir="$1"
@@ -328,15 +339,22 @@ main() {
                 
             has_plan)
                 local choice
+                local implement_label
+                implement_label=$(build_implement_label)
                 if has_uncommitted_changes "$dir"; then
-                    choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
-                        "Revise the plan" \
-                        "Commit changes" \
-                        "Implement the entire plan" \
-                        "Exit")
+                    local -a uncommitted_options=("Revise the plan" "Commit changes" "$implement_label")
+                    if [ -f "$IMPLEMENT_CONFIG_FILE" ]; then
+                        uncommitted_options+=("Configure implement options")
+                    fi
+                    uncommitted_options+=("Exit")
 
-                    case "$choice" in
-                        1)
+                    choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
+                        "${uncommitted_options[@]}")
+
+                    # Map option labels to actions
+                    local selected="${uncommitted_options[$((choice-1))]}"
+                    case "$selected" in
+                        "Revise the plan")
                             if run_step "Revising plan" "$SCRIPT_DIR/revise-plan.sh" "$dir"; then
                                 echo "Plan revised successfully!"
                             else
@@ -345,7 +363,7 @@ main() {
                                 fi
                             fi
                             ;;
-                        2)
+                        "Commit changes")
                             if commit_idea_changes "$dir"; then
                                 echo "Changes committed successfully!"
                                 continue
@@ -355,7 +373,7 @@ main() {
                                 fi
                             fi
                             ;;
-                        3)
+                        "$implement_label")
                             if [ ! -f "$IMPLEMENT_CONFIG_FILE" ] || ! read_implement_config; then
                                 prompt_implement_config
                                 write_implement_config
@@ -383,7 +401,11 @@ main() {
                                 fi
                             fi
                             ;;
-                        4)
+                        "Configure implement options")
+                            prompt_implement_config
+                            write_implement_config
+                            ;;
+                        "Exit")
                             echo "Exiting workflow."
                             exit 0
                             ;;
@@ -391,7 +413,7 @@ main() {
                 else
                     choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
                         "Revise the plan" \
-                        "Implement the entire plan" \
+                        "$implement_label" \
                         "Configure implement options" \
                         "Exit")
 

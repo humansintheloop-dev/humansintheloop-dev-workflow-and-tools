@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tests that selecting "Commit changes" commits the idea files,
 # the commit message matches the expected format, and the next
-# menu iteration shows "Implement the entire plan [default]".
+# menu iteration shows "Implement the entire plan: i2code implement [default]".
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -70,11 +70,11 @@ else
     echo "  actual:   '$COMMIT_MSG'"
 fi
 
-# Assert 3: Second menu iteration shows "Implement the entire plan [default]"
-if echo "$STDERR_OUTPUT" | grep -q "Implement the entire plan \[default\]"; then
-    pass "second menu shows 'Implement the entire plan [default]'"
+# Assert 3: Second menu iteration shows "Implement the entire plan: i2code implement [default]"
+if echo "$STDERR_OUTPUT" | grep -q "Implement the entire plan: i2code implement.*\[default\]"; then
+    pass "second menu shows 'Implement the entire plan: i2code implement [default]'"
 else
-    fail "second menu does NOT show 'Implement the entire plan [default]'"
+    fail "second menu does NOT show 'Implement the entire plan: i2code implement [default]'"
     echo "  stderr output: $STDERR_OUTPUT"
 fi
 

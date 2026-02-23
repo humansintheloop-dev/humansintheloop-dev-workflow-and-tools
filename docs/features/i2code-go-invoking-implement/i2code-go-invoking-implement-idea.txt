@@ -1,0 +1,9 @@
+i2code go invokes i2code implement repeatedly without any options
+
+It should prompt the user for options:
+* interactive or non-interactive
+* worktree or trunk
+
+Those options should be saved in <idea-name>-implement-config.yaml in the idea directory.
+
+And passed to implement whenever it is invoked

@@ -84,17 +84,17 @@ When a user selects "Implement the entire plan" and no config file exists, they 
     - [x] Create `test-scripts/test-implement-config.sh` with: setup function that creates a temp idea directory (e.g., `/tmp/test-idea-XXXX/my-idea`) with `my-idea-idea.txt`, `my-idea-spec.md`, `my-idea-plan.md` (containing `- [x] Task 1`); teardown function that removes the temp directory; a test case that sources `src/i2code/scripts/_helper.sh` with the temp idea directory and asserts `IMPLEMENT_CONFIG_FILE` equals `<temp-dir>/my-idea/my-idea-implement-config.yaml`
     - [x] Add `"$SCRIPT_DIR/test-implement-config.sh"` to `test-scripts/test-end-to-end.sh` before the integration tests
 
-- [ ] **Task 1.2: Selecting "Implement" when no config exists prompts for options and saves config file**
+- [x] **Task 1.2: Selecting "Implement" when no config exists prompts for options and saves config file**
   - TaskType: OUTCOME
   - Entrypoint: `printf '%s\n' 2 2 2 3 | src/i2code/scripts/idea-to-code.sh <idea-dir>` (Implement → Non-interactive → Trunk → Exit)
   - Observable: `<idea-name>-implement-config.yaml` created in the idea directory containing `interactive: false` and `trunk: true`
   - Evidence: `test-scripts/test-implement-config.sh` test case pipes menu selections and prompt choices to `idea-to-code.sh`, then asserts the config file exists with the expected values
   - Steps:
-    - [ ] Add `prompt_implement_config` function to `src/i2code/scripts/idea-to-code.sh` that uses `get_user_choice` to prompt for: (1) "How should Claude run?" with options "Interactive" (default 1) and "Non-interactive"; (2) "Where should implementation happen?" with options "Worktree (branch + PR)" (default 1) and "Trunk (current branch, no PR)"; sets `IMPLEMENT_INTERACTIVE` to `true`/`false` and `IMPLEMENT_TRUNK` to `false`/`true` based on choices
-    - [ ] Add `write_implement_config` function to `src/i2code/scripts/idea-to-code.sh` that writes `interactive: $IMPLEMENT_INTERACTIVE` and `trunk: $IMPLEMENT_TRUNK` to `$IMPLEMENT_CONFIG_FILE`
-    - [ ] In the `has_plan` case branch for option 2 (Implement) at `src/i2code/scripts/idea-to-code.sh:268`, before the `run_step` call, add: if `$IMPLEMENT_CONFIG_FILE` does not exist, call `prompt_implement_config` then `write_implement_config`
-    - [ ] Add a helper function `create_mock_i2code` to `test-scripts/test-implement-config.sh` that creates a temp directory with a mock `i2code` script; the mock checks if `$1` is `implement`, and if so writes all arguments to `$MOCK_ARGS_FILE` and exits 0
-    - [ ] Add test case `test_first_run_prompting_saves_config`: set up has_plan directory, create mock, prepend mock to PATH, pipe `printf '%s\n' 2 2 2 3` (Implement, Non-interactive, Trunk, Exit) to `idea-to-code.sh`, assert config file exists, assert it contains `interactive: false`, assert it contains `trunk: true`
+    - [x] Add `prompt_implement_config` function to `src/i2code/scripts/idea-to-code.sh` that uses `get_user_choice` to prompt for: (1) "How should Claude run?" with options "Interactive" (default 1) and "Non-interactive"; (2) "Where should implementation happen?" with options "Worktree (branch + PR)" (default 1) and "Trunk (current branch, no PR)"; sets `IMPLEMENT_INTERACTIVE` to `true`/`false` and `IMPLEMENT_TRUNK` to `false`/`true` based on choices
+    - [x] Add `write_implement_config` function to `src/i2code/scripts/idea-to-code.sh` that writes `interactive: $IMPLEMENT_INTERACTIVE` and `trunk: $IMPLEMENT_TRUNK` to `$IMPLEMENT_CONFIG_FILE`
+    - [x] In the `has_plan` case branch for option 2 (Implement) at `src/i2code/scripts/idea-to-code.sh:268`, before the `run_step` call, add: if `$IMPLEMENT_CONFIG_FILE` does not exist, call `prompt_implement_config` then `write_implement_config`
+    - [x] Add a helper function `create_mock_i2code` to `test-scripts/test-implement-config.sh` that creates a temp directory with a mock `i2code` script; the mock checks if `$1` is `implement`, and if so writes all arguments to `$MOCK_ARGS_FILE` and exits 0
+    - [x] Add test case `test_first_run_prompting_saves_config`: set up has_plan directory, create mock, prepend mock to PATH, pipe `printf '%s\n' 2 2 2 3` (Implement, Non-interactive, Trunk, Exit) to `idea-to-code.sh`, assert config file exists, assert it contains `interactive: false`, assert it contains `trunk: true`
 
 - [ ] **Task 1.3: Config-driven invocation passes correct flags to i2code implement**
   - TaskType: OUTCOME

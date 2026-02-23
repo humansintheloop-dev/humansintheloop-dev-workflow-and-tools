@@ -125,6 +125,30 @@ handle_error() {
 # Trap Ctrl+C
 trap 'echo ""; echo "Workflow interrupted."; exit 130' INT
 
+# Function to prompt user for implement configuration options
+prompt_implement_config() {
+    local mode_choice
+    mode_choice=$(get_user_choice "How should Claude run?" 1 "Interactive" "Non-interactive")
+    if [ "$mode_choice" -eq 1 ]; then
+        IMPLEMENT_INTERACTIVE=true
+    else
+        IMPLEMENT_INTERACTIVE=false
+    fi
+
+    local branch_choice
+    branch_choice=$(get_user_choice "Where should implementation happen?" 1 "Worktree (branch + PR)" "Trunk (current branch, no PR)")
+    if [ "$branch_choice" -eq 1 ]; then
+        IMPLEMENT_TRUNK=false
+    else
+        IMPLEMENT_TRUNK=true
+    fi
+}
+
+# Function to write implement configuration to file
+write_implement_config() {
+    printf 'interactive: %s\ntrunk: %s\n' "$IMPLEMENT_INTERACTIVE" "$IMPLEMENT_TRUNK" > "$IMPLEMENT_CONFIG_FILE"
+}
+
 # Main function
 main() {
     local dir="$1"
@@ -294,6 +318,10 @@ main() {
                             fi
                             ;;
                         3)
+                            if [ ! -f "$IMPLEMENT_CONFIG_FILE" ]; then
+                                prompt_implement_config
+                                write_implement_config
+                            fi
                             if run_step "Implementing plan" i2code implement "$dir"; then
                                 echo "Implementation completed successfully!"
                                 echo ""
@@ -336,6 +364,10 @@ main() {
                             fi
                             ;;
                         2)
+                            if [ ! -f "$IMPLEMENT_CONFIG_FILE" ]; then
+                                prompt_implement_config
+                                write_implement_config
+                            fi
                             if run_step "Implementing plan" i2code implement "$dir"; then
                                 echo "Implementation completed successfully!"
                                 echo ""

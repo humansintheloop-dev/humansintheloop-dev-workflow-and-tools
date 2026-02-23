@@ -22,6 +22,10 @@ echo ""
 echo "--- Editor resolution tests ---"
 "$SCRIPT_DIR/test-editor-resolution.sh"
 
+echo ""
+echo "--- Go commit menu tests ---"
+"$SCRIPT_DIR/test-go-commit-menu.sh"
+
 "$SCRIPT_DIR/test-integration.sh"
 
 "$SCRIPT_DIR/test-integration-gh.sh"

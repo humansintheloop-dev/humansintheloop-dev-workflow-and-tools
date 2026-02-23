@@ -40,6 +40,8 @@ echo "--- Go skip commit tests ---"
 
 "$SCRIPT_DIR/test-integration.sh"
 
+"$SCRIPT_DIR/test-plugin-javascript.sh"
+
 "$SCRIPT_DIR/test-integration-gh.sh"
 
 echo ""

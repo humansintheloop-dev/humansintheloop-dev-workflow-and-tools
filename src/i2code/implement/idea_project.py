@@ -73,7 +73,7 @@ class IdeaProject:
         if not glob.glob(idea_pattern):
             missing.append(f"{self._name}-idea.md (or .txt)")
 
-        for suffix in ["discussion.md", "spec.md", "plan.md"]:
+        for suffix in ["spec.md", "plan.md"]:
             filepath = os.path.join(self._directory, f"{self._name}-{suffix}")
             if not os.path.isfile(filepath):
                 missing.append(f"{self._name}-{suffix}")

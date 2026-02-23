@@ -122,14 +122,14 @@ class TestIdeaProjectValidateFiles:
                 project.validate_files()
 
             captured = capsys.readouterr()
-            assert "discussion" in captured.err.lower()
+            assert "discussion" not in captured.err.lower()
             assert "spec" in captured.err.lower()
             assert "plan" in captured.err.lower()
 
     def test_validate_files_all_present_succeeds(self):
-        """validate_files() should succeed when all files exist."""
+        """validate_files() should succeed when all required files exist (no discussion)."""
         with TempIdeaProject("my-feature") as project:
-            for suffix in ["idea.md", "discussion.md", "spec.md", "plan.md"]:
+            for suffix in ["idea.md", "spec.md", "plan.md"]:
                 with open(
                     os.path.join(project.directory, f"my-feature-{suffix}"), "w"
                 ) as f:
@@ -144,7 +144,7 @@ class TestIdeaProjectValidateFiles:
                 os.path.join(project.directory, "my-feature-idea.txt"), "w"
             ) as f:
                 f.write("My Feature Idea")
-            for suffix in ["discussion.md", "spec.md", "plan.md"]:
+            for suffix in ["spec.md", "plan.md"]:
                 with open(
                     os.path.join(project.directory, f"my-feature-{suffix}"), "w"
                 ) as f:

@@ -50,7 +50,7 @@ class TestIncompleteIdeaDirectory:
         # Should mention missing files
         assert "missing" in result.stderr.lower()
         # Should list specific missing files
-        assert "discussion" in result.stderr.lower()
+        assert "discussion" not in result.stderr.lower()
         assert "spec" in result.stderr.lower()
         assert "plan" in result.stderr.lower()
 
@@ -68,7 +68,7 @@ class TestUncommittedIdeaFiles:
         os.makedirs(idea_dir)
 
         # Create all required files
-        for suffix in ["idea.md", "discussion.md", "spec.md", "plan.md"]:
+        for suffix in ["idea.md", "spec.md", "plan.md"]:
             filepath = os.path.join(idea_dir, f"test-feature-{suffix}")
             with open(filepath, "w") as f:
                 f.write(f"# {suffix}")
@@ -94,13 +94,13 @@ class TestValidIdeaDirectory:
         os.makedirs(idea_dir)
 
         # Create all required files
-        for suffix in ["idea.md", "discussion.md", "spec.md", "plan.md"]:
+        for suffix in ["idea.md", "spec.md", "plan.md"]:
             filepath = os.path.join(idea_dir, f"test-feature-{suffix}")
             with open(filepath, "w") as f:
                 f.write(f"# {suffix}")
 
         # Commit all files
-        for suffix in ["idea.md", "discussion.md", "spec.md", "plan.md"]:
+        for suffix in ["idea.md", "spec.md", "plan.md"]:
             rel_path = os.path.join("test-feature", f"test-feature-{suffix}")
             repo.index.add([rel_path])
         repo.index.commit("Add idea files")

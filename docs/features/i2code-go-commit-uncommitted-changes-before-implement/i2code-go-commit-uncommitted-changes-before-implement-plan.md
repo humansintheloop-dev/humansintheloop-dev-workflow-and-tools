@@ -86,15 +86,15 @@ This steel thread implements the primary scenario (S-1): when the user has a pla
     - [x] Add a `commit_idea_changes()` function to `src/i2code/scripts/idea-to-code.sh` that runs `git add "$1"` followed by `git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"`
     - [x] In the `has_plan)` case, when uncommitted changes exist and the user selects option 2, call `commit_idea_changes "$dir"` and if successful, `continue` the loop (which triggers re-detection and a fresh menu)
 
-- [ ] **Task 1.3: User can skip commit and implement directly when uncommitted changes exist**
+- [x] **Task 1.3: User can skip commit and implement directly when uncommitted changes exist**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <test-idea-directory>` (simulated via automated input to `idea-to-code.sh`)
   - Observable: When uncommitted changes exist and the user selects option 3 ("Implement the entire plan") instead of option 2 ("Commit changes"), implementation proceeds without committing idea files. The `i2code implement` command is invoked.
   - Evidence: Shell test script `test-scripts/test-go-skip-commit.sh` creates a temp git repo with uncommitted idea files in `has_plan` state, stubs `i2code` to record calls, pipes input "3" (Implement) into `idea-to-code.sh`, and asserts that `i2code implement` was invoked and idea files remain uncommitted.
   - Steps:
-    - [ ] Create `test-scripts/test-go-skip-commit.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; stubs `i2code` command on PATH to record arguments and exit 0; pipes input "3" (Implement the entire plan) into `idea-to-code.sh`; asserts the stub recorded an `implement` invocation; asserts idea files are still uncommitted
-    - [ ] Add `test-scripts/test-go-skip-commit.sh` to `test-scripts/test-end-to-end.sh`
-    - [ ] Verify the `has_plan)` case with uncommitted changes handles option 3 as "Implement the entire plan" — this should already work from Task 1.1's menu restructuring, but confirm the case numbering maps correctly (option 3 in the 4-option menu maps to implement)
+    - [x] Create `test-scripts/test-go-skip-commit.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; stubs `i2code` command on PATH to record arguments and exit 0; pipes input "3" (Implement the entire plan) into `idea-to-code.sh`; asserts the stub recorded an `implement` invocation; asserts idea files are still uncommitted
+    - [x] Add `test-scripts/test-go-skip-commit.sh` to `test-scripts/test-end-to-end.sh`
+    - [x] Verify the `has_plan)` case with uncommitted changes handles option 3 as "Implement the entire plan" — this should already work from Task 1.1's menu restructuring, but confirm the case numbering maps correctly (option 3 in the 4-option menu maps to implement)
 
 ## Steel Thread 2: Commit Failure Handling
 
@@ -131,3 +131,15 @@ Menu shows Commit changes [default] when uncommitted changes exist, original men
 
 ### 2026-02-23 11:44 - mark-task-complete
 Test and implementation complete: commit_idea_changes() function extracted, continue added on success, all 6 tests pass
+
+### 2026-02-23 11:50 - mark-step-complete
+Created test-go-skip-commit.sh with stub i2code, pipes option 3, asserts implement invoked and files uncommitted
+
+### 2026-02-23 11:50 - mark-step-complete
+Added test-go-skip-commit.sh to test-end-to-end.sh after go commit action tests
+
+### 2026-02-23 11:50 - mark-step-complete
+Verified option 3 in 4-option menu maps to implement at idea-to-code.sh:296-297; test confirms it works
+
+### 2026-02-23 11:50 - mark-task-complete
+Test verifies skip-commit-and-implement behavior; all assertions pass

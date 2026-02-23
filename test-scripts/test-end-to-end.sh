@@ -30,6 +30,10 @@ echo ""
 echo "--- Go commit action tests ---"
 "$SCRIPT_DIR/test-go-commit-action.sh"
 
+echo ""
+echo "--- Go skip commit tests ---"
+"$SCRIPT_DIR/test-go-skip-commit.sh"
+
 "$SCRIPT_DIR/test-integration.sh"
 
 "$SCRIPT_DIR/test-integration-gh.sh"

@@ -88,14 +88,14 @@ This thread adds a mode-independent guard in `execute()` that catches the all-ta
     - [x] Add a new test class `TestExecuteAllTasksComplete` in `tests/implement/test_implement_command.py` with three tests: (a) worktree mode — `FakeIdeaProject` returns `None`, `execute()` raises `SystemExit(1)`, stderr contains "all tasks", `_worktree_mode` not called; (b) trunk mode — same assertions with `trunk=True`; (c) isolate mode — same assertions with `isolate=True`. Verify all three tests fail.
     - [x] In `src/i2code/implement/implement_command.py`, add a guard in `execute()` after `validate_idea_files_committed` (and the `dry_run` check) but before the mode dispatch `if/elif/else` block. The guard calls `self.project.get_next_task()` and, if it returns `None`, prints an error to stderr and calls `sys.exit(1)`. Verify the tests pass.
 
-- [ ] **Task 2.2: `execute()` proceeds normally when tasks remain (regression guard)**
+- [x] **Task 2.2: `execute()` proceeds normally when tasks remain (regression guard)**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/implement/test_implement_command.py -v -m unit`
   - Observable: When `get_next_task()` returns a valid `NumberedTask`, `execute()` dispatches to the appropriate mode method without exiting early.
   - Evidence: All existing dispatch tests (`TestImplementCommandTrunkDispatch`, `TestImplementCommandIsolateDispatch`, `TestImplementCommandWorktreeDispatch`) continue to pass. These tests use `FakeIdeaProject` which currently returns `None` — they must be updated to configure a next task so they exercise the normal dispatch path through the new guard.
   - Steps:
-    - [ ] Update `_make_command()` in `tests/implement/test_implement_command.py` to configure `FakeIdeaProject` with a default `NumberedTask` (so `get_next_task()` returns a task instead of `None`). This ensures all existing dispatch tests pass through the new `execute()` guard.
-    - [ ] Verify all existing tests still pass: `TestImplementCommandDryRun`, `TestImplementCommandTrunkDispatch`, `TestImplementCommandIsolateDispatch`, `TestImplementCommandWorktreeDispatch`, `TestImplementCommandValidation`, `TestImplementCommandTrunkMode`, `TestImplementCommandIsolateMode`, `TestImplementCommandWorktreeMode`.
+    - [x] Update `_make_command()` in `tests/implement/test_implement_command.py` to configure `FakeIdeaProject` with a default `NumberedTask` (so `get_next_task()` returns a task instead of `None`). This ensures all existing dispatch tests pass through the new `execute()` guard.
+    - [x] Verify all existing tests still pass: `TestImplementCommandDryRun`, `TestImplementCommandTrunkDispatch`, `TestImplementCommandIsolateDispatch`, `TestImplementCommandWorktreeDispatch`, `TestImplementCommandValidation`, `TestImplementCommandTrunkMode`, `TestImplementCommandIsolateMode`, `TestImplementCommandWorktreeMode`.
 
 ---
 
@@ -123,3 +123,6 @@ Guard added in execute() before mode dispatch; all 3 new tests pass
 
 ### 2026-02-24 08:40 - mark-task-complete
 Guard in execute() exits with error before mode dispatch when all tasks complete; 3 unit tests pass
+
+### 2026-02-24 08:46 - mark-task-complete
+Both steps already completed in commit dc610fe. _make_command() configures FakeIdeaProject with _DEFAULT_TASK. All 23 tests pass.

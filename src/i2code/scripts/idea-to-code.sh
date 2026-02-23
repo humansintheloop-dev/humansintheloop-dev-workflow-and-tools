@@ -96,6 +96,14 @@ has_uncommitted_changes() {
     [ -n "$status_output" ]
 }
 
+# Function to commit uncommitted idea changes in a directory
+commit_idea_changes() {
+    local dir="$1"
+    echo "Committing idea changes..."
+    git add "$dir"
+    git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"
+}
+
 # Function to handle errors with retry option
 handle_error() {
     echo ""
@@ -276,10 +284,9 @@ main() {
                             fi
                             ;;
                         2)
-                            echo "Committing idea changes..."
-                            git add "$dir"
-                            if git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"; then
+                            if commit_idea_changes "$dir"; then
                                 echo "Changes committed successfully!"
+                                continue
                             else
                                 if handle_error "git commit" "$dir"; then
                                     continue  # Retry

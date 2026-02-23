@@ -26,6 +26,10 @@ echo ""
 echo "--- Go commit menu tests ---"
 "$SCRIPT_DIR/test-go-commit-menu.sh"
 
+echo ""
+echo "--- Go commit action tests ---"
+"$SCRIPT_DIR/test-go-commit-action.sh"
+
 "$SCRIPT_DIR/test-integration.sh"
 
 "$SCRIPT_DIR/test-integration-gh.sh"

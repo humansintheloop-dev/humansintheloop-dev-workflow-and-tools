@@ -75,16 +75,16 @@ This steel thread implements the primary scenario (S-1): when the user has a pla
     - [x] Add a `has_uncommitted_changes()` function to `src/i2code/scripts/idea-to-code.sh` that runs `git status --porcelain -- "$1"` and returns 0 if output is non-empty (changes exist), 1 otherwise
     - [x] Modify the `has_plan)` case in `src/i2code/scripts/idea-to-code.sh` (starting at line 251): check `has_uncommitted_changes "$dir"` and conditionally show either the 4-option menu (with "Commit changes [default]" at position 2) or the original 3-option menu (with "Implement the entire plan [default]" at position 2)
 
-- [ ] **Task 1.2: Selecting "Commit changes" runs `git add`/`git commit` and loops back**
+- [x] **Task 1.2: Selecting "Commit changes" runs `git add`/`git commit` and loops back**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <test-idea-directory>` (simulated via automated input to `idea-to-code.sh`)
   - Observable: When the user selects "Commit changes", the script runs `git add "$dir"` followed by `git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"`. After a successful commit, the workflow loops back and on the next iteration (if no more uncommitted changes remain) shows the normal menu with "Implement" as default.
   - Evidence: Shell test script `test-scripts/test-go-commit-action.sh` creates a temporary git repo with uncommitted idea files, pipes input selecting "Commit changes" then "Exit" on the next iteration, and asserts: (1) the idea files are committed (verified via `git status`), (2) the commit message follows the expected format, (3) the second iteration's menu output shows "Implement the entire plan [default]" (not "Commit changes").
   - Steps:
-    - [ ] Create `test-scripts/test-go-commit-action.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; pipes input "2" (Commit changes) followed by "3" (Exit on next iteration) into `idea-to-code.sh`; asserts the idea files are committed via `git log` and `git status`; asserts the commit message matches the expected format; asserts the second menu iteration shows "Implement the entire plan [default]"
-    - [ ] Add `test-scripts/test-go-commit-action.sh` to `test-scripts/test-end-to-end.sh`
-    - [ ] Add a `commit_idea_changes()` function to `src/i2code/scripts/idea-to-code.sh` that runs `git add "$1"` followed by `git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"`
-    - [ ] In the `has_plan)` case, when uncommitted changes exist and the user selects option 2, call `commit_idea_changes "$dir"` and if successful, `continue` the loop (which triggers re-detection and a fresh menu)
+    - [x] Create `test-scripts/test-go-commit-action.sh` that: sets up a temp git repo with uncommitted idea files in `has_plan` state; pipes input "2" (Commit changes) followed by "3" (Exit on next iteration) into `idea-to-code.sh`; asserts the idea files are committed via `git log` and `git status`; asserts the commit message matches the expected format; asserts the second menu iteration shows "Implement the entire plan [default]"
+    - [x] Add `test-scripts/test-go-commit-action.sh` to `test-scripts/test-end-to-end.sh`
+    - [x] Add a `commit_idea_changes()` function to `src/i2code/scripts/idea-to-code.sh` that runs `git add "$1"` followed by `git commit -m "Add idea docs for $IDEA_NAME" -- "$dir"`
+    - [x] In the `has_plan)` case, when uncommitted changes exist and the user selects option 2, call `commit_idea_changes "$dir"` and if successful, `continue` the loop (which triggers re-detection and a fresh menu)
 
 - [ ] **Task 1.3: User can skip commit and implement directly when uncommitted changes exist**
   - TaskType: OUTCOME
@@ -128,3 +128,6 @@ Modified has_plan case with conditional 4-option/3-option menu
 
 ### 2026-02-23 11:38 - mark-task-complete
 Menu shows Commit changes [default] when uncommitted changes exist, original menu when clean
+
+### 2026-02-23 11:44 - mark-task-complete
+Test and implementation complete: commit_idea_changes() function extracted, continue added on success, all 6 tests pass

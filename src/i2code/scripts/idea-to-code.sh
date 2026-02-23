@@ -388,6 +388,7 @@ main() {
                     choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
                         "Revise the plan" \
                         "Implement the entire plan" \
+                        "Configure implement options" \
                         "Exit")
 
                     case "$choice" in
@@ -429,6 +430,10 @@ main() {
                             fi
                             ;;
                         3)
+                            prompt_implement_config
+                            write_implement_config
+                            ;;
+                        4)
                             echo "Exiting workflow."
                             exit 0
                             ;;

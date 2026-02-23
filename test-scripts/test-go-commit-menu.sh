@@ -89,11 +89,11 @@ echo "# Plan" > "$IDEA_DIR_2/my-idea-plan.md"
     git commit -m "add idea files"
 )
 
-# Pipe "3" (Exit) into the script — 3-option menu
+# Pipe "4" (Exit) into the script — 4-option menu
 # Run from within the temp repo so git status works correctly.
 STDERR_OUTPUT_2=$(
     cd "$TMPDIR_COMMITTED" || exit 1
-    printf '3\n' | "$I2CODE_SCRIPT" "$IDEA_DIR_2" 2>&1 >/dev/null || true
+    printf '4\n' | "$I2CODE_SCRIPT" "$IDEA_DIR_2" 2>&1 >/dev/null || true
 )
 
 if echo "$STDERR_OUTPUT_2" | grep -q "Implement the entire plan \[default\]"; then

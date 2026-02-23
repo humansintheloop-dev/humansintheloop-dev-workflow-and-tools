@@ -289,6 +289,135 @@ else
 fi
 
 # ---------------------------------------------------------------
+# Test 8: Corrupt config triggers re-prompting
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 8: Corrupt config triggers re-prompting ---"
+
+TEST8_DIR="$TMPDIR_ROOT/test8-idea"
+mkdir -p "$TEST8_DIR"
+echo "My idea" > "$TEST8_DIR/test8-idea-idea.txt"
+echo "# Spec" > "$TEST8_DIR/test8-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST8_DIR/test8-idea-plan.md"
+
+# Write corrupt content to config file
+echo "not yaml garbage" > "$TEST8_DIR/test8-idea-implement-config.yaml"
+
+create_mock_i2code
+
+# Capture stderr; pipe: 2 (Implement) → 1 (Interactive) → 1 (Worktree) → 4 (Exit)
+STDERR8="$TMPDIR_ROOT/test8-stderr"
+printf '%s\n' 2 1 1 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST8_DIR" > /dev/null 2>"$STDERR8" || true
+
+if grep -q 'How should Claude run?' "$STDERR8"; then
+    pass "Corrupt config: stderr contains 'How should Claude run?' (prompting occurred)"
+else
+    fail "Corrupt config: stderr does not contain 'How should Claude run?'"
+    echo "  Captured stderr:" && cat "$STDERR8"
+fi
+
+CONFIG8_FILE="$TEST8_DIR/test8-idea-implement-config.yaml"
+if [ -f "$CONFIG8_FILE" ] && grep -q 'interactive: true' "$CONFIG8_FILE"; then
+    pass "Corrupt config: new config has 'interactive: true'"
+else
+    fail "Corrupt config: new config does not have 'interactive: true'"
+    [ -f "$CONFIG8_FILE" ] && echo "  Actual config:" && cat "$CONFIG8_FILE"
+fi
+
+if [ -f "$CONFIG8_FILE" ] && grep -q 'trunk: false' "$CONFIG8_FILE"; then
+    pass "Corrupt config: new config has 'trunk: false'"
+else
+    fail "Corrupt config: new config does not have 'trunk: false'"
+    [ -f "$CONFIG8_FILE" ] && echo "  Actual config:" && cat "$CONFIG8_FILE"
+fi
+
+# ---------------------------------------------------------------
+# Test 9: Empty config triggers re-prompting
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 9: Empty config triggers re-prompting ---"
+
+TEST9_DIR="$TMPDIR_ROOT/test9-idea"
+mkdir -p "$TEST9_DIR"
+echo "My idea" > "$TEST9_DIR/test9-idea-idea.txt"
+echo "# Spec" > "$TEST9_DIR/test9-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST9_DIR/test9-idea-plan.md"
+
+# Write empty file as config
+: > "$TEST9_DIR/test9-idea-implement-config.yaml"
+
+create_mock_i2code
+
+# Capture stderr; pipe: 2 (Implement) → 1 (Interactive) → 1 (Worktree) → 4 (Exit)
+STDERR9="$TMPDIR_ROOT/test9-stderr"
+printf '%s\n' 2 1 1 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST9_DIR" > /dev/null 2>"$STDERR9" || true
+
+if grep -q 'How should Claude run?' "$STDERR9"; then
+    pass "Empty config: stderr contains 'How should Claude run?' (prompting occurred)"
+else
+    fail "Empty config: stderr does not contain 'How should Claude run?'"
+    echo "  Captured stderr:" && cat "$STDERR9"
+fi
+
+CONFIG9_FILE="$TEST9_DIR/test9-idea-implement-config.yaml"
+if [ -f "$CONFIG9_FILE" ] && grep -q 'interactive: true' "$CONFIG9_FILE"; then
+    pass "Empty config: new config has 'interactive: true'"
+else
+    fail "Empty config: new config does not have 'interactive: true'"
+    [ -f "$CONFIG9_FILE" ] && echo "  Actual config:" && cat "$CONFIG9_FILE"
+fi
+
+if [ -f "$CONFIG9_FILE" ] && grep -q 'trunk: false' "$CONFIG9_FILE"; then
+    pass "Empty config: new config has 'trunk: false'"
+else
+    fail "Empty config: new config does not have 'trunk: false'"
+    [ -f "$CONFIG9_FILE" ] && echo "  Actual config:" && cat "$CONFIG9_FILE"
+fi
+
+# ---------------------------------------------------------------
+# Test 10: Partial config (one valid field) does NOT trigger re-prompting
+# ---------------------------------------------------------------
+echo ""
+echo "--- Test 10: Partial config does NOT trigger re-prompting ---"
+
+TEST10_DIR="$TMPDIR_ROOT/test10-idea"
+mkdir -p "$TEST10_DIR"
+echo "My idea" > "$TEST10_DIR/test10-idea-idea.txt"
+echo "# Spec" > "$TEST10_DIR/test10-idea-spec.md"
+echo "- [ ] Task 1" > "$TEST10_DIR/test10-idea-plan.md"
+
+# Config with only trunk: true (no interactive: line)
+printf 'trunk: true\n' > "$TEST10_DIR/test10-idea-implement-config.yaml"
+
+create_mock_i2code
+
+# Capture stderr; pipe: 2 (Implement) → 4 (Exit)
+STDERR10="$TMPDIR_ROOT/test10-stderr"
+printf '%s\n' 2 4 | PATH="$MOCK_DIR:$PATH" "$PROJECT_ROOT/src/i2code/scripts/idea-to-code.sh" "$TEST10_DIR" > /dev/null 2>"$STDERR10" || true
+
+if grep -q 'How should Claude run?' "$STDERR10"; then
+    fail "Partial config: stderr should NOT contain 'How should Claude run?' (should not re-prompt)"
+    echo "  Captured stderr:" && cat "$STDERR10"
+else
+    pass "Partial config: no re-prompting occurred (correct)"
+fi
+
+# Verify defaults were applied: trunk: true from file, interactive defaults to true
+if grep -q 'Mode: interactive' "$STDERR10"; then
+    pass "Partial config: default 'Mode: interactive' applied"
+else
+    fail "Partial config: 'Mode: interactive' not shown in stderr"
+    echo "  Captured stderr:" && cat "$STDERR10"
+fi
+
+if grep -q 'Branch: trunk' "$STDERR10"; then
+    pass "Partial config: 'Branch: trunk' read from file"
+else
+    fail "Partial config: 'Branch: trunk' not shown in stderr"
+    echo "  Captured stderr:" && cat "$STDERR10"
+fi
+
+# ---------------------------------------------------------------
 # Results
 # ---------------------------------------------------------------
 echo ""

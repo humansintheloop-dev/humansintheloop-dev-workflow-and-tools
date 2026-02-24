@@ -123,6 +123,6 @@ class TestValidIdeaDirectory:
         with open(state_file, "r") as f:
             state = json.load(f)
 
-        assert state.get("slice_number") == 1
+        assert "slice_number" not in state
         assert "processed_comment_ids" in state
         assert "processed_review_ids" in state

@@ -9,13 +9,13 @@ class FakeWorkflowState:
     """Test double for WorkflowState that tracks state in memory.
 
     Usage:
-        fake = FakeWorkflowState(slice_number=1)
+        fake = FakeWorkflowState()
         fake.mark_comments_processed(["c1", "c2"])
         assert fake.processed_comment_ids == ["c1", "c2"]
     """
 
-    def __init__(self, slice_number=1):
-        self._slice_number = slice_number
+    def __init__(self):
+        self._slice_number = 1
         self._processed_comment_ids = []
         self._processed_review_ids = []
         self._processed_conversation_ids = []

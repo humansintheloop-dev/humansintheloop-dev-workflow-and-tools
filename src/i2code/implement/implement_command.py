@@ -110,7 +110,7 @@ class ImplementCommand:
         first_task_name = next_task.task.title if next_task else "implementation"
 
         slice_branch = self.git_repo.ensure_slice_branch(
-            self.project.name, state.slice_number, first_task_name, integration_branch
+            self.project.name, 1, first_task_name, integration_branch
         )
         print(f"Slice branch: {slice_branch}")
 

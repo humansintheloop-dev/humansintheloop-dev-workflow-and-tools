@@ -28,10 +28,21 @@ class TestWorkflowStateDefaultState:
 
             state = WorkflowState.load(state_file)
 
-            assert state.slice_number == 1
             assert state.processed_comment_ids == []
             assert state.processed_review_ids == []
             assert state.processed_conversation_ids == []
+
+    def test_new_state_file_has_no_slice_number(self):
+        from i2code.implement.workflow_state import WorkflowState
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_file = os.path.join(tmpdir, "my-feature-wt-state.json")
+
+            WorkflowState.load(state_file)
+
+            with open(state_file, "r") as f:
+                saved = json.load(f)
+            assert "slice_number" not in saved
 
     def test_includes_processed_conversation_ids(self, tmp_path):
         from i2code.implement.workflow_state import WorkflowState
@@ -48,23 +59,26 @@ class TestWorkflowStateDefaultState:
 class TestWorkflowStateLoad:
     """Test loading existing state."""
 
-    def test_loads_existing_file(self):
+    @pytest.mark.parametrize("extra_fields", [
+        {},
+        {"slice_number": 3},
+    ], ids=["current-format", "old-format-with-slice-number"])
+    def test_loads_existing_file_preserves_feedback_ids(self, extra_fields):
         from i2code.implement.workflow_state import WorkflowState
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            state_file = os.path.join(tmpdir, "my-feature-wt-state.json")
+            state_file = os.path.join(tmpdir, "state.json")
             existing = {
-                "slice_number": 3,
+                **extra_fields,
                 "processed_comment_ids": [101, 102],
                 "processed_review_ids": [201],
-                "processed_conversation_ids": [301, 302]
+                "processed_conversation_ids": [301, 302],
             }
             with open(state_file, "w") as f:
                 json.dump(existing, f)
 
             state = WorkflowState.load(state_file)
 
-            assert state.slice_number == 3
             assert state.processed_comment_ids == [101, 102]
             assert state.processed_review_ids == [201]
             assert state.processed_conversation_ids == [301, 302]
@@ -76,7 +90,6 @@ class TestWorkflowStateLoad:
         with tempfile.TemporaryDirectory() as tmpdir:
             state_file = os.path.join(tmpdir, "state.json")
             existing = {
-                "slice_number": 2,
                 "processed_comment_ids": [101],
                 "processed_review_ids": [201],
             }
@@ -104,10 +117,36 @@ class TestWorkflowStateSave:
             with open(state_file, "r") as f:
                 saved = json.load(f)
 
-            assert saved["slice_number"] == 1
+            assert "slice_number" not in saved
             assert saved["processed_comment_ids"] == []
             assert saved["processed_review_ids"] == []
             assert saved["processed_conversation_ids"] == []
+
+    def test_save_after_loading_old_file_drops_slice_number(self):
+        """Loading an old file with slice_number and saving drops the field."""
+        from i2code.implement.workflow_state import WorkflowState
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_file = os.path.join(tmpdir, "state.json")
+            existing = {
+                "slice_number": 3,
+                "processed_comment_ids": [101],
+                "processed_review_ids": [201],
+                "processed_conversation_ids": [301]
+            }
+            with open(state_file, "w") as f:
+                json.dump(existing, f)
+
+            state = WorkflowState.load(state_file)
+            state.save()
+
+            with open(state_file, "r") as f:
+                saved = json.load(f)
+
+            assert "slice_number" not in saved
+            assert saved["processed_comment_ids"] == [101]
+            assert saved["processed_review_ids"] == [201]
+            assert saved["processed_conversation_ids"] == [301]
 
     def test_save_after_modifications(self):
         from i2code.implement.workflow_state import WorkflowState

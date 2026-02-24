@@ -125,14 +125,14 @@ All tasks use TDD. The test command is: `uv run --with pytest --with pytest-mock
       - `test_non_interactive_calls_run_batch` at `tests/implement/test_project_setup.py:200`: change assertion from `method == "run_batch"` to `method == "run"`, rename test to `test_non_interactive_calls_run`
       - `test_forwards_mock_claude` at `tests/implement/test_project_setup.py:220`: change assertion from `method == "run_interactive"` to `method == "run"`
 
-- [ ] **Task 1.8: GithubActionsBuildFixer._invoke_claude_for_fix() uses runner.run() instead of if/else dispatch**
+- [x] **Task 1.8: GithubActionsBuildFixer._invoke_claude_for_fix() uses runner.run() instead of if/else dispatch**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_github_actions_build_fixer.py -v -m unit`
   - Observable: No behavior change — _invoke_claude_for_fix() produces identical results for both interactive and non-interactive execution
   - Evidence: All `TestGithubActionsBuildFixer` tests pass with updated assertions
   - Steps:
-    - [ ] In `src/i2code/implement/github_actions_build_fixer.py:141-145` `_invoke_claude_for_fix()`: replace the if/else dispatch with `self._claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)`. Keep the local `interactive` variable (needed for `build_ci_fix_command`)
-    - [ ] At `tests/implement/test_github_actions_build_fixer.py:118`: change assertion from `fake_runner.calls[0][0] == "run_batch"` to `fake_runner.calls[0][0] == "run"`
+    - [x] In `src/i2code/implement/github_actions_build_fixer.py:141-145` `_invoke_claude_for_fix()`: replace the if/else dispatch with `self._claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)`. Keep the local `interactive` variable (needed for `build_ci_fix_command`)
+    - [x] At `tests/implement/test_github_actions_build_fixer.py:118`: change assertion from `fake_runner.calls[0][0] == "run_batch"` to `fake_runner.calls[0][0] == "run"`
 
 - [ ] **Task 1.9: PullRequestReviewProcessor._invoke_fix() uses runner.run() instead of if/else dispatch**
   - TaskType: REFACTOR
@@ -187,3 +187,12 @@ Simplified WorktreeMode._run_claude() to use runner.run() instead of if/else dis
 
 ### 2026-02-24 23:22 - mark-task-complete
 Replaced if/else dispatch with runner.run() in run_scaffolding(); updated TestRunScaffolding assertions
+
+### 2026-02-25 06:52 - mark-step-complete
+Replaced if/else dispatch with self._claude_runner.run()
+
+### 2026-02-25 06:52 - mark-step-complete
+Changed assertion from run_batch to run
+
+### 2026-02-25 06:52 - mark-task-complete
+Replaced if/else dispatch with runner.run() in _invoke_claude_for_fix()

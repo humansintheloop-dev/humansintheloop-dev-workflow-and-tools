@@ -55,15 +55,17 @@ class TestIsolateModeExecute:
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
         project = FakeIdeaProject()
+        git_repo = FakeGitRepository()
 
         mode = IsolateMode(
-            git_repo=FakeGitRepository(),
+            git_repo=git_repo,
             project=project,
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
         returncode = mode.execute()
 
+        assert ("ensure_branch", "idea/test-feature", None, False) in git_repo.calls
         assert any(c[0] == "ensure_project_setup" for c in fake_initializer._setup_calls)
         assert len(fake_subprocess.calls) == 1
         assert returncode == 0
@@ -180,6 +182,7 @@ class TestIsolateModeExecute:
         assert len(setup_calls) == 1
         kwargs = setup_calls[0][1]
         assert kwargs["idea_directory"] == "/tmp/fake-idea"
+        assert kwargs["branch"] == "idea/test-feature"
         assert kwargs["interactive"] is False
         assert kwargs["mock_claude"] == "/mock.sh"
         assert kwargs["ci_timeout"] == 900

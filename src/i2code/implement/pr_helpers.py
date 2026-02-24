@@ -1,5 +1,7 @@
 """PR helper functions: title/body generation, push helpers."""
 
+import glob
+import os
 import subprocess
 import sys
 from typing import List, Optional
@@ -12,19 +14,39 @@ def _default_gh_client():
     return GitHubClient()
 
 
-def generate_pr_title(idea_name: str, slice_branch_suffix: str) -> str:
-    """Generate a PR title from idea name and slice branch suffix."""
-    return f"[{idea_name}] {slice_branch_suffix}"
+def extract_title_from_idea_file(idea_directory: str, idea_name: str) -> str:
+    """Extract the title from the idea file's first markdown heading.
+
+    Looks for a file matching `<idea_name>-idea.*` in the idea directory.
+    Returns the text after `# ` on the first heading line, or falls back
+    to the idea_name if no heading is found or the file doesn't exist.
+    """
+    pattern = os.path.join(idea_directory, f"{idea_name}-idea.*")
+    matches = glob.glob(pattern)
+    if not matches:
+        return idea_name
+    try:
+        with open(matches[0], "r") as f:
+            for line in f:
+                if line.startswith("# "):
+                    return line[2:].strip()
+    except OSError:
+        return idea_name
+    return idea_name
 
 
-def generate_pr_body(idea_directory: str, idea_name: str, slice_number: int) -> str:
-    """Generate a PR body with idea directory reference."""
-    return f"""## Slice #{slice_number} for {idea_name}
+def generate_pr_title(idea_name: str, idea_directory: str) -> str:
+    """Generate a PR title from the idea file heading.
 
-**Idea directory:** `{idea_directory}`
+    Extracts the title from the idea file's first markdown heading,
+    falling back to the idea_name if no heading is found.
+    """
+    return extract_title_from_idea_file(idea_directory, idea_name)
 
-This PR implements slice #{slice_number} of the development plan.
-"""
+
+def generate_pr_body(idea_directory: str) -> str:
+    """Generate a minimal PR body with the idea directory reference."""
+    return f"**Idea directory:** `{idea_directory}`"
 
 
 def find_existing_pr(branch_name: str) -> Optional[int]:

@@ -96,6 +96,18 @@ class GitRepository:
                 self._repo.create_head(branch_name)
         return branch_name
 
+    def ensure_idea_branch(self, idea_name):
+        """Ensure the idea branch exists, creating from HEAD if necessary.
+
+        Args:
+            idea_name: Name of the idea.
+
+        Returns:
+            The idea branch name.
+        """
+        branch_name = f"idea/{idea_name}"
+        return self.ensure_branch(branch_name)
+
     def ensure_integration_branch(self, idea_name, isolated=False):
         """Ensure the integration branch exists for the given idea.
 
@@ -208,7 +220,7 @@ class GitRepository:
         )
         return result.stdout
 
-    def ensure_pr(self, idea_directory, idea_name, slice_number):
+    def ensure_pr(self, idea_directory, idea_name):
         """Ensure a Draft PR exists for the tracked branch.
 
         Creates a new Draft PR if none exists, otherwise returns the existing
@@ -226,9 +238,8 @@ class GitRepository:
             return existing
 
         base_branch = self._gh_client.get_default_branch()
-        slice_suffix = self._branch.split("/")[-1]
-        title = generate_pr_title(idea_name, slice_suffix)
-        body = generate_pr_body(idea_directory, idea_name, slice_number)
+        title = generate_pr_title(idea_name, idea_directory)
+        body = generate_pr_body(idea_directory)
         pr_number = self._gh_client.create_draft_pr(
             self._branch, title, body, base_branch
         )

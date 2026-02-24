@@ -120,7 +120,6 @@ class WorktreeMode:
         if self._git_repo.pr_number is None:
             self._git_repo.ensure_pr(
                 self._work_project.directory, self._work_project.name,
-                1,
             )
             print(f"Created Draft PR #{self._git_repo.pr_number}")
 

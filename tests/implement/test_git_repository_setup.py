@@ -427,7 +427,7 @@ class TestEnsurePrOnGitRepository:
         git_repo.branch = "idea/test/01-setup"
 
         with pytest.raises(RuntimeError):
-            git_repo.ensure_pr("/path/to/idea", "test", 1)
+            git_repo.ensure_pr("/path/to/idea", "test")
 
     def test_ensure_pr_uses_default_branch_from_gh_client(self, test_git_repo_with_commit):
         """ensure_pr should fetch default branch from gh_client."""
@@ -439,7 +439,7 @@ class TestEnsurePrOnGitRepository:
         git_repo = GitRepository(repo, gh_client=fake)
         git_repo.branch = "idea/test/01-setup"
 
-        git_repo.ensure_pr("/path/to/idea", "test", 1)
+        git_repo.ensure_pr("/path/to/idea", "test")
 
         assert len(fake._created_prs) == 1
         assert fake._created_prs[0]["base"] == "develop"
@@ -453,7 +453,7 @@ class TestEnsurePrOnGitRepository:
         git_repo = GitRepository(repo, gh_client=fake)
         git_repo.branch = "idea/test/01-setup"
 
-        result = git_repo.ensure_pr("/path/to/idea", "test", 1)
+        result = git_repo.ensure_pr("/path/to/idea", "test")
 
         assert result == 77
         assert len(fake._created_prs) == 0

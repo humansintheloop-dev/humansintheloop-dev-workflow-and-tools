@@ -113,14 +113,14 @@ All tasks use TDD. The test command is: `uv run --with pytest --with pytest-mock
       - `test_recovery_needed_and_succeeds` at `tests/implement/test_worktree_mode.py:602`: change assertion from `fake_runner.calls[1][0] == "run_interactive"` to `"run"` (recovery call at line 601 stays `"run_batch"`)
       - `test_no_recovery_needed` at `tests/implement/test_worktree_mode.py:650`: change assertion from `method == "run_interactive"` to `method == "run"`
 
-- [ ] **Task 1.7: ProjectSetup.run_scaffolding() uses runner.run() instead of if/else dispatch**
+- [x] **Task 1.7: ProjectSetup.run_scaffolding() uses runner.run() instead of if/else dispatch**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_project_setup.py -v -m unit`
   - Observable: No behavior change — run_scaffolding() produces identical results for both interactive and non-interactive execution
   - Evidence: All `TestRunScaffolding` tests pass with updated assertions
   - Steps:
-    - [ ] In `src/i2code/implement/project_setup.py:67-70` `run_scaffolding()`: replace the if/else dispatch with `result = self._claude_runner.run(cmd, cwd=cwd)`. Keep the `interactive` parameter (needed for `build_scaffolding_command` and the `if interactive or "<SUCCESS>" ...` check)
-    - [ ] In `tests/implement/test_project_setup.py`:
+    - [x] In `src/i2code/implement/project_setup.py:67-70` `run_scaffolding()`: replace the if/else dispatch with `result = self._claude_runner.run(cmd, cwd=cwd)`. Keep the `interactive` parameter (needed for `build_scaffolding_command` and the `if interactive or "<SUCCESS>" ...` check)
+    - [x] In `tests/implement/test_project_setup.py`:
       - `test_interactive_calls_run_interactive` at `tests/implement/test_project_setup.py:184`: change assertion from `method == "run_interactive"` to `method == "run"`, rename test to `test_interactive_calls_run`
       - `test_non_interactive_calls_run_batch` at `tests/implement/test_project_setup.py:200`: change assertion from `method == "run_batch"` to `method == "run"`, rename test to `test_non_interactive_calls_run`
       - `test_forwards_mock_claude` at `tests/implement/test_project_setup.py:220`: change assertion from `method == "run_interactive"` to `method == "run"`
@@ -184,3 +184,6 @@ Updated test assertions from run_interactive/run_batch to run
 
 ### 2026-02-24 22:57 - mark-task-complete
 Simplified WorktreeMode._run_claude() to use runner.run() instead of if/else dispatch
+
+### 2026-02-24 23:22 - mark-task-complete
+Replaced if/else dispatch with runner.run() in run_scaffolding(); updated TestRunScaffolding assertions

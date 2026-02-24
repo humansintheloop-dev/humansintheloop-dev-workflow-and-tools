@@ -1,6 +1,6 @@
 {
   "name": "idea-to-code",
-  "version": "1.0.20260222081959",
+  "version": "1.0.20260224084020",
   "description": "Skills, slash commands and hooks for the Humans-in-the-Loop idea-to-code workflow. Use with the workflow scripts at https://github.com/chrisrichardson/genai-development-workflow",
   "author": {
     "name": "Chris Richardson",
@@ -17,6 +17,7 @@
     "./commands/review-design-doc.md"
   ],
   "skills": [
+    "./skills/apply-design-patterns",
     "./skills/ask-a-friend",
     "./skills/commit-guidelines",
     "./skills/debugging-ci-failures",
@@ -29,6 +30,7 @@
     "./skills/tdd",
     "./skills/test-runner-java-gradle",
     "./skills/testing-scripts-and-infrastructure",
+    "./skills/write-design-pattern",
     "./skills/find-usage",
     "./skills/write-idea"
   ],

@@ -27,6 +27,11 @@ IMPORTANT: Always invoke the relevant skill before performing these actions:
 - **When creating Dockerfiles**: Use the `idea-to-code:dockerfile-guidelines` skill
 - **When moving/renaming files**: Use the `idea-to-code:file-organization` skill
 - **When writing multiple similar files**: Use the `idea-to-code:incremental-development` skill
+- **When implementing or refactoring code**: Use the `idea-to-code:apply-design-patterns` skill
+- **When investigating CI build failures**: Use the `idea-to-code:debugging-ci-failures` skill
+- **When creating or updating GitHub Actions CI workflows**: Use the `idea-to-code:github-workflow-gradle-template` skill
+- **When running tests in Java/Gradle projects**: Use the `idea-to-code:test-runner-java-gradle` skill
+- **When writing test scripts involving infrastructure**: Use the `idea-to-code:testing-scripts-and-infrastructure` skill
 
 ## Code Health
 

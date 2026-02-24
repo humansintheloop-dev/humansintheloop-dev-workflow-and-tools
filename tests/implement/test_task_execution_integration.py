@@ -148,7 +148,7 @@ class TestTaskDetectionAndExecution:
         self._assert_all_tasks_completed(expected_count=3)
         assert "All tasks completed!" in result.stdout
 
-        pr = self._assert_draft_pr_created()
+        pr = self._assert_pr_marked_ready()
         self._assert_pr_is_open_and_not_complete(pr["number"])
 
         self._add_task_to_plan(after_task=3)
@@ -210,11 +210,11 @@ class TestTaskDetectionAndExecution:
             assert plan.is_task_completed(thread=1, task=task_num), \
                 f"Task 1.{task_num} should be completed"
 
-    def _assert_draft_pr_created(self):
+    def _assert_pr_marked_ready(self):
         pr_list = self._get_open_prs()
         assert len(pr_list) == 1, f"Expected 1 PR, got {len(pr_list)}"
         pr = pr_list[0]
-        assert pr["isDraft"] is True
+        assert pr["isDraft"] is False, "PR should be marked ready after all tasks complete"
         assert pr["title"] == "Simple Test Idea"
         return pr
 

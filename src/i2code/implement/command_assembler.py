@@ -20,7 +20,7 @@ def assemble_implement(opts):
     repo = Repo(project.directory, search_parent_directories=True)
     gh_client = GitHubClient()
     git_repo = GitRepository(repo, gh_client=gh_client)
-    claude_runner = ClaudeRunner()
+    claude_runner = ClaudeRunner(interactive=not opts.non_interactive)
     build_fixer_factory = GithubActionsBuildFixerFactory(
         opts=opts,
         claude_runner=claude_runner,
@@ -42,7 +42,7 @@ def assemble_scaffold(opts):
     repo = Repo(project.directory, search_parent_directories=True)
 
     initializer = ProjectInitializer(
-        claude_runner=ClaudeRunner(),
+        claude_runner=ClaudeRunner(interactive=not opts.non_interactive),
         command_builder=CommandBuilder(),
     )
     return ScaffoldCommand(opts, initializer, cwd=repo.working_tree_dir)

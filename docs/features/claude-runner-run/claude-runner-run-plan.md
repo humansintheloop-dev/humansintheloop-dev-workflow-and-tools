@@ -78,14 +78,14 @@ All tasks use TDD. The test command is: `uv run --with pytest --with pytest-mock
     - [x] Add `run(self, cmd, cwd)` method to `FakeClaudeRunner` that appends `("run", cmd, cwd)` and returns `self._next_result()`
     - [x] Update the docstring example in `FakeClaudeRunner` to show the `run()` method
 
-- [ ] **Task 1.4: command_assembler.py passes interactive when constructing ClaudeRunner**
+- [x] **Task 1.4: command_assembler.py passes interactive when constructing ClaudeRunner**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/ -v -m unit`
   - Observable: No behavior change — default `interactive=True` matches previous behavior; `--non-interactive` flag now sets `interactive=False` at construction
   - Evidence: All existing unit tests pass unchanged
   - Steps:
-    - [ ] In `src/i2code/implement/command_assembler.py:24` `assemble_implement()`: change `ClaudeRunner()` to `ClaudeRunner(interactive=not opts.non_interactive)`
-    - [ ] In `src/i2code/implement/command_assembler.py:54` `assemble_scaffold()`: change `ClaudeRunner()` to `ClaudeRunner(interactive=not opts.non_interactive)`
+    - [x] In `src/i2code/implement/command_assembler.py:24` `assemble_implement()`: change `ClaudeRunner()` to `ClaudeRunner(interactive=not opts.non_interactive)`
+    - [x] In `src/i2code/implement/command_assembler.py:54` `assemble_scaffold()`: change `ClaudeRunner()` to `ClaudeRunner(interactive=not opts.non_interactive)`
 
 - [ ] **Task 1.5: TrunkMode._run_claude() uses runner.run() instead of if/else dispatch**
   - TaskType: REFACTOR
@@ -163,3 +163,12 @@ Added run() method that dispatches based on self._interactive
 
 ### 2026-02-24 20:43 - mark-task-complete
 ClaudeRunner.run() dispatches to run_interactive or run_batch based on interactive constructor argument. All 18 tests pass.
+
+### 2026-02-24 21:42 - mark-step-complete
+Changed ClaudeRunner() to ClaudeRunner(interactive=not opts.non_interactive) in assemble_implement()
+
+### 2026-02-24 21:42 - mark-step-complete
+Changed ClaudeRunner() to ClaudeRunner(interactive=not opts.non_interactive) in assemble_scaffold()
+
+### 2026-02-24 21:42 - mark-task-complete
+Both assemble_implement() and assemble_scaffold() now pass interactive=not opts.non_interactive to ClaudeRunner; all 390 unit tests pass unchanged

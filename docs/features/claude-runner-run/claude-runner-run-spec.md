@@ -2,7 +2,7 @@
 
 ## Purpose and Context
 
-`ClaudeRunner` is the central abstraction for invoking Claude CLI processes. It currently exposes two public methods — `run_interactive(cmd, cwd)` and `run_with_capture(cmd, cwd)` — and every caller duplicates the same if/else dispatch to choose between them based on the `interactive` flag.
+`ClaudeRunner` is the central abstraction for invoking Claude CLI processes. It currently exposes two public methods — `run_interactive(cmd, cwd)` and `run_batch(cmd, cwd)` — and every caller duplicates the same if/else dispatch to choose between them based on the `interactive` flag.
 
 This refactoring makes `interactive` a constructor argument and adds a `run(cmd, cwd)` method that dispatches internally, eliminating the duplicated conditional from five call sites.
 
@@ -15,7 +15,8 @@ This refactoring makes `interactive` a constructor argument and adds a `run(cmd,
 | ProjectSetup | `src/i2code/implement/project_setup.py` | Runs scaffolding before task execution |
 | GithubActionsBuildFixer | `src/i2code/implement/github_actions_build_fixer.py` | Invokes Claude to fix CI failures |
 | PullRequestReviewProcessor | `src/i2code/implement/pull_request_review_processor.py` | Invokes Claude for PR feedback fixes and triage |
-| CLI entry points | `src/i2code/implement/cli.py` | Constructs `ClaudeRunner` instances |
+| Assembly | `src/i2code/implement/command_assembler.py` | Constructs `ClaudeRunner` instances |
+| TaskCommitRecovery | `src/i2code/implement/commit_recovery.py` | Always calls `run_batch()` directly |
 | Tests | `tests/implement/fake_claude_runner.py` | Test double (`FakeClaudeRunner`) |
 
 ## Capabilities and Behaviors
@@ -26,11 +27,11 @@ This refactoring makes `interactive` a constructor argument and adds a `run(cmd,
 
 ### C2: New `run(cmd, cwd)` method dispatches internally
 
-`ClaudeRunner.run(cmd, cwd)` delegates to `run_interactive` when `interactive=True` and to `run_with_capture` when `interactive=False`. Callers replace their if/else blocks with a single `run()` call.
+`ClaudeRunner.run(cmd, cwd)` delegates to `run_interactive` when `interactive=True` and to `run_batch` when `interactive=False`. Callers replace their if/else blocks with a single `run()` call.
 
 ### C3: Existing methods remain public
 
-`run_interactive(cmd, cwd)` and `run_with_capture(cmd, cwd)` remain public. Callers that need to bypass the dispatch (e.g., triage always capturing) continue calling `run_with_capture()` directly.
+`run_interactive(cmd, cwd)` and `run_batch(cmd, cwd)` remain public. Callers that need to bypass the dispatch (e.g., triage always capturing) continue calling `run_batch()` directly.
 
 ### C4: FakeClaudeRunner matches the new interface
 
@@ -38,7 +39,7 @@ This refactoring makes `interactive` a constructor argument and adds a `run(cmd,
 
 ### C5: Construction sites pass `interactive`
 
-The two construction sites in `cli.py` pass `interactive=not opts.non_interactive` (or `interactive=not non_interactive` for `scaffold_cmd`) when creating `ClaudeRunner`.
+The two construction sites in `command_assembler.py` pass `interactive=not opts.non_interactive` when creating `ClaudeRunner`.
 
 ### C6: Dispatch sites simplified
 
@@ -46,7 +47,11 @@ Each of the five dispatch sites replaces its if/else block with a single `self._
 
 ### C7: Triage unchanged
 
-`PullRequestReviewProcessor._run_triage()` continues calling `self._claude_runner.run_with_capture()` directly. Triage always captures output regardless of the interactive setting.
+`PullRequestReviewProcessor._run_triage()` continues calling `self._claude_runner.run_batch()` directly. Triage always captures output regardless of the interactive setting.
+
+### C8: Commit recovery unchanged
+
+`TaskCommitRecovery.commit_uncommitted_changes()` continues calling `self._claude_runner.run_batch()` directly. Recovery always runs non-interactively to commit previously completed work.
 
 ## High-Level API
 
@@ -60,12 +65,12 @@ class ClaudeRunner:
     def run(self, cmd: List[str], cwd: str) -> ClaudeResult:
         if self._interactive:
             return self.run_interactive(cmd, cwd=cwd)
-        return self.run_with_capture(cmd, cwd=cwd)
+        return self.run_batch(cmd, cwd=cwd)
 
     def run_interactive(self, cmd: List[str], cwd: str) -> ClaudeResult:
         ...  # unchanged
 
-    def run_with_capture(self, cmd: List[str], cwd: str) -> ClaudeResult:
+    def run_batch(self, cmd: List[str], cwd: str) -> ClaudeResult:
         ...  # unchanged
 ```
 
@@ -84,7 +89,7 @@ class FakeClaudeRunner:
     def run_interactive(self, cmd, cwd):
         ...  # unchanged
 
-    def run_with_capture(self, cmd, cwd):
+    def run_batch(self, cmd, cwd):
         ...  # unchanged
 ```
 
@@ -92,7 +97,7 @@ class FakeClaudeRunner:
 
 ### Construction sites
 
-**`cli.py` — `implement_cmd()`**
+**`command_assembler.py` — `assemble_implement()`**
 
 ```python
 # Before
@@ -102,14 +107,14 @@ claude_runner = ClaudeRunner()
 claude_runner = ClaudeRunner(interactive=not opts.non_interactive)
 ```
 
-**`cli.py` — `scaffold_cmd()`**
+**`command_assembler.py` — `assemble_scaffold()`**
 
 ```python
 # Before
 claude_runner=ClaudeRunner(),
 
 # After
-claude_runner=ClaudeRunner(interactive=not non_interactive),
+claude_runner=ClaudeRunner(interactive=not opts.non_interactive),
 ```
 
 ### Dispatch sites
@@ -120,7 +125,7 @@ claude_runner=ClaudeRunner(interactive=not non_interactive),
 # Before
 def _run_claude(self, claude_cmd, non_interactive):
     if non_interactive:
-        return self._claude_runner.run_with_capture(claude_cmd, cwd=self._git_repo.working_tree_dir)
+        return self._claude_runner.run_batch(claude_cmd, cwd=self._git_repo.working_tree_dir)
     else:
         return self._claude_runner.run_interactive(claude_cmd, cwd=self._git_repo.working_tree_dir)
 
@@ -138,13 +143,13 @@ The `non_interactive` parameter is removed from `_run_claude` since the runner a
 def _run_claude(self, claude_cmd):
     work_dir = self._git_repo.working_tree_dir
     if self._opts.non_interactive:
-        return self._claude_runner.run_with_capture(claude_cmd, cwd=work_dir)
+        return self._loop_steps.claude_runner.run_batch(claude_cmd, cwd=work_dir)
     else:
-        return self._claude_runner.run_interactive(claude_cmd, cwd=work_dir)
+        return self._loop_steps.claude_runner.run_interactive(claude_cmd, cwd=work_dir)
 
 # After
 def _run_claude(self, claude_cmd):
-    return self._claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)
+    return self._loop_steps.claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)
 ```
 
 **`project_setup.py` — `run_scaffolding()`**
@@ -154,7 +159,7 @@ def _run_claude(self, claude_cmd):
 if interactive:
     result = self._claude_runner.run_interactive(cmd, cwd=cwd)
 else:
-    result = self._claude_runner.run_with_capture(cmd, cwd=cwd)
+    result = self._claude_runner.run_batch(cmd, cwd=cwd)
 
 # After
 result = self._claude_runner.run(cmd, cwd=cwd)
@@ -169,7 +174,7 @@ The `interactive` parameter on `run_scaffolding()` is retained — it is still n
 if interactive:
     self._claude_runner.run_interactive(claude_cmd, cwd=self._git_repo.working_tree_dir)
 else:
-    self._claude_runner.run_with_capture(claude_cmd, cwd=self._git_repo.working_tree_dir)
+    self._claude_runner.run_batch(claude_cmd, cwd=self._git_repo.working_tree_dir)
 
 # After
 self._claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)
@@ -184,7 +189,7 @@ The local `interactive` variable is retained for `build_ci_fix_command(interacti
 if interactive:
     self._claude_runner.run_interactive(fix_cmd, cwd=self._git_repo.working_tree_dir)
 else:
-    self._claude_runner.run_with_capture(fix_cmd, cwd=self._git_repo.working_tree_dir)
+    self._claude_runner.run_batch(fix_cmd, cwd=self._git_repo.working_tree_dir)
 
 # After
 self._claude_runner.run(fix_cmd, cwd=self._git_repo.working_tree_dir)
@@ -201,15 +206,15 @@ The local `interactive` variable is retained for `build_fix_command(..., interac
 
 ### S1: Primary end-to-end scenario — Trunk mode task execution
 
-A caller constructs `ClaudeRunner(interactive=False)` and passes it to `TrunkMode`. When `TrunkMode` executes a task, it calls `runner.run(cmd, cwd)`, which internally delegates to `run_with_capture()`. The captured output is checked for `<SUCCESS>` tag and diagnostics are available. This replaces the current flow where `TrunkMode._run_claude()` receives a `non_interactive` parameter and dispatches itself.
+A caller constructs `ClaudeRunner(interactive=False)` and passes it to `TrunkMode`. When `TrunkMode` executes a task, it calls `runner.run(cmd, cwd)`, which internally delegates to `run_batch()`. The captured output is checked for `<SUCCESS>` tag and diagnostics are available. This replaces the current flow where `TrunkMode._run_claude()` receives a `non_interactive` parameter and dispatches itself.
 
 ### S2: Interactive mode execution
 
 A caller constructs `ClaudeRunner(interactive=True)` (default). `runner.run(cmd, cwd)` internally delegates to `run_interactive()`, which gives Claude direct terminal access. No output is captured.
 
-### S3: Triage bypasses `run()` dispatch
+### S3: Triage and commit recovery bypass `run()` dispatch
 
-`PullRequestReviewProcessor._run_triage()` calls `runner.run_with_capture()` directly, regardless of the runner's `interactive` setting. This ensures triage always captures output for programmatic parsing.
+`PullRequestReviewProcessor._run_triage()` and `TaskCommitRecovery.commit_uncommitted_changes()` call `runner.run_batch()` directly, regardless of the runner's `interactive` setting. Triage always captures output for programmatic parsing; recovery always runs non-interactively.
 
 ### S4: Scaffolding retains `interactive` parameter for command building
 
@@ -217,7 +222,7 @@ A caller constructs `ClaudeRunner(interactive=True)` (default). `runner.run(cmd,
 
 ### S5: FakeClaudeRunner records `"run"` method name
 
-Tests that previously asserted `calls[0][0] == "run_interactive"` or `"run_with_capture"` at dispatch sites now assert `calls[0][0] == "run"`. Dispatch correctness is verified in a dedicated unit test on `ClaudeRunner` itself.
+Tests that previously asserted `calls[0][0] == "run_interactive"` or `"run_batch"` at dispatch sites now assert `calls[0][0] == "run"`. Dispatch correctness is verified in a dedicated unit test on `ClaudeRunner` itself.
 
 ## Constraints and Assumptions
 
@@ -228,13 +233,13 @@ Tests that previously asserted `calls[0][0] == "run_interactive"` or `"run_with_
 ## Acceptance Criteria
 
 1. `ClaudeRunner.__init__` accepts `interactive: bool = True`.
-2. `ClaudeRunner.run(cmd, cwd)` dispatches to `run_interactive` when `interactive=True` and to `run_with_capture` when `interactive=False`.
-3. `run_interactive` and `run_with_capture` remain public and unchanged in behavior.
+2. `ClaudeRunner.run(cmd, cwd)` dispatches to `run_interactive` when `interactive=True` and to `run_batch` when `interactive=False`.
+3. `run_interactive` and `run_batch` remain public and unchanged in behavior.
 4. All five dispatch sites call `runner.run()` instead of the if/else pattern.
 5. `TrunkMode._run_claude()` no longer accepts a `non_interactive` parameter.
 6. `FakeClaudeRunner.__init__` accepts `interactive: bool = True`.
 7. `FakeClaudeRunner.run(cmd, cwd)` records calls as `("run", cmd, cwd)`.
-8. `_run_triage()` continues calling `run_with_capture()` directly.
+8. `_run_triage()` and `TaskCommitRecovery.commit_uncommitted_changes()` continue calling `run_batch()` directly.
 9. A dedicated unit test verifies `ClaudeRunner.run()` dispatches correctly for both `interactive=True` and `interactive=False`.
 10. All existing tests pass with updated assertions.
 11. Code Health score of 10.0 for all modified files.

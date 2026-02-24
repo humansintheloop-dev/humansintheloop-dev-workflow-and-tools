@@ -6,7 +6,7 @@ Every caller of `ClaudeRunner` duplicates the same dispatch conditional:
 
 ```python
 if non_interactive:
-    runner.run_with_capture(cmd, cwd)
+    runner.run_batch(cmd, cwd)
 else:
     runner.run_interactive(cmd, cwd)
 ```
@@ -17,7 +17,7 @@ This pattern appears in five call sites across the codebase.
 
 Make `interactive` a constructor argument of `ClaudeRunner` and add a single `run(cmd, cwd)` method that dispatches internally. Callers replace the if/else with one call.
 
-Keep `run_with_capture()` for the special case where triage always captures output regardless of the interactive setting.
+Keep `run_batch()` for the special case where triage always captures output regardless of the interactive setting.
 
 ## Locations
 
@@ -41,4 +41,4 @@ Keep `run_with_capture()` for the special case where triage always captures outp
 
 ### Unchanged
 
-- `src/i2code/implement/pull_request_review_processor.py:175` — triage always calls `run_with_capture()` directly
+- `src/i2code/implement/pull_request_review_processor.py:175` — triage always calls `run_batch()` directly

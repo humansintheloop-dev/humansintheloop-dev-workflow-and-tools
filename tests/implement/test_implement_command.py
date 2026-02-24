@@ -208,6 +208,33 @@ class TestWorktreeModeAllTasksComplete:
 
 
 @pytest.mark.unit
+class TestIsolateModeReceivesIsolationType:
+    """_isolate_mode() passes isolation_type to isolate_mode.execute()."""
+
+    def test_isolate_mode_receives_isolation_type(self):
+        cmd, project, git_repo = _make_command(
+            isolate=True, isolation_type="docker",
+            ignore_uncommitted_idea_changes=True,
+        )
+        cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
+        with pytest.raises(SystemExit):
+            cmd.execute()
+        call_kwargs = cmd.mode_factory.make_isolate_mode.return_value.execute.call_args
+        assert call_kwargs.kwargs.get("isolation_type") == "docker"
+
+    def test_isolate_mode_receives_none_when_not_set(self):
+        cmd, project, git_repo = _make_command(
+            isolate=True,
+            ignore_uncommitted_idea_changes=True,
+        )
+        cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
+        with pytest.raises(SystemExit):
+            cmd.execute()
+        call_kwargs = cmd.mode_factory.make_isolate_mode.return_value.execute.call_args
+        assert call_kwargs.kwargs.get("isolation_type") is None
+
+
+@pytest.mark.unit
 class TestImplementCommandWorktreeMode:
     """_worktree_mode() uses a single idea branch (no integration or slice branch)."""
 

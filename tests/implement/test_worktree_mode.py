@@ -136,6 +136,59 @@ class TestWorktreeModeAllComplete:
             captured = capsys.readouterr()
             assert "https://github.com/owner/repo/pull/42" in captured.out
 
+    def test_all_complete_marks_pr_ready_when_pr_exists(self, capsys):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_name = "test-feature"
+            idea_dir = os.path.join(tmpdir, idea_name)
+            os.makedirs(idea_dir)
+            plan_path = write_plan_file(idea_dir, idea_name, [
+                (1, 1, "Already done", True),
+            ])
+
+            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
+            fake_repo.pr_number = 42
+            fake_gh = FakeGitHubClient()
+            fake_gh.set_pr_url(42, "https://github.com/owner/repo/pull/42")
+
+            mode, _, _, _, _ = _make_worktree_mode(
+                plan_path, idea_dir, tmpdir,
+                fake_repo=fake_repo, fake_gh=fake_gh,
+            )
+            mode.execute()
+
+            # mark_pr_ready was called with the PR number
+            mark_ready_calls = [c for c in fake_gh.calls if c[0] == "mark_pr_ready"]
+            assert len(mark_ready_calls) == 1
+            assert mark_ready_calls[0] == ("mark_pr_ready", 42)
+
+            captured = capsys.readouterr()
+            assert "ready for review" in captured.out
+
+    def test_all_complete_does_not_mark_ready_when_no_pr(self, capsys):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_name = "test-feature"
+            idea_dir = os.path.join(tmpdir, idea_name)
+            os.makedirs(idea_dir)
+            plan_path = write_plan_file(idea_dir, idea_name, [
+                (1, 1, "Already done", True),
+            ])
+
+            fake_gh = FakeGitHubClient()
+
+            mode, _, _, _, _ = _make_worktree_mode(
+                plan_path, idea_dir, tmpdir,
+                fake_gh=fake_gh,
+            )
+            # pr_number is None by default
+            mode.execute()
+
+            # mark_pr_ready should NOT have been called
+            mark_ready_calls = [c for c in fake_gh.calls if c[0] == "mark_pr_ready"]
+            assert len(mark_ready_calls) == 0
+
+            captured = capsys.readouterr()
+            assert "ready for review" not in captured.out
+
 
 @pytest.mark.unit
 class TestWorktreeModeTaskExecution:

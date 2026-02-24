@@ -114,7 +114,7 @@ class WorktreeMode:
         print(f"Task completed successfully in {duration}. Pushing changes...")
 
         if not self._git_repo.push():
-            print("Error: Could not push commit to slice branch", file=sys.stderr)
+            print("Error: Could not push commit to branch", file=sys.stderr)
             sys.exit(1)
 
         if self._git_repo.pr_number is None:
@@ -127,6 +127,8 @@ class WorktreeMode:
         """Print completion message with PR URL if available."""
         print("All tasks completed!")
         if self._git_repo.pr_number:
+            self._git_repo.gh_client.mark_pr_ready(self._git_repo.pr_number)
+            print("PR marked ready for review")
             pr_url = self._git_repo.gh_client.get_pr_url(self._git_repo.pr_number)
             if pr_url:
                 print(f"PR: {pr_url}")

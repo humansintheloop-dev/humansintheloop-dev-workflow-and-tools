@@ -25,7 +25,7 @@ const GIT_DASH_C_MESSAGE =
   'Do not use `git -C directory` - cd to the top-level directory and run git commands from there';
 
 function isPythonMPytest(command) {
-  return /\bpython3?\s+-m\s+pytest\b/.test(command) && !/\buv\s+run\b/.test(command);
+  return /^python3?\s+-m\s+pytest\b/.test(command);
 }
 
 const PYTHON_M_PYTEST_MESSAGE =
@@ -37,7 +37,7 @@ const PYTHON_M_PYTEST_MESSAGE =
  * @returns {boolean} True if the command runs bare pytest (not via uv run)
  */
 function isBarePytest(command) {
-  return /\bpytest\b/.test(command) && !/\buv\s+run\b/.test(command);
+  return /^pytest\b/.test(command);
 }
 
 const BARE_PYTEST_MESSAGE =

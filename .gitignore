@@ -16,3 +16,4 @@ debug.log
 .ruff_cache
 .coverage
 pytest-of-*/
+.env.local

@@ -67,16 +67,16 @@ All tasks use TDD. The test command is: `uv run --with pytest --with pytest-mock
     - [x] Add `interactive: bool = True` parameter to `ClaudeRunner.__init__()` in `src/i2code/implement/claude_runner.py`, store as `self._interactive`
     - [x] Add `run(self, cmd: List[str], cwd: str) -> ClaudeResult` method to `ClaudeRunner` that dispatches based on `self._interactive`
 
-- [ ] **Task 1.3: FakeClaudeRunner accepts interactive and records run() calls**
+- [x] **Task 1.3: FakeClaudeRunner accepts interactive and records run() calls**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_claude_runner.py -v -m unit`
   - Observable: No behavior change for existing methods; new `run()` method records `("run", cmd, cwd)` tuples
   - Evidence: Existing `TestFakeClaudeRunner` tests pass, plus new `test_records_run_call` test passes
   - Steps:
-    - [ ] Add `test_records_run_call` to `TestFakeClaudeRunner` in `tests/implement/test_claude_runner.py`: call `fake.run(cmd, cwd)` and assert `fake.calls == [("run", cmd, cwd)]`
-    - [ ] Add `interactive: bool = True` parameter to `FakeClaudeRunner.__init__()` in `tests/implement/fake_claude_runner.py`, store as `self._interactive`
-    - [ ] Add `run(self, cmd, cwd)` method to `FakeClaudeRunner` that appends `("run", cmd, cwd)` and returns `self._next_result()`
-    - [ ] Update the docstring example in `FakeClaudeRunner` to show the `run()` method
+    - [x] Add `test_records_run_call` to `TestFakeClaudeRunner` in `tests/implement/test_claude_runner.py`: call `fake.run(cmd, cwd)` and assert `fake.calls == [("run", cmd, cwd)]`
+    - [x] Add `interactive: bool = True` parameter to `FakeClaudeRunner.__init__()` in `tests/implement/fake_claude_runner.py`, store as `self._interactive`
+    - [x] Add `run(self, cmd, cwd)` method to `FakeClaudeRunner` that appends `("run", cmd, cwd)` and returns `self._next_result()`
+    - [x] Update the docstring example in `FakeClaudeRunner` to show the `run()` method
 
 - [ ] **Task 1.4: command_assembler.py passes interactive when constructing ClaudeRunner**
   - TaskType: REFACTOR

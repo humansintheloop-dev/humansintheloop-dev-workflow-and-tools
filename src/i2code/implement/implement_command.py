@@ -90,8 +90,10 @@ class ImplementCommand:
     def _isolate_mode(self):
         """Delegate execution to an isolarium VM."""
         idea_branch = self.git_repo.ensure_idea_branch(self.project.name)
+        print(f"Idea branch: {idea_branch}")
         main_repo_dir = self.git_repo.working_tree_dir
         self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
+        print(f"Worktree: {self.git_repo.working_tree_dir}")
         setup_project(self.git_repo.working_tree_dir, source_root=main_repo_dir)
         work_project = self.project.worktree_idea_project(
             self.git_repo.working_tree_dir, main_repo_dir
@@ -125,6 +127,7 @@ class ImplementCommand:
         print(f"Idea branch: {idea_branch}")
 
         if self.opts.isolated:
+            print(f"Worktree: {self.git_repo.working_tree_dir}")
             self.git_repo.set_user_config("Test User", "test@test.com")
             setup_project(self.git_repo.working_tree_dir)
             work_project = self.project

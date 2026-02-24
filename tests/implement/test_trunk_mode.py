@@ -81,7 +81,7 @@ class TestTrunkModeExecute:
 
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
-            assert method == "run_interactive"
+            assert method == "run"
             captured = capsys.readouterr()
             assert "All tasks completed!" in captured.out
 
@@ -181,7 +181,7 @@ class TestTrunkModeExecute:
 
             assert exc_info.value.code == 1
 
-    def test_non_interactive_uses_run_batch(self, capsys):
+    def test_non_interactive_uses_run(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_name = "test-feature"
             idea_dir = os.path.join(tmpdir, idea_name)
@@ -215,7 +215,7 @@ class TestTrunkModeExecute:
 
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
-            assert method == "run_batch"
+            assert method == "run"
             assert cmd[0] == "/mock"
 
     def test_mock_claude_bypasses_command_builder(self, capsys):
@@ -331,8 +331,8 @@ class TestTrunkModeWithRecovery:
 
             # Claude called twice: first for recovery (non-interactive), then for task 1.2
             assert len(fake_runner.calls) == 2
-            assert fake_runner.calls[0][0] == "run_batch"
-            assert fake_runner.calls[1][0] == "run_interactive"
+            assert fake_runner.calls[0][0] == "run_batch"  # recovery uses run_batch directly
+            assert fake_runner.calls[1][0] == "run"
             captured = capsys.readouterr()
             assert "Detected uncommitted changes" in captured.out
             assert "All tasks completed!" in captured.out
@@ -376,7 +376,7 @@ class TestTrunkModeWithRecovery:
             # Claude called once for the task (no recovery call)
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
-            assert method == "run_interactive"
+            assert method == "run"
             captured = capsys.readouterr()
             assert "Detected uncommitted changes" not in captured.out
             assert "All tasks completed!" in captured.out

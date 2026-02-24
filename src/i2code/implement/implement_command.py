@@ -18,22 +18,30 @@ class ImplementCommand:
 
     def execute(self):
         """Implement a development plan using Git worktrees and GitHub Draft PRs."""
-        self.project.validate()
-        self.project.validate_files()
-
-        if self.opts.isolation_type:
-            self.opts.isolate = True
+        self._validate_and_apply_defaults()
 
         if self.opts.dry_run:
             self._print_dry_run()
             return
 
-        if not self.opts.isolated and not self.opts.ignore_uncommitted_idea_changes:
-            validate_idea_files_committed(self.project)
+        self._check_idea_files_committed()
 
         if self._all_tasks_already_complete():
             return
 
+        self._dispatch_mode()
+
+    def _validate_and_apply_defaults(self):
+        self.project.validate()
+        self.project.validate_files()
+        if self.opts.isolation_type:
+            self.opts.isolate = True
+
+    def _check_idea_files_committed(self):
+        if not self.opts.isolated and not self.opts.ignore_uncommitted_idea_changes:
+            validate_idea_files_committed(self.project)
+
+    def _dispatch_mode(self):
         if self.opts.trunk:
             self._trunk_mode()
         elif self.opts.isolate:
@@ -85,10 +93,13 @@ class ImplementCommand:
         main_repo_dir = self.git_repo.working_tree_dir
         self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
         setup_project(self.git_repo.working_tree_dir, source_root=main_repo_dir)
+        work_project = self.project.worktree_idea_project(
+            self.git_repo.working_tree_dir, main_repo_dir
+        )
 
         isolate_mode = self.mode_factory.make_isolate_mode(
             git_repo=self.git_repo,
-            project=self.project,
+            project=work_project,
         )
         returncode = isolate_mode.execute(
             non_interactive=self.opts.non_interactive,

@@ -154,15 +154,22 @@ class TestImplementCommandIsolateMode:
     """_isolate_mode() creates a worktree then delegates to mode_factory.make_isolate_mode()."""
 
     def _setup_isolate_command(self):
-        cmd, project, git_repo = _make_command(
-            isolate=True, ignore_uncommitted_idea_changes=True
+        opts = _make_opts(isolate=True, ignore_uncommitted_idea_changes=True)
+        project = FakeIdeaProject(
+            name="test-feature",
+            directory="/tmp/fake-repo/docs/features/test-feature",
         )
+        project.set_next_task(_DEFAULT_TASK)
+        git_repo = MagicMock()
+        mode_factory = MagicMock()
+        cmd = ImplementCommand(opts, project, git_repo, mode_factory)
+
         git_repo.working_tree_dir = "/tmp/fake-repo"
         git_repo.ensure_idea_branch.return_value = "idea/test-feature"
         mock_wt_git_repo = MagicMock()
         mock_wt_git_repo.working_tree_dir = "/tmp/fake-repo-wt-test-feature"
         git_repo.ensure_worktree.return_value = mock_wt_git_repo
-        cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
+        mode_factory.make_isolate_mode.return_value.execute.return_value = 0
         return cmd, project, git_repo, mock_wt_git_repo
 
     @patch("i2code.implement.implement_command.setup_project")
@@ -174,14 +181,14 @@ class TestImplementCommandIsolateMode:
         git_repo.ensure_worktree.assert_called_once_with(project.name, "idea/test-feature")
 
     @patch("i2code.implement.implement_command.setup_project")
-    def test_passes_worktree_git_repo_to_mode_factory(self, mock_setup):
+    def test_passes_worktree_git_repo_and_project_to_mode_factory(self, mock_setup):
         cmd, project, git_repo, mock_wt_git_repo = self._setup_isolate_command()
         with pytest.raises(SystemExit):
             cmd.execute()
-        cmd.mode_factory.make_isolate_mode.assert_called_once_with(
-            git_repo=mock_wt_git_repo,
-            project=project,
-        )
+        call_kwargs = cmd.mode_factory.make_isolate_mode.call_args.kwargs
+        assert call_kwargs["git_repo"] is mock_wt_git_repo
+        work_project = call_kwargs["project"]
+        assert work_project.directory == "/tmp/fake-repo-wt-test-feature/docs/features/test-feature"
 
     @patch("i2code.implement.implement_command.setup_project")
     def test_calls_setup_project_on_worktree(self, mock_setup):

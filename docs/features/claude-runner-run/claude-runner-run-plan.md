@@ -55,17 +55,17 @@ All tasks use TDD. The test command is: `uv run --with pytest --with pytest-mock
     - [x] Rename run_with_capture to run_batch in module-level function run_claude_with_output_capture — update the call in ClaudeRunner.run_batch to call run_claude_with_output_capture (function name unchanged, only the method name changes)
     - [x] Update all direct callers: src/i2code/implement/commit_recovery.py:55, src/i2code/implement/pull_request_review_processor.py:175
     - [x] Update all test assertions that reference "run_with_capture" to "run_batch" across test files: test_claude_runner.py, test_trunk_mode.py, test_worktree_mode.py, test_github_actions_build_fixer.py, test_pull_request_review_processor.py
-- [ ] **Task 1.2: ClaudeRunner.run() dispatches to run_interactive or run_batch based on interactive constructor argument**
+- [x] **Task 1.2: ClaudeRunner.run() dispatches to run_interactive or run_batch based on interactive constructor argument**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_claude_runner.py -v -m unit`
   - Observable: `ClaudeRunner(interactive=True).run(cmd, cwd)` delegates to `run_interactive`; `ClaudeRunner(interactive=False).run(cmd, cwd)` delegates to `run_batch`. Constructor accepts `interactive: bool = True`.
   - Evidence: Two new unit tests in `TestClaudeRunnerRun` class pass — one for `interactive=True`, one for `interactive=False`
   - Steps:
-    - [ ] Write a new `TestClaudeRunnerRun` test class in `tests/implement/test_claude_runner.py` with two tests:
+    - [x] Write a new `TestClaudeRunnerRun` test class in `tests/implement/test_claude_runner.py` with two tests:
       - `test_run_delegates_to_run_interactive_when_interactive_true`: Instantiate `ClaudeRunner(interactive=True)`, mock `run_interactive`, call `run()`, assert `run_interactive` was called
       - `test_run_delegates_to_run_batch_when_interactive_false`: Instantiate `ClaudeRunner(interactive=False)`, mock `run_batch`, call `run()`, assert `run_batch` was called
-    - [ ] Add `interactive: bool = True` parameter to `ClaudeRunner.__init__()` in `src/i2code/implement/claude_runner.py`, store as `self._interactive`
-    - [ ] Add `run(self, cmd: List[str], cwd: str) -> ClaudeResult` method to `ClaudeRunner` that dispatches based on `self._interactive`
+    - [x] Add `interactive: bool = True` parameter to `ClaudeRunner.__init__()` in `src/i2code/implement/claude_runner.py`, store as `self._interactive`
+    - [x] Add `run(self, cmd: List[str], cwd: str) -> ClaudeResult` method to `ClaudeRunner` that dispatches based on `self._interactive`
 
 - [ ] **Task 1.3: FakeClaudeRunner accepts interactive and records run() calls**
   - TaskType: REFACTOR
@@ -151,3 +151,15 @@ All tasks use TDD. The test command is: `uv run --with pytest --with pytest-mock
 - **2026-02-22:** Standardized all file references to use relative paths with suffix in backticks (e.g., `src/i2code/implement/cli.py`) and all location references to use `path:linenumber` format in backticks (e.g., `src/i2code/implement/cli.py:55`). Replaced bare "(line N)" annotations throughout all tasks.
 - **2026-02-24:** Revised spec and plan to match actual code. Construction sites are in `command_assembler.py` (not `cli.py`). WorktreeMode uses `self._loop_steps.claude_runner` (not `self._claude_runner`). Added `TaskCommitRecovery` as a consumer. Added missing recovery test assertion updates to Tasks 1.5/1.6. Updated line numbers throughout.
 - **2026-02-24:** Renamed `run_with_capture` → `run_batch` across idea, spec, and plan. Added new Task 1.1 for the rename in production code and tests.
+
+### 2026-02-24 20:43 - mark-step-complete
+Wrote TestClaudeRunnerRun class with two tests
+
+### 2026-02-24 20:43 - mark-step-complete
+Added interactive: bool = True parameter to ClaudeRunner.__init__()
+
+### 2026-02-24 20:43 - mark-step-complete
+Added run() method that dispatches based on self._interactive
+
+### 2026-02-24 20:43 - mark-task-complete
+ClaudeRunner.run() dispatches to run_interactive or run_batch based on interactive constructor argument. All 18 tests pass.

@@ -526,6 +526,20 @@ class FakeProjectInitializerForScaffold:
         })
 
 
+def _fake_assemble_scaffold(fake_initializer):
+    """Return an assemble_scaffold override that injects a fake initializer."""
+    def assemble(opts):
+        from git import Repo
+        from i2code.implement.idea_project import IdeaProject
+        from i2code.implement.scaffold_command import ScaffoldCommand
+        project = IdeaProject(opts.idea_directory)
+        project.validate()
+        project.validate_files()
+        repo = Repo(project.directory, search_parent_directories=True)
+        return ScaffoldCommand(opts, fake_initializer, cwd=repo.working_tree_dir)
+    return assemble
+
+
 @pytest.mark.unit
 class TestScaffoldCmd:
     """Test scaffold CLI command — no @patch."""
@@ -541,7 +555,7 @@ class TestScaffoldCmd:
             runner = CliRunner(catch_exceptions=False)
             result = runner.invoke(
                 scaffold_cmd, [idea_dir],
-                obj={"project_initializer": fake_initializer},
+                obj={"command_factory": _fake_assemble_scaffold(fake_initializer)},
             )
 
             assert result.exit_code == 0
@@ -563,7 +577,7 @@ class TestScaffoldCmd:
             runner = CliRunner(catch_exceptions=False)
             result = runner.invoke(
                 scaffold_cmd, [idea_dir, "--non-interactive"],
-                obj={"project_initializer": fake_initializer},
+                obj={"command_factory": _fake_assemble_scaffold(fake_initializer)},
             )
 
             assert result.exit_code == 0
@@ -580,7 +594,7 @@ class TestScaffoldCmd:
             runner = CliRunner(catch_exceptions=False)
             result = runner.invoke(
                 scaffold_cmd, [idea_dir, "--mock-claude", "/mock.sh"],
-                obj={"project_initializer": fake_initializer},
+                obj={"command_factory": _fake_assemble_scaffold(fake_initializer)},
             )
 
             assert result.exit_code == 0

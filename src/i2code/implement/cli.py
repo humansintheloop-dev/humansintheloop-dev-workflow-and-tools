@@ -2,19 +2,13 @@
 
 import click
 
-from git import Repo
-
-from i2code.implement.git_repository import GitRepository
-from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixerFactory
-from i2code.implement.github_client import GitHubClient
-from i2code.implement.mode_factory import ModeFactory
-from i2code.implement.idea_project import IdeaProject
-from i2code.implement.implement_command import ImplementCommand
+from i2code.implement.command_assembler import (
+    assemble_command,
+    assemble_implement,
+    assemble_scaffold,
+)
 from i2code.implement.implement_opts import ImplementOpts
-from i2code.implement.claude_runner import ClaudeRunner
-from i2code.implement.command_builder import CommandBuilder
-from i2code.implement.pr_helpers import push_branch_to_remote
-from i2code.implement.project_setup import ProjectInitializer
+from i2code.implement.scaffold_opts import ScaffoldOpts
 
 
 @click.command("implement")
@@ -45,32 +39,10 @@ from i2code.implement.project_setup import ProjectInitializer
               help="Print what mode would be used and exit without executing")
 @click.option("--ignore-uncommitted-idea-changes", is_flag=True,
               help="Skip validation that idea files are committed")
-def implement_cmd(**kwargs):
+@click.pass_context
+def implement_cmd(ctx, **kwargs):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
-    opts = ImplementOpts(**kwargs)
-    project = IdeaProject(opts.idea_directory)
-    repo = Repo(project.directory, search_parent_directories=True)
-    gh_client = GitHubClient()
-    git_repo = GitRepository(repo, gh_client=gh_client)
-    claude_runner = ClaudeRunner()
-    build_fixer_factory = GithubActionsBuildFixerFactory(
-        opts=opts,
-        claude_runner=claude_runner,
-    )
-    project_initializer = ProjectInitializer(
-        claude_runner=claude_runner,
-        command_builder=CommandBuilder(),
-        git_repo=git_repo,
-        build_fixer=build_fixer_factory.create(git_repo),
-        push_fn=push_branch_to_remote,
-    )
-    mode_factory = ModeFactory(
-        opts=opts,
-        claude_runner=claude_runner,
-        build_fixer_factory=build_fixer_factory,
-        project_initializer=project_initializer,
-    )
-    command = ImplementCommand(opts, project, git_repo, mode_factory)
+    command = assemble_command(ctx, assemble_implement, ImplementOpts(**kwargs))
     command.execute()
 
 
@@ -81,21 +53,7 @@ def implement_cmd(**kwargs):
 @click.option("--mock-claude", metavar="SCRIPT",
               help="Use mock script instead of Claude (for testing)")
 @click.pass_context
-def scaffold_cmd(ctx, idea_directory, non_interactive, mock_claude):
+def scaffold_cmd(ctx, **kwargs):
     """Generate project scaffolding for an idea directory."""
-    project = IdeaProject(idea_directory)
-    project.validate()
-    project.validate_files()
-
-    repo = Repo(project.directory, search_parent_directories=True)
-
-    initializer = (ctx.obj or {}).get("project_initializer") or ProjectInitializer(
-        claude_runner=ClaudeRunner(),
-        command_builder=CommandBuilder(),
-    )
-    initializer.run_scaffolding(
-        idea_directory,
-        cwd=repo.working_tree_dir,
-        interactive=not non_interactive,
-        mock_claude=mock_claude,
-    )
+    command = assemble_command(ctx, assemble_scaffold, ScaffoldOpts(**kwargs))
+    command.execute()

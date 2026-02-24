@@ -83,41 +83,29 @@ class ImplementCommand:
         """Execute tasks using worktree + PR + CI loop."""
         state = WorkflowState.load(self.project.state_file)
 
-        integration_branch = self.git_repo.ensure_integration_branch(
-            self.project.name, isolated=self.opts.isolated
-        )
-        print(f"Integration branch: {integration_branch}")
-
-        next_task = self.project.get_next_task()
-        first_task_name = next_task.task.title if next_task else "implementation"
-
-        slice_branch = self.git_repo.ensure_slice_branch(
-            self.project.name, 1, first_task_name, integration_branch
-        )
-        print(f"Slice branch: {slice_branch}")
+        idea_branch = self.git_repo.ensure_idea_branch(self.project.name)
+        print(f"Idea branch: {idea_branch}")
 
         if self.opts.isolated:
             self.git_repo.set_user_config("Test User", "test@test.com")
             setup_project(self.git_repo.working_tree_dir)
             work_project = self.project
-            self.git_repo.checkout(slice_branch)
         else:
             main_repo_dir = self.git_repo.working_tree_dir
-            self.git_repo = self.git_repo.ensure_worktree(self.project.name, integration_branch)
+            self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
             print(f"Worktree: {self.git_repo.working_tree_dir}")
             setup_project(self.git_repo.working_tree_dir, source_root=main_repo_dir)
             work_project = self.project.worktree_idea_project(
                 self.git_repo.working_tree_dir, main_repo_dir
             )
-            self.git_repo.checkout(slice_branch)
 
-        self.git_repo.branch = slice_branch
+        self.git_repo.branch = idea_branch
 
         if self.opts.setup_only:
             print("Setup complete. Exiting (--setup-only mode).")
             return
 
-        existing_pr = self.git_repo.gh_client.find_pr(slice_branch)
+        existing_pr = self.git_repo.gh_client.find_pr(idea_branch)
         if existing_pr:
             self.git_repo.pr_number = existing_pr
             print(f"Reusing existing PR #{existing_pr}")

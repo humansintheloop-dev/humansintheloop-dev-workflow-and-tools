@@ -82,22 +82,22 @@ This steel thread implements the core branching simplification: replacing the tw
     - [x] Update `FakeGitRepository.ensure_pr()` in `tests/implement/fake_git_repository.py` to accept only `(idea_directory, idea_name)` — remove `slice_number`
     - [x] Add `ensure_idea_branch()` stub to `tests/implement/fake_git_repository.py`
 
-- [ ] **Task 1.3: ImplementCommand._worktree_mode uses single idea branch**
+- [x] **Task 1.3: ImplementCommand._worktree_mode uses single idea branch**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/implement/test_implement_command.py -v`
   - Observable: `_worktree_mode()` creates a single `idea/<name>` branch (no integration or slice branch), creates the worktree on that branch, sets `git_repo.branch` to the idea branch, and finds existing PRs on the idea branch
   - Evidence: Unit tests verify: (1) `ensure_idea_branch` is called instead of `ensure_integration_branch`/`ensure_slice_branch`, (2) `ensure_worktree` receives the idea branch name, (3) `git_repo.branch` is set to the idea branch, (4) `find_pr` is called with the idea branch name
   - Steps:
-    - [ ] Update `TestImplementCommandWorktreeMode` in `tests/implement/test_implement_command.py` to verify the new single-branch flow: mock `ensure_idea_branch` instead of `ensure_integration_branch`/`ensure_slice_branch`, verify no `slice_number` references, verify `checkout` is not called (worktree is already on the idea branch)
-    - [ ] Update `TestDeferredPRCreation` to remove the `slice_number=1` mock on `WorkflowState.load`
-    - [ ] Rewrite `_worktree_mode()` in `src/i2code/implement/implement_command.py`:
+    - [x] Update `TestImplementCommandWorktreeMode` in `tests/implement/test_implement_command.py` to verify the new single-branch flow: mock `ensure_idea_branch` instead of `ensure_integration_branch`/`ensure_slice_branch`, verify no `slice_number` references, verify `checkout` is not called (worktree is already on the idea branch)
+    - [x] Update `TestDeferredPRCreation` to remove the `slice_number=1` mock on `WorkflowState.load`
+    - [x] Rewrite `_worktree_mode()` in `src/i2code/implement/implement_command.py`:
       1. Load `WorkflowState` from state file
       2. Call `self.git_repo.ensure_idea_branch(self.project.name)` to get the idea branch
       3. Create worktree on the idea branch (or set up isolated mode without `checkout`)
       4. Set `self.git_repo.branch = idea_branch`
       5. Find existing PR on the idea branch
       6. Delegate to `worktree_mode.execute()`
-    - [ ] Remove the `WorkflowState` import if no longer needed in `_worktree_mode()` (check if state is still loaded here — it is, for the state file)
+    - [x] Remove the `WorkflowState` import if no longer needed in `_worktree_mode()` (check if state is still loaded here — it is, for the state file)
 
 - [ ] **Task 1.4: WorktreeMode._push_and_ensure_pr drops slice_number and completion marks PR ready**
   - TaskType: OUTCOME
@@ -153,3 +153,18 @@ Removed slice_number constructor parameter from FakeWorkflowState; property reta
 
 ### 2026-02-24 16:47 - mark-task-complete
 WorkflowState.load() creates files without slice_number, reads old files with slice_number without error, save() omits slice_number
+
+### 2026-02-24 17:09 - mark-step-complete
+Updated TestImplementCommandWorktreeMode with 7 tests for single-branch flow: ensure_idea_branch called, no integration/slice branch, worktree receives idea branch, branch set to idea branch, find_pr uses idea branch, checkout not called, delegates to mode_factory
+
+### 2026-02-24 17:09 - mark-step-complete
+Removed slice_number=1 from WorkflowState.load mock, updated to use ensure_idea_branch and assert on worktree git_repo
+
+### 2026-02-24 17:09 - mark-step-complete
+Rewrote _worktree_mode(): calls ensure_idea_branch, passes idea branch to ensure_worktree, sets git_repo.branch to idea branch, finds PR on idea branch, no checkout call
+
+### 2026-02-24 17:09 - mark-step-complete
+WorkflowState import is still needed — state is loaded from state file on line 84
+
+### 2026-02-24 17:09 - mark-task-complete
+_worktree_mode() creates single idea/<name> branch, worktree on that branch, sets git_repo.branch, finds PRs on idea branch. All 802 tests pass.

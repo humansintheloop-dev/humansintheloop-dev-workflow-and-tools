@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tests that selecting "Commit changes" commits the idea files,
 # the commit message matches the expected format, and the next
-# menu iteration shows "Implement the entire plan [default]".
+# menu iteration shows "Implement the entire plan: i2code implement [default]".
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -38,16 +38,16 @@ echo "# Plan" > "$IDEA_DIR/my-idea-plan.md"
 # Files are untracked = uncommitted changes
 
 # ---------------------------------------------------------------
-# Test: Select "Commit changes" (option 2), then "Exit" (option 3
-# on the next iteration which shows the normal 3-option menu)
+# Test: Select "Commit changes" (option 2), then "Exit" (option 4
+# on the next iteration which shows the normal 4-option menu)
 # ---------------------------------------------------------------
 echo ""
 echo "--- Test: Commit changes action ---"
 
-# Pipe "2" (Commit changes on 4-option menu) then "3" (Exit on 3-option menu)
+# Pipe "2" (Commit changes on 4-option menu) then "4" (Exit on 4-option menu)
 STDERR_OUTPUT=$(
     cd "$TMPDIR_COMMIT" || exit 1
-    printf '2\n3\n' | "$I2CODE_SCRIPT" "$IDEA_DIR" 2>&1 >/dev/null || true
+    printf '2\n4\n' | "$I2CODE_SCRIPT" "$IDEA_DIR" 2>&1 >/dev/null || true
 )
 
 # Assert 1: Files are committed (git status is clean for idea dir)
@@ -70,11 +70,11 @@ else
     echo "  actual:   '$COMMIT_MSG'"
 fi
 
-# Assert 3: Second menu iteration shows "Implement the entire plan [default]"
-if echo "$STDERR_OUTPUT" | grep -q "Implement the entire plan \[default\]"; then
-    pass "second menu shows 'Implement the entire plan [default]'"
+# Assert 3: Second menu iteration shows "Implement the entire plan: i2code implement [default]"
+if echo "$STDERR_OUTPUT" | grep -q "Implement the entire plan: i2code implement.*\[default\]"; then
+    pass "second menu shows 'Implement the entire plan: i2code implement [default]'"
 else
-    fail "second menu does NOT show 'Implement the entire plan [default]'"
+    fail "second menu does NOT show 'Implement the entire plan: i2code implement [default]'"
     echo "  stderr output: $STDERR_OUTPUT"
 fi
 

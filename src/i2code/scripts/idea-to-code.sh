@@ -125,6 +125,79 @@ handle_error() {
 # Trap Ctrl+C
 trap 'echo ""; echo "Workflow interrupted."; exit 130' INT
 
+# Function to prompt user for implement configuration options
+prompt_implement_config() {
+    local mode_choice
+    mode_choice=$(get_user_choice "How should Claude run?" 1 "Interactive" "Non-interactive")
+    if [ "$mode_choice" -eq 1 ]; then
+        IMPLEMENT_INTERACTIVE=true
+    else
+        IMPLEMENT_INTERACTIVE=false
+    fi
+
+    local branch_choice
+    branch_choice=$(get_user_choice "Where should implementation happen?" 1 "Worktree (branch + PR)" "Trunk (current branch, no PR)")
+    if [ "$branch_choice" -eq 1 ]; then
+        IMPLEMENT_TRUNK=false
+    else
+        IMPLEMENT_TRUNK=true
+    fi
+}
+
+# Function to write implement configuration to file
+write_implement_config() {
+    printf 'interactive: %s\ntrunk: %s\n' "$IMPLEMENT_INTERACTIVE" "$IMPLEMENT_TRUNK" > "$IMPLEMENT_CONFIG_FILE"
+}
+
+# Function to read implement configuration from file
+# Returns non-zero if the file contains no recognized fields
+read_implement_config() {
+    IMPLEMENT_INTERACTIVE=$(sed -n 's/^interactive: *//p' "$IMPLEMENT_CONFIG_FILE")
+    IMPLEMENT_TRUNK=$(sed -n 's/^trunk: *//p' "$IMPLEMENT_CONFIG_FILE")
+    if [ -z "$IMPLEMENT_INTERACTIVE" ] && [ -z "$IMPLEMENT_TRUNK" ]; then
+        return 1
+    fi
+    IMPLEMENT_INTERACTIVE="${IMPLEMENT_INTERACTIVE:-true}"
+    IMPLEMENT_TRUNK="${IMPLEMENT_TRUNK:-false}"
+}
+
+# Function to display active implement configuration
+display_implement_config() {
+    echo "Implementation options:" >&2
+    if [ "$IMPLEMENT_INTERACTIVE" = "true" ]; then
+        echo "  Mode: interactive" >&2
+    else
+        echo "  Mode: non-interactive" >&2
+    fi
+    if [ "$IMPLEMENT_TRUNK" = "true" ]; then
+        echo "  Branch: trunk" >&2
+    else
+        echo "  Branch: worktree" >&2
+    fi
+}
+
+# Function to build flags for i2code implement based on config
+build_implement_flags() {
+    IMPLEMENT_FLAGS=()
+    if [ "$IMPLEMENT_INTERACTIVE" = "false" ]; then
+        IMPLEMENT_FLAGS+=(--non-interactive)
+    fi
+    if [ "$IMPLEMENT_TRUNK" = "true" ]; then
+        IMPLEMENT_FLAGS+=(--trunk)
+    fi
+}
+
+# Function to build the menu label for "Implement the entire plan"
+# Always includes the invocation command; uses config flags when available, defaults otherwise
+build_implement_label() {
+    if [ -f "$IMPLEMENT_CONFIG_FILE" ] && read_implement_config; then
+        build_implement_flags
+    else
+        IMPLEMENT_FLAGS=()
+    fi
+    echo "Implement the entire plan: i2code implement${IMPLEMENT_FLAGS:+ ${IMPLEMENT_FLAGS[*]}}"
+}
+
 # Main function
 main() {
     local dir="$1"
@@ -266,15 +339,22 @@ main() {
                 
             has_plan)
                 local choice
+                local implement_label
+                implement_label=$(build_implement_label)
                 if has_uncommitted_changes "$dir"; then
-                    choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
-                        "Revise the plan" \
-                        "Commit changes" \
-                        "Implement the entire plan" \
-                        "Exit")
+                    local -a uncommitted_options=("Revise the plan" "Commit changes" "$implement_label")
+                    if [ -f "$IMPLEMENT_CONFIG_FILE" ]; then
+                        uncommitted_options+=("Configure implement options")
+                    fi
+                    uncommitted_options+=("Exit")
 
-                    case "$choice" in
-                        1)
+                    choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
+                        "${uncommitted_options[@]}")
+
+                    # Map option labels to actions
+                    local selected="${uncommitted_options[$((choice-1))]}"
+                    case "$selected" in
+                        "Revise the plan")
                             if run_step "Revising plan" "$SCRIPT_DIR/revise-plan.sh" "$dir"; then
                                 echo "Plan revised successfully!"
                             else
@@ -283,7 +363,7 @@ main() {
                                 fi
                             fi
                             ;;
-                        2)
+                        "Commit changes")
                             if commit_idea_changes "$dir"; then
                                 echo "Changes committed successfully!"
                                 continue
@@ -293,8 +373,15 @@ main() {
                                 fi
                             fi
                             ;;
-                        3)
-                            if run_step "Implementing plan" i2code implement "$dir"; then
+                        "$implement_label")
+                            if [ ! -f "$IMPLEMENT_CONFIG_FILE" ] || ! read_implement_config; then
+                                prompt_implement_config
+                                write_implement_config
+                            fi
+                            read_implement_config
+                            display_implement_config
+                            build_implement_flags
+                            if run_step "Implementing plan" i2code implement "${IMPLEMENT_FLAGS[@]}" "$dir"; then
                                 echo "Implementation completed successfully!"
                                 echo ""
                                 if grep -q '\[ \]' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null; then
@@ -314,7 +401,11 @@ main() {
                                 fi
                             fi
                             ;;
-                        4)
+                        "Configure implement options")
+                            prompt_implement_config
+                            write_implement_config
+                            ;;
+                        "Exit")
                             echo "Exiting workflow."
                             exit 0
                             ;;
@@ -322,7 +413,8 @@ main() {
                 else
                     choice=$(get_user_choice "Implementation plan exists. What would you like to do?" 2 \
                         "Revise the plan" \
-                        "Implement the entire plan" \
+                        "$implement_label" \
+                        "Configure implement options" \
                         "Exit")
 
                     case "$choice" in
@@ -336,7 +428,14 @@ main() {
                             fi
                             ;;
                         2)
-                            if run_step "Implementing plan" i2code implement "$dir"; then
+                            if [ ! -f "$IMPLEMENT_CONFIG_FILE" ] || ! read_implement_config; then
+                                prompt_implement_config
+                                write_implement_config
+                            fi
+                            read_implement_config
+                            display_implement_config
+                            build_implement_flags
+                            if run_step "Implementing plan" i2code implement "${IMPLEMENT_FLAGS[@]}" "$dir"; then
                                 echo "Implementation completed successfully!"
                                 echo ""
                                 if grep -q '\[ \]' "$PLAN_WITHOUT_STORIES_FILE" 2>/dev/null; then
@@ -357,6 +456,10 @@ main() {
                             fi
                             ;;
                         3)
+                            prompt_implement_config
+                            write_implement_config
+                            ;;
+                        4)
                             echo "Exiting workflow."
                             exit 0
                             ;;

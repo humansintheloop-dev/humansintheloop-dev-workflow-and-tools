@@ -56,15 +56,15 @@ CI runs `./test-scripts/test-end-to-end.sh`.
 
 This steel thread implements the core branching simplification: replacing the two-level branching model (integration + slice) with a single `idea/<name>` branch, and updating PR title/body generation. All existing CI infrastructure is already in place.
 
-- [ ] **Task 1.1: WorkflowState drops slice_number on load and save**
+- [x] **Task 1.1: WorkflowState drops slice_number on load and save**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/implement/test_workflow_state.py -v`
   - Observable: `WorkflowState.load()` creates new state files without `slice_number`, reads old files containing `slice_number` without error, and `save()` omits `slice_number` from the persisted JSON
   - Evidence: Unit tests verify: (1) new state files have no `slice_number` key, (2) old state files with `slice_number` load successfully with feedback IDs intact, (3) after loading an old file and saving, the saved JSON has no `slice_number`
   - Steps:
-    - [ ] Update existing tests in `tests/implement/test_workflow_state.py`: remove assertions on `state.slice_number`, add tests for backward-compatible loading (file with `slice_number` loads without error, feedback IDs are preserved), and add a test that `save()` after loading an old file drops `slice_number`
-    - [ ] Modify `src/i2code/implement/workflow_state.py`: remove `slice_number` from the default data dict in `load()`, remove the `slice_number` property, add logic in `load()` to silently pop `slice_number` from loaded data
-    - [ ] Update `tests/implement/fake_workflow_state.py`: remove `slice_number` parameter and property from `FakeWorkflowState`
+    - [x] Update existing tests in `tests/implement/test_workflow_state.py`: remove assertions on `state.slice_number`, add tests for backward-compatible loading (file with `slice_number` loads without error, feedback IDs are preserved), and add a test that `save()` after loading an old file drops `slice_number`
+    - [x] Modify `src/i2code/implement/workflow_state.py`: remove `slice_number` from the default data dict in `load()`, remove the `slice_number` property, add logic in `load()` to silently pop `slice_number` from loaded data
+    - [x] Update `tests/implement/fake_workflow_state.py`: remove `slice_number` parameter and property from `FakeWorkflowState`
 
 - [ ] **Task 1.2: GitRepository gains ensure_idea_branch and ensure_pr drops slice_number**
   - TaskType: OUTCOME
@@ -138,3 +138,18 @@ This steel thread removes all dead code related to the old integration/slice bra
     - [ ] Remove the `sanitize_branch_name` import from `pr_helpers.py` if it's no longer used
     - [ ] Search `src/` for any remaining references to "slice", "integration_branch", or "rollover" and remove them
     - [ ] Run full test suite to confirm no behavior change
+
+---
+
+## Change History
+### 2026-02-24 16:47 - mark-step-complete
+Updated tests: removed slice_number assertions, added backward-compat loading test and save-drops-slice_number test
+
+### 2026-02-24 16:47 - mark-step-complete
+Removed slice_number from default data, removed property, added pop on load
+
+### 2026-02-24 16:47 - mark-step-complete
+Removed slice_number constructor parameter from FakeWorkflowState; property retained temporarily for worktree_mode consumers (Task 1.4)
+
+### 2026-02-24 16:47 - mark-task-complete
+WorkflowState.load() creates files without slice_number, reads old files with slice_number without error, save() omits slice_number

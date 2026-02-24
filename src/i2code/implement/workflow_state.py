@@ -18,10 +18,10 @@ class WorkflowState:
         if os.path.isfile(state_file):
             with open(state_file, "r") as f:
                 data = json.load(f)
+            data.pop("slice_number", None)
             data.setdefault("processed_conversation_ids", [])
         else:
             data = {
-                "slice_number": 1,
                 "processed_comment_ids": [],
                 "processed_review_ids": [],
                 "processed_conversation_ids": [],
@@ -35,10 +35,6 @@ class WorkflowState:
         """Persist current state to disk."""
         with open(self._state_file, "w") as f:
             json.dump(self._data, f, indent=2)
-
-    @property
-    def slice_number(self) -> int:
-        return self._data["slice_number"]
 
     @property
     def processed_comment_ids(self) -> List:

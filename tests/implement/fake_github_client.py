@@ -60,12 +60,12 @@ class FakeGitHubClient:
                 return pr.get("number")
         return None
 
-    def create_draft_pr(self, slice_branch, title, body, base_branch):
-        self.calls.append(("create_draft_pr", slice_branch, title, body, base_branch))
+    def create_draft_pr(self, branch_name, title, body, base_branch):
+        self.calls.append(("create_draft_pr", branch_name, title, body, base_branch))
         pr_number = self._next_pr_number
         self._created_prs.append({
             "number": pr_number,
-            "head": slice_branch,
+            "head": branch_name,
             "title": title,
             "body": body,
             "base": base_branch,

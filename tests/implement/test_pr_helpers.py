@@ -1,44 +1,98 @@
 """Tests for PR helper functions in implement-with-worktree."""
 
+import os
+import tempfile
+
 import pytest
 
 
 @pytest.mark.unit
+class TestExtractTitleFromIdeaFile:
+    """Test extracting title from idea file heading."""
+
+    def test_extracts_heading_from_idea_file(self):
+        from i2code.implement.pr_helpers import extract_title_from_idea_file
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = os.path.join(tmpdir, "my-feature")
+            os.makedirs(idea_dir)
+            idea_file = os.path.join(idea_dir, "my-feature-idea.md")
+            with open(idea_file, "w") as f:
+                f.write("# My Great Feature\n\nSome description.\n")
+
+            title = extract_title_from_idea_file(idea_dir, "my-feature")
+
+            assert title == "My Great Feature"
+
+    def test_falls_back_to_idea_name_when_no_heading(self):
+        from i2code.implement.pr_helpers import extract_title_from_idea_file
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = os.path.join(tmpdir, "my-feature")
+            os.makedirs(idea_dir)
+            idea_file = os.path.join(idea_dir, "my-feature-idea.md")
+            with open(idea_file, "w") as f:
+                f.write("No heading here, just text.\n")
+
+            title = extract_title_from_idea_file(idea_dir, "my-feature")
+
+            assert title == "my-feature"
+
+    def test_falls_back_to_idea_name_when_file_missing(self):
+        from i2code.implement.pr_helpers import extract_title_from_idea_file
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = os.path.join(tmpdir, "my-feature")
+            os.makedirs(idea_dir)
+
+            title = extract_title_from_idea_file(idea_dir, "my-feature")
+
+            assert title == "my-feature"
+
+
+@pytest.mark.unit
 class TestPRTitleGeneration:
-    """Test PR title generation from slice name."""
+    """Test PR title generation from idea name and directory."""
 
-    def test_generate_pr_title(self):
-        """Should generate PR title from idea and slice name."""
+    def test_generate_pr_title_uses_idea_file_heading(self):
+        """Should derive title from the idea file heading."""
         from i2code.implement.pr_helpers import generate_pr_title
 
-        title = generate_pr_title("my-feature", "01-project-setup")
-        assert title == "[my-feature] 01-project-setup"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = os.path.join(tmpdir, "my-feature")
+            os.makedirs(idea_dir)
+            idea_file = os.path.join(idea_dir, "my-feature-idea.md")
+            with open(idea_file, "w") as f:
+                f.write("# My Great Feature\n\nDescription.\n")
 
-    def test_generate_pr_title_preserves_slice_name(self):
-        """PR title should preserve the full slice name."""
+            title = generate_pr_title("my-feature", idea_dir)
+
+            assert title == "My Great Feature"
+
+    def test_generate_pr_title_falls_back_to_idea_name(self):
+        """Should fall back to idea name when no idea file exists."""
         from i2code.implement.pr_helpers import generate_pr_title
 
-        title = generate_pr_title("wt-pr-based-development", "03-feedback-handling")
-        assert title == "[wt-pr-based-development] 03-feedback-handling"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            idea_dir = os.path.join(tmpdir, "my-feature")
+            os.makedirs(idea_dir)
+
+            title = generate_pr_title("my-feature", idea_dir)
+
+            assert title == "my-feature"
 
 
 @pytest.mark.unit
 class TestPRBodyGeneration:
     """Test PR body generation."""
 
-    def test_generate_pr_body(self):
-        """Should generate PR body with idea directory reference."""
+    def test_generate_pr_body_minimal_format(self):
+        """Should generate minimal PR body with just the idea directory link."""
         from i2code.implement.pr_helpers import generate_pr_body
 
-        body = generate_pr_body(
-            idea_directory="docs/features/my-feature",
-            idea_name="my-feature",
-            slice_number=1
-        )
+        body = generate_pr_body(idea_directory="docs/features/my-feature")
 
-        assert "docs/features/my-feature" in body
-        assert "my-feature" in body
-        assert "slice 1" in body.lower() or "slice #1" in body.lower()
+        assert body == "**Idea directory:** `docs/features/my-feature`"
 
 
 @pytest.mark.unit
@@ -60,69 +114,6 @@ class TestPushOperations:
         cmd = build_push_command("idea/my-feature/01-setup", force=True)
 
         assert "--force-with-lease" in cmd
-
-
-@pytest.mark.unit
-class TestPushToSliceBranch:
-    """Test push_to_slice_branch function."""
-
-    def test_push_returns_false_if_pr_not_draft(self, mocker):
-        """Should not push and return False if PR is not in Draft state."""
-        from fake_github_client import FakeGitHubClient
-        from i2code.implement.pr_helpers import push_to_slice_branch
-
-        fake = FakeGitHubClient()
-        fake.set_pr_view(123, {"isDraft": False})
-        # Mock subprocess.run to track if it was called
-        mock_run = mocker.patch('i2code.implement.pr_helpers.subprocess.run')
-
-        result = push_to_slice_branch(
-            slice_branch="idea/my-feature/01-setup",
-            pr_number=123,
-            gh_client=fake,
-        )
-
-        assert result is False
-        mock_run.assert_not_called()
-
-    def test_push_succeeds_when_pr_is_draft(self, mocker):
-        """Should push and return True when PR is in Draft state."""
-        from fake_github_client import FakeGitHubClient
-        from i2code.implement.pr_helpers import push_to_slice_branch
-
-        fake = FakeGitHubClient()
-        fake.set_pr_view(123, {"isDraft": True})
-        # Mock subprocess.run to simulate successful push
-        mock_run = mocker.patch('i2code.implement.pr_helpers.subprocess.run')
-        mock_run.return_value.returncode = 0
-
-        result = push_to_slice_branch(
-            slice_branch="idea/my-feature/01-setup",
-            pr_number=123,
-            gh_client=fake,
-        )
-
-        assert result is True
-        mock_run.assert_called_once()
-
-    def test_push_returns_false_on_push_failure(self, mocker):
-        """Should return False when git push fails."""
-        from fake_github_client import FakeGitHubClient
-        from i2code.implement.pr_helpers import push_to_slice_branch
-
-        fake = FakeGitHubClient()
-        fake.set_pr_view(123, {"isDraft": True})
-        # Mock subprocess.run to simulate failed push
-        mock_run = mocker.patch('i2code.implement.pr_helpers.subprocess.run')
-        mock_run.return_value.returncode = 1
-
-        result = push_to_slice_branch(
-            slice_branch="idea/my-feature/01-setup",
-            pr_number=123,
-            gh_client=fake,
-        )
-
-        assert result is False
 
 
 @pytest.mark.unit
@@ -217,66 +208,3 @@ class TestPRPolling:
         assert is_pr_complete("OPEN") is False
 
 
-@pytest.mark.unit
-class TestSliceRollover:
-    """Test slice rollover when PR exits Draft state unexpectedly."""
-
-    def test_should_rollover_true_when_not_draft_with_local_commits(self):
-        """Should return True when PR is not draft and has unpushed commits."""
-        from fake_github_client import FakeGitHubClient
-        from i2code.implement.pr_helpers import should_rollover
-
-        fake = FakeGitHubClient()
-        fake.set_pr_view(123, {"isDraft": False})
-
-        result = should_rollover(pr_number=123, has_unpushed_commits=True, gh_client=fake)
-
-        assert result is True
-
-    def test_should_rollover_false_when_draft(self):
-        """Should return False when PR is still in draft state."""
-        from fake_github_client import FakeGitHubClient
-        from i2code.implement.pr_helpers import should_rollover
-
-        fake = FakeGitHubClient()
-        fake.set_pr_view(123, {"isDraft": True})
-
-        result = should_rollover(pr_number=123, has_unpushed_commits=True, gh_client=fake)
-
-        assert result is False
-
-    def test_should_rollover_false_when_no_unpushed_commits(self):
-        """Should return False when there are no unpushed commits."""
-        from fake_github_client import FakeGitHubClient
-        from i2code.implement.pr_helpers import should_rollover
-
-        fake = FakeGitHubClient()
-        fake.set_pr_view(123, {"isDraft": False})
-
-        result = should_rollover(pr_number=123, has_unpushed_commits=False, gh_client=fake)
-
-        assert result is False
-
-    def test_generate_next_slice_branch_increments_number(self):
-        """Should generate next slice branch with incremented number."""
-        from i2code.implement.pr_helpers import generate_next_slice_branch
-
-        next_branch = generate_next_slice_branch(
-            idea_name="my-feature",
-            current_slice_number=1,
-            slice_name="continuation"
-        )
-
-        assert next_branch == "idea/my-feature/02-continuation"
-
-    def test_generate_next_slice_branch_zero_pads(self):
-        """Should zero-pad the slice number."""
-        from i2code.implement.pr_helpers import generate_next_slice_branch
-
-        next_branch = generate_next_slice_branch(
-            idea_name="my-feature",
-            current_slice_number=9,
-            slice_name="next"
-        )
-
-        assert next_branch == "idea/my-feature/10-next"

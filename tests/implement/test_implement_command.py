@@ -7,6 +7,8 @@ from unittest.mock import MagicMock, patch
 
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.implement_opts import ImplementOpts
+from i2code.plan_domain.numbered_task import NumberedTask, TaskNumber
+from i2code.plan_domain.task import Task
 
 from fake_idea_project import FakeIdeaProject
 
@@ -17,9 +19,16 @@ def _make_opts(**overrides):
     return ImplementOpts(**defaults)
 
 
+_DEFAULT_TASK = NumberedTask(
+    number=TaskNumber(thread=1, task=1),
+    task=Task(_lines=["- [ ] **Task 1.1: default-task**"]),
+)
+
+
 def _make_command(**opt_overrides):
     opts = _make_opts(**opt_overrides)
     project = FakeIdeaProject()
+    project.set_next_task(_DEFAULT_TASK)
     git_repo = MagicMock()
     mode_factory = MagicMock()
     cmd = ImplementCommand(opts, project, git_repo, mode_factory)
@@ -160,27 +169,132 @@ class TestImplementCommandIsolateMode:
 
 
 @pytest.mark.unit
-class TestImplementCommandWorktreeMode:
-    """_worktree_mode() delegates to mode_factory.make_worktree_mode()."""
+class TestExecuteAllTasksComplete:
+    """execute() returns normally when all tasks complete, before dispatching to any mode."""
 
-    @patch("i2code.implement.implement_command.WorkflowState.load")
-    @patch("i2code.implement.implement_command.setup_project")
-    def test_worktree_mode_delegates_to_mode_factory(
-        self, mock_setup, mock_load_state,
-    ):
-        mock_load_state.return_value = MagicMock(slice_number=1)
+    @pytest.mark.parametrize("opts,mode_method", [
+        (dict(), "_worktree_mode"),
+        (dict(trunk=True), "_trunk_mode"),
+        (dict(isolate=True), "_isolate_mode"),
+    ], ids=["worktree", "trunk", "isolate"])
+    def test_mode_not_called(self, capsys, opts, mode_method):
+        cmd, project, git_repo = _make_command(
+            ignore_uncommitted_idea_changes=True, **opts
+        )
+        project.set_next_task(None)
+        with patch.object(cmd, mode_method) as mock_mode:
+            cmd.execute()
+            assert "all tasks" in capsys.readouterr().out.lower()
+            mock_mode.assert_not_called()
 
+
+@pytest.mark.unit
+class TestWorktreeModeAllTasksComplete:
+    """_worktree_mode() returns normally when all tasks are complete."""
+
+    def test_returns_when_all_tasks_complete(self, capsys):
         cmd, project, git_repo = _make_command(
             ignore_uncommitted_idea_changes=True
         )
+        project.set_next_task(None)
+
+        cmd.execute()
+
+        assert "all tasks" in capsys.readouterr().out.lower()
+        git_repo.ensure_integration_branch.assert_not_called()
+        git_repo.ensure_slice_branch.assert_not_called()
+        git_repo.ensure_worktree.assert_not_called()
+        git_repo.checkout.assert_not_called()
+
+
+@pytest.mark.unit
+class TestIsolateModeReceivesIsolationType:
+    """_isolate_mode() passes isolation_type to isolate_mode.execute()."""
+
+    def test_isolate_mode_receives_isolation_type(self):
+        cmd, project, git_repo = _make_command(
+            isolate=True, isolation_type="docker",
+            ignore_uncommitted_idea_changes=True,
+        )
+        cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
+        with pytest.raises(SystemExit):
+            cmd.execute()
+        call_kwargs = cmd.mode_factory.make_isolate_mode.return_value.execute.call_args
+        assert call_kwargs.kwargs.get("isolation_type") == "docker"
+
+    def test_isolate_mode_receives_none_when_not_set(self):
+        cmd, project, git_repo = _make_command(
+            isolate=True,
+            ignore_uncommitted_idea_changes=True,
+        )
+        cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
+        with pytest.raises(SystemExit):
+            cmd.execute()
+        call_kwargs = cmd.mode_factory.make_isolate_mode.return_value.execute.call_args
+        assert call_kwargs.kwargs.get("isolation_type") is None
+
+
+@pytest.mark.unit
+class TestImplementCommandWorktreeMode:
+    """_worktree_mode() uses a single idea branch (no integration or slice branch)."""
+
+    def _setup_worktree_command(self):
+        """Set up a command with mocks for worktree mode execution."""
+        cmd, project, git_repo = _make_command(
+            ignore_uncommitted_idea_changes=True
+        )
+        project.set_next_task(NumberedTask(
+            number=TaskNumber(thread=1, task=1),
+            task=Task(_lines=["- [ ] **Task 1.1: test-task**"]),
+        ))
         git_repo.working_tree_dir = "/tmp/fake-repo"
+        git_repo.ensure_idea_branch.return_value = "idea/fake-idea"
         mock_wt_git_repo = MagicMock()
         mock_wt_git_repo.working_tree_dir = "/tmp/wt"
         git_repo.ensure_worktree.return_value = mock_wt_git_repo
         git_repo.gh_client.find_pr.return_value = None
+        return cmd, project, git_repo, mock_wt_git_repo
 
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_calls_ensure_idea_branch(self, mock_setup, mock_load_state):
+        cmd, project, git_repo, _ = self._setup_worktree_command()
         cmd.execute()
+        git_repo.ensure_idea_branch.assert_called_once_with(project.name)
 
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_ensure_worktree_receives_idea_branch(self, mock_setup, mock_load_state):
+        cmd, project, git_repo, _ = self._setup_worktree_command()
+        cmd.execute()
+        git_repo.ensure_worktree.assert_called_once_with(project.name, "idea/fake-idea")
+
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_sets_branch_to_idea_branch(self, mock_setup, mock_load_state):
+        cmd, _, git_repo, mock_wt_git_repo = self._setup_worktree_command()
+        cmd.execute()
+        assert mock_wt_git_repo.branch == "idea/fake-idea"
+
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_find_pr_uses_idea_branch(self, mock_setup, mock_load_state):
+        cmd, _, git_repo, mock_wt_git_repo = self._setup_worktree_command()
+        cmd.execute()
+        mock_wt_git_repo.gh_client.find_pr.assert_called_once_with("idea/fake-idea")
+
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_checkout_not_called(self, mock_setup, mock_load_state):
+        cmd, _, git_repo, mock_wt_git_repo = self._setup_worktree_command()
+        cmd.execute()
+        mock_wt_git_repo.checkout.assert_not_called()
+
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_delegates_to_mode_factory(self, mock_setup, mock_load_state):
+        cmd, _, _, _ = self._setup_worktree_command()
+        cmd.execute()
         cmd.mode_factory.make_worktree_mode.assert_called_once()
         cmd.mode_factory.make_worktree_mode.return_value.execute.assert_called_once()
 
@@ -238,6 +352,32 @@ class TestImplementCmd:
 
 
 @pytest.mark.unit
+class TestImplementCommandIsolationTypeImplied:
+    """--isolation-type implies --isolate when --isolate is not explicitly set."""
+
+    def test_isolation_type_implies_isolate_dispatch(self):
+        """With isolation_type set and isolate=False, execute() dispatches to _isolate_mode()."""
+        cmd, *_ = _make_command(
+            isolation_type="docker", ignore_uncommitted_idea_changes=True
+        )
+        cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
+        with patch.object(cmd, '_isolate_mode') as mock_isolate, \
+             patch.object(cmd, '_worktree_mode') as mock_worktree:
+            cmd.execute()
+            mock_isolate.assert_called_once()
+            mock_worktree.assert_not_called()
+
+    def test_isolation_type_implies_isolate_dry_run(self, capsys):
+        """In dry-run mode with isolation_type set, output shows Mode: isolate."""
+        cmd, *_ = _make_command(
+            dry_run=True, isolation_type="docker"
+        )
+        cmd.execute()
+        output = capsys.readouterr().out
+        assert "Mode: isolate" in output
+
+
+@pytest.mark.unit
 class TestDeferredPRCreation:
     """Test that PR creation is deferred until after first push."""
 
@@ -245,7 +385,7 @@ class TestDeferredPRCreation:
         """Running with --setup-only should NOT attempt to create a PR."""
         monkeypatch.setattr(
             "i2code.implement.implement_command.WorkflowState.load",
-            lambda x: MagicMock(slice_number=1),
+            lambda x: MagicMock(),
         )
         monkeypatch.setattr(
             "i2code.implement.implement_command.setup_project",
@@ -255,6 +395,10 @@ class TestDeferredPRCreation:
         cmd, _project, git_repo = _make_command(
             setup_only=True, ignore_uncommitted_idea_changes=True,
         )
+        git_repo.ensure_idea_branch.return_value = "idea/fake-idea"
+        mock_wt_git_repo = MagicMock()
+        mock_wt_git_repo.working_tree_dir = "/tmp/wt"
+        git_repo.ensure_worktree.return_value = mock_wt_git_repo
         cmd.execute()
 
-        git_repo.gh_client.find_pr.assert_not_called()
+        mock_wt_git_repo.gh_client.find_pr.assert_not_called()

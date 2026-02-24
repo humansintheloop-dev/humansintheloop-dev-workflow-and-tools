@@ -8,7 +8,7 @@ import os
 import pytest
 from git import Repo
 
-from conftest import run_script
+from conftest import run_script, write_plan_file
 
 
 def create_valid_idea_directory(tmpdir, repo, idea_name="test-feature"):
@@ -16,11 +16,16 @@ def create_valid_idea_directory(tmpdir, repo, idea_name="test-feature"):
     idea_dir = os.path.join(tmpdir, idea_name)
     os.makedirs(idea_dir)
 
-    # Create all required files
-    for suffix in ["idea.md", "discussion.md", "spec.md", "plan.md"]:
+    # Create non-plan files
+    for suffix in ["idea.md", "discussion.md", "spec.md"]:
         filepath = os.path.join(idea_dir, f"{idea_name}-{suffix}")
         with open(filepath, "w") as f:
-            f.write(f"# {suffix}\n\n- [ ] **Task 1.1: Test task**")
+            f.write(f"# {suffix}\n")
+
+    # Create plan file with proper thread/task structure
+    write_plan_file(idea_dir, idea_name, [
+        (1, 1, "Test task", False),
+    ])
 
     # Commit all files
     for suffix in ["idea.md", "discussion.md", "spec.md", "plan.md"]:
@@ -32,11 +37,11 @@ def create_valid_idea_directory(tmpdir, repo, idea_name="test-feature"):
 
 
 @pytest.mark.integration
-class TestIntegrationBranchCreation:
-    """Test that script creates integration branch."""
+class TestIdeaBranchCreation:
+    """Test that script creates idea branch."""
 
-    def test_integration_branch_created(self, test_git_repo_with_commit):
-        """Running script should create integration branch."""
+    def test_idea_branch_created(self, test_git_repo_with_commit):
+        """Running script should create idea branch."""
         tmpdir, repo = test_git_repo_with_commit
         idea_dir = create_valid_idea_directory(tmpdir, repo)
 
@@ -45,10 +50,10 @@ class TestIntegrationBranchCreation:
         # Reload repo to see new branches
         repo = Repo(tmpdir)
 
-        # Check integration branch exists
+        # Check idea branch exists
         branch_names = [b.name for b in repo.branches]
-        assert "idea/test-feature/integration" in branch_names, \
-            f"Integration branch not found. Branches: {branch_names}. stderr: {result.stderr}"
+        assert "idea/test-feature" in branch_names, \
+            f"Idea branch not found. Branches: {branch_names}. stderr: {result.stderr}"
 
 
 @pytest.mark.integration
@@ -72,11 +77,11 @@ class TestWorktreeCreation:
 
 
 @pytest.mark.integration
-class TestSliceBranchCreation:
-    """Test that script creates slice branch."""
+class TestNoSliceBranchCreated:
+    """Test that script does not create slice or integration branches."""
 
-    def test_slice_branch_created_with_correct_pattern(self, test_git_repo_with_commit):
-        """Running script should create slice branch with correct pattern."""
+    def test_only_idea_branch_created(self, test_git_repo_with_commit):
+        """Running script should only create idea branch, no slice or integration branches."""
         tmpdir, repo = test_git_repo_with_commit
         idea_dir = create_valid_idea_directory(tmpdir, repo)
 
@@ -85,17 +90,11 @@ class TestSliceBranchCreation:
         # Reload repo to see new branches
         repo = Repo(tmpdir)
 
-        # Check slice branch exists with pattern idea/<idea-name>/<nn>-<slice-name>
         branch_names = [b.name for b in repo.branches]
-        slice_branches = [b for b in branch_names if b.startswith("idea/test-feature/") and b != "idea/test-feature/integration"]
+        idea_sub_branches = [b for b in branch_names if b.startswith("idea/test-feature/")]
 
-        assert len(slice_branches) >= 1, \
-            f"No slice branch found. Branches: {branch_names}. stderr: {result.stderr}"
-
-        # Verify slice branch has correct format (01-something)
-        slice_branch = slice_branches[0]
-        assert "/01-" in slice_branch, \
-            f"Slice branch doesn't have correct format: {slice_branch}"
+        assert len(idea_sub_branches) == 0, \
+            f"Unexpected sub-branches found: {idea_sub_branches}. stderr: {result.stderr}"
 
 
 @pytest.mark.integration

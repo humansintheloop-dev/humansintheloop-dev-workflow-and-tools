@@ -19,6 +19,7 @@ class ImplementOpts:
     ci_fix_retries: int = 3
     ci_timeout: int = 600
     isolate: bool = False
+    isolation_type: str | None = None
     isolated: bool = False
     trunk: bool = False
     dry_run: bool = False

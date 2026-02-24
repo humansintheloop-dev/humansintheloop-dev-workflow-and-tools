@@ -21,6 +21,9 @@ class ImplementCommand:
         self.project.validate()
         self.project.validate_files()
 
+        if self.opts.isolation_type:
+            self.opts.isolate = True
+
         if self.opts.dry_run:
             self._print_dry_run()
             return
@@ -28,12 +31,27 @@ class ImplementCommand:
         if not self.opts.isolated and not self.opts.ignore_uncommitted_idea_changes:
             validate_idea_files_committed(self.project)
 
+        if self._all_tasks_already_complete():
+            return
+
         if self.opts.trunk:
             self._trunk_mode()
         elif self.opts.isolate:
             self._isolate_mode()
         else:
             self._worktree_mode()
+
+    def _all_tasks_already_complete(self):
+        if self.project.get_next_task() is None:
+            print("All tasks are already complete.")
+            return True
+        return False
+
+    def _all_tasks_already_complete_in_worktree(self):
+        if self.project.get_next_task() is None:
+            print("All tasks are already complete in worktree.")
+            return True
+        return False
 
     def _print_dry_run(self):
         """Print configuration summary without executing."""
@@ -76,48 +94,40 @@ class ImplementCommand:
             skip_ci_wait=self.opts.skip_ci_wait,
             ci_fix_retries=self.opts.ci_fix_retries,
             ci_timeout=self.opts.ci_timeout,
+            isolation_type=self.opts.isolation_type,
         )
         sys.exit(returncode)
 
     def _worktree_mode(self):
         """Execute tasks using worktree + PR + CI loop."""
+        if self._all_tasks_already_complete_in_worktree():
+            return
+
         state = WorkflowState.load(self.project.state_file)
 
-        integration_branch = self.git_repo.ensure_integration_branch(
-            self.project.name, isolated=self.opts.isolated
-        )
-        print(f"Integration branch: {integration_branch}")
-
-        next_task = self.project.get_next_task()
-        first_task_name = next_task.task.title if next_task else "implementation"
-
-        slice_branch = self.git_repo.ensure_slice_branch(
-            self.project.name, state.slice_number, first_task_name, integration_branch
-        )
-        print(f"Slice branch: {slice_branch}")
+        idea_branch = self.git_repo.ensure_idea_branch(self.project.name)
+        print(f"Idea branch: {idea_branch}")
 
         if self.opts.isolated:
             self.git_repo.set_user_config("Test User", "test@test.com")
             setup_project(self.git_repo.working_tree_dir)
             work_project = self.project
-            self.git_repo.checkout(slice_branch)
         else:
             main_repo_dir = self.git_repo.working_tree_dir
-            self.git_repo = self.git_repo.ensure_worktree(self.project.name, integration_branch)
+            self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
             print(f"Worktree: {self.git_repo.working_tree_dir}")
             setup_project(self.git_repo.working_tree_dir, source_root=main_repo_dir)
             work_project = self.project.worktree_idea_project(
                 self.git_repo.working_tree_dir, main_repo_dir
             )
-            self.git_repo.checkout(slice_branch)
 
-        self.git_repo.branch = slice_branch
+        self.git_repo.branch = idea_branch
 
         if self.opts.setup_only:
             print("Setup complete. Exiting (--setup-only mode).")
             return
 
-        existing_pr = self.git_repo.gh_client.find_pr(slice_branch)
+        existing_pr = self.git_repo.gh_client.find_pr(idea_branch)
         if existing_pr:
             self.git_repo.pr_number = existing_pr
             print(f"Reusing existing PR #{existing_pr}")

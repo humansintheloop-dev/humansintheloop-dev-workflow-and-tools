@@ -52,46 +52,46 @@ Test each layer with fakes — no `@patch` on `IsolateMode` tests.
 
 Implements **US-1**: `i2code implement --isolate --isolation-type docker idea-dir` produces an isolarium command with `--type docker` in global args.
 
-- [ ] **Task 1.1: IsolateMode inserts --type TYPE into isolarium global args when isolation_type is provided**
+- [x] **Task 1.1: IsolateMode inserts --type TYPE into isolarium global args when isolation_type is provided**
   - TaskType: OUTCOME
   - Entrypoint: `IsolateMode.execute(isolation_type="docker")` via unit test
   - Observable: The isolarium command captured by `FakeSubprocessRunner` contains `--type docker` in the global args (after `--name` and before `run`). When `isolation_type` is `None`, the command does NOT contain `--type` (backwards compatibility).
   - Evidence: `pytest tests/implement/test_isolate_mode.py -k "isolation_type" -v` passes
   - Steps:
-    - [ ] Add test class `TestIsolateModeIsolationType` to `tests/implement/test_isolate_mode.py` with:
+    - [x] Add test class `TestIsolateModeIsolationType` to `tests/implement/test_isolate_mode.py` with:
       - `test_includes_type_in_isolarium_global_args_when_isolation_type_provided` — asserts `--type docker` appears after `--name i2code-<name>` and before `run` in the captured command
       - `test_omits_type_from_isolarium_when_isolation_type_is_none` — asserts `--type` does NOT appear when `isolation_type=None` (backwards compatibility, Scenario 5)
       - `test_isolation_type_not_forwarded_to_inner_command` — asserts `--type` does NOT appear after the `--` separator (FR-4)
-    - [ ] Add `isolation_type=None` parameter to `IsolateMode.execute()` in `src/i2code/implement/isolate_mode.py`
-    - [ ] Add `isolation_type=None` parameter to `IsolateMode._build_isolarium_command()` in `src/i2code/implement/isolate_mode.py`
-    - [ ] In `_build_isolarium_command()`, insert `["--type", isolation_type]` into isolarium global args (between `--name i2code-<name>` and `run`) when `isolation_type` is not None
+    - [x] Add `isolation_type=None` parameter to `IsolateMode.execute()` in `src/i2code/implement/isolate_mode.py`
+    - [x] Add `isolation_type=None` parameter to `IsolateMode._build_isolarium_command()` in `src/i2code/implement/isolate_mode.py`
+    - [x] In `_build_isolarium_command()`, insert `["--type", isolation_type]` into isolarium global args (between `--name i2code-<name>` and `run`) when `isolation_type` is not None
 
-- [ ] **Task 1.2: --isolation-type CLI option flows through ImplementOpts to IsolateMode**
+- [x] **Task 1.2: --isolation-type CLI option flows through ImplementOpts to IsolateMode**
   - TaskType: OUTCOME
   - Entrypoint: `ImplementCommand.execute()` with `opts.isolation_type="docker"` and `opts.isolate=True`
   - Observable: The `isolation_type` value reaches `IsolateMode.execute()` as a keyword argument
   - Evidence: `pytest tests/implement/test_implement_command.py -k "isolation_type" -v` passes
   - Steps:
-    - [ ] Add `isolation_type: str | None = None` field to `ImplementOpts` in `src/i2code/implement/implement_opts.py`
-    - [ ] Add test `test_isolate_mode_receives_isolation_type` to `tests/implement/test_implement_command.py` — construct `ImplementCommand` with `isolation_type="docker"` and `isolate=True`, verify `mode_factory.make_isolate_mode()` is called and the resulting mode's `execute()` receives `isolation_type="docker"`
-    - [ ] Add `@click.option("--isolation-type", metavar="TYPE", help="Isolation environment type (passed as --type to isolarium)")` to `implement_cmd` in `src/i2code/implement/cli.py`
-    - [ ] In `ImplementCommand._isolate_mode()` at `src/i2code/implement/implement_command.py`, pass `isolation_type=self.opts.isolation_type` to `isolate_mode.execute()`
+    - [x] Add `isolation_type: str | None = None` field to `ImplementOpts` in `src/i2code/implement/implement_opts.py`
+    - [x] Add test `test_isolate_mode_receives_isolation_type` to `tests/implement/test_implement_command.py` — construct `ImplementCommand` with `isolation_type="docker"` and `isolate=True`, verify `mode_factory.make_isolate_mode()` is called and the resulting mode's `execute()` receives `isolation_type="docker"`
+    - [x] Add `@click.option("--isolation-type", metavar="TYPE", help="Isolation environment type (passed as --type to isolarium)")` to `implement_cmd` in `src/i2code/implement/cli.py`
+    - [x] In `ImplementCommand._isolate_mode()` at `src/i2code/implement/implement_command.py`, pass `isolation_type=self.opts.isolation_type` to `isolate_mode.execute()`
 
 ## Steel Thread 2: Isolation Type Implies Isolate Mode
 
 Implements **US-2**: `i2code implement --isolation-type docker idea-dir` automatically enables isolate mode without requiring `--isolate`.
 
-- [ ] **Task 2.1: --isolation-type implies --isolate when --isolate is not explicitly set**
+- [x] **Task 2.1: --isolation-type implies --isolate when --isolate is not explicitly set**
   - TaskType: OUTCOME
   - Entrypoint: `ImplementCommand.execute()` with `opts.isolation_type="docker"` and `opts.isolate=False`
   - Observable: The command dispatches to `_isolate_mode()` (not `_worktree_mode()`). In dry-run mode, output shows `Mode: isolate`.
   - Evidence: `pytest tests/implement/test_implement_command.py -k "isolation_type_implies" -v` passes
   - Steps:
-    - [ ] Add test class `TestImplementCommandIsolationTypeImplied` to `tests/implement/test_implement_command.py` with:
+    - [x] Add test class `TestImplementCommandIsolationTypeImplied` to `tests/implement/test_implement_command.py` with:
       - `test_isolation_type_implies_isolate_mode` — construct with `isolation_type="docker"`, `isolate=False`; verify `_isolate_mode()` is called
       - `test_dry_run_shows_isolate_when_isolation_type_set` — construct with `dry_run=True`, `isolation_type="docker"`; verify output contains "isolate" (FR-6, Scenario 6)
       - `test_isolation_type_with_explicit_isolate_dispatches_normally` — construct with `isolation_type="docker"`, `isolate=True`; verify `_isolate_mode()` is called (Scenario 2)
-    - [ ] In `ImplementCommand.execute()` at `src/i2code/implement/implement_command.py`, before the dry-run check and mode dispatch, add: if `self.opts.isolation_type` is set, set `self.opts.isolate = True`
+    - [x] In `ImplementCommand.execute()` at `src/i2code/implement/implement_command.py`, before the dry-run check and mode dispatch, add: if `self.opts.isolation_type` is set, set `self.opts.isolate = True`
 
 ## Steel Thread 3: Error on Incompatible Mode
 
@@ -106,3 +106,9 @@ Implements **US-4**: `i2code implement --trunk --isolation-type docker idea-dir`
     - [ ] Add `test_isolation_type_raises_usage_error` to `TestValidateTrunkOptions` parametrized test list in `tests/implement/test_implement_opts.py` — construct `ImplementOpts(trunk=True, isolation_type="docker")`, assert `UsageError` with "cannot be combined"
     - [ ] Add `test_error_message_includes_isolation_type_with_other_flags` — construct with `trunk=True, isolation_type="docker", cleanup=True`, assert error message lists both `--cleanup` and `--isolation-type`
     - [ ] In `validate_trunk_options()` at `src/i2code/implement/implement_opts.py`, add check: if `self.isolation_type` is not None, append `"--isolation-type"` to the incompatible list
+
+---
+
+## Change History
+### 2026-02-24 17:32 - mark-task-complete
+isolation_type implies isolate: tests pass, dispatches to _isolate_mode()

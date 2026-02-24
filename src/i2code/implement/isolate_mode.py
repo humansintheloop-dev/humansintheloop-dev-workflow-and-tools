@@ -33,19 +33,20 @@ class IsolateMode:
         skip_ci_wait=False,
         ci_fix_retries=3,
         ci_timeout=600,
+        isolation_type=None,
     ):
         """Run project setup on host, then delegate to isolarium VM.
 
         Returns:
             The subprocess return code from isolarium.
         """
-        integration_branch = self._git_repo.ensure_integration_branch(
+        idea_branch = self._git_repo.ensure_idea_branch(
             self._project.name,
         )
 
         setup_ok = self._project_initializer.ensure_project_setup(
             idea_directory=self._project.directory,
-            integration_branch=integration_branch,
+            branch=idea_branch,
             interactive=not non_interactive,
             mock_claude=mock_claude,
             ci_timeout=ci_timeout,
@@ -64,6 +65,7 @@ class IsolateMode:
             skip_ci_wait=skip_ci_wait,
             ci_fix_retries=ci_fix_retries,
             ci_timeout=ci_timeout,
+            isolation_type=isolation_type,
         )
         print(f"Running: {' '.join(cmd)}")
         return self._subprocess_runner.run(cmd)
@@ -78,12 +80,16 @@ class IsolateMode:
         skip_ci_wait=False,
         ci_fix_retries=3,
         ci_timeout=600,
+        isolation_type=None,
     ):
         rel_idea_dir = os.path.relpath(
             self._project.directory, self._git_repo.working_tree_dir,
         )
 
-        isolarium_args = ["isolarium", "--name", f"i2code-{self._project.name}", "run"]
+        isolarium_args = ["isolarium", "--name", f"i2code-{self._project.name}"]
+        if isolation_type is not None:
+            isolarium_args.extend(["--type", isolation_type])
+        isolarium_args.append("run")
         if not non_interactive:
             isolarium_args.append("--interactive")
 

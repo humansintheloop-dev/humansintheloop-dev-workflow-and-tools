@@ -25,53 +25,6 @@ def get_remote_main_head(branch: str, remote: str = "origin") -> str:
     return result.stdout.split()[0]
 
 
-def rebase_integration_branch(integration_branch: str, base_branch: str) -> bool:
-    """Attempt to rebase the integration branch onto the updated main."""
-    subprocess.run(
-        ["git", "checkout", integration_branch],
-        capture_output=True, text=True,
-    )
-    result = subprocess.run(
-        ["git", "rebase", f"origin/{base_branch}"],
-        capture_output=True, text=True,
-    )
-    if result.returncode != 0:
-        subprocess.run(
-            ["git", "rebase", "--abort"],
-            capture_output=True, text=True,
-        )
-        return False
-    return True
-
-
-def update_slice_after_rebase(slice_branch: str) -> bool:
-    """Force push the slice branch after a successful rebase."""
-    result = subprocess.run(
-        ["git", "push", "--force-with-lease", "origin", slice_branch],
-        capture_output=True, text=True,
-    )
-    return result.returncode == 0
-
-
-def get_rebase_conflict_message(integration_branch: str, base_branch: str) -> str:
-    """Generate a message explaining rebase conflict and how to resolve it."""
-    return f"""
-Rebase conflict detected on {integration_branch}!
-
-The main branch has advanced and there are conflicts that require manual resolution.
-
-To resolve:
-1. Navigate to the worktree directory
-2. Run: git rebase origin/{base_branch}
-3. Resolve the conflicts in each file
-4. Run: git add <resolved-files>
-5. Run: git rebase --continue
-6. Re-run this script to continue
-
-The script will now pause. Press Enter when ready to exit, or Ctrl+C to abort.
-"""
-
-
 # Cleanup Functions
 
 def remove_worktree(worktree_path: str) -> bool:

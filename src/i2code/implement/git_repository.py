@@ -96,34 +96,17 @@ class GitRepository:
                 self._repo.create_head(branch_name)
         return branch_name
 
-    def ensure_integration_branch(self, idea_name, isolated=False):
-        """Ensure the integration branch exists for the given idea.
+    def ensure_idea_branch(self, idea_name):
+        """Ensure the idea branch exists, creating from HEAD if necessary.
 
         Args:
             idea_name: Name of the idea.
-            isolated: When True, try tracking remote branch first.
 
         Returns:
-            The integration branch name.
+            The idea branch name.
         """
-        branch_name = f"idea/{idea_name}/integration"
-        return self.ensure_branch(branch_name, remote=isolated)
-
-    def ensure_slice_branch(self, idea_name, slice_number, slice_name, integration_branch):
-        """Ensure the slice branch exists for the given idea.
-
-        Args:
-            idea_name: Name of the idea.
-            slice_number: Slice number for branch naming.
-            slice_name: Human-readable slice name (will be sanitized).
-            integration_branch: Branch to create from.
-
-        Returns:
-            The slice branch name.
-        """
-        sanitized_name = self.sanitize_branch_name(slice_name)
-        branch_name = f"idea/{idea_name}/{slice_number:02d}-{sanitized_name}"
-        return self.ensure_branch(branch_name, from_ref=integration_branch)
+        branch_name = f"idea/{idea_name}"
+        return self.ensure_branch(branch_name)
 
     def checkout(self, branch_name):
         """Check out the named branch."""
@@ -208,7 +191,7 @@ class GitRepository:
         )
         return result.stdout
 
-    def ensure_pr(self, idea_directory, idea_name, slice_number):
+    def ensure_pr(self, idea_directory, idea_name):
         """Ensure a Draft PR exists for the tracked branch.
 
         Creates a new Draft PR if none exists, otherwise returns the existing
@@ -226,9 +209,8 @@ class GitRepository:
             return existing
 
         base_branch = self._gh_client.get_default_branch()
-        slice_suffix = self._branch.split("/")[-1]
-        title = generate_pr_title(idea_name, slice_suffix)
-        body = generate_pr_body(idea_directory, idea_name, slice_number)
+        title = generate_pr_title(idea_name, idea_directory)
+        body = generate_pr_body(idea_directory)
         pr_number = self._gh_client.create_draft_pr(
             self._branch, title, body, base_branch
         )

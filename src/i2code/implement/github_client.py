@@ -32,13 +32,13 @@ class GitHubClient:
                 return pr.get("number")
         return None
 
-    def create_draft_pr(self, slice_branch: str, title: str, body: str, base_branch: str) -> int:
+    def create_draft_pr(self, branch_name: str, title: str, body: str, base_branch: str) -> int:
         result = self._run_gh(
             ["gh", "pr", "create",
              "--draft",
              "--title", title,
              "--body", body,
-             "--head", slice_branch,
+             "--head", branch_name,
              "--base", base_branch]
         )
         if result.returncode != 0:

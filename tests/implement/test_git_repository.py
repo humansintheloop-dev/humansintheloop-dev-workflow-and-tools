@@ -96,6 +96,30 @@ class TestEnsureBranch:
 
 
 @pytest.mark.unit
+class TestEnsureIdeaBranch:
+
+    def test_creates_idea_branch_from_head(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+
+        result = git_repo.ensure_idea_branch("my-feature")
+
+        assert result == "idea/my-feature"
+        assert "idea/my-feature" in [b.name for b in repo.branches]
+
+    def test_reuses_existing_idea_branch(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        repo.create_head("idea/my-feature")
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+
+        result = git_repo.ensure_idea_branch("my-feature")
+
+        assert result == "idea/my-feature"
+        matching = [b for b in repo.branches if b.name == "idea/my-feature"]
+        assert len(matching) == 1
+
+
+@pytest.mark.unit
 class TestCheckout:
 
     def test_checks_out_branch(self, test_git_repo_with_commit):
@@ -233,15 +257,14 @@ class TestEnsurePr:
     def test_reuses_existing_pr(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
         gh = FakeGitHubClient()
-        gh.set_pr_list([{"number": 42, "headRefName": "idea/test/01-setup", "isDraft": True}])
+        gh.set_pr_list([{"number": 42, "headRefName": "idea/test", "isDraft": True}])
 
         git_repo = GitRepository(repo, gh_client=gh)
-        git_repo.branch = "idea/test/01-setup"
+        git_repo.branch = "idea/test"
 
         result = git_repo.ensure_pr(
             idea_directory="/fake/idea",
             idea_name="test",
-            slice_number=1,
         )
 
         assert result == 42
@@ -253,16 +276,42 @@ class TestEnsurePr:
         gh.set_next_pr_number(99)
 
         git_repo = GitRepository(repo, gh_client=gh)
-        git_repo.branch = "idea/test/01-setup"
+        git_repo.branch = "idea/test"
 
         result = git_repo.ensure_pr(
             idea_directory="/fake/idea",
             idea_name="test",
-            slice_number=1,
         )
 
         assert result == 99
         assert git_repo.pr_number == 99
+
+    def test_creates_pr_with_title_from_idea_file(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        # Create idea directory with idea file
+        idea_dir = os.path.join(tmpdir, "test-idea")
+        os.makedirs(idea_dir)
+        idea_file = os.path.join(idea_dir, "test-idea-name-idea.md")
+        with open(idea_file, "w") as f:
+            f.write("# My Test Idea\n\nDescription.\n")
+
+        gh = FakeGitHubClient()
+        gh.set_next_pr_number(99)
+
+        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo.branch = "idea/test-idea-name"
+
+        git_repo.ensure_pr(
+            idea_directory=idea_dir,
+            idea_name="test-idea-name",
+        )
+
+        # Check the PR was created with title from the idea file heading
+        create_calls = [c for c in gh.calls if c[0] == "create_draft_pr"]
+        assert len(create_calls) == 1
+        _, branch, title, body, base = create_calls[0]
+        assert title == "My Test Idea"
+        assert body == f"**Idea directory:** `{idea_dir}`"
 
     def test_returns_cached_pr_number_on_second_call(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
@@ -270,18 +319,16 @@ class TestEnsurePr:
         gh.set_next_pr_number(99)
 
         git_repo = GitRepository(repo, gh_client=gh)
-        git_repo.branch = "idea/test/01-setup"
+        git_repo.branch = "idea/test"
 
         git_repo.ensure_pr(
             idea_directory="/fake/idea",
             idea_name="test",
-            slice_number=1,
         )
         # Second call should return cached value without calling gh again
         result = git_repo.ensure_pr(
             idea_directory="/fake/idea",
             idea_name="test",
-            slice_number=1,
         )
 
         assert result == 99

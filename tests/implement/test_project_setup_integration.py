@@ -75,7 +75,7 @@ class TestEnsureProjectSetupWithMockClaude:
             mock_script = os.path.join(tmpdir, "mock-claude.sh")
             create_mock_claude_script(mock_script)
 
-            integration_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_integration_branch("test-idea")
+            idea_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_idea_branch("test-idea")
 
             git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
             initializer = ProjectInitializer(
@@ -86,15 +86,15 @@ class TestEnsureProjectSetupWithMockClaude:
             )
             result = initializer.ensure_project_setup(
                 idea_directory=idea_dir,
-                integration_branch=integration_branch,
+                branch=idea_branch,
                 mock_claude=mock_script,
                 skip_ci_wait=True,
             )
 
             assert result is True
 
-            # Verify the integration branch has the scaffolding commit
-            repo.git.checkout(integration_branch)
+            # Verify the idea branch has the scaffolding commit
+            repo.git.checkout(idea_branch)
             assert os.path.isfile(os.path.join(repo_path, "scaffolding.txt"))
 
             # Verify the commit is on the branch
@@ -109,7 +109,7 @@ class TestEnsureProjectSetupWithMockClaude:
             mock_script = os.path.join(tmpdir, "mock-claude.sh")
             create_mock_claude_script(mock_script)
 
-            integration_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_integration_branch("test-idea")
+            idea_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_idea_branch("test-idea")
 
             git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
             initializer = ProjectInitializer(
@@ -122,7 +122,7 @@ class TestEnsureProjectSetupWithMockClaude:
             # First run — creates scaffolding
             result1 = initializer.ensure_project_setup(
                 idea_directory=idea_dir,
-                integration_branch=integration_branch,
+                branch=idea_branch,
                 mock_claude=mock_script,
                 skip_ci_wait=True,
             )
@@ -134,7 +134,7 @@ class TestEnsureProjectSetupWithMockClaude:
             # Second run — should be a no-op (no new commits)
             result2 = initializer.ensure_project_setup(
                 idea_directory=idea_dir,
-                integration_branch=integration_branch,
+                branch=idea_branch,
                 mock_claude=mock_script,
                 skip_ci_wait=True,
             )

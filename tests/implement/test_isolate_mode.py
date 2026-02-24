@@ -55,15 +55,17 @@ class TestIsolateModeExecute:
         fake_initializer = _make_fake_project_initializer()
         fake_subprocess = FakeSubprocessRunner()
         project = FakeIdeaProject()
+        git_repo = FakeGitRepository()
 
         mode = IsolateMode(
-            git_repo=FakeGitRepository(),
+            git_repo=git_repo,
             project=project,
             project_initializer=fake_initializer,
             subprocess_runner=fake_subprocess,
         )
         returncode = mode.execute()
 
+        assert ("ensure_branch", "idea/test-feature", None, False) in git_repo.calls
         assert any(c[0] == "ensure_project_setup" for c in fake_initializer._setup_calls)
         assert len(fake_subprocess.calls) == 1
         assert returncode == 0
@@ -180,6 +182,7 @@ class TestIsolateModeExecute:
         assert len(setup_calls) == 1
         kwargs = setup_calls[0][1]
         assert kwargs["idea_directory"] == "/tmp/fake-idea"
+        assert kwargs["branch"] == "idea/test-feature"
         assert kwargs["interactive"] is False
         assert kwargs["mock_claude"] == "/mock.sh"
         assert kwargs["ci_timeout"] == 900
@@ -217,6 +220,44 @@ class TestIsolateModeExecute:
 
         cmd = fake_subprocess.calls[0][1]
         assert "--interactive" not in cmd
+
+
+@pytest.mark.unit
+class TestIsolateModeIsolationType:
+    """IsolateMode inserts --type TYPE into isolarium global args when isolation_type is provided."""
+
+    def _execute_and_capture_cmd(self, isolation_type):
+        fake_subprocess = FakeSubprocessRunner()
+        mode = IsolateMode(
+            git_repo=FakeGitRepository(),
+            project=FakeIdeaProject(),
+            project_initializer=_make_fake_project_initializer(),
+            subprocess_runner=fake_subprocess,
+        )
+        mode.execute(isolation_type=isolation_type)
+        return fake_subprocess.calls[0][1]
+
+    def test_includes_type_in_isolarium_global_args_when_isolation_type_provided(self):
+        cmd = self._execute_and_capture_cmd(isolation_type="docker")
+
+        name_idx = cmd.index("--name")
+        run_idx = cmd.index("run")
+        type_idx = cmd.index("--type")
+        assert cmd[type_idx + 1] == "docker"
+        assert type_idx > name_idx
+        assert type_idx < run_idx
+
+    def test_omits_type_from_isolarium_when_isolation_type_is_none(self):
+        cmd = self._execute_and_capture_cmd(isolation_type=None)
+
+        assert "--type" not in cmd
+
+    def test_isolation_type_not_forwarded_to_inner_command(self):
+        cmd = self._execute_and_capture_cmd(isolation_type="docker")
+
+        separator_idx = cmd.index("--")
+        inner_cmd = cmd[separator_idx + 1:]
+        assert "--type" not in inner_cmd
 
 
 @pytest.mark.unit

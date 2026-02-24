@@ -1,4 +1,4 @@
-"""Project setup: scaffolding and integration branch setup."""
+"""Project setup: scaffolding and branch setup."""
 
 import sys
 from typing import Optional
@@ -17,17 +17,17 @@ class ProjectInitializer:
     def ensure_project_setup(
         self,
         idea_directory: str,
-        integration_branch: str,
+        branch: str,
         interactive: bool = True,
         mock_claude: Optional[str] = None,
         skip_ci_wait: bool = False,
         ci_timeout: int = 600,
     ) -> bool:
-        """Ensure project scaffolding exists on the integration branch.
+        """Ensure project scaffolding exists on the given branch.
 
         Returns True if setup succeeded (CI passes), False otherwise.
         """
-        self._git_repo.checkout(integration_branch)
+        self._git_repo.checkout(branch)
 
         head_before = self._git_repo.head_sha
 
@@ -41,17 +41,17 @@ class ProjectInitializer:
         if not self._git_repo.head_advanced_since(head_before):
             return True
 
-        self._push_fn(integration_branch)
+        self._push_fn(branch)
 
         if skip_ci_wait:
             return True
 
         ci_success, failing_run = self._git_repo.gh_client.wait_for_workflow_completion(
-            integration_branch, self._git_repo.head_sha, timeout_seconds=ci_timeout,
+            branch, self._git_repo.head_sha, timeout_seconds=ci_timeout,
         )
 
         if not ci_success and failing_run:
-            self._git_repo.branch = integration_branch
+            self._git_repo.branch = branch
             return self._build_fixer.fix_ci_failure()
 
         return ci_success

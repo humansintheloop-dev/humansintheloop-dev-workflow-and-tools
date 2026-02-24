@@ -53,14 +53,6 @@ class FakeGitRepository:
         self._branches.add(branch_name)
         return branch_name
 
-    def ensure_integration_branch(self, idea_name, isolated=False):
-        branch_name = f"idea/{idea_name}/integration"
-        return self.ensure_branch(branch_name, remote=isolated)
-
-    def ensure_slice_branch(self, idea_name, slice_number, slice_name, integration_branch):
-        branch_name = f"idea/{idea_name}/{slice_number:02d}-{slice_name}"
-        return self.ensure_branch(branch_name, from_ref=integration_branch)
-
     def checkout(self, branch_name):
         self.calls.append(("checkout", branch_name))
         self._checked_out = branch_name
@@ -110,8 +102,12 @@ class FakeGitRepository:
     def set_file_at_head(self, file_path, content):
         self._files_at_head[file_path] = content
 
-    def ensure_pr(self, idea_directory, idea_name, slice_number):
-        self.calls.append(("ensure_pr", idea_directory, idea_name, slice_number))
+    def ensure_idea_branch(self, idea_name):
+        branch_name = f"idea/{idea_name}"
+        return self.ensure_branch(branch_name)
+
+    def ensure_pr(self, idea_directory, idea_name):
+        self.calls.append(("ensure_pr", idea_directory, idea_name))
         if self.pr_number is None:
             self.pr_number = 100
         return self.pr_number

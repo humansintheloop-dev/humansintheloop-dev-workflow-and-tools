@@ -31,6 +31,8 @@ from i2code.implement.scaffold_opts import ScaffoldOpts
               help="Timeout in seconds for CI completion (default: 600)")
 @click.option("--isolate", is_flag=True,
               help="Run inside an isolarium VM")
+@click.option("--isolation-type", metavar="TYPE",
+              help="Isolation environment type (passed as --type to isolarium)")
 @click.option("--isolated", is_flag=True, hidden=True,
               help="Running inside isolarium VM (internal flag)")
 @click.option("--trunk", is_flag=True,

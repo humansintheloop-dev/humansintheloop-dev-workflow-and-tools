@@ -66,16 +66,16 @@ Implements **US-1**: `i2code implement --isolate --isolation-type docker idea-di
     - [x] Add `isolation_type=None` parameter to `IsolateMode._build_isolarium_command()` in `src/i2code/implement/isolate_mode.py`
     - [x] In `_build_isolarium_command()`, insert `["--type", isolation_type]` into isolarium global args (between `--name i2code-<name>` and `run`) when `isolation_type` is not None
 
-- [ ] **Task 1.2: --isolation-type CLI option flows through ImplementOpts to IsolateMode**
+- [x] **Task 1.2: --isolation-type CLI option flows through ImplementOpts to IsolateMode**
   - TaskType: OUTCOME
   - Entrypoint: `ImplementCommand.execute()` with `opts.isolation_type="docker"` and `opts.isolate=True`
   - Observable: The `isolation_type` value reaches `IsolateMode.execute()` as a keyword argument
   - Evidence: `pytest tests/implement/test_implement_command.py -k "isolation_type" -v` passes
   - Steps:
-    - [ ] Add `isolation_type: str | None = None` field to `ImplementOpts` in `src/i2code/implement/implement_opts.py`
-    - [ ] Add test `test_isolate_mode_receives_isolation_type` to `tests/implement/test_implement_command.py` — construct `ImplementCommand` with `isolation_type="docker"` and `isolate=True`, verify `mode_factory.make_isolate_mode()` is called and the resulting mode's `execute()` receives `isolation_type="docker"`
-    - [ ] Add `@click.option("--isolation-type", metavar="TYPE", help="Isolation environment type (passed as --type to isolarium)")` to `implement_cmd` in `src/i2code/implement/cli.py`
-    - [ ] In `ImplementCommand._isolate_mode()` at `src/i2code/implement/implement_command.py`, pass `isolation_type=self.opts.isolation_type` to `isolate_mode.execute()`
+    - [x] Add `isolation_type: str | None = None` field to `ImplementOpts` in `src/i2code/implement/implement_opts.py`
+    - [x] Add test `test_isolate_mode_receives_isolation_type` to `tests/implement/test_implement_command.py` — construct `ImplementCommand` with `isolation_type="docker"` and `isolate=True`, verify `mode_factory.make_isolate_mode()` is called and the resulting mode's `execute()` receives `isolation_type="docker"`
+    - [x] Add `@click.option("--isolation-type", metavar="TYPE", help="Isolation environment type (passed as --type to isolarium)")` to `implement_cmd` in `src/i2code/implement/cli.py`
+    - [x] In `ImplementCommand._isolate_mode()` at `src/i2code/implement/implement_command.py`, pass `isolation_type=self.opts.isolation_type` to `isolate_mode.execute()`
 
 ## Steel Thread 2: Isolation Type Implies Isolate Mode
 

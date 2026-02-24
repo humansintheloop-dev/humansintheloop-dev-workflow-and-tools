@@ -91,6 +91,7 @@ class ImplementCommand:
             skip_ci_wait=self.opts.skip_ci_wait,
             ci_fix_retries=self.opts.ci_fix_retries,
             ci_timeout=self.opts.ci_timeout,
+            isolation_type=self.opts.isolation_type,
         )
         sys.exit(returncode)
 

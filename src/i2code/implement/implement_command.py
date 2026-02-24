@@ -28,9 +28,8 @@ class ImplementCommand:
         if not self.opts.isolated and not self.opts.ignore_uncommitted_idea_changes:
             validate_idea_files_committed(self.project)
 
-        if self.project.get_next_task() is None:
-            print("Error: all tasks are already complete.", file=sys.stderr)
-            sys.exit(1)
+        if self._all_tasks_already_complete():
+            return
 
         if self.opts.trunk:
             self._trunk_mode()
@@ -38,6 +37,18 @@ class ImplementCommand:
             self._isolate_mode()
         else:
             self._worktree_mode()
+
+    def _all_tasks_already_complete(self):
+        if self.project.get_next_task() is None:
+            print("All tasks are already complete.")
+            return True
+        return False
+
+    def _all_tasks_already_complete_in_worktree(self):
+        if self.project.get_next_task() is None:
+            print("All tasks are already complete in worktree.")
+            return True
+        return False
 
     def _print_dry_run(self):
         """Print configuration summary without executing."""
@@ -85,9 +96,8 @@ class ImplementCommand:
 
     def _worktree_mode(self):
         """Execute tasks using worktree + PR + CI loop."""
-        if self.project.get_next_task() is None:
-            print("Error: all tasks are already complete.", file=sys.stderr)
-            sys.exit(1)
+        if self._all_tasks_already_complete_in_worktree():
+            return
 
         state = WorkflowState.load(self.project.state_file)
 

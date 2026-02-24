@@ -133,6 +133,15 @@ class GitRepository:
 
         return GitRepository(Repo(worktree_path), gh_client=self._gh_client)
 
+    def set_upstream(self, branch_name):
+        """Configure the upstream tracking branch to origin/<branch_name>.
+
+        Uses git config directly so it works even if the remote branch
+        doesn't exist yet (unlike --set-upstream-to which requires it).
+        """
+        self._repo.config_writer().set_value(f'branch "{branch_name}"', "remote", "origin").release()
+        self._repo.config_writer().set_value(f'branch "{branch_name}"', "merge", f"refs/heads/{branch_name}").release()
+
     def branch_has_been_pushed(self):
         """Check if the tracked branch exists on the remote.
 

@@ -21,6 +21,9 @@ class ImplementCommand:
         self.project.validate()
         self.project.validate_files()
 
+        if self.opts.isolation_type:
+            self.opts.isolate = True
+
         if self.opts.dry_run:
             self._print_dry_run()
             return

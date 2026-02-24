@@ -352,6 +352,32 @@ class TestImplementCmd:
 
 
 @pytest.mark.unit
+class TestImplementCommandIsolationTypeImplied:
+    """--isolation-type implies --isolate when --isolate is not explicitly set."""
+
+    def test_isolation_type_implies_isolate_dispatch(self):
+        """With isolation_type set and isolate=False, execute() dispatches to _isolate_mode()."""
+        cmd, *_ = _make_command(
+            isolation_type="docker", ignore_uncommitted_idea_changes=True
+        )
+        cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
+        with patch.object(cmd, '_isolate_mode') as mock_isolate, \
+             patch.object(cmd, '_worktree_mode') as mock_worktree:
+            cmd.execute()
+            mock_isolate.assert_called_once()
+            mock_worktree.assert_not_called()
+
+    def test_isolation_type_implies_isolate_dry_run(self, capsys):
+        """In dry-run mode with isolation_type set, output shows Mode: isolate."""
+        cmd, *_ = _make_command(
+            dry_run=True, isolation_type="docker"
+        )
+        cmd.execute()
+        output = capsys.readouterr().out
+        assert "Mode: isolate" in output
+
+
+@pytest.mark.unit
 class TestDeferredPRCreation:
     """Test that PR creation is deferred until after first push."""
 

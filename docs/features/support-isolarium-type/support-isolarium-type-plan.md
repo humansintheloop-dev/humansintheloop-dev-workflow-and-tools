@@ -81,17 +81,17 @@ Implements **US-1**: `i2code implement --isolate --isolation-type docker idea-di
 
 Implements **US-2**: `i2code implement --isolation-type docker idea-dir` automatically enables isolate mode without requiring `--isolate`.
 
-- [ ] **Task 2.1: --isolation-type implies --isolate when --isolate is not explicitly set**
+- [x] **Task 2.1: --isolation-type implies --isolate when --isolate is not explicitly set**
   - TaskType: OUTCOME
   - Entrypoint: `ImplementCommand.execute()` with `opts.isolation_type="docker"` and `opts.isolate=False`
   - Observable: The command dispatches to `_isolate_mode()` (not `_worktree_mode()`). In dry-run mode, output shows `Mode: isolate`.
   - Evidence: `pytest tests/implement/test_implement_command.py -k "isolation_type_implies" -v` passes
   - Steps:
-    - [ ] Add test class `TestImplementCommandIsolationTypeImplied` to `tests/implement/test_implement_command.py` with:
+    - [x] Add test class `TestImplementCommandIsolationTypeImplied` to `tests/implement/test_implement_command.py` with:
       - `test_isolation_type_implies_isolate_mode` — construct with `isolation_type="docker"`, `isolate=False`; verify `_isolate_mode()` is called
       - `test_dry_run_shows_isolate_when_isolation_type_set` — construct with `dry_run=True`, `isolation_type="docker"`; verify output contains "isolate" (FR-6, Scenario 6)
       - `test_isolation_type_with_explicit_isolate_dispatches_normally` — construct with `isolation_type="docker"`, `isolate=True`; verify `_isolate_mode()` is called (Scenario 2)
-    - [ ] In `ImplementCommand.execute()` at `src/i2code/implement/implement_command.py`, before the dry-run check and mode dispatch, add: if `self.opts.isolation_type` is set, set `self.opts.isolate = True`
+    - [x] In `ImplementCommand.execute()` at `src/i2code/implement/implement_command.py`, before the dry-run check and mode dispatch, add: if `self.opts.isolation_type` is set, set `self.opts.isolate = True`
 
 ## Steel Thread 3: Error on Incompatible Mode
 
@@ -106,3 +106,9 @@ Implements **US-4**: `i2code implement --trunk --isolation-type docker idea-dir`
     - [ ] Add `test_isolation_type_raises_usage_error` to `TestValidateTrunkOptions` parametrized test list in `tests/implement/test_implement_opts.py` — construct `ImplementOpts(trunk=True, isolation_type="docker")`, assert `UsageError` with "cannot be combined"
     - [ ] Add `test_error_message_includes_isolation_type_with_other_flags` — construct with `trunk=True, isolation_type="docker", cleanup=True`, assert error message lists both `--cleanup` and `--isolation-type`
     - [ ] In `validate_trunk_options()` at `src/i2code/implement/implement_opts.py`, add check: if `self.isolation_type` is not None, append `"--isolation-type"` to the incompatible list
+
+---
+
+## Change History
+### 2026-02-24 17:32 - mark-task-complete
+isolation_type implies isolate: tests pass, dispatches to _isolate_mode()

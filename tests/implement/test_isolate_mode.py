@@ -223,6 +223,44 @@ class TestIsolateModeExecute:
 
 
 @pytest.mark.unit
+class TestIsolateModeIsolationType:
+    """IsolateMode inserts --type TYPE into isolarium global args when isolation_type is provided."""
+
+    def _execute_and_capture_cmd(self, isolation_type):
+        fake_subprocess = FakeSubprocessRunner()
+        mode = IsolateMode(
+            git_repo=FakeGitRepository(),
+            project=FakeIdeaProject(),
+            project_initializer=_make_fake_project_initializer(),
+            subprocess_runner=fake_subprocess,
+        )
+        mode.execute(isolation_type=isolation_type)
+        return fake_subprocess.calls[0][1]
+
+    def test_includes_type_in_isolarium_global_args_when_isolation_type_provided(self):
+        cmd = self._execute_and_capture_cmd(isolation_type="docker")
+
+        name_idx = cmd.index("--name")
+        run_idx = cmd.index("run")
+        type_idx = cmd.index("--type")
+        assert cmd[type_idx + 1] == "docker"
+        assert type_idx > name_idx
+        assert type_idx < run_idx
+
+    def test_omits_type_from_isolarium_when_isolation_type_is_none(self):
+        cmd = self._execute_and_capture_cmd(isolation_type=None)
+
+        assert "--type" not in cmd
+
+    def test_isolation_type_not_forwarded_to_inner_command(self):
+        cmd = self._execute_and_capture_cmd(isolation_type="docker")
+
+        separator_idx = cmd.index("--")
+        inner_cmd = cmd[separator_idx + 1:]
+        assert "--type" not in inner_cmd
+
+
+@pytest.mark.unit
 class TestSubprocessRunner:
     """SubprocessRunner uses Popen + ManagedSubprocess for clean interrupt handling."""
 

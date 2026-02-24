@@ -458,7 +458,7 @@ class TestWorktreeModeFailures:
 
 @pytest.mark.unit
 class TestWorktreeModeNonInteractive:
-    """WorktreeMode in non-interactive mode uses run_batch."""
+    """WorktreeMode in non-interactive mode uses run."""
 
     def test_non_interactive_uses_capture_and_checks_success_tag(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -492,7 +492,7 @@ class TestWorktreeModeNonInteractive:
 
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
-            assert method == "run_batch"
+            assert method == "run"
 
     def test_non_interactive_exits_without_success_tag(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -598,8 +598,8 @@ class TestWorktreeModeWithRecovery:
 
             # Recovery Claude call (non-interactive) happens before task-loop call
             assert len(fake_runner.calls) == 2
-            assert fake_runner.calls[0][0] == "run_batch"  # recovery
-            assert fake_runner.calls[1][0] == "run_interactive"  # task execution
+            assert fake_runner.calls[0][0] == "run_batch"  # recovery (commit_recovery uses run_batch directly)
+            assert fake_runner.calls[1][0] == "run"  # task execution
 
             captured = capsys.readouterr()
             assert "Detected uncommitted changes" in captured.out
@@ -647,7 +647,7 @@ class TestWorktreeModeWithRecovery:
             # Only one Claude call for task execution, no recovery
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
-            assert method == "run_interactive"
+            assert method == "run"
 
             captured = capsys.readouterr()
             assert "Detected uncommitted changes" not in captured.out

@@ -7,6 +7,8 @@ from unittest.mock import MagicMock, patch
 
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.implement_opts import ImplementOpts
+from i2code.plan_domain.numbered_task import NumberedTask, TaskNumber
+from i2code.plan_domain.task import Task
 
 from fake_idea_project import FakeIdeaProject
 
@@ -168,7 +170,7 @@ class TestImplementCommandIsolateMode:
 
 @pytest.mark.unit
 class TestExecuteAllTasksComplete:
-    """execute() exits with error when all tasks complete, before dispatching to any mode."""
+    """execute() returns normally when all tasks complete, before dispatching to any mode."""
 
     @pytest.mark.parametrize("opts,mode_method", [
         (dict(), "_worktree_mode"),
@@ -181,28 +183,24 @@ class TestExecuteAllTasksComplete:
         )
         project.set_next_task(None)
         with patch.object(cmd, mode_method) as mock_mode:
-            with pytest.raises(SystemExit) as exc_info:
-                cmd.execute()
-            assert exc_info.value.code == 1
-            assert "all tasks" in capsys.readouterr().err.lower()
+            cmd.execute()
+            assert "all tasks" in capsys.readouterr().out.lower()
             mock_mode.assert_not_called()
 
 
 @pytest.mark.unit
 class TestWorktreeModeAllTasksComplete:
-    """_worktree_mode() exits with error when all tasks are complete."""
+    """_worktree_mode() returns normally when all tasks are complete."""
 
-    def test_exits_with_error_when_all_tasks_complete(self, capsys):
+    def test_returns_when_all_tasks_complete(self, capsys):
         cmd, project, git_repo = _make_command(
             ignore_uncommitted_idea_changes=True
         )
         project.set_next_task(None)
 
-        with pytest.raises(SystemExit) as exc_info:
-            cmd.execute()
+        cmd.execute()
 
-        assert exc_info.value.code == 1
-        assert "all tasks" in capsys.readouterr().err.lower()
+        assert "all tasks" in capsys.readouterr().out.lower()
         git_repo.ensure_integration_branch.assert_not_called()
         git_repo.ensure_slice_branch.assert_not_called()
         git_repo.ensure_worktree.assert_not_called()

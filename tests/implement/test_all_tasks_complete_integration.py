@@ -1,9 +1,9 @@
-"""Integration test: implement exits with error when all tasks are complete.
+"""Integration test: implement returns normally when all tasks are complete.
 
 Runs the real i2code implement command against a test git repo where all
 plan tasks are marked [x] complete. Verifies that the command exits with
-a non-zero status, stderr contains "all tasks", and no branches,
-worktrees, or Claude invocations occur.
+zero status, stdout contains "all tasks", and no branches, worktrees, or
+Claude invocations occur.
 """
 
 import os
@@ -16,10 +16,10 @@ from conftest import run_script, write_plan_file
 
 
 @pytest.mark.integration
-class TestAllTasksCompleteExitsWithError:
-    """i2code implement should exit with error when all plan tasks are complete."""
+class TestAllTasksCompleteReturnsNormally:
+    """i2code implement should return normally when all plan tasks are complete."""
 
-    def test_exits_with_error_and_no_side_effects(self, test_git_repo_with_commit):
+    def test_returns_normally_with_no_side_effects(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
         idea_name = "test-feature"
         idea_dir = os.path.join(tmpdir, idea_name)
@@ -57,15 +57,15 @@ touch "{sentinel_path}"
         # Run i2code implement
         result = run_script(idea_dir, cwd=tmpdir, mock_claude=mock_claude_script)
 
-        # (a) Non-zero returncode
-        assert result.returncode != 0, (
-            f"Expected non-zero exit code, got {result.returncode}. "
+        # (a) Zero returncode
+        assert result.returncode == 0, (
+            f"Expected zero exit code, got {result.returncode}. "
             f"stdout: {result.stdout}\nstderr: {result.stderr}"
         )
 
-        # (b) stderr contains "all tasks"
-        assert "all tasks" in result.stderr.lower(), (
-            f"Expected stderr to contain 'all tasks', got: {result.stderr}"
+        # (b) stdout contains "all tasks"
+        assert "all tasks" in result.stdout.lower(), (
+            f"Expected stdout to contain 'all tasks', got: {result.stdout}"
         )
 
         # (c) No idea/* branches created beyond master

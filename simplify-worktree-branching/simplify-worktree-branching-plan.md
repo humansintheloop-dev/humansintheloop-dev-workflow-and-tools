@@ -127,17 +127,17 @@ This steel thread removes all dead code related to the old integration/slice bra
     - [x] Remove `TestRebaseOperations` and `TestRebaseConflictHandling` test classes from `tests/implement/test_branch_lifecycle.py`
     - [x] Run full test suite to confirm no behavior change
 
-- [ ] **Task 2.2: Remove dead PR helper functions and their tests**
+- [x] **Task 2.2: Remove dead PR helper functions and their tests**
   - TaskType: REFACTOR
   - Entrypoint: `uv run python3 -m pytest tests/ -v -m "unit or integration"`
   - Observable: No behavior change — all existing tests pass. The following dead code is removed: `push_to_slice_branch()`, `should_rollover()`, `generate_next_slice_branch()` from `pr_helpers.py`
   - Evidence: Full test suite passes. Grep for `push_to_slice_branch`, `should_rollover`, `generate_next_slice_branch`, `slice_number` in `src/` returns no results
   - Steps:
-    - [ ] Remove `push_to_slice_branch()`, `should_rollover()`, and `generate_next_slice_branch()` from `src/i2code/implement/pr_helpers.py`
-    - [ ] Remove `TestPushToSliceBranch` and `TestSliceRollover` test classes from `tests/implement/test_pr_helpers.py`
-    - [ ] Remove the `sanitize_branch_name` import from `pr_helpers.py` if it's no longer used
-    - [ ] Search `src/` for any remaining references to "slice", "integration_branch", or "rollover" and remove them
-    - [ ] Run full test suite to confirm no behavior change
+    - [x] Remove `push_to_slice_branch()`, `should_rollover()`, and `generate_next_slice_branch()` from `src/i2code/implement/pr_helpers.py`
+    - [x] Remove `TestPushToSliceBranch` and `TestSliceRollover` test classes from `tests/implement/test_pr_helpers.py`
+    - [x] Remove the `sanitize_branch_name` import from `pr_helpers.py` if it's no longer used
+    - [x] Search `src/` for any remaining references to "slice", "integration_branch", or "rollover" and remove them
+    - [x] Run full test suite to confirm no behavior change
 
 ---
 

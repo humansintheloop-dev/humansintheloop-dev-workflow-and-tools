@@ -15,15 +15,10 @@ class FakeWorkflowState:
     """
 
     def __init__(self):
-        self._slice_number = 1
         self._processed_comment_ids = []
         self._processed_review_ids = []
         self._processed_conversation_ids = []
         self._saved = False
-
-    @property
-    def slice_number(self):
-        return self._slice_number
 
     @property
     def processed_comment_ids(self):

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from fake_claude_runner import FakeClaudeRunner
-from i2code.implement.claude_runner import CapturedOutput, ClaudeResult, run_claude_with_output_capture
+from i2code.implement.claude_runner import CapturedOutput, ClaudeResult, ClaudeRunner, run_claude_with_output_capture
 
 
 @pytest.mark.unit
@@ -217,3 +217,32 @@ class TestClaudeInvocationResult:
         assert check_claude_success(exit_code=1, head_before="abc", head_after="def") is False
         # Both conditions met
         assert check_claude_success(exit_code=0, head_before="abc", head_after="def") is True
+
+
+@pytest.mark.unit
+class TestClaudeRunnerRun:
+    """ClaudeRunner.run() dispatches to run_interactive or run_batch."""
+
+    def test_interactive_true_delegates_to_run_interactive(self, mocker):
+        runner = ClaudeRunner(interactive=True)
+        mock_result = ClaudeResult(returncode=0)
+        mocker.patch.object(runner, 'run_interactive', return_value=mock_result)
+        mocker.patch.object(runner, 'run_batch', return_value=mock_result)
+
+        result = runner.run(["claude", "task"], cwd="/repo")
+
+        runner.run_interactive.assert_called_once_with(["claude", "task"], cwd="/repo")
+        runner.run_batch.assert_not_called()
+        assert result is mock_result
+
+    def test_interactive_false_delegates_to_run_batch(self, mocker):
+        runner = ClaudeRunner(interactive=False)
+        mock_result = ClaudeResult(returncode=0)
+        mocker.patch.object(runner, 'run_interactive', return_value=mock_result)
+        mocker.patch.object(runner, 'run_batch', return_value=mock_result)
+
+        result = runner.run(["claude", "-p", "task"], cwd="/repo")
+
+        runner.run_batch.assert_called_once_with(["claude", "-p", "task"], cwd="/repo")
+        runner.run_interactive.assert_not_called()
+        assert result is mock_result

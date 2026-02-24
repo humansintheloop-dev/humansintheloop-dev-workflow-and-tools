@@ -1,8 +1,11 @@
 """ModeFactory creates execution mode instances with their dependencies."""
 
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.isolate_mode import IsolateMode, SubprocessRunner
+from i2code.implement.pr_helpers import push_branch_to_remote
+from i2code.implement.project_setup import ProjectInitializer
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.trunk_mode import TrunkMode
 from i2code.implement.worktree_mode import LoopSteps, WorktreeMode
@@ -11,11 +14,10 @@ from i2code.implement.worktree_mode import LoopSteps, WorktreeMode
 class ModeFactory:
     """Creates execution mode instances, wiring up their dependencies."""
 
-    def __init__(self, opts, claude_runner, build_fixer_factory, project_initializer):
+    def __init__(self, opts, claude_runner, build_fixer_factory):
         self._opts = opts
         self._claude_runner = claude_runner
         self._build_fixer_factory = build_fixer_factory
-        self._project_initializer = project_initializer
 
     def make_trunk_mode(self, git_repo, project):
         commit_recovery = TaskCommitRecovery(
@@ -31,10 +33,17 @@ class ModeFactory:
         )
 
     def make_isolate_mode(self, git_repo, project):
+        project_initializer = ProjectInitializer(
+            claude_runner=self._claude_runner,
+            command_builder=CommandBuilder(),
+            git_repo=git_repo,
+            build_fixer=self._build_fixer_factory.create(git_repo),
+            push_fn=push_branch_to_remote,
+        )
         return IsolateMode(
             git_repo=git_repo,
             project=project,
-            project_initializer=self._project_initializer,
+            project_initializer=project_initializer,
             subprocess_runner=SubprocessRunner(),
         )
 

@@ -10,7 +10,6 @@ from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.mode_factory import ModeFactory
-from i2code.implement.pr_helpers import push_branch_to_remote
 from i2code.implement.project_setup import ProjectInitializer
 from i2code.implement.scaffold_command import ScaffoldCommand
 
@@ -26,18 +25,10 @@ def assemble_implement(opts):
         opts=opts,
         claude_runner=claude_runner,
     )
-    project_initializer = ProjectInitializer(
-        claude_runner=claude_runner,
-        command_builder=CommandBuilder(),
-        git_repo=git_repo,
-        build_fixer=build_fixer_factory.create(git_repo),
-        push_fn=push_branch_to_remote,
-    )
     mode_factory = ModeFactory(
         opts=opts,
         claude_runner=claude_runner,
         build_fixer_factory=build_fixer_factory,
-        project_initializer=project_initializer,
     )
     return ImplementCommand(opts, project, git_repo, mode_factory)
 

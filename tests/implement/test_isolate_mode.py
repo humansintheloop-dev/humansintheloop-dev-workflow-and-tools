@@ -42,8 +42,8 @@ class FakeSubprocessRunner:
     def set_returncode(self, code):
         self._returncode = code
 
-    def run(self, cmd):
-        self.calls.append(("run", cmd))
+    def run(self, cmd, cwd=None):
+        self.calls.append(("run", cmd, cwd))
         return self._returncode
 
 
@@ -65,7 +65,6 @@ class TestIsolateModeExecute:
         )
         returncode = mode.execute()
 
-        assert ("ensure_branch", "idea/test-feature", None, False) in git_repo.calls
         assert any(c[0] == "ensure_project_setup" for c in fake_initializer._setup_calls)
         assert len(fake_subprocess.calls) == 1
         assert returncode == 0
@@ -282,7 +281,7 @@ class TestSubprocessRunner:
             runner = SubprocessRunner()
             result = runner.run(["echo", "hello"])
 
-        mock_popen.assert_called_once_with(["echo", "hello"], start_new_session=True)
+        mock_popen.assert_called_once_with(["echo", "hello"], start_new_session=True, cwd=None)
         mock_managed_cls.assert_called_once_with(mock_process, label="isolarium")
         assert result == 0
 

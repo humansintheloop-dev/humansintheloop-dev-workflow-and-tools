@@ -151,21 +151,46 @@ class TestImplementCommandTrunkMode:
 
 @pytest.mark.unit
 class TestImplementCommandIsolateMode:
-    """_isolate_mode() delegates to mode_factory.make_isolate_mode()."""
+    """_isolate_mode() creates a worktree then delegates to mode_factory.make_isolate_mode()."""
 
-    def test_isolate_mode_delegates_to_mode_factory(self):
+    def _setup_isolate_command(self):
         cmd, project, git_repo = _make_command(
             isolate=True, ignore_uncommitted_idea_changes=True
         )
+        git_repo.working_tree_dir = "/tmp/fake-repo"
+        git_repo.ensure_idea_branch.return_value = "idea/test-feature"
+        mock_wt_git_repo = MagicMock()
+        mock_wt_git_repo.working_tree_dir = "/tmp/fake-repo-wt-test-feature"
+        git_repo.ensure_worktree.return_value = mock_wt_git_repo
         cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
-        with pytest.raises(SystemExit) as exc_info:
+        return cmd, project, git_repo, mock_wt_git_repo
+
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_creates_worktree_before_delegating(self, mock_setup):
+        cmd, project, git_repo, mock_wt_git_repo = self._setup_isolate_command()
+        with pytest.raises(SystemExit):
             cmd.execute()
-        assert exc_info.value.code == 0
+        git_repo.ensure_idea_branch.assert_called_once_with(project.name)
+        git_repo.ensure_worktree.assert_called_once_with(project.name, "idea/test-feature")
+
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_passes_worktree_git_repo_to_mode_factory(self, mock_setup):
+        cmd, project, git_repo, mock_wt_git_repo = self._setup_isolate_command()
+        with pytest.raises(SystemExit):
+            cmd.execute()
         cmd.mode_factory.make_isolate_mode.assert_called_once_with(
-            git_repo=git_repo,
+            git_repo=mock_wt_git_repo,
             project=project,
         )
-        cmd.mode_factory.make_isolate_mode.return_value.execute.assert_called_once()
+
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_calls_setup_project_on_worktree(self, mock_setup):
+        cmd, project, git_repo, mock_wt_git_repo = self._setup_isolate_command()
+        with pytest.raises(SystemExit):
+            cmd.execute()
+        mock_setup.assert_called_once_with(
+            "/tmp/fake-repo-wt-test-feature", source_root="/tmp/fake-repo"
+        )
 
 
 @pytest.mark.unit

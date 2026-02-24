@@ -40,9 +40,7 @@ class IsolateMode:
         Returns:
             The subprocess return code from isolarium.
         """
-        idea_branch = self._git_repo.ensure_idea_branch(
-            self._project.name,
-        )
+        idea_branch = f"idea/{self._project.name}"
 
         setup_ok = self._project_initializer.ensure_project_setup(
             idea_directory=self._project.directory,
@@ -68,7 +66,7 @@ class IsolateMode:
             isolation_type=isolation_type,
         )
         print(f"Running: {' '.join(cmd)}")
-        return self._subprocess_runner.run(cmd)
+        return self._subprocess_runner.run(cmd, cwd=self._git_repo.working_tree_dir)
 
     def _build_isolarium_command(
         self,
@@ -120,8 +118,8 @@ class IsolateMode:
 class SubprocessRunner:
     """Runs subprocess with ManagedSubprocess for clean interrupt handling."""
 
-    def run(self, cmd):
-        process = subprocess.Popen(cmd, start_new_session=True)
+    def run(self, cmd, cwd=None):
+        process = subprocess.Popen(cmd, start_new_session=True, cwd=cwd)
         with ManagedSubprocess(process, label="isolarium") as managed:
             process.wait()
         if managed.interrupted:

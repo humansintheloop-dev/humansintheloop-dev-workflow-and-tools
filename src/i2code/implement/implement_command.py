@@ -81,6 +81,11 @@ class ImplementCommand:
 
     def _isolate_mode(self):
         """Delegate execution to an isolarium VM."""
+        idea_branch = self.git_repo.ensure_idea_branch(self.project.name)
+        main_repo_dir = self.git_repo.working_tree_dir
+        self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
+        setup_project(self.git_repo.working_tree_dir, source_root=main_repo_dir)
+
         isolate_mode = self.mode_factory.make_isolate_mode(
             git_repo=self.git_repo,
             project=self.project,

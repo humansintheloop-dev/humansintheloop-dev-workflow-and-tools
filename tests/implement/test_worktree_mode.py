@@ -458,7 +458,7 @@ class TestWorktreeModeFailures:
 
 @pytest.mark.unit
 class TestWorktreeModeNonInteractive:
-    """WorktreeMode in non-interactive mode uses run_with_capture."""
+    """WorktreeMode in non-interactive mode uses run_batch."""
 
     def test_non_interactive_uses_capture_and_checks_success_tag(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -492,7 +492,7 @@ class TestWorktreeModeNonInteractive:
 
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
-            assert method == "run_with_capture"
+            assert method == "run_batch"
 
     def test_non_interactive_exits_without_success_tag(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -598,7 +598,7 @@ class TestWorktreeModeWithRecovery:
 
             # Recovery Claude call (non-interactive) happens before task-loop call
             assert len(fake_runner.calls) == 2
-            assert fake_runner.calls[0][0] == "run_with_capture"  # recovery
+            assert fake_runner.calls[0][0] == "run_batch"  # recovery
             assert fake_runner.calls[1][0] == "run_interactive"  # task execution
 
             captured = capsys.readouterr()

@@ -52,7 +52,7 @@ class TaskCommitRecovery:
         )
 
         head_before = self._git_repo.head_sha
-        claude_result = self._claude_runner.run_with_capture(
+        claude_result = self._claude_runner.run_batch(
             cmd, cwd=self._git_repo.working_tree_dir,
         )
         head_after = self._git_repo.head_sha

@@ -243,5 +243,5 @@ class ClaudeRunner:
     def run_interactive(self, cmd: List[str], cwd: str) -> ClaudeResult:
         return run_claude_interactive(cmd, cwd=cwd)
 
-    def run_with_capture(self, cmd: List[str], cwd: str) -> ClaudeResult:
+    def run_batch(self, cmd: List[str], cwd: str) -> ClaudeResult:
         return run_claude_with_output_capture(cmd, cwd=cwd)

@@ -142,4 +142,4 @@ class GithubActionsBuildFixer:
         if interactive:
             self._claude_runner.run_interactive(claude_cmd, cwd=self._git_repo.working_tree_dir)
         else:
-            self._claude_runner.run_with_capture(claude_cmd, cwd=self._git_repo.working_tree_dir)
+            self._claude_runner.run_batch(claude_cmd, cwd=self._git_repo.working_tree_dir)

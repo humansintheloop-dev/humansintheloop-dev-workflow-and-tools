@@ -44,17 +44,17 @@ Use these skills by invoking them before the relevant action:
 
 All tasks use TDD. The test command is: `uv run --with pytest --with pytest-mock pytest tests/implement/ -v -m unit`
 
-- [ ] **Task 1.1: Rename run_with_capture to run_batch in ClaudeRunner and FakeClaudeRunner and all callers**
+- [x] **Task 1.1: Rename run_with_capture to run_batch in ClaudeRunner and FakeClaudeRunner and all callers**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/ -v -m unit`
   - Observable: All references to run_with_capture are renamed to run_batch across production code and tests
   - Evidence: `All existing unit tests pass with updated method name`
   - Steps:
-    - [ ] Rename run_with_capture to run_batch in ClaudeRunner class at src/i2code/implement/claude_runner.py:246
-    - [ ] Rename run_with_capture to run_batch in FakeClaudeRunner class at tests/implement/fake_claude_runner.py:54
-    - [ ] Rename run_with_capture to run_batch in module-level function run_claude_with_output_capture — update the call in ClaudeRunner.run_batch to call run_claude_with_output_capture (function name unchanged, only the method name changes)
-    - [ ] Update all direct callers: src/i2code/implement/commit_recovery.py:55, src/i2code/implement/pull_request_review_processor.py:175
-    - [ ] Update all test assertions that reference "run_with_capture" to "run_batch" across test files: test_claude_runner.py, test_trunk_mode.py, test_worktree_mode.py, test_github_actions_build_fixer.py, test_pull_request_review_processor.py
+    - [x] Rename run_with_capture to run_batch in ClaudeRunner class at src/i2code/implement/claude_runner.py:246
+    - [x] Rename run_with_capture to run_batch in FakeClaudeRunner class at tests/implement/fake_claude_runner.py:54
+    - [x] Rename run_with_capture to run_batch in module-level function run_claude_with_output_capture — update the call in ClaudeRunner.run_batch to call run_claude_with_output_capture (function name unchanged, only the method name changes)
+    - [x] Update all direct callers: src/i2code/implement/commit_recovery.py:55, src/i2code/implement/pull_request_review_processor.py:175
+    - [x] Update all test assertions that reference "run_with_capture" to "run_batch" across test files: test_claude_runner.py, test_trunk_mode.py, test_worktree_mode.py, test_github_actions_build_fixer.py, test_pull_request_review_processor.py
 - [ ] **Task 1.2: ClaudeRunner.run() dispatches to run_interactive or run_batch based on interactive constructor argument**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_claude_runner.py -v -m unit`

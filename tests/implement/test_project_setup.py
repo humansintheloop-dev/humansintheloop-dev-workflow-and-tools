@@ -197,7 +197,7 @@ class TestRunScaffolding:
         assert cmd[0] == "claude"
         assert cwd == "/tmp/repo"
 
-    def test_non_interactive_calls_run_with_capture(self):
+    def test_non_interactive_calls_run_batch(self):
         from i2code.implement.command_builder import CommandBuilder
         from i2code.implement.project_setup import ProjectInitializer
         from tests.implement.fake_claude_runner import FakeClaudeRunner
@@ -212,7 +212,7 @@ class TestRunScaffolding:
 
         assert len(fake.calls) == 1
         method, cmd, cwd = fake.calls[0]
-        assert method == "run_with_capture"
+        assert method == "run_batch"
         assert cmd[0] == "claude"
         assert "-p" in cmd
         assert cwd == "/tmp/repo"

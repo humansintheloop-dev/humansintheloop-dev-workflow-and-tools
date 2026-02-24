@@ -23,10 +23,10 @@ class TestFakeClaudeRunner:
         fake.run_interactive(["claude", "do task"], cwd="/repo")
         assert fake.calls == [("run_interactive", ["claude", "do task"], "/repo")]
 
-    def test_records_run_with_capture_call(self):
+    def test_records_run_batch_call(self):
         fake = FakeClaudeRunner()
-        fake.run_with_capture(["claude", "-p", "do task"], cwd="/repo")
-        assert fake.calls == [("run_with_capture", ["claude", "-p", "do task"], "/repo")]
+        fake.run_batch(["claude", "-p", "do task"], cwd="/repo")
+        assert fake.calls == [("run_batch", ["claude", "-p", "do task"], "/repo")]
 
     def test_returns_configured_result(self):
 
@@ -44,7 +44,7 @@ class TestFakeClaudeRunner:
             ClaudeResult(returncode=1, output=CapturedOutput("fail", "err")),
         ])
         r1 = fake.run_interactive(["claude", "t1"], cwd="/r")
-        r2 = fake.run_with_capture(["claude", "t2"], cwd="/r")
+        r2 = fake.run_batch(["claude", "t2"], cwd="/r")
         assert r1.returncode == 0
         assert r2.returncode == 1
 

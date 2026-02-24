@@ -51,6 +51,6 @@ class FakeClaudeRunner:
         self.calls.append(("run_interactive", cmd, cwd))
         return self._next_result()
 
-    def run_with_capture(self, cmd, cwd):
-        self.calls.append(("run_with_capture", cmd, cwd))
+    def run_batch(self, cmd, cwd):
+        self.calls.append(("run_batch", cmd, cwd))
         return self._next_result()

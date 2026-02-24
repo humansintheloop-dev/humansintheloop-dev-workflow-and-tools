@@ -172,7 +172,7 @@ class PullRequestReviewProcessor:
         else:
             triage_cmd = CommandBuilder().build_triage_command(feedback_content, interactive=False)
 
-        result = self._claude_runner.run_with_capture(triage_cmd, cwd=self._git_repo.working_tree_dir)
+        result = self._claude_runner.run_batch(triage_cmd, cwd=self._git_repo.working_tree_dir)
         return triage_cmd, result
 
     def _reply_with_clarifications(self, needs_clarification, pr_number, new_review_comments, new_conversation):
@@ -265,7 +265,7 @@ class PullRequestReviewProcessor:
         if interactive:
             self._claude_runner.run_interactive(fix_cmd, cwd=self._git_repo.working_tree_dir)
         else:
-            self._claude_runner.run_with_capture(fix_cmd, cwd=self._git_repo.working_tree_dir)
+            self._claude_runner.run_batch(fix_cmd, cwd=self._git_repo.working_tree_dir)
 
         head_after = self._git_repo.head_sha
         if head_before == head_after:

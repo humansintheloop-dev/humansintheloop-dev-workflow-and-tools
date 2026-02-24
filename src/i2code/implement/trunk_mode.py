@@ -85,6 +85,6 @@ class TrunkMode:
 
     def _run_claude(self, claude_cmd, non_interactive):
         if non_interactive:
-            return self._claude_runner.run_with_capture(claude_cmd, cwd=self._git_repo.working_tree_dir)
+            return self._claude_runner.run_batch(claude_cmd, cwd=self._git_repo.working_tree_dir)
         else:
             return self._claude_runner.run_interactive(claude_cmd, cwd=self._git_repo.working_tree_dir)

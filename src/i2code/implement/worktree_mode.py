@@ -147,6 +147,6 @@ class WorktreeMode:
     def _run_claude(self, claude_cmd):
         work_dir = self._git_repo.working_tree_dir
         if self._opts.non_interactive:
-            return self._loop_steps.claude_runner.run_with_capture(claude_cmd, cwd=work_dir)
+            return self._loop_steps.claude_runner.run_batch(claude_cmd, cwd=work_dir)
         else:
             return self._loop_steps.claude_runner.run_interactive(claude_cmd, cwd=work_dir)

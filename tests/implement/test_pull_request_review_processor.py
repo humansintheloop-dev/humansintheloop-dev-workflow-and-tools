@@ -136,8 +136,8 @@ class TestProcessPrFeedbackNoFeedback:
 class TestProcessPrFeedbackTriage:
     """process_pr_feedback triages feedback using claude_runner."""
 
-    def test_triage_uses_claude_runner_run_with_capture(self):
-        """Triage invokes claude_runner.run_with_capture, not module-level function."""
+    def test_triage_uses_claude_runner_run_batch(self):
+        """Triage invokes claude_runner.run_batch, not module-level function."""
         triage_json = json.dumps({"will_fix": [], "needs_clarification": []})
         triage_result = ClaudeResult(returncode=0, output=CapturedOutput(triage_json))
 
@@ -150,7 +150,7 @@ class TestProcessPrFeedbackTriage:
 
         assert len(fake_claude.calls) == 1
         method, _cmd, cwd = fake_claude.calls[0]
-        assert method == "run_with_capture"
+        assert method == "run_batch"
         assert cwd == fake_repo.working_tree_dir
 
 
@@ -231,8 +231,8 @@ class TestProcessPrFeedbackFixGroup:
 
         processor.process_pr_feedback()
 
-        # First call is triage (run_with_capture), second is fix (run_interactive)
-        assert fake_claude.calls[0][0] == "run_with_capture"
+        # First call is triage (run_batch), second is fix (run_interactive)
+        assert fake_claude.calls[0][0] == "run_batch"
         assert fake_claude.calls[1][0] == "run_interactive"
 
     def test_fix_marks_all_feedback_processed(self):

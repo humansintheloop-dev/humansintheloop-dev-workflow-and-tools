@@ -47,7 +47,7 @@ def test_real_claude_triage_pr6(tmp_path):
 
     # Run real Claude
     runner = ClaudeRunner()
-    result = runner.run_with_capture(triage_cmd, cwd=os.getcwd())
+    result = runner.run_batch(triage_cmd, cwd=os.getcwd())
 
     print("=" * 80)
     print("(2) CLAUDE'S RESPONSE")

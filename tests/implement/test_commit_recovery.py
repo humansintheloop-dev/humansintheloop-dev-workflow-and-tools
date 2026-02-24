@@ -147,7 +147,7 @@ class TestTaskCommitRecoveryRecover:
         assert result is True
         assert len(runner.calls) == 1
         method, cmd, cwd = runner.calls[0]
-        assert method == "run_with_capture"
+        assert method == "run_batch"
         captured = capsys.readouterr()
         assert "Detected uncommitted changes" in captured.out
 

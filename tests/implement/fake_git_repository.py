@@ -110,8 +110,12 @@ class FakeGitRepository:
     def set_file_at_head(self, file_path, content):
         self._files_at_head[file_path] = content
 
-    def ensure_pr(self, idea_directory, idea_name, slice_number):
-        self.calls.append(("ensure_pr", idea_directory, idea_name, slice_number))
+    def ensure_idea_branch(self, idea_name):
+        branch_name = f"idea/{idea_name}"
+        return self.ensure_branch(branch_name)
+
+    def ensure_pr(self, idea_directory, idea_name):
+        self.calls.append(("ensure_pr", idea_directory, idea_name))
         if self.pr_number is None:
             self.pr_number = 100
         return self.pr_number

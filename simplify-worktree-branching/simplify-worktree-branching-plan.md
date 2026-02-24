@@ -66,21 +66,21 @@ This steel thread implements the core branching simplification: replacing the tw
     - [x] Modify `src/i2code/implement/workflow_state.py`: remove `slice_number` from the default data dict in `load()`, remove the `slice_number` property, add logic in `load()` to silently pop `slice_number` from loaded data
     - [x] Update `tests/implement/fake_workflow_state.py`: remove `slice_number` parameter and property from `FakeWorkflowState`
 
-- [ ] **Task 1.2: GitRepository gains ensure_idea_branch and ensure_pr drops slice_number**
+- [x] **Task 1.2: GitRepository gains ensure_idea_branch and ensure_pr drops slice_number**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/implement/test_git_repository.py -v`
   - Observable: `ensure_idea_branch(idea_name)` creates or reuses a branch named `idea/<name>` from HEAD. `ensure_pr()` accepts only `idea_directory` and `idea_name` (no `slice_number`) and creates a Draft PR with the title derived from the idea file heading and a minimal body containing just the idea directory link
   - Evidence: Unit tests verify: (1) `ensure_idea_branch("my-feature")` creates branch `idea/my-feature`, (2) calling it again reuses the existing branch, (3) `ensure_pr()` without `slice_number` creates a PR with the correct title and body format
   - Steps:
-    - [ ] Add test class `TestEnsureIdeaBranch` in `tests/implement/test_git_repository.py` with tests for creating a new idea branch and reusing an existing one
-    - [ ] Add `ensure_idea_branch(idea_name)` method to `src/i2code/implement/git_repository.py` that delegates to `ensure_branch(f"idea/{idea_name}")`
-    - [ ] Add a helper function `extract_title_from_idea_file(idea_directory, idea_name)` in `src/i2code/implement/pr_helpers.py` that reads the first `# ` heading from the idea file, with fallback to the idea name. Add tests for it in `tests/implement/test_pr_helpers.py`
-    - [ ] Update `generate_pr_title()` in `src/i2code/implement/pr_helpers.py` to accept `(idea_name, idea_directory)` and use `extract_title_from_idea_file`. Update `generate_pr_body()` to accept only `(idea_directory)` and produce the minimal format: `**Idea directory:** \`<idea-directory>\``
-    - [ ] Update `ensure_pr()` in `src/i2code/implement/git_repository.py` to accept only `(idea_directory, idea_name)` — remove `slice_number` parameter, call the updated title/body generators
-    - [ ] Update tests in `tests/implement/test_git_repository.py` `TestEnsurePr` to match the new 2-argument signature
-    - [ ] Update `tests/implement/test_pr_helpers.py` `TestPRTitleGeneration` and `TestPRBodyGeneration` to test the new behavior
-    - [ ] Update `FakeGitRepository.ensure_pr()` in `tests/implement/fake_git_repository.py` to accept only `(idea_directory, idea_name)` — remove `slice_number`
-    - [ ] Add `ensure_idea_branch()` stub to `tests/implement/fake_git_repository.py`
+    - [x] Add test class `TestEnsureIdeaBranch` in `tests/implement/test_git_repository.py` with tests for creating a new idea branch and reusing an existing one
+    - [x] Add `ensure_idea_branch(idea_name)` method to `src/i2code/implement/git_repository.py` that delegates to `ensure_branch(f"idea/{idea_name}")`
+    - [x] Add a helper function `extract_title_from_idea_file(idea_directory, idea_name)` in `src/i2code/implement/pr_helpers.py` that reads the first `# ` heading from the idea file, with fallback to the idea name. Add tests for it in `tests/implement/test_pr_helpers.py`
+    - [x] Update `generate_pr_title()` in `src/i2code/implement/pr_helpers.py` to accept `(idea_name, idea_directory)` and use `extract_title_from_idea_file`. Update `generate_pr_body()` to accept only `(idea_directory)` and produce the minimal format: `**Idea directory:** \`<idea-directory>\``
+    - [x] Update `ensure_pr()` in `src/i2code/implement/git_repository.py` to accept only `(idea_directory, idea_name)` — remove `slice_number` parameter, call the updated title/body generators
+    - [x] Update tests in `tests/implement/test_git_repository.py` `TestEnsurePr` to match the new 2-argument signature
+    - [x] Update `tests/implement/test_pr_helpers.py` `TestPRTitleGeneration` and `TestPRBodyGeneration` to test the new behavior
+    - [x] Update `FakeGitRepository.ensure_pr()` in `tests/implement/fake_git_repository.py` to accept only `(idea_directory, idea_name)` — remove `slice_number`
+    - [x] Add `ensure_idea_branch()` stub to `tests/implement/fake_git_repository.py`
 
 - [ ] **Task 1.3: ImplementCommand._worktree_mode uses single idea branch**
   - TaskType: OUTCOME

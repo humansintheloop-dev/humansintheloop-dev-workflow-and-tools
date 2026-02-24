@@ -32,6 +32,7 @@ IMPORTANT: Always invoke the relevant skill before performing these actions:
 - **When creating or updating GitHub Actions CI workflows**: Use the `idea-to-code:github-workflow-gradle-template` skill
 - **When running tests in Java/Gradle projects**: Use the `idea-to-code:test-runner-java-gradle` skill
 - **When writing test scripts involving infrastructure**: Use the `idea-to-code:testing-scripts-and-infrastructure` skill
+- **When resolving merge or rebase conflicts**: Use the `idea-to-code:git-conflict-resolution` skill
 
 ## Code Health
 

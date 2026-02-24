@@ -95,24 +95,3 @@ class TestIdeaFilesCommitValidation:
 
             # Should not raise
             validate_idea_files_committed(IdeaProject(idea_dir))
-
-
-@pytest.mark.unit
-class TestCalculateClaudePermissions:
-    """Test calculation of Claude permissions for --allowedTools."""
-
-    def test_includes_required_permissions(self):
-        from i2code.implement.git_setup import calculate_claude_permissions, REQUIRED_PERMISSIONS
-
-        perms = calculate_claude_permissions("/fake/repo")
-
-        for req in REQUIRED_PERMISSIONS:
-            assert req in perms
-
-    def test_includes_write_and_edit_for_repo_root(self):
-        from i2code.implement.git_setup import calculate_claude_permissions
-
-        perms = calculate_claude_permissions("/fake/repo")
-
-        assert "Write(//fake/repo/)" in perms
-        assert "Edit(//fake/repo/)" in perms

@@ -2,9 +2,7 @@
 
 import sys
 
-from i2code.implement.git_setup import (
-    calculate_claude_permissions,
-)
+from i2code.implement.claude_permissions import calculate_claude_permissions
 from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.claude_runner import (
     check_claude_success,

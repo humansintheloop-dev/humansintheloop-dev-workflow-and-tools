@@ -87,15 +87,15 @@ All tasks use TDD. The test command is: `uv run --with pytest --with pytest-mock
     - [x] In `src/i2code/implement/command_assembler.py:24` `assemble_implement()`: change `ClaudeRunner()` to `ClaudeRunner(interactive=not opts.non_interactive)`
     - [x] In `src/i2code/implement/command_assembler.py:54` `assemble_scaffold()`: change `ClaudeRunner()` to `ClaudeRunner(interactive=not opts.non_interactive)`
 
-- [ ] **Task 1.5: TrunkMode._run_claude() uses runner.run() instead of if/else dispatch**
+- [x] **Task 1.5: TrunkMode._run_claude() uses runner.run() instead of if/else dispatch**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_trunk_mode.py -v -m unit`
   - Observable: No behavior change — TrunkMode produces identical results for both interactive and non-interactive execution
   - Evidence: All `TestTrunkModeExecute` tests pass with updated assertions
   - Steps:
-    - [ ] In `src/i2code/implement/trunk_mode.py:86-90`: simplify `_run_claude(self, claude_cmd, non_interactive)` to `_run_claude(self, claude_cmd)` — remove the `non_interactive` parameter and replace the if/else with `return self._claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)`
-    - [ ] Update the call site at `src/i2code/implement/trunk_mode.py:54`: change `self._run_claude(claude_cmd, non_interactive)` to `self._run_claude(claude_cmd)`
-    - [ ] In `tests/implement/test_trunk_mode.py`:
+    - [x] In `src/i2code/implement/trunk_mode.py:86-90`: simplify `_run_claude(self, claude_cmd, non_interactive)` to `_run_claude(self, claude_cmd)` — remove the `non_interactive` parameter and replace the if/else with `return self._claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)`
+    - [x] Update the call site at `src/i2code/implement/trunk_mode.py:54`: change `self._run_claude(claude_cmd, non_interactive)` to `self._run_claude(claude_cmd)`
+    - [x] In `tests/implement/test_trunk_mode.py`:
       - `test_invokes_claude_for_first_task` at `tests/implement/test_trunk_mode.py:84`: change assertion from `method == "run_interactive"` to `method == "run"`
       - `test_non_interactive_uses_run_batch` at `tests/implement/test_trunk_mode.py:218`: change assertion from `method == "run_batch"` to `method == "run"`, and update class/method docstring
       - `test_recovery_needed_and_succeeds` at `tests/implement/test_trunk_mode.py:335`: change assertion from `fake_runner.calls[1][0] == "run_interactive"` to `"run"` (recovery call at line 334 stays `"run_batch"`)
@@ -172,3 +172,6 @@ Changed ClaudeRunner() to ClaudeRunner(interactive=not opts.non_interactive) in 
 
 ### 2026-02-24 21:42 - mark-task-complete
 Both assemble_implement() and assemble_scaffold() now pass interactive=not opts.non_interactive to ClaudeRunner; all 390 unit tests pass unchanged
+
+### 2026-02-24 21:54 - mark-task-complete
+Simplified _run_claude to use runner.run() instead of if/else dispatch

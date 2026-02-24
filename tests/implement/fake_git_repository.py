@@ -68,6 +68,9 @@ class FakeGitRepository:
     def set_worktree_path(self, idea_name, path):
         self._worktrees[idea_name] = path
 
+    def set_upstream(self, branch_name):
+        self.calls.append(("set_upstream", branch_name))
+
     def branch_has_been_pushed(self):
         self.calls.append(("branch_has_been_pushed",))
         return self._pushed

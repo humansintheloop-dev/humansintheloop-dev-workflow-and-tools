@@ -48,6 +48,11 @@ class TestFakeClaudeRunner:
         assert r1.returncode == 0
         assert r2.returncode == 1
 
+    def test_records_run_call(self):
+        fake = FakeClaudeRunner()
+        fake.run(["claude", "do task"], cwd="/repo")
+        assert fake.calls == [("run", ["claude", "do task"], "/repo")]
+
     def test_falls_back_to_default_after_sequence_exhausted(self):
 
         fake = FakeClaudeRunner()

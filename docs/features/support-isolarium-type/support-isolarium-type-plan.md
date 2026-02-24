@@ -52,19 +52,19 @@ Test each layer with fakes — no `@patch` on `IsolateMode` tests.
 
 Implements **US-1**: `i2code implement --isolate --isolation-type docker idea-dir` produces an isolarium command with `--type docker` in global args.
 
-- [ ] **Task 1.1: IsolateMode inserts --type TYPE into isolarium global args when isolation_type is provided**
+- [x] **Task 1.1: IsolateMode inserts --type TYPE into isolarium global args when isolation_type is provided**
   - TaskType: OUTCOME
   - Entrypoint: `IsolateMode.execute(isolation_type="docker")` via unit test
   - Observable: The isolarium command captured by `FakeSubprocessRunner` contains `--type docker` in the global args (after `--name` and before `run`). When `isolation_type` is `None`, the command does NOT contain `--type` (backwards compatibility).
   - Evidence: `pytest tests/implement/test_isolate_mode.py -k "isolation_type" -v` passes
   - Steps:
-    - [ ] Add test class `TestIsolateModeIsolationType` to `tests/implement/test_isolate_mode.py` with:
+    - [x] Add test class `TestIsolateModeIsolationType` to `tests/implement/test_isolate_mode.py` with:
       - `test_includes_type_in_isolarium_global_args_when_isolation_type_provided` — asserts `--type docker` appears after `--name i2code-<name>` and before `run` in the captured command
       - `test_omits_type_from_isolarium_when_isolation_type_is_none` — asserts `--type` does NOT appear when `isolation_type=None` (backwards compatibility, Scenario 5)
       - `test_isolation_type_not_forwarded_to_inner_command` — asserts `--type` does NOT appear after the `--` separator (FR-4)
-    - [ ] Add `isolation_type=None` parameter to `IsolateMode.execute()` in `src/i2code/implement/isolate_mode.py`
-    - [ ] Add `isolation_type=None` parameter to `IsolateMode._build_isolarium_command()` in `src/i2code/implement/isolate_mode.py`
-    - [ ] In `_build_isolarium_command()`, insert `["--type", isolation_type]` into isolarium global args (between `--name i2code-<name>` and `run`) when `isolation_type` is not None
+    - [x] Add `isolation_type=None` parameter to `IsolateMode.execute()` in `src/i2code/implement/isolate_mode.py`
+    - [x] Add `isolation_type=None` parameter to `IsolateMode._build_isolarium_command()` in `src/i2code/implement/isolate_mode.py`
+    - [x] In `_build_isolarium_command()`, insert `["--type", isolation_type]` into isolarium global args (between `--name i2code-<name>` and `run`) when `isolation_type` is not None
 
 - [ ] **Task 1.2: --isolation-type CLI option flows through ImplementOpts to IsolateMode**
   - TaskType: OUTCOME

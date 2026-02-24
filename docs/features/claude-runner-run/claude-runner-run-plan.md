@@ -134,15 +134,15 @@ All tasks use TDD. The test command is: `uv run --with pytest --with pytest-mock
     - [x] In `src/i2code/implement/github_actions_build_fixer.py:141-145` `_invoke_claude_for_fix()`: replace the if/else dispatch with `self._claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)`. Keep the local `interactive` variable (needed for `build_ci_fix_command`)
     - [x] At `tests/implement/test_github_actions_build_fixer.py:118`: change assertion from `fake_runner.calls[0][0] == "run_batch"` to `fake_runner.calls[0][0] == "run"`
 
-- [ ] **Task 1.9: PullRequestReviewProcessor._invoke_fix() uses runner.run() instead of if/else dispatch**
+- [x] **Task 1.9: PullRequestReviewProcessor._invoke_fix() uses runner.run() instead of if/else dispatch**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --with pytest --with pytest-mock pytest tests/implement/test_pull_request_review_processor.py -v -m unit`
   - Observable: No behavior change — _invoke_fix() produces identical results; _run_triage() continues calling run_batch() directly
   - Evidence: All `TestProcessPrFeedback*` tests pass with updated assertions
   - Steps:
-    - [ ] In `src/i2code/implement/pull_request_review_processor.py:264-268` `_invoke_fix()`: replace the if/else dispatch with `self._claude_runner.run(fix_cmd, cwd=self._git_repo.working_tree_dir)`. Keep the local `interactive` variable (needed for `build_fix_command`)
-    - [ ] Verify `_run_triage()` at `src/i2code/implement/pull_request_review_processor.py:175` still calls `run_batch()` directly — no changes needed
-    - [ ] In `tests/implement/test_pull_request_review_processor.py`:
+    - [x] In `src/i2code/implement/pull_request_review_processor.py:264-268` `_invoke_fix()`: replace the if/else dispatch with `self._claude_runner.run(fix_cmd, cwd=self._git_repo.working_tree_dir)`. Keep the local `interactive` variable (needed for `build_fix_command`)
+    - [x] Verify `_run_triage()` at `src/i2code/implement/pull_request_review_processor.py:175` still calls `run_batch()` directly — no changes needed
+    - [x] In `tests/implement/test_pull_request_review_processor.py`:
       - `test_triage_uses_claude_runner_run_batch` at `tests/implement/test_pull_request_review_processor.py:139`: **no change** — triage still uses `run_batch`
       - `test_fix_interactive_uses_run_interactive` at `tests/implement/test_pull_request_review_processor.py:214`: change second assertion from `fake_claude.calls[1][0] == "run_interactive"` to `fake_claude.calls[1][0] == "run"`, rename test to `test_fix_interactive_uses_run`
 

@@ -115,17 +115,17 @@ This steel thread implements the core branching simplification: replacing the tw
 
 This steel thread removes all dead code related to the old integration/slice branching model.
 
-- [ ] **Task 2.1: Remove dead branching and rebase code**
+- [x] **Task 2.1: Remove dead branching and rebase code**
   - TaskType: REFACTOR
   - Entrypoint: `uv run python3 -m pytest tests/ -v -m "unit or integration"`
   - Observable: No behavior change — all existing tests pass. The following dead code is removed: `ensure_integration_branch()` and `ensure_slice_branch()` from `git_repository.py`, `rebase_integration_branch()`, `update_slice_after_rebase()`, and `get_rebase_conflict_message()` from `branch_lifecycle.py`
   - Evidence: Full test suite passes. Grep for `integration_branch`, `slice_branch`, `rebase_integration`, `update_slice_after_rebase`, `get_rebase_conflict_message` in `src/` returns no results
   - Steps:
-    - [ ] Remove `ensure_integration_branch()` and `ensure_slice_branch()` from `src/i2code/implement/git_repository.py`
-    - [ ] Remove `ensure_integration_branch()` and `ensure_slice_branch()` stubs from `tests/implement/fake_git_repository.py`
-    - [ ] Remove `rebase_integration_branch()`, `update_slice_after_rebase()`, and `get_rebase_conflict_message()` from `src/i2code/implement/branch_lifecycle.py`
-    - [ ] Remove `TestRebaseOperations` and `TestRebaseConflictHandling` test classes from `tests/implement/test_branch_lifecycle.py`
-    - [ ] Run full test suite to confirm no behavior change
+    - [x] Remove `ensure_integration_branch()` and `ensure_slice_branch()` from `src/i2code/implement/git_repository.py`
+    - [x] Remove `ensure_integration_branch()` and `ensure_slice_branch()` stubs from `tests/implement/fake_git_repository.py`
+    - [x] Remove `rebase_integration_branch()`, `update_slice_after_rebase()`, and `get_rebase_conflict_message()` from `src/i2code/implement/branch_lifecycle.py`
+    - [x] Remove `TestRebaseOperations` and `TestRebaseConflictHandling` test classes from `tests/implement/test_branch_lifecycle.py`
+    - [x] Run full test suite to confirm no behavior change
 
 - [ ] **Task 2.2: Remove dead PR helper functions and their tests**
   - TaskType: REFACTOR
@@ -168,3 +168,21 @@ WorkflowState import is still needed — state is loaded from state file on line
 
 ### 2026-02-24 17:09 - mark-task-complete
 _worktree_mode() creates single idea/<name> branch, worktree on that branch, sets git_repo.branch, finds PRs on idea branch. All 802 tests pass.
+
+### 2026-02-24 17:27 - mark-step-complete
+Removed ensure_integration_branch() and ensure_slice_branch() from git_repository.py
+
+### 2026-02-24 17:28 - mark-step-complete
+Removed ensure_integration_branch() and ensure_slice_branch() stubs from fake_git_repository.py
+
+### 2026-02-24 17:28 - mark-step-complete
+Removed rebase_integration_branch(), update_slice_after_rebase(), get_rebase_conflict_message() from branch_lifecycle.py
+
+### 2026-02-24 17:28 - mark-step-complete
+Removed TestRebaseOperations and TestRebaseConflictHandling test classes from test_branch_lifecycle.py
+
+### 2026-02-24 17:28 - mark-step-complete
+All 785 tests pass. Grep for dead code names in src/ returns no results.
+
+### 2026-02-24 17:28 - mark-task-complete
+Removed dead branching/rebase code. Also updated isolate_mode.py and project_setup.py callers.

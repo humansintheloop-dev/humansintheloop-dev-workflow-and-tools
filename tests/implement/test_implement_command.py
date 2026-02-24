@@ -185,14 +185,6 @@ class TestImplementCommandWorktreeMode:
 
     @patch("i2code.implement.implement_command.WorkflowState.load")
     @patch("i2code.implement.implement_command.setup_project")
-    def test_does_not_call_integration_or_slice_branch(self, mock_setup, mock_load_state):
-        cmd, project, git_repo, _ = self._setup_worktree_command()
-        cmd.execute()
-        git_repo.ensure_integration_branch.assert_not_called()
-        git_repo.ensure_slice_branch.assert_not_called()
-
-    @patch("i2code.implement.implement_command.WorkflowState.load")
-    @patch("i2code.implement.implement_command.setup_project")
     def test_ensure_worktree_receives_idea_branch(self, mock_setup, mock_load_state):
         cmd, project, git_repo, _ = self._setup_worktree_command()
         cmd.execute()

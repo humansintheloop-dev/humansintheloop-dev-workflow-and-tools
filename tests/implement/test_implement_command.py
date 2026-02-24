@@ -209,15 +209,10 @@ class TestWorktreeModeAllTasksComplete:
 
 @pytest.mark.unit
 class TestImplementCommandWorktreeMode:
-    """_worktree_mode() delegates to mode_factory.make_worktree_mode()."""
+    """_worktree_mode() uses a single idea branch (no integration or slice branch)."""
 
-    @patch("i2code.implement.implement_command.WorkflowState.load")
-    @patch("i2code.implement.implement_command.setup_project")
-    def test_worktree_mode_delegates_to_mode_factory(
-        self, mock_setup, mock_load_state,
-    ):
-        mock_load_state.return_value = MagicMock(slice_number=1)
-
+    def _setup_worktree_command(self):
+        """Set up a command with mocks for worktree mode execution."""
         cmd, project, git_repo = _make_command(
             ignore_uncommitted_idea_changes=True
         )
@@ -226,13 +221,61 @@ class TestImplementCommandWorktreeMode:
             task=Task(_lines=["- [ ] **Task 1.1: test-task**"]),
         ))
         git_repo.working_tree_dir = "/tmp/fake-repo"
+        git_repo.ensure_idea_branch.return_value = "idea/fake-idea"
         mock_wt_git_repo = MagicMock()
         mock_wt_git_repo.working_tree_dir = "/tmp/wt"
         git_repo.ensure_worktree.return_value = mock_wt_git_repo
         git_repo.gh_client.find_pr.return_value = None
+        return cmd, project, git_repo, mock_wt_git_repo
 
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_calls_ensure_idea_branch(self, mock_setup, mock_load_state):
+        cmd, project, git_repo, _ = self._setup_worktree_command()
         cmd.execute()
+        git_repo.ensure_idea_branch.assert_called_once_with(project.name)
 
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_does_not_call_integration_or_slice_branch(self, mock_setup, mock_load_state):
+        cmd, project, git_repo, _ = self._setup_worktree_command()
+        cmd.execute()
+        git_repo.ensure_integration_branch.assert_not_called()
+        git_repo.ensure_slice_branch.assert_not_called()
+
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_ensure_worktree_receives_idea_branch(self, mock_setup, mock_load_state):
+        cmd, project, git_repo, _ = self._setup_worktree_command()
+        cmd.execute()
+        git_repo.ensure_worktree.assert_called_once_with(project.name, "idea/fake-idea")
+
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_sets_branch_to_idea_branch(self, mock_setup, mock_load_state):
+        cmd, _, git_repo, mock_wt_git_repo = self._setup_worktree_command()
+        cmd.execute()
+        assert mock_wt_git_repo.branch == "idea/fake-idea"
+
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_find_pr_uses_idea_branch(self, mock_setup, mock_load_state):
+        cmd, _, git_repo, mock_wt_git_repo = self._setup_worktree_command()
+        cmd.execute()
+        mock_wt_git_repo.gh_client.find_pr.assert_called_once_with("idea/fake-idea")
+
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_checkout_not_called(self, mock_setup, mock_load_state):
+        cmd, _, git_repo, mock_wt_git_repo = self._setup_worktree_command()
+        cmd.execute()
+        mock_wt_git_repo.checkout.assert_not_called()
+
+    @patch("i2code.implement.implement_command.WorkflowState.load")
+    @patch("i2code.implement.implement_command.setup_project")
+    def test_delegates_to_mode_factory(self, mock_setup, mock_load_state):
+        cmd, _, _, _ = self._setup_worktree_command()
+        cmd.execute()
         cmd.mode_factory.make_worktree_mode.assert_called_once()
         cmd.mode_factory.make_worktree_mode.return_value.execute.assert_called_once()
 
@@ -297,7 +340,7 @@ class TestDeferredPRCreation:
         """Running with --setup-only should NOT attempt to create a PR."""
         monkeypatch.setattr(
             "i2code.implement.implement_command.WorkflowState.load",
-            lambda x: MagicMock(slice_number=1),
+            lambda x: MagicMock(),
         )
         monkeypatch.setattr(
             "i2code.implement.implement_command.setup_project",
@@ -307,6 +350,10 @@ class TestDeferredPRCreation:
         cmd, _project, git_repo = _make_command(
             setup_only=True, ignore_uncommitted_idea_changes=True,
         )
+        git_repo.ensure_idea_branch.return_value = "idea/fake-idea"
+        mock_wt_git_repo = MagicMock()
+        mock_wt_git_repo.working_tree_dir = "/tmp/wt"
+        git_repo.ensure_worktree.return_value = mock_wt_git_repo
         cmd.execute()
 
-        git_repo.gh_client.find_pr.assert_not_called()
+        mock_wt_git_repo.gh_client.find_pr.assert_not_called()

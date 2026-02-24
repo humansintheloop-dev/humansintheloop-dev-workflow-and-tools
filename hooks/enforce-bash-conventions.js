@@ -2,7 +2,8 @@
 /**
  * PreToolUse hook that blocks certain Bash command patterns:
  * - `git -C <directory>` — use cd + git instead
- * - `python -m pytest` — use uv run pytest instead
+ * - `python -m pytest` — use `uv run --python 3.12 python3 -m pytest` instead
+ * - bare `pytest` — use `uv run --python 3.12 python3 -m pytest` instead
  *
  * Exit codes:
  *   0 - allow the command
@@ -24,11 +25,23 @@ const GIT_DASH_C_MESSAGE =
   'Do not use `git -C directory` - cd to the top-level directory and run git commands from there';
 
 function isPythonMPytest(command) {
-  return /\bpython3?\s+-m\s+pytest\b/.test(command);
+  return /\bpython3?\s+-m\s+pytest\b/.test(command) && !/\buv\s+run\b/.test(command);
 }
 
 const PYTHON_M_PYTEST_MESSAGE =
-  'Do not use `python -m pytest` - use `uv run pytest` instead';
+  'Do not use `python -m pytest` - use `uv run --python 3.12 python3 -m pytest` instead';
+
+/**
+ * Checks whether a Bash command runs pytest without `uv run`.
+ * @param {string} command - The shell command to inspect
+ * @returns {boolean} True if the command runs bare pytest (not via uv run)
+ */
+function isBarePytest(command) {
+  return /\bpytest\b/.test(command) && !/\buv\s+run\b/.test(command);
+}
+
+const BARE_PYTEST_MESSAGE =
+  'Do not run `pytest` directly - use `uv run --python 3.12 python3 -m pytest` instead';
 
 /**
  * Handles a PreToolUse hook event for the Bash tool.
@@ -52,6 +65,10 @@ function handlePreToolUse(hookInput) {
     return { blocked: true, message: PYTHON_M_PYTEST_MESSAGE };
   }
 
+  if (isBarePytest(command)) {
+    return { blocked: true, message: BARE_PYTEST_MESSAGE };
+  }
+
   return { blocked: false };
 }
 
@@ -59,9 +76,11 @@ function handlePreToolUse(hookInput) {
 module.exports = {
   isGitDashC,
   isPythonMPytest,
+  isBarePytest,
   handlePreToolUse,
   GIT_DASH_C_MESSAGE,
-  PYTHON_M_PYTEST_MESSAGE
+  PYTHON_M_PYTEST_MESSAGE,
+  BARE_PYTEST_MESSAGE
 };
 
 // Main entry point when run as a script

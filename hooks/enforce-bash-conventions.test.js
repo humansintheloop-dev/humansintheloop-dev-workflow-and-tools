@@ -5,7 +5,7 @@
 
 const assert = require('assert');
 
-const { isGitDashC, isPythonMPytest, handlePreToolUse, GIT_DASH_C_MESSAGE, PYTHON_M_PYTEST_MESSAGE } = require('./enforce-bash-conventions.js');
+const { isGitDashC, isPythonMPytest, isBarePytest, handlePreToolUse, GIT_DASH_C_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE } = require('./enforce-bash-conventions.js');
 
 // Test suite
 const tests = [];
@@ -136,7 +136,11 @@ test('allows uv run pytest', () => {
   assert.strictEqual(isPythonMPytest('uv run pytest tests/'), false);
 });
 
-test('allows plain pytest', () => {
+test('allows uv run --python 3.12 python3 -m pytest', () => {
+  assert.strictEqual(isPythonMPytest('uv run --python 3.12 python3 -m pytest tests/ -v -m unit'), false);
+});
+
+test('isPythonMPytest does not match bare pytest', () => {
   assert.strictEqual(isPythonMPytest('pytest tests/'), false);
 });
 
@@ -155,6 +159,50 @@ test('allows Bash tool with uv run pytest command', () => {
     tool_input: { command: 'uv run pytest tests/ -v' }
   });
   assert.strictEqual(result.blocked, false);
+});
+
+test('allows Bash tool with uv run --python 3.12 python3 -m pytest command', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'uv run --python 3.12 python3 -m pytest tests/ -v -m unit' }
+  });
+  assert.strictEqual(result.blocked, false);
+});
+
+// --- Tests for isBarePytest ---
+
+test('detects bare pytest', () => {
+  assert.strictEqual(isBarePytest('pytest tests/'), true);
+});
+
+test('detects bare pytest with flags', () => {
+  assert.strictEqual(isBarePytest('pytest -v tests/'), true);
+});
+
+test('allows uv run pytest', () => {
+  assert.strictEqual(isBarePytest('uv run pytest tests/'), false);
+});
+
+test('allows uv run --python 3.12 python3 -m pytest', () => {
+  assert.strictEqual(isBarePytest('uv run --python 3.12 python3 -m pytest tests/ -v -m unit'), false);
+});
+
+test('blocks Bash tool with bare pytest command', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'pytest tests/' }
+  });
+  assert.strictEqual(result.blocked, true);
+  assert.strictEqual(result.message, BARE_PYTEST_MESSAGE);
+});
+
+test('blocks Bash tool with bare pytest and flags', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'pytest -v --tb=short tests/' }
+  });
+  assert.strictEqual(result.blocked, true);
+  assert.strictEqual(result.message, BARE_PYTEST_MESSAGE);
 });
 
 // Run all tests

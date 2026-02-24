@@ -99,17 +99,17 @@ This steel thread implements the core branching simplification: replacing the tw
       6. Delegate to `worktree_mode.execute()`
     - [x] Remove the `WorkflowState` import if no longer needed in `_worktree_mode()` (check if state is still loaded here — it is, for the state file)
 
-- [ ] **Task 1.4: WorktreeMode._push_and_ensure_pr drops slice_number and completion marks PR ready**
+- [x] **Task 1.4: WorktreeMode._push_and_ensure_pr drops slice_number and completion marks PR ready**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/implement/test_worktree_mode.py -v`
   - Observable: `_push_and_ensure_pr()` calls `ensure_pr()` without `slice_number`. When all tasks complete, `_print_completion()` calls `gh_client.mark_pr_ready()` before printing the PR URL. The push error message says "branch" instead of "slice branch"
   - Evidence: Unit tests verify: (1) `ensure_pr` is called with only `(directory, name)` — no third argument, (2) when all tasks are complete and a PR exists, `mark_pr_ready` is called on the gh_client, (3) the "ready for review" status is printed
   - Steps:
-    - [ ] Add test in `tests/implement/test_worktree_mode.py` `TestWorktreeModeAllComplete`: when all tasks are complete and PR exists, `mark_pr_ready` is called on `fake_gh` and output contains "ready for review"
-    - [ ] Add test: when all tasks are complete but no PR exists (pr_number is None), `mark_pr_ready` is NOT called
-    - [ ] Update `_push_and_ensure_pr()` in `src/i2code/implement/worktree_mode.py`: remove `self._loop_steps.state.slice_number` from the `ensure_pr()` call, change error message from "slice branch" to "branch"
-    - [ ] Update `_print_completion()` in `src/i2code/implement/worktree_mode.py`: call `self._git_repo.gh_client.mark_pr_ready(self._git_repo.pr_number)` before printing the PR URL, print "PR marked ready for review" on success
-    - [ ] Verify existing `test_executes_single_task_push_pr_ci` still passes (the `ensure_pr` call args assertion may need updating)
+    - [x] Add test in `tests/implement/test_worktree_mode.py` `TestWorktreeModeAllComplete`: when all tasks are complete and PR exists, `mark_pr_ready` is called on `fake_gh` and output contains "ready for review"
+    - [x] Add test: when all tasks are complete but no PR exists (pr_number is None), `mark_pr_ready` is NOT called
+    - [x] Update `_push_and_ensure_pr()` in `src/i2code/implement/worktree_mode.py`: remove `self._loop_steps.state.slice_number` from the `ensure_pr()` call, change error message from "slice branch" to "branch"
+    - [x] Update `_print_completion()` in `src/i2code/implement/worktree_mode.py`: call `self._git_repo.gh_client.mark_pr_ready(self._git_repo.pr_number)` before printing the PR URL, print "PR marked ready for review" on success
+    - [x] Verify existing `test_executes_single_task_push_pr_ci` still passes (the `ensure_pr` call args assertion may need updating)
 
 ## Steel Thread 2: Dead Code Removal
 

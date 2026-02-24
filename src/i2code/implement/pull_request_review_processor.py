@@ -262,10 +262,7 @@ class PullRequestReviewProcessor:
             fix_cmd = CommandBuilder().build_fix_command(pr_url, group_content, description, interactive=interactive)
 
         print("  Invoking Claude to fix...")
-        if interactive:
-            self._claude_runner.run_interactive(fix_cmd, cwd=self._git_repo.working_tree_dir)
-        else:
-            self._claude_runner.run_batch(fix_cmd, cwd=self._git_repo.working_tree_dir)
+        self._claude_runner.run(fix_cmd, cwd=self._git_repo.working_tree_dir)
 
         head_after = self._git_repo.head_sha
         if head_before == head_after:

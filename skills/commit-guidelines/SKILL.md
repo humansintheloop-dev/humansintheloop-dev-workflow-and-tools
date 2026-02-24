@@ -11,7 +11,7 @@ Before committing, complete these steps in order:
 2. If the project has a configured linter, run it with auto-fix. Resolve any unfixable errors.
 3. If any new or modified shell scripts will be committed, run `shellcheck` on them and fix any issues.
 4. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it.
-   * If it fails with "Not inside a supported VCS root" (common in git worktrees), use `code_health_review` on each modified source file instead.
+   * If it fails with "Not inside a supported VCS root" (common in git worktrees), use `code_health_review` on each modified source file (production AND tests) instead.
    * **STOP if quality gates fail.** Do NOT commit until resolved. Do NOT dismiss findings as "pre-existing".
    * If Code Health regresses, refactor the flagged function before committing (boy scout rule).
    * Target a score of 10 for both new and modified files.

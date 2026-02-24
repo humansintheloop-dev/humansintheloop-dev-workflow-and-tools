@@ -215,7 +215,7 @@ class TestTaskDetectionAndExecution:
         assert len(pr_list) == 1, f"Expected 1 PR, got {len(pr_list)}"
         pr = pr_list[0]
         assert pr["isDraft"] is True
-        assert self.repo.idea_name in pr["title"]
+        assert pr["title"] == "Simple Test Idea"
         return pr
 
     def _assert_pr_is_open_and_not_complete(self, pr_number):

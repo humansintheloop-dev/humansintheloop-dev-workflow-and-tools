@@ -108,35 +108,6 @@ class GitRepository:
         branch_name = f"idea/{idea_name}"
         return self.ensure_branch(branch_name)
 
-    def ensure_integration_branch(self, idea_name, isolated=False):
-        """Ensure the integration branch exists for the given idea.
-
-        Args:
-            idea_name: Name of the idea.
-            isolated: When True, try tracking remote branch first.
-
-        Returns:
-            The integration branch name.
-        """
-        branch_name = f"idea/{idea_name}/integration"
-        return self.ensure_branch(branch_name, remote=isolated)
-
-    def ensure_slice_branch(self, idea_name, slice_number, slice_name, integration_branch):
-        """Ensure the slice branch exists for the given idea.
-
-        Args:
-            idea_name: Name of the idea.
-            slice_number: Slice number for branch naming.
-            slice_name: Human-readable slice name (will be sanitized).
-            integration_branch: Branch to create from.
-
-        Returns:
-            The slice branch name.
-        """
-        sanitized_name = self.sanitize_branch_name(slice_name)
-        branch_name = f"idea/{idea_name}/{slice_number:02d}-{sanitized_name}"
-        return self.ensure_branch(branch_name, from_ref=integration_branch)
-
     def checkout(self, branch_name):
         """Check out the named branch."""
         self._repo.git.checkout(branch_name)

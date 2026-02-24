@@ -268,7 +268,7 @@ class TestEnsureProjectSetupMethod:
 
         result = initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            integration_branch="idea/test/integration",
+            branch="idea/test/integration",
         )
 
         assert result is True
@@ -300,7 +300,7 @@ class TestEnsureProjectSetupMethod:
 
         result = initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            integration_branch="idea/test/integration",
+            branch="idea/test/integration",
             ci_timeout=300,
         )
 
@@ -333,7 +333,7 @@ class TestEnsureProjectSetupMethod:
 
         result = initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            integration_branch="idea/test/integration",
+            branch="idea/test/integration",
             skip_ci_wait=True,
         )
 
@@ -380,7 +380,7 @@ class TestEnsureProjectSetupMethod:
 
         result = initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            integration_branch="idea/test/integration",
+            branch="idea/test/integration",
         )
 
         assert result is True
@@ -424,13 +424,13 @@ class TestEnsureProjectSetupMethod:
 
         result = initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            integration_branch="idea/test/integration",
+            branch="idea/test/integration",
         )
 
         assert result is False
 
-    def test_checkouts_integration_branch(self):
-        """Should checkout the integration branch before scaffolding."""
+    def test_checkouts_branch(self):
+        """Should checkout the branch before scaffolding."""
         from tests.implement.fake_claude_runner import FakeClaudeRunner
         from tests.implement.fake_git_repository import FakeGitRepository
 
@@ -446,7 +446,7 @@ class TestEnsureProjectSetupMethod:
 
         initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            integration_branch="idea/test/integration",
+            branch="idea/test/integration",
         )
 
         assert ("checkout", "idea/test/integration") in fake_git.calls
@@ -478,7 +478,7 @@ class TestEnsureProjectSetupMethod:
 
         result = initializer.ensure_project_setup(
             idea_directory="/tmp/idea",
-            integration_branch="idea/test/integration",
+            branch="idea/test/integration",
         )
 
         assert result is False

@@ -39,13 +39,13 @@ class IsolateMode:
         Returns:
             The subprocess return code from isolarium.
         """
-        integration_branch = self._git_repo.ensure_integration_branch(
+        idea_branch = self._git_repo.ensure_idea_branch(
             self._project.name,
         )
 
         setup_ok = self._project_initializer.ensure_project_setup(
             idea_directory=self._project.directory,
-            integration_branch=integration_branch,
+            branch=idea_branch,
             interactive=not non_interactive,
             mock_claude=mock_claude,
             ci_timeout=ci_timeout,

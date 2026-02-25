@@ -4,32 +4,32 @@ import pytest
 
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.isolate_mode import IsolateMode
-from i2code.implement.project_setup import ProjectInitializer
+from i2code.implement.project_setup import ProjectScaffolder
 
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
 from fake_idea_project import FakeIdeaProject
 
 
-def _make_fake_project_initializer(setup_success=True):
-    """Build a ProjectInitializer with fakes and a controllable ensure_project_setup."""
+def _make_fake_project_scaffolder(setup_success=True):
+    """Build a ProjectScaffolder with fakes and a controllable ensure_scaffolding_setup."""
     from i2code.implement.command_builder import CommandBuilder
-    initializer = ProjectInitializer(
+    initializer = ProjectScaffolder(
         claude_runner=FakeClaudeRunner(),
         command_builder=CommandBuilder(),
         git_repo=FakeGitRepository(),
         build_fixer=None,
         push_fn=lambda branch: True,
     )
-    # Monkey-patch ensure_project_setup to record calls and return canned result
+    # Monkey-patch ensure_scaffolding_setup to record calls and return canned result
     initializer._setup_success = setup_success
     initializer._setup_calls = []
 
-    def fake_ensure_project_setup(**kwargs):
-        initializer._setup_calls.append(("ensure_project_setup", kwargs))
+    def fake_ensure_scaffolding_setup(opts, **kwargs):
+        initializer._setup_calls.append(("ensure_scaffolding_setup", {"opts": opts, **kwargs}))
         return initializer._setup_success
 
-    initializer.ensure_project_setup = fake_ensure_project_setup
+    initializer.ensure_scaffolding_setup = fake_ensure_scaffolding_setup
     return initializer
 
 
@@ -50,12 +50,12 @@ class FakeSubprocessRunner:
 
 def _make_mode(project=None, git_repo=None, setup_success=True):
     """Build an IsolateMode with fakes, returning (mode, initializer, subprocess_runner)."""
-    initializer = _make_fake_project_initializer(setup_success)
+    initializer = _make_fake_project_scaffolder(setup_success)
     subprocess_runner = FakeSubprocessRunner()
     mode = IsolateMode(
         git_repo=git_repo or FakeGitRepository(),
         project=project or FakeIdeaProject(),
-        project_initializer=initializer,
+        project_scaffolder=initializer,
         subprocess_runner=subprocess_runner,
     )
     return mode, initializer, subprocess_runner
@@ -80,11 +80,11 @@ def _execute_and_get_cmd(options=None, project=None, git_repo=None):
 class TestIsolateModeExecute:
     """IsolateMode.execute() runs project setup then delegates to isolarium."""
 
-    def test_calls_ensure_project_setup_then_runs_subprocess(self):
+    def test_calls_ensure_scaffolding_setup_then_runs_subprocess(self):
         mode, initializer, subprocess_runner = _make_mode()
         returncode = mode.execute(_opts())
 
-        assert any(c[0] == "ensure_project_setup" for c in initializer._setup_calls)
+        assert any(c[0] == "ensure_scaffolding_setup" for c in initializer._setup_calls)
         assert len(subprocess_runner.calls) == 1
         assert returncode == 0
 
@@ -151,15 +151,12 @@ class TestIsolateModeExecute:
         mode, initializer, _ = _make_mode()
         mode.execute(options)
 
-        setup_calls = [c for c in initializer._setup_calls if c[0] == "ensure_project_setup"]
+        setup_calls = [c for c in initializer._setup_calls if c[0] == "ensure_scaffolding_setup"]
         assert len(setup_calls) == 1
         kwargs = setup_calls[0][1]
+        assert kwargs["opts"] is options
         assert kwargs["idea_directory"] == "/tmp/fake-idea"
         assert kwargs["branch"] == "idea/test-feature"
-        assert kwargs["interactive"] is False
-        assert kwargs["mock_claude"] == "/mock.sh"
-        assert kwargs["ci_timeout"] == 900
-        assert kwargs["skip_ci_wait"] is True
 
     def test_interactive_mode_passes_interactive_flag_to_isolarium(self):
         cmd = _execute_and_get_cmd(_opts(non_interactive=False))

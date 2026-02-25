@@ -1,10 +1,14 @@
 """Project setup: scaffolding and branch setup."""
 
+import os
 import sys
 from typing import Optional
 
+SCAFFOLDING_GUARD_DIR = ".hitl_dev"
+SCAFFOLDING_GUARD_FILE = "scaffolding-done"
 
-class ProjectInitializer:
+
+class ProjectScaffolder:
     """Orchestrates project scaffolding using injected dependencies."""
 
     def __init__(self, claude_runner, command_builder, git_repo=None, build_fixer=None, push_fn=None):
@@ -14,19 +18,14 @@ class ProjectInitializer:
         self._build_fixer = build_fixer
         self._push_fn = push_fn
 
-    def ensure_project_setup(
-        self,
-        idea_directory: str,
-        branch: str,
-        interactive: bool = True,
-        mock_claude: Optional[str] = None,
-        skip_ci_wait: bool = False,
-        ci_timeout: int = 600,
-    ) -> bool:
+    def ensure_scaffolding_setup(self, opts, idea_directory: str, branch: str) -> bool:
         """Ensure project scaffolding exists on the given branch.
 
         Returns True if setup succeeded (CI passes), False otherwise.
         """
+        if self._guard_file_exists():
+            return True
+
         self._git_repo.checkout(branch)
 
         head_before = self._git_repo.head_sha
@@ -34,20 +33,24 @@ class ProjectInitializer:
         self.run_scaffolding(
             idea_directory,
             cwd=self._git_repo.working_tree_dir,
-            interactive=interactive,
-            mock_claude=mock_claude,
+            interactive=not opts.non_interactive,
+            mock_claude=opts.mock_claude,
         )
 
-        if not self._git_repo.head_advanced_since(head_before):
-            return True
+        head_advanced = self._git_repo.head_advanced_since(head_before)
+
+        self._write_guard_file()
 
         self._push_fn(branch)
+        
+        if not head_advanced:
+            return True
 
-        if skip_ci_wait:
+        if opts.skip_ci_wait:
             return True
 
         ci_success, failing_run = self._git_repo.gh_client.wait_for_workflow_completion(
-            branch, self._git_repo.head_sha, timeout_seconds=ci_timeout,
+            branch, self._git_repo.head_sha, timeout_seconds=opts.ci_timeout,
         )
 
         if not ci_success and failing_run:
@@ -86,4 +89,15 @@ class ProjectInitializer:
                     print(f"  Result: {text}", file=sys.stderr)
         sys.exit(1)
 
+    def _guard_file_path(self):
+        hitl_dir = os.path.join(self._git_repo.working_tree_dir, SCAFFOLDING_GUARD_DIR)
+        return os.path.join(hitl_dir, SCAFFOLDING_GUARD_FILE)
 
+    def _guard_file_exists(self):
+        return os.path.isfile(self._guard_file_path())
+
+    def _write_guard_file(self):
+        guard_file = self._guard_file_path()
+        os.makedirs(os.path.dirname(guard_file), exist_ok=True)
+        open(guard_file, "w").close()
+        self._git_repo.add_and_commit(guard_file, "Mark scaffolding complete")

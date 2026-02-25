@@ -74,6 +74,11 @@ class GitRepository:
         """Return True if HEAD has moved past the given SHA."""
         return self._repo.head.commit.hexsha != original_sha
 
+    def add_and_commit(self, file_path, message):
+        """Stage a file and commit it."""
+        self._repo.index.add([file_path])
+        self._repo.index.commit(message)
+
     @staticmethod
     def sanitize_branch_name(name: str) -> str:
         """Sanitize a string for use in a Git branch name."""

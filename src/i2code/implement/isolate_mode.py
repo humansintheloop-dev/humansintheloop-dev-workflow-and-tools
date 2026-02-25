@@ -37,31 +37,26 @@ class IsolateMode:
     Args:
         git_repo: GitRepository for branch and working-tree operations.
         project: IdeaProject with directory and name.
-        project_initializer: ProjectInitializer providing ensure_project_setup().
+        project_scaffolder: ProjectScaffolder providing ensure_scaffolding_setup().
         subprocess_runner: Object providing run(cmd) -> returncode.
     """
 
-    def __init__(self, git_repo, project, project_initializer, subprocess_runner):
+    def __init__(self, git_repo, project, project_scaffolder, subprocess_runner):
         self._git_repo = git_repo
         self._project = project
-        self._project_initializer = project_initializer
+        self._project_scaffolder = project_scaffolder
         self._subprocess_runner = subprocess_runner
 
     def execute(self, options):
-        """Run project setup on host, then delegate to isolarium VM.
+        """Run project setup on host (because host token can configure Github Actions workflow files), then delegate to Isolarium
 
         Returns:
             The subprocess return code from isolarium.
         """
         idea_branch = f"idea/{self._project.name}"
 
-        setup_ok = self._project_initializer.ensure_project_setup(
-            idea_directory=self._project.directory,
-            branch=idea_branch,
-            interactive=not options.non_interactive,
-            mock_claude=options.mock_claude,
-            ci_timeout=options.ci_timeout,
-            skip_ci_wait=options.skip_ci_wait,
+        setup_ok = self._project_scaffolder.ensure_scaffolding_setup(
+            options, idea_directory=self._project.directory, branch=idea_branch,
         )
         if not setup_ok:
             print("Error: Project scaffolding setup failed", file=sys.stderr)

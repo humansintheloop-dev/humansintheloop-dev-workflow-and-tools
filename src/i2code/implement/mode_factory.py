@@ -5,7 +5,7 @@ from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.isolate_mode import IsolateMode, SubprocessRunner
 from i2code.implement.pr_helpers import push_branch_to_remote
-from i2code.implement.project_setup import ProjectInitializer
+from i2code.implement.project_setup import ProjectScaffolder
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.trunk_mode import TrunkMode
 from i2code.implement.workspace import Workspace
@@ -35,7 +35,7 @@ class ModeFactory:
         )
 
     def make_isolate_mode(self, git_repo, project):
-        project_initializer = ProjectInitializer(
+        project_scaffolder = ProjectScaffolder(
             claude_runner=self._claude_runner,
             command_builder=CommandBuilder(),
             git_repo=git_repo,
@@ -45,7 +45,7 @@ class ModeFactory:
         return IsolateMode(
             git_repo=git_repo,
             project=project,
-            project_initializer=project_initializer,
+            project_scaffolder=project_scaffolder,
             subprocess_runner=SubprocessRunner(),
         )
 

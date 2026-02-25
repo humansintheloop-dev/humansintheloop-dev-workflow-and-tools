@@ -53,6 +53,9 @@ class FakeGitRepository:
     def set_head_sha(self, sha):
         self._head_sha = sha
 
+    def add_and_commit(self, file_path, message):
+        self.calls.append(("add_and_commit", file_path, message))
+
     def head_advanced_since(self, original_sha):
         self.calls.append(("head_advanced_since", original_sha))
         return self._head_sha != original_sha

@@ -1,4 +1,4 @@
-"""Integration tests for ensure_project_setup() with mock Claude."""
+"""Integration tests for ensure_scaffolding_setup() with mock Claude."""
 
 import os
 import stat
@@ -10,10 +10,17 @@ from git import Repo
 from i2code.implement.claude_runner import ClaudeRunner
 from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.git_repository import GitRepository
+from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.pr_helpers import push_branch_to_remote
-from i2code.implement.project_setup import ProjectInitializer
+from i2code.implement.project_setup import ProjectScaffolder
 
 from fake_github_client import FakeGitHubClient
+
+
+def _opts(**kwargs):
+    """Build ImplementOpts with defaults suitable for integration tests."""
+    kwargs.setdefault("idea_directory", "/tmp/fake-idea")
+    return ImplementOpts(**kwargs)
 
 
 def create_mock_claude_script(path):
@@ -65,10 +72,10 @@ def init_repo_with_remote(tmpdir):
 
 @pytest.mark.integration
 class TestEnsureProjectSetupWithMockClaude:
-    """Integration tests for ensure_project_setup with a mock Claude script."""
+    """Integration tests for ensure_scaffolding_setup with a mock Claude script."""
 
     def test_mock_claude_setup_creates_scaffolding_commit(self):
-        """Mock Claude creates scaffolding, ensure_project_setup detects and pushes it."""
+        """Mock Claude creates scaffolding, ensure_scaffolding_setup detects and pushes it."""
         with tempfile.TemporaryDirectory() as tmpdir:
             repo, repo_path, idea_dir = init_repo_with_remote(tmpdir)
 
@@ -78,17 +85,15 @@ class TestEnsureProjectSetupWithMockClaude:
             idea_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_idea_branch("test-idea")
 
             git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
-            initializer = ProjectInitializer(
+            initializer = ProjectScaffolder(
                 claude_runner=ClaudeRunner(),
                 command_builder=CommandBuilder(),
                 git_repo=git_repo,
                 push_fn=push_branch_to_remote,
             )
-            result = initializer.ensure_project_setup(
-                idea_directory=idea_dir,
-                branch=idea_branch,
-                mock_claude=mock_script,
-                skip_ci_wait=True,
+            result = initializer.ensure_scaffolding_setup(
+                _opts(mock_claude=mock_script, skip_ci_wait=True),
+                idea_directory=idea_dir, branch=idea_branch,
             )
 
             assert result is True
@@ -112,7 +117,7 @@ class TestEnsureProjectSetupWithMockClaude:
             idea_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_idea_branch("test-idea")
 
             git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
-            initializer = ProjectInitializer(
+            initializer = ProjectScaffolder(
                 claude_runner=ClaudeRunner(),
                 command_builder=CommandBuilder(),
                 git_repo=git_repo,
@@ -120,11 +125,9 @@ class TestEnsureProjectSetupWithMockClaude:
             )
 
             # First run — creates scaffolding
-            result1 = initializer.ensure_project_setup(
-                idea_directory=idea_dir,
-                branch=idea_branch,
-                mock_claude=mock_script,
-                skip_ci_wait=True,
+            opts = _opts(mock_claude=mock_script, skip_ci_wait=True)
+            result1 = initializer.ensure_scaffolding_setup(
+                opts, idea_directory=idea_dir, branch=idea_branch,
             )
             assert result1 is True
 
@@ -132,11 +135,8 @@ class TestEnsureProjectSetupWithMockClaude:
             commit_count_after_first = int(repo.git.rev_list("--count", "HEAD"))
 
             # Second run — should be a no-op (no new commits)
-            result2 = initializer.ensure_project_setup(
-                idea_directory=idea_dir,
-                branch=idea_branch,
-                mock_claude=mock_script,
-                skip_ci_wait=True,
+            result2 = initializer.ensure_scaffolding_setup(
+                opts, idea_directory=idea_dir, branch=idea_branch,
             )
             assert result2 is True
 

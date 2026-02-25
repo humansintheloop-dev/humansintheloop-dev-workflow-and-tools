@@ -10,7 +10,7 @@ from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.mode_factory import ModeFactory
-from i2code.implement.project_setup import ProjectInitializer
+from i2code.implement.project_setup import ProjectScaffolder
 from i2code.implement.scaffold_command import ScaffoldCommand
 
 
@@ -41,7 +41,7 @@ def assemble_scaffold(opts):
 
     repo = Repo(project.directory, search_parent_directories=True)
 
-    initializer = ProjectInitializer(
+    initializer = ProjectScaffolder(
         claude_runner=ClaudeRunner(interactive=not opts.non_interactive),
         command_builder=CommandBuilder(),
     )

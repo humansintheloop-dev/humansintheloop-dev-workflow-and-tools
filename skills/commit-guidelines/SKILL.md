@@ -19,9 +19,9 @@ Before committing, complete these steps in order:
 5. If adding or modifying production code and coverage tooling is available, verify test coverage and check that new/modified lines are covered.
 
 NOTES:
-- **Python dead code (step 1):** `uvx vulture src`
-- **Python linter (step 2):** `uvx ruff check --fix`
-- **Shell script linting (step 3):** `uvx --from shellcheck-py shellcheck <file.sh>` on each new or modified `.sh` file
+- **Python dead code (step 1):** `uv run --with vulture vulture src`
+- **Python linter (step 2):** `uv run --with ruff ruff check --fix`
+- **Shell script linting (step 3):** `uv run --with shellcheck-py shellcheck <file.sh>` on each new or modified `.sh` file
 - **Python coverage (step 5):** `uv run --with pytest --with pytest-mock --with pytest-cov pytest -m "unit or integration" --cov=src/i2code --cov-report=term-missing`
 
 # Running `git add` and `git commit`

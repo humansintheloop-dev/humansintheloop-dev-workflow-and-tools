@@ -23,7 +23,9 @@ Moving `self._collaborator = ConcreteClass(arg1, arg2)` into `__init__` couples 
 
 - `Workspace` in `src/i2code/implement/workspace.py` — bundles `git_repo` and `project` into a single parameter
 - `TrunkMode` in `src/i2code/implement/trunk_mode.py` — accepts `Workspace` instead of separate `git_repo` and `project`
-- `ModeFactory.make_trunk_mode` in `src/i2code/implement/mode_factory.py` — constructs `Workspace` and passes it to `TrunkMode`
+- `LoopSteps` in `src/i2code/implement/worktree_mode.py` — bundles `claude_runner`, `state`, `ci_monitor`, `build_fixer`, `review_processor`, and `commit_recovery` into a single parameter
+- `WorktreeMode` in `src/i2code/implement/worktree_mode.py` — accepts `LoopSteps` instead of six separate collaborators
+- `ModeFactory.make_trunk_mode`, `ModeFactory.make_worktree_mode` in `src/i2code/implement/mode_factory.py` — construct the bundles and pass them to the mode classes
 
 **Extract strategy:**
 

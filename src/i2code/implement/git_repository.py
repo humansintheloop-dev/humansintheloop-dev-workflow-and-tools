@@ -62,6 +62,10 @@ class GitRepository:
         return self._repo.working_tree_dir != self._main_repo_dir
 
     @property
+    def origin_url(self):
+        return self._repo.remotes.origin.url
+
+    @property
     def head_sha(self):
         return self._repo.head.commit.hexsha
 

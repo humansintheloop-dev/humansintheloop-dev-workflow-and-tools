@@ -5,10 +5,12 @@ import pytest
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.isolate_mode import IsolateMode
 from i2code.implement.project_scaffolding import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
+from i2code.implement.workspace import Workspace
 
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
 from fake_idea_project import FakeIdeaProject
+from fake_repo_cloner import FakeRepoCloner
 
 
 def _make_fake_project_scaffolder(setup_success=True):
@@ -55,17 +57,22 @@ class FakeSubprocessRunner:
         return self._returncode
 
 
-def _make_mode(project=None, git_repo=None, setup_success=True):
-    """Build an IsolateMode with fakes, returning (mode, initializer, subprocess_runner)."""
+def _make_mode(project=None, git_repo=None, setup_success=True, clone_creator=None):
+    """Build an IsolateMode with fakes, returning (mode, initializer, subprocess_runner, clone_creator)."""
     initializer = _make_fake_project_scaffolder(setup_success)
     subprocess_runner = FakeSubprocessRunner()
-    mode = IsolateMode(
+    clone_creator = clone_creator or FakeRepoCloner()
+    workspace = Workspace(
         git_repo=git_repo or FakeGitRepository(),
         project=project or FakeIdeaProject(),
+    )
+    mode = IsolateMode(
+        workspace=workspace,
         project_scaffolder=initializer,
         subprocess_runner=subprocess_runner,
+        clone_creator=clone_creator,
     )
-    return mode, initializer, subprocess_runner
+    return mode, initializer, subprocess_runner, clone_creator
 
 
 def _opts(**kwargs):
@@ -78,7 +85,7 @@ def _execute_and_get_cmd(options=None, project=None, git_repo=None):
     """Execute IsolateMode and return the subprocess command."""
     if options is None:
         options = _opts()
-    mode, _, subprocess_runner = _make_mode(project=project, git_repo=git_repo)
+    mode, _, subprocess_runner, _ = _make_mode(project=project, git_repo=git_repo)
     mode.execute(options)
     return subprocess_runner.calls[0][1]
 
@@ -88,7 +95,7 @@ class TestIsolateModeExecute:
     """IsolateMode.execute() runs project setup then delegates to isolarium."""
 
     def test_calls_ensure_scaffolding_setup_then_runs_subprocess(self):
-        mode, initializer, subprocess_runner = _make_mode()
+        mode, initializer, subprocess_runner, _ = _make_mode()
         returncode = mode.execute(_opts())
 
         assert any(c[0] == "ensure_scaffolding_setup" for c in initializer._setup_calls)
@@ -96,7 +103,7 @@ class TestIsolateModeExecute:
         assert returncode == 0
 
     def test_exits_when_project_setup_fails(self):
-        mode, _, subprocess_runner = _make_mode(setup_success=False)
+        mode, _, subprocess_runner, _ = _make_mode(setup_success=False)
 
         with pytest.raises(SystemExit) as exc_info:
             mode.execute(_opts())
@@ -141,7 +148,7 @@ class TestIsolateModeExecute:
         assert "--isolated" in cmd
 
     def test_returns_subprocess_returncode(self):
-        mode, _, subprocess_runner = _make_mode()
+        mode, _, subprocess_runner, _ = _make_mode()
         subprocess_runner.set_returncode(42)
         returncode = mode.execute(_opts())
 
@@ -155,7 +162,7 @@ class TestIsolateModeExecute:
             ci_timeout=900,
             skip_ci_wait=True,
         )
-        mode, initializer, _ = _make_mode()
+        mode, initializer, _, _ = _make_mode()
         mode.execute(options)
 
         setup_calls = [c for c in initializer._setup_calls if c[0] == "ensure_scaffolding_setup"]
@@ -230,6 +237,44 @@ class TestIsolateModeEnvFile:
 
         cmd = _execute_and_get_cmd(git_repo=git_repo)
         assert "--env-file" not in cmd
+
+
+@pytest.mark.unit
+class TestIsolateModeCloneCreator:
+    """IsolateMode calls clone_creator after scaffolding and uses clone path as subprocess cwd."""
+
+    def test_create_clone_called_with_worktree_path_idea_name_and_origin_url(self):
+        git_repo = FakeGitRepository(working_tree_dir="/home/user/project")
+        project = FakeIdeaProject(name="my-feature")
+        clone_creator = FakeRepoCloner(clone_path="/home/user/project-cl-my-feature")
+        mode, _, _, _ = _make_mode(
+            git_repo=git_repo, project=project, clone_creator=clone_creator,
+        )
+
+        mode.execute(_opts())
+
+        assert len(clone_creator.calls) == 1
+        call = clone_creator.calls[0]
+        assert call == ("create_clone", "/home/user/project", "my-feature", "https://github.com/test/repo.git")
+
+    def test_subprocess_cwd_is_clone_path(self):
+        clone_creator = FakeRepoCloner(clone_path="/tmp/clone-dir")
+        mode, _, subprocess_runner, _ = _make_mode(clone_creator=clone_creator)
+
+        mode.execute(_opts())
+
+        assert len(subprocess_runner.calls) == 1
+        _, _, cwd = subprocess_runner.calls[0]
+        assert cwd == "/tmp/clone-dir"
+
+    def test_create_clone_not_called_when_scaffolding_fails(self):
+        clone_creator = FakeRepoCloner()
+        mode, _, _, _ = _make_mode(setup_success=False, clone_creator=clone_creator)
+
+        with pytest.raises(SystemExit):
+            mode.execute(_opts())
+
+        assert len(clone_creator.calls) == 0
 
 
 @pytest.mark.unit

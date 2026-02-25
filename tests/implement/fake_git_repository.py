@@ -18,6 +18,7 @@ class FakeGitRepository:
         self._working_tree_dir = working_tree_dir
         self._gh_client = gh_client
         self._main_repo_dir = main_repo_dir or working_tree_dir
+        self._origin_url = "https://github.com/test/repo.git"
         self._head_sha = "aaa"
         self._branches = set()
         self._checked_out = None
@@ -45,6 +46,13 @@ class FakeGitRepository:
     @property
     def is_worktree(self):
         return self._working_tree_dir != self._main_repo_dir
+
+    @property
+    def origin_url(self):
+        return self._origin_url
+
+    def set_origin_url(self, url):
+        self._origin_url = url
 
     @property
     def head_sha(self):

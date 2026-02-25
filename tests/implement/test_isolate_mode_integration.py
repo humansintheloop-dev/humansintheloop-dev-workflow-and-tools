@@ -197,6 +197,12 @@ def _worktree_path_for(tmpdir, idea_name):
     return os.path.join(os.path.dirname(tmpdir), f"{tmpdir_name}-wt-{idea_name}")
 
 
+def _clone_path_for(worktree_path, idea_name):
+    """Compute the expected clone path for a given worktree."""
+    worktree_name = os.path.basename(worktree_path)
+    return os.path.join(os.path.dirname(worktree_path), f"{worktree_name}-cl-{idea_name}")
+
+
 @pytest.mark.integration_gh
 class TestIsolateModeCreatesWorktree:
     """--isolation-type creates a worktree and preserves the main repo branch."""
@@ -219,10 +225,13 @@ class TestIsolateModeCreatesWorktree:
         )
 
         worktree_path = _worktree_path_for(tmpdir, idea_name)
+        clone_path = _clone_path_for(worktree_path, idea_name)
 
         self._assert_main_branch_unchanged(tmpdir, original_branch)
         self._assert_worktree_created(worktree_path)
-        self._assert_isolarium_ran_in_worktree(fake_bin, idea_name, worktree_path)
+        self._assert_isolarium_ran_in_clone(fake_bin, idea_name, clone_path)
+        self._assert_clone_origin_is_github(clone_path, info["repo_full_name"])
+        self._assert_clone_has_independent_git(clone_path)
         self._assert_isolarium_args_correct(fake_bin, idea_name)
         self._assert_inner_idea_dir_is_relative(fake_bin, idea_name)
 
@@ -254,14 +263,31 @@ class TestIsolateModeCreatesWorktree:
             f"Expected worktree directory at {worktree_path}"
         )
 
-    def _assert_isolarium_ran_in_worktree(self, fake_bin, idea_name, worktree_path):
+    def _assert_isolarium_ran_in_clone(self, fake_bin, idea_name, clone_path):
         captured_branch = _read_capture(fake_bin, "branch")
         assert captured_branch == f"idea/{idea_name}", (
             f"Expected isolarium to run on idea branch, got {captured_branch}"
         )
         captured_cwd = _read_capture(fake_bin, "cwd")
-        assert os.path.realpath(captured_cwd) == os.path.realpath(worktree_path), (
-            f"Expected isolarium cwd to be worktree, got {captured_cwd}"
+        assert os.path.realpath(captured_cwd) == os.path.realpath(clone_path), (
+            f"Expected isolarium cwd to be clone, got {captured_cwd}"
+        )
+
+    def _assert_clone_origin_is_github(self, clone_path, repo_full_name):
+        result = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            cwd=clone_path, capture_output=True, text=True, check=True,
+        )
+        origin_url = result.stdout.strip()
+        assert repo_full_name in origin_url, (
+            f"Expected clone origin to contain {repo_full_name}, got {origin_url}"
+        )
+
+    def _assert_clone_has_independent_git(self, clone_path):
+        git_dir = os.path.join(clone_path, ".git")
+        assert os.path.isdir(git_dir), (
+            f"Expected clone .git to be a directory (not a worktree pointer), "
+            f"got {'file' if os.path.isfile(git_dir) else 'missing'}"
         )
 
     def _assert_isolarium_args_correct(self, fake_bin, idea_name):

@@ -53,10 +53,9 @@ class ImplementCommand:
         self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
         self.git_repo.set_upstream(idea_branch)
         print(f"Worktree: {self.git_repo.working_tree_dir}")
-        main_repo_dir = self.git_repo.main_repo_dir
-        setup_project(self.git_repo.working_tree_dir, source_root=main_repo_dir)
+        setup_project(self.git_repo)
         work_project = self.project.worktree_idea_project(
-            self.git_repo.working_tree_dir, main_repo_dir
+            self.git_repo.working_tree_dir, self.git_repo.main_repo_dir
         )
 
         isolate_mode = self.mode_factory.make_isolate_mode(
@@ -79,15 +78,14 @@ class ImplementCommand:
         if self.opts.isolated:
             print(f"Worktree: {self.git_repo.working_tree_dir}")
             self.git_repo.set_user_config("Test User", "test@test.com")
-            setup_project(self.git_repo.working_tree_dir)
+            setup_project(self.git_repo)
             work_project = self.project
         else:
-            main_repo_dir = self.git_repo.working_tree_dir
             self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
             print(f"Worktree: {self.git_repo.working_tree_dir}")
-            setup_project(self.git_repo.working_tree_dir, source_root=main_repo_dir)
+            setup_project(self.git_repo)
             work_project = self.project.worktree_idea_project(
-                self.git_repo.working_tree_dir, main_repo_dir
+                self.git_repo.working_tree_dir, self.git_repo.main_repo_dir
             )
 
         self.git_repo.branch = idea_branch

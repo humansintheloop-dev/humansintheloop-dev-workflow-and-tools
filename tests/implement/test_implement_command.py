@@ -192,9 +192,7 @@ class TestImplementCommandIsolateMode:
         cmd, project, git_repo, mock_wt_git_repo = self._setup_isolate_command()
         with pytest.raises(SystemExit):
             cmd.execute()
-        mock_setup.assert_called_once_with(
-            "/tmp/fake-repo-wt-test-feature", source_root="/tmp/fake-repo"
-        )
+        mock_setup.assert_called_once_with(mock_wt_git_repo)
 
 
 @pytest.mark.unit

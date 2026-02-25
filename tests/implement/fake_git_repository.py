@@ -43,6 +43,10 @@ class FakeGitRepository:
         return self._working_tree_dir
 
     @property
+    def is_worktree(self):
+        return self._working_tree_dir != self._main_repo_dir
+
+    @property
     def head_sha(self):
         return self._head_sha
 

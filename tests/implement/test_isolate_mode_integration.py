@@ -142,6 +142,10 @@ def github_repo_for_isolate():
     finally:
         delete_github_repo(repo_full_name)
         if "tmpdir" in locals():
+            worktree_path = _worktree_path_for(tmpdir, idea_name)
+            clone_path = _clone_path_for(worktree_path, idea_name)
+            shutil.rmtree(clone_path, ignore_errors=True)
+            shutil.rmtree(worktree_path, ignore_errors=True)
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 

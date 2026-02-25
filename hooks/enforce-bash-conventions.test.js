@@ -136,8 +136,8 @@ test('allows uv run pytest', () => {
   assert.strictEqual(isPythonMPytest('uv run pytest tests/'), false);
 });
 
-test('allows uv run --python 3.12 python3 -m pytest', () => {
-  assert.strictEqual(isPythonMPytest('uv run --python 3.12 python3 -m pytest tests/ -v -m unit'), false);
+test('allows uv run python -m pytest', () => {
+  assert.strictEqual(isPythonMPytest('uv run python -m pytest tests/ -v -m unit'), false);
 });
 
 test('isPythonMPytest does not match bare pytest', () => {
@@ -161,10 +161,10 @@ test('allows Bash tool with uv run pytest command', () => {
   assert.strictEqual(result.blocked, false);
 });
 
-test('allows Bash tool with uv run --python 3.12 python3 -m pytest command', () => {
+test('allows Bash tool with uv run python -m pytest command', () => {
   const result = handlePreToolUse({
     tool_name: 'Bash',
-    tool_input: { command: 'uv run --python 3.12 python3 -m pytest tests/ -v -m unit' }
+    tool_input: { command: 'uv run python -m pytest tests/ -v -m unit' }
   });
   assert.strictEqual(result.blocked, false);
 });
@@ -183,8 +183,8 @@ test('allows uv run pytest', () => {
   assert.strictEqual(isBarePytest('uv run pytest tests/'), false);
 });
 
-test('allows uv run --python 3.12 python3 -m pytest', () => {
-  assert.strictEqual(isBarePytest('uv run --python 3.12 python3 -m pytest tests/ -v -m unit'), false);
+test('allows uv run python -m pytest', () => {
+  assert.strictEqual(isBarePytest('uv run python -m pytest tests/ -v -m unit'), false);
 });
 
 test('blocks Bash tool with bare pytest command', () => {

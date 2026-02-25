@@ -2,8 +2,8 @@
 /**
  * PreToolUse hook that blocks certain Bash command patterns:
  * - `git -C <directory>` — use cd + git instead
- * - `python -m pytest` — use `uv run --python 3.12 python3 -m pytest` instead
- * - bare `pytest` — use `uv run --python 3.12 python3 -m pytest` instead
+ * - `python -m pytest` — use `uv run python -m pytest` instead
+ * - bare `pytest` — use `uv run python -m pytest` instead
  *
  * Exit codes:
  *   0 - allow the command
@@ -29,7 +29,7 @@ function isPythonMPytest(command) {
 }
 
 const PYTHON_M_PYTEST_MESSAGE =
-  'Do not use `python -m pytest` - use `uv run --python 3.12 python3 -m pytest` instead';
+  'Do not use `python -m pytest` - use `uv run python -m pytest` instead';
 
 /**
  * Checks whether a Bash command runs pytest without `uv run`.
@@ -41,7 +41,7 @@ function isBarePytest(command) {
 }
 
 const BARE_PYTEST_MESSAGE =
-  'Do not run `pytest` directly - use `uv run --python 3.12 python3 -m pytest` instead';
+  'Do not run `pytest` directly - use `uv run python -m pytest` instead';
 
 /**
  * Handles a PreToolUse hook event for the Bash tool.

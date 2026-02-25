@@ -29,49 +29,12 @@ class ImplementCommand:
         if self._all_tasks_already_complete():
             return
 
-        self._dispatch_mode()
-
-    def _validate_and_apply_defaults(self):
-        self.project.validate()
-        self.project.validate_files()
-        if self.opts.isolation_type:
-            self.opts.isolate = True
-
-    def _check_idea_files_committed(self):
-        if not self.opts.isolated and not self.opts.ignore_uncommitted_idea_changes:
-            validate_idea_files_committed(self.project)
-
-    def _dispatch_mode(self):
         if self.opts.trunk:
             self._trunk_mode()
         elif self.opts.isolate:
             self._isolate_mode()
         else:
             self._worktree_mode()
-
-    def _all_tasks_already_complete(self):
-        if self.project.get_next_task() is None:
-            print("All tasks are already complete.")
-            return True
-        return False
-
-    def _all_tasks_already_complete_in_worktree(self):
-        if self.project.get_next_task() is None:
-            print("All tasks are already complete in worktree.")
-            return True
-        return False
-
-    def _print_dry_run(self):
-        """Print configuration summary without executing."""
-        if self.opts.trunk:
-            mode = "trunk"
-        elif self.opts.isolate:
-            mode = "isolate"
-        else:
-            mode = "worktree"
-        print(f"Mode: {mode}")
-        print(f"Idea: {self.project.name}")
-        print(f"Directory: {self.project.directory}")
 
     def _trunk_mode(self):
         """Execute tasks locally on the current branch."""
@@ -81,11 +44,7 @@ class ImplementCommand:
             git_repo=self.git_repo,
             project=self.project,
         )
-        trunk_mode.execute(
-            non_interactive=self.opts.non_interactive,
-            mock_claude=self.opts.mock_claude,
-            extra_prompt=self.opts.extra_prompt,
-        )
+        trunk_mode.execute()
 
     def _isolate_mode(self):
         """Delegate execution to an isolarium VM."""
@@ -148,3 +107,37 @@ class ImplementCommand:
             work_project=work_project,
         )
         worktree_mode.execute()
+
+    def _validate_and_apply_defaults(self):
+        self.project.validate()
+        self.project.validate_files()
+        if self.opts.isolation_type:
+            self.opts.isolate = True
+
+    def _check_idea_files_committed(self):
+        if not self.opts.isolated and not self.opts.ignore_uncommitted_idea_changes:
+            validate_idea_files_committed(self.project)
+
+    def _all_tasks_already_complete(self):
+        if self.project.get_next_task() is None:
+            print("All tasks are already complete.")
+            return True
+        return False
+
+    def _all_tasks_already_complete_in_worktree(self):
+        if self.project.get_next_task() is None:
+            print("All tasks are already complete in worktree.")
+            return True
+        return False
+
+    def _print_dry_run(self):
+        """Print configuration summary without executing."""
+        if self.opts.trunk:
+            mode = "trunk"
+        elif self.opts.isolate:
+            mode = "isolate"
+        else:
+            mode = "worktree"
+        print(f"Mode: {mode}")
+        print(f"Idea: {self.project.name}")
+        print(f"Directory: {self.project.directory}")

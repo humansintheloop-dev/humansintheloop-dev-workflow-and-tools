@@ -8,6 +8,7 @@ from i2code.implement.pr_helpers import push_branch_to_remote
 from i2code.implement.project_setup import ProjectInitializer
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.trunk_mode import TrunkMode
+from i2code.implement.workspace import Workspace
 from i2code.implement.worktree_mode import LoopSteps, WorktreeMode
 
 
@@ -20,14 +21,15 @@ class ModeFactory:
         self._build_fixer_factory = build_fixer_factory
 
     def make_trunk_mode(self, git_repo, project):
+        workspace = Workspace(git_repo=git_repo, project=project)
         commit_recovery = TaskCommitRecovery(
             git_repo=git_repo,
             project=project,
             claude_runner=self._claude_runner,
         )
         return TrunkMode(
-            git_repo=git_repo,
-            project=project,
+            opts=self._opts,
+            workspace=workspace,
             claude_runner=self._claude_runner,
             commit_recovery=commit_recovery,
         )

@@ -142,11 +142,7 @@ class TestImplementCommandTrunkMode:
             git_repo=git_repo,
             project=project,
         )
-        cmd.mode_factory.make_trunk_mode.return_value.execute.assert_called_once_with(
-            non_interactive=False,
-            mock_claude=None,
-            extra_prompt=None,
-        )
+        cmd.mode_factory.make_trunk_mode.return_value.execute.assert_called_once_with()
 
 
 @pytest.mark.unit

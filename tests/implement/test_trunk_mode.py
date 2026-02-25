@@ -8,11 +8,19 @@ import pytest
 from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.idea_project import IdeaProject
+from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.trunk_mode import TrunkMode
+from i2code.implement.workspace import Workspace
 
 from conftest import write_plan_file, mark_task_complete, advance_head, combined
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
+
+
+def _opts(**kwargs):
+    """Build ImplementOpts with defaults suitable for TrunkMode tests."""
+    kwargs.setdefault("idea_directory", "/tmp/fake-idea")
+    return ImplementOpts(**kwargs)
 
 
 def _noop_commit_recovery(project, fake_runner):
@@ -39,8 +47,8 @@ class TestTrunkModeExecute:
             fake_runner = FakeClaudeRunner()
 
             mode = TrunkMode(
-                git_repo=fake_repo,
-                project=project,
+                opts=_opts(),
+                workspace=Workspace(fake_repo, project),
                 claude_runner=fake_runner,
                 commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
@@ -72,8 +80,8 @@ class TestTrunkModeExecute:
             )
 
             mode = TrunkMode(
-                git_repo=fake_repo,
-                project=project,
+                opts=_opts(),
+                workspace=Workspace(fake_repo, project),
                 claude_runner=fake_runner,
                 commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
@@ -102,8 +110,8 @@ class TestTrunkModeExecute:
             ))
 
             mode = TrunkMode(
-                git_repo=fake_repo,
-                project=project,
+                opts=_opts(),
+                workspace=Workspace(fake_repo, project),
                 claude_runner=fake_runner,
                 commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
@@ -140,8 +148,8 @@ class TestTrunkModeExecute:
             ])
 
             mode = TrunkMode(
-                git_repo=fake_repo,
-                project=project,
+                opts=_opts(),
+                workspace=Workspace(fake_repo, project),
                 claude_runner=fake_runner,
                 commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
@@ -170,8 +178,8 @@ class TestTrunkModeExecute:
             )
 
             mode = TrunkMode(
-                git_repo=fake_repo,
-                project=project,
+                opts=_opts(),
+                workspace=Workspace(fake_repo, project),
                 claude_runner=fake_runner,
                 commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
@@ -206,12 +214,12 @@ class TestTrunkModeExecute:
             ))
 
             mode = TrunkMode(
-                git_repo=fake_repo,
-                project=project,
+                opts=_opts(non_interactive=True, mock_claude="/mock"),
+                workspace=Workspace(fake_repo, project),
                 claude_runner=fake_runner,
                 commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
-            mode.execute(non_interactive=True, mock_claude="/mock")
+            mode.execute()
 
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
@@ -239,12 +247,12 @@ class TestTrunkModeExecute:
             )
 
             mode = TrunkMode(
-                git_repo=fake_repo,
-                project=project,
+                opts=_opts(mock_claude="/path/to/mock-script"),
+                workspace=Workspace(fake_repo, project),
                 claude_runner=fake_runner,
                 commit_recovery=_noop_commit_recovery(project, fake_runner),
             )
-            mode.execute(mock_claude="/path/to/mock-script")
+            mode.execute()
 
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
@@ -322,8 +330,8 @@ class TestTrunkModeWithRecovery:
             ])
 
             mode = TrunkMode(
-                git_repo=fake_repo,
-                project=project,
+                opts=_opts(),
+                workspace=Workspace(fake_repo, project),
                 claude_runner=fake_runner,
                 commit_recovery=commit_recovery,
             )
@@ -366,8 +374,8 @@ class TestTrunkModeWithRecovery:
             )
 
             mode = TrunkMode(
-                git_repo=fake_repo,
-                project=project,
+                opts=_opts(),
+                workspace=Workspace(fake_repo, project),
                 claude_runner=fake_runner,
                 commit_recovery=commit_recovery,
             )

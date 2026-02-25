@@ -97,7 +97,7 @@ class TestRunScaffoldingFailure:
 
     def _make_scaffolding_creator(self, fake):
         from i2code.implement.command_builder import CommandBuilder
-        from i2code.implement.project_setup import ScaffoldingCreator
+        from i2code.implement.project_scaffolding import ScaffoldingCreator
         return ScaffoldingCreator(command_builder=CommandBuilder(), claude_runner=fake)
 
     def test_non_zero_exit_code_exits(self):
@@ -190,7 +190,7 @@ class TestRunScaffolding:
 
     def _make_creator(self, fake_runner):
         from i2code.implement.command_builder import CommandBuilder
-        from i2code.implement.project_setup import ScaffoldingCreator
+        from i2code.implement.project_scaffolding import ScaffoldingCreator
 
         return ScaffoldingCreator(command_builder=CommandBuilder(), claude_runner=fake_runner)
 
@@ -268,7 +268,7 @@ class TestEnsureProjectSetupMethod:
 
     def _make_initializer(self, fake_runner=None, git_repo=None, build_fixer=None, push_fn=None):
         from i2code.implement.command_builder import CommandBuilder
-        from i2code.implement.project_setup import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
+        from i2code.implement.project_scaffolding import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
         from tests.implement.fake_claude_runner import FakeClaudeRunner
 
         runner = fake_runner or FakeClaudeRunner()

@@ -10,7 +10,7 @@ from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.mode_factory import ModeFactory
-from i2code.implement.project_setup import ScaffoldingCreator
+from i2code.implement.project_scaffolding import ScaffoldingCreator
 from i2code.implement.scaffold_command import ScaffoldCommand
 
 

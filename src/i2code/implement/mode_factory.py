@@ -5,7 +5,7 @@ from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.isolate_mode import IsolateMode, SubprocessRunner
 from i2code.implement.pr_helpers import push_branch_to_remote
-from i2code.implement.project_setup import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
+from i2code.implement.project_scaffolding import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.trunk_mode import TrunkMode
 from i2code.implement.workspace import Workspace

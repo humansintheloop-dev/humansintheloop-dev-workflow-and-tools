@@ -12,7 +12,7 @@ from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.git_repository import GitRepository
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.pr_helpers import push_branch_to_remote
-from i2code.implement.project_setup import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
+from i2code.implement.project_scaffolding import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
 
 from fake_github_client import FakeGitHubClient
 

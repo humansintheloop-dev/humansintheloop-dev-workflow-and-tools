@@ -4,7 +4,7 @@ import pytest
 
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.isolate_mode import IsolateMode
-from i2code.implement.project_setup import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
+from i2code.implement.project_scaffolding import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
 
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository

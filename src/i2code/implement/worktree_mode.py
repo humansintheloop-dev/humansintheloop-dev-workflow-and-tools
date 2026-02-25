@@ -57,7 +57,7 @@ class WorktreeMode:
         """Run the worktree task loop until all tasks are complete."""
         self._loop_steps.commit_recovery.commit_if_needed()
 
-        if self._git_repo.has_unpushed_commits():
+        if self._git_repo.branch_has_been_pushed() and self._git_repo.has_unpushed_commits():
             self._push_and_ensure_pr()
 
         while True:

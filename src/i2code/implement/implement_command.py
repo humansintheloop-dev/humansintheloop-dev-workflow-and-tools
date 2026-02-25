@@ -2,6 +2,7 @@
 
 import sys
 
+from i2code.implement.isolate_mode import IsolateOptions
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import validate_idea_files_committed
 from i2code.implement.worktree_setup import setup_project
@@ -91,10 +92,10 @@ class ImplementCommand:
         """Delegate execution to an isolarium VM."""
         idea_branch = self.git_repo.ensure_idea_branch(self.project.name)
         print(f"Idea branch: {idea_branch}")
-        main_repo_dir = self.git_repo.working_tree_dir
         self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
         self.git_repo.set_upstream(idea_branch)
         print(f"Worktree: {self.git_repo.working_tree_dir}")
+        main_repo_dir = self.git_repo.main_repo_dir
         setup_project(self.git_repo.working_tree_dir, source_root=main_repo_dir)
         work_project = self.project.worktree_idea_project(
             self.git_repo.working_tree_dir, main_repo_dir
@@ -104,7 +105,7 @@ class ImplementCommand:
             git_repo=self.git_repo,
             project=work_project,
         )
-        returncode = isolate_mode.execute(
+        options = IsolateOptions(
             non_interactive=self.opts.non_interactive,
             mock_claude=self.opts.mock_claude,
             cleanup=self.opts.cleanup,
@@ -115,6 +116,7 @@ class ImplementCommand:
             ci_timeout=self.opts.ci_timeout,
             isolation_type=self.opts.isolation_type,
         )
+        returncode = isolate_mode.execute(options)
         sys.exit(returncode)
 
     def _worktree_mode(self):

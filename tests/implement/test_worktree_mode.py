@@ -29,25 +29,53 @@ def _write_ci_workflow(work_dir):
         f.write("name: CI\n")
 
 
-def _make_worktree_mode(
-    plan_path, idea_dir, work_dir,
-    fake_repo=None, fake_runner=None, fake_gh=None, fake_state=None,
-    opts=None, commit_recovery=None, clock=None,
-):  # noqa: PLR0913
+def _setup_idea(tmpdir, tasks, *, ci_workflow=False):
+    """Create idea directory and plan file, returning (plan_path, idea_dir)."""
+    idea_name = "test-feature"
+    idea_dir = os.path.join(tmpdir, idea_name)
+    os.makedirs(idea_dir)
+    plan_path = write_plan_file(idea_dir, idea_name, tasks)
+    if ci_workflow:
+        _write_ci_workflow(tmpdir)
+    return plan_path, idea_dir
+
+
+def _setup_task_with_success(tmpdir, task_name="Set up"):
+    """Create a single pending task with side effects that succeed."""
+    plan_path, idea_dir = _setup_idea(tmpdir, [(1, 1, task_name, False)], ci_workflow=True)
+    fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
+    fake_runner = FakeClaudeRunner()
+    fake_runner.set_side_effect(
+        combined(
+            advance_head(fake_repo, "bbb"),
+            mark_task_complete(plan_path, 1, 1, task_name),
+        )
+    )
+    return plan_path, idea_dir, fake_repo, fake_runner
+
+
+def _make_success_mode(tmpdir, task_name="Set up", **mode_kwargs):
+    """Set up a mode with a successful task, ready to execute."""
+    plan_path, idea_dir, fake_repo, fake_runner = _setup_task_with_success(tmpdir, task_name)
+    mode_kwargs.setdefault('fake_repo', fake_repo)
+    mode_kwargs.setdefault('fake_runner', fake_runner)
+    mode_kwargs.setdefault('opts', ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True))
+    return _make_worktree_mode(plan_path, idea_dir, tmpdir, **mode_kwargs)
+
+
+def _make_worktree_mode(plan_path, idea_dir, work_dir, **kwargs):
     """Create a WorktreeMode with fakes wired up."""
     project = IdeaProject(idea_dir)
-    if fake_runner is None:
-        fake_runner = FakeClaudeRunner()
-    if fake_gh is None:
-        fake_gh = FakeGitHubClient()
-    if fake_state is None:
-        fake_state = FakeWorkflowState()
+    fake_runner = kwargs.get('fake_runner') or FakeClaudeRunner()
+    fake_gh = kwargs.get('fake_gh') or FakeGitHubClient()
+    fake_state = kwargs.get('fake_state') or FakeWorkflowState()
+    fake_repo = kwargs.get('fake_repo')
+    opts = kwargs.get('opts') or ImplementOpts(idea_directory=idea_dir)
+
     if fake_repo is None:
         fake_repo = FakeGitRepository(working_tree_dir=work_dir, gh_client=fake_gh)
     elif fake_repo.gh_client is None:
         fake_repo._gh_client = fake_gh
-    if opts is None:
-        opts = ImplementOpts(idea_directory=idea_dir)
 
     ci_monitor = GithubActionsMonitor(
         gh_client=fake_gh,
@@ -68,6 +96,7 @@ def _make_worktree_mode(
         claude_runner=fake_runner,
     )
 
+    commit_recovery = kwargs.get('commit_recovery')
     if commit_recovery is None:
         noop_repo = FakeGitRepository()
         commit_recovery = TaskCommitRecovery(
@@ -80,7 +109,7 @@ def _make_worktree_mode(
         build_fixer=build_fixer,
         review_processor=review_processor,
         commit_recovery=commit_recovery,
-        clock=clock,
+        clock=kwargs.get('clock'),
     )
     mode = WorktreeMode(
         opts=opts,
@@ -91,45 +120,39 @@ def _make_worktree_mode(
     return mode, fake_repo, fake_runner, fake_gh, fake_state
 
 
+def _make_all_complete_mode(tmpdir, *, pr_number=None, pr_url=None):
+    """Create a mode where all tasks are complete, optionally with a PR."""
+    plan_path, idea_dir = _setup_idea(tmpdir, [(1, 1, "Already done", True)])
+    fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
+    fake_repo.set_pushed(True)
+    fake_gh = FakeGitHubClient()
+    if pr_number is not None:
+        fake_repo.pr_number = pr_number
+        if pr_url:
+            fake_gh.set_pr_url(pr_number, pr_url)
+    mode, _, _, _, _ = _make_worktree_mode(
+        plan_path, idea_dir, tmpdir,
+        fake_repo=fake_repo, fake_gh=fake_gh,
+    )
+    return mode, fake_repo, fake_gh
+
+
 @pytest.mark.unit
 class TestWorktreeModeAllComplete:
     """When no tasks remain, WorktreeMode prints completion and PR URL."""
 
     def test_no_tasks_remaining_prints_all_completed(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Already done", True),
-            ])
-
-            mode, fake_repo, fake_runner, fake_gh, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-            )
+            mode, _, _ = _make_all_complete_mode(tmpdir)
             mode.execute()
 
             captured = capsys.readouterr()
             assert "All tasks completed!" in captured.out
-            assert len(fake_runner.calls) == 0
 
     def test_all_complete_prints_pr_url(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Already done", True),
-            ])
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_repo.pr_number = 42
-            fake_gh = FakeGitHubClient()
-            fake_gh.set_pr_url(42, "https://github.com/owner/repo/pull/42")
-
-            mode, _, _, _, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_gh=fake_gh,
+            mode, _, _ = _make_all_complete_mode(
+                tmpdir, pr_number=42, pr_url="https://github.com/owner/repo/pull/42",
             )
             mode.execute()
 
@@ -138,25 +161,11 @@ class TestWorktreeModeAllComplete:
 
     def test_all_complete_marks_pr_ready_when_pr_exists(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Already done", True),
-            ])
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_repo.pr_number = 42
-            fake_gh = FakeGitHubClient()
-            fake_gh.set_pr_url(42, "https://github.com/owner/repo/pull/42")
-
-            mode, _, _, _, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_gh=fake_gh,
+            mode, _, fake_gh = _make_all_complete_mode(
+                tmpdir, pr_number=42, pr_url="https://github.com/owner/repo/pull/42",
             )
             mode.execute()
 
-            # mark_pr_ready was called with the PR number
             mark_ready_calls = [c for c in fake_gh.calls if c[0] == "mark_pr_ready"]
             assert len(mark_ready_calls) == 1
             assert mark_ready_calls[0] == ("mark_pr_ready", 42)
@@ -166,23 +175,9 @@ class TestWorktreeModeAllComplete:
 
     def test_all_complete_does_not_mark_ready_when_no_pr(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Already done", True),
-            ])
-
-            fake_gh = FakeGitHubClient()
-
-            mode, _, _, _, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_gh=fake_gh,
-            )
-            # pr_number is None by default
+            mode, _, fake_gh = _make_all_complete_mode(tmpdir)
             mode.execute()
 
-            # mark_pr_ready should NOT have been called
             mark_ready_calls = [c for c in fake_gh.calls if c[0] == "mark_pr_ready"]
             assert len(mark_ready_calls) == 0
 
@@ -196,23 +191,7 @@ class TestWorktreeModeTaskExecution:
 
     def test_executes_single_task_push_pr_ci(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up project", False),
-            ])
-            _write_ci_workflow(tmpdir)
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_runner = FakeClaudeRunner()
-
-            fake_runner.set_side_effect(
-                combined(
-                    advance_head(fake_repo, "bbb"),
-                    mark_task_complete(plan_path, 1, 1, "Set up project"),
-                )
-            )
+            plan_path, idea_dir, fake_repo, fake_runner = _setup_task_with_success(tmpdir)
 
             mode, _, _, fake_gh, _ = _make_worktree_mode(
                 plan_path, idea_dir, tmpdir,
@@ -220,13 +199,9 @@ class TestWorktreeModeTaskExecution:
             )
             mode.execute()
 
-            # Claude was invoked
             assert len(fake_runner.calls) == 1
-            # Push was called
             assert ("push",) in fake_repo.calls
-            # PR was created
             assert any(c[0] == "ensure_pr" for c in fake_repo.calls)
-            # CI was waited on (via GithubActionsMonitor → gh_client)
             assert any(c[0] == "wait_for_workflow_completion" for c in fake_gh.calls)
 
             captured = capsys.readouterr()
@@ -234,65 +209,19 @@ class TestWorktreeModeTaskExecution:
 
     def test_reuses_existing_pr(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up project", False),
-            ])
-            _write_ci_workflow(tmpdir)
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_repo.pr_number = 42  # Pre-existing PR
-            fake_runner = FakeClaudeRunner()
-
-            fake_runner.set_side_effect(
-                combined(
-                    advance_head(fake_repo, "bbb"),
-                    mark_task_complete(plan_path, 1, 1, "Set up project"),
-                )
-            )
-
-            mode, _, _, _, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_runner=fake_runner,
-                opts=ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True),
-            )
+            mode, fake_repo, _, _, _ = _make_success_mode(tmpdir, "Set up project")
+            fake_repo.pr_number = 42
             mode.execute()
 
-            # ensure_pr should NOT have been called since PR already exists
             assert not any(c[0] == "ensure_pr" for c in fake_repo.calls)
 
     def test_uses_detected_default_branch_for_pr(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up", False),
-            ])
-            _write_ci_workflow(tmpdir)
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_runner = FakeClaudeRunner()
             fake_gh = FakeGitHubClient()
             fake_gh.set_default_branch("master")
-
-            fake_runner.set_side_effect(
-                combined(
-                    advance_head(fake_repo, "bbb"),
-                    mark_task_complete(plan_path, 1, 1, "Set up"),
-                )
-            )
-
-            mode, _, _, _, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_runner=fake_runner, fake_gh=fake_gh,
-                opts=ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True),
-            )
+            mode, fake_repo, _, _, _ = _make_success_mode(tmpdir, fake_gh=fake_gh)
             mode.execute()
 
-            # ensure_pr was called
             ensure_pr_calls = [c for c in fake_repo.calls if c[0] == "ensure_pr"]
             assert len(ensure_pr_calls) == 1
 
@@ -300,30 +229,9 @@ class TestWorktreeModeTaskExecution:
 def _run_with_fake_clock(capsys, start, end):
     """Run a single task with a fake clock and return captured stdout."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        idea_name = "test-feature"
-        idea_dir = os.path.join(tmpdir, idea_name)
-        os.makedirs(idea_dir)
-        plan_path = write_plan_file(idea_dir, idea_name, [
-            (1, 1, "Set up project", False),
-        ])
-        _write_ci_workflow(tmpdir)
-
-        fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-        fake_runner = FakeClaudeRunner()
-
-        fake_runner.set_side_effect(
-            combined(
-                advance_head(fake_repo, "bbb"),
-                mark_task_complete(plan_path, 1, 1, "Set up project"),
-            )
-        )
-
         clock_values = iter([start, end])
-        mode, _, _, _, _ = _make_worktree_mode(
-            plan_path, idea_dir, tmpdir,
-            fake_repo=fake_repo, fake_runner=fake_runner,
-            opts=ImplementOpts(idea_directory=idea_dir, skip_ci_wait=True),
-            clock=lambda: next(clock_values),
+        mode, _, _, _, _ = _make_success_mode(
+            tmpdir, "Set up project", clock=lambda: next(clock_values),
         )
         mode.execute()
 
@@ -342,27 +250,48 @@ def test_prints_task_duration(capsys, start, end, expected_duration):
     assert f"Task completed successfully in {expected_duration}." in output
 
 
+def _setup_failure_task(tmpdir, task_name="Set up", *, ci_workflow=True):
+    """Create a single pending task for failure testing."""
+    plan_path, idea_dir = _setup_idea(
+        tmpdir, [(1, 1, task_name, False)], ci_workflow=ci_workflow,
+    )
+    fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
+    fake_runner = FakeClaudeRunner()
+    return plan_path, idea_dir, fake_repo, fake_runner
+
+
+def _make_completed_task_failure_mode(tmpdir, *, ci_workflow=True, customize_repo=None):
+    """Make a mode where the task completes but a subsequent step fails."""
+    plan_path, idea_dir, fake_repo, fake_runner = _setup_failure_task(
+        tmpdir, ci_workflow=ci_workflow,
+    )
+    if customize_repo:
+        customize_repo(fake_repo)
+    fake_runner.set_side_effect(
+        combined(
+            advance_head(fake_repo, "bbb"),
+            mark_task_complete(plan_path, 1, 1, "Set up"),
+        )
+    )
+    return _make_worktree_mode(
+        plan_path, idea_dir, tmpdir,
+        fake_repo=fake_repo, fake_runner=fake_runner,
+    )
+
+
 @pytest.mark.unit
 class TestWorktreeModeFailures:
     """WorktreeMode exits on various failure conditions."""
 
     def test_exits_on_claude_failure(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up", False),
-            ])
-
-            fake_runner = FakeClaudeRunner()
+            plan_path, idea_dir, _, fake_runner = _setup_failure_task(tmpdir)
             fake_runner.set_result(ClaudeResult(
                 returncode=1, output=CapturedOutput(stderr="error"),
             ))
 
             mode, _, _, _, _ = _make_worktree_mode(
-                write_plan_file(idea_dir, idea_name, [(1, 1, "Set up", False)]),
-                idea_dir, tmpdir, fake_runner=fake_runner,
+                plan_path, idea_dir, tmpdir, fake_runner=fake_runner,
             )
 
             with pytest.raises(SystemExit) as exc_info:
@@ -372,19 +301,8 @@ class TestWorktreeModeFailures:
 
     def test_exits_when_task_not_marked_complete(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up", False),
-            ])
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_runner = FakeClaudeRunner()
-            # Advance HEAD (success) but do NOT mark task complete
-            fake_runner.set_side_effect(
-                advance_head(fake_repo, "bbb"),
-            )
+            plan_path, idea_dir, fake_repo, fake_runner = _setup_failure_task(tmpdir)
+            fake_runner.set_side_effect(advance_head(fake_repo, "bbb"))
 
             mode, _, _, _, _ = _make_worktree_mode(
                 plan_path, idea_dir, tmpdir,
@@ -398,27 +316,7 @@ class TestWorktreeModeFailures:
 
     def test_exits_when_no_ci_workflow_files(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up", False),
-            ])
-            # Deliberately do NOT create .github/workflows/
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_runner = FakeClaudeRunner()
-            fake_runner.set_side_effect(
-                combined(
-                    advance_head(fake_repo, "bbb"),
-                    mark_task_complete(plan_path, 1, 1, "Set up"),
-                )
-            )
-
-            mode, _, _, _, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_runner=fake_runner,
-            )
+            mode, _, _, _, _ = _make_completed_task_failure_mode(tmpdir, ci_workflow=False)
 
             with pytest.raises(SystemExit) as exc_info:
                 mode.execute()
@@ -426,34 +324,40 @@ class TestWorktreeModeFailures:
             assert exc_info.value.code == 1
 
     def test_exits_when_push_fails(self):
+        def break_push(repo):
+            repo.push = lambda: (repo.calls.append(("push",)) or False)
+
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up", False),
-            ])
-            _write_ci_workflow(tmpdir)
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_repo.push = lambda: (fake_repo.calls.append(("push",)) or False)  # push returns False
-            fake_runner = FakeClaudeRunner()
-            fake_runner.set_side_effect(
-                combined(
-                    advance_head(fake_repo, "bbb"),
-                    mark_task_complete(plan_path, 1, 1, "Set up"),
-                )
-            )
-
-            mode, _, _, _, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_runner=fake_runner,
+            mode, _, _, _, _ = _make_completed_task_failure_mode(
+                tmpdir, customize_repo=break_push,
             )
 
             with pytest.raises(SystemExit) as exc_info:
                 mode.execute()
 
             assert exc_info.value.code == 1
+
+
+def _make_non_interactive_mode(tmpdir, result_output, *, skip_ci_wait=False):
+    """Make a non-interactive mode with a specific ClaudeResult output."""
+    plan_path, idea_dir, fake_repo, fake_runner = _setup_failure_task(tmpdir)
+    fake_runner.set_side_effect(
+        combined(
+            advance_head(fake_repo, "bbb"),
+            mark_task_complete(plan_path, 1, 1, "Set up"),
+        )
+    )
+    fake_runner.set_result(ClaudeResult(
+        returncode=0, output=CapturedOutput(result_output),
+    ))
+    opts = ImplementOpts(
+        idea_directory=idea_dir, non_interactive=True,
+        mock_claude="/mock", skip_ci_wait=skip_ci_wait,
+    )
+    return _make_worktree_mode(
+        plan_path, idea_dir, tmpdir,
+        fake_repo=fake_repo, fake_runner=fake_runner, opts=opts,
+    )
 
 
 @pytest.mark.unit
@@ -462,31 +366,8 @@ class TestWorktreeModeNonInteractive:
 
     def test_non_interactive_uses_capture_and_checks_success_tag(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up", False),
-            ])
-            _write_ci_workflow(tmpdir)
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_runner = FakeClaudeRunner()
-            fake_runner.set_result(ClaudeResult(
-                returncode=0,
-                output=CapturedOutput("<SUCCESS>task implemented: bbb</SUCCESS>"),
-            ))
-            fake_runner.set_side_effect(
-                combined(
-                    advance_head(fake_repo, "bbb"),
-                    mark_task_complete(plan_path, 1, 1, "Set up"),
-                )
-            )
-
-            mode, _, _, _, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_runner=fake_runner,
-                opts=ImplementOpts(idea_directory=idea_dir, non_interactive=True, mock_claude="/mock", skip_ci_wait=True),
+            mode, _, fake_runner, _, _ = _make_non_interactive_mode(
+                tmpdir, "<SUCCESS>task implemented: bbb</SUCCESS>", skip_ci_wait=True,
             )
             mode.execute()
 
@@ -496,30 +377,8 @@ class TestWorktreeModeNonInteractive:
 
     def test_non_interactive_exits_without_success_tag(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up", False),
-            ])
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_runner = FakeClaudeRunner()
-            fake_runner.set_result(ClaudeResult(
-                returncode=0,
-                output=CapturedOutput("some output without success tag"),
-            ))
-            fake_runner.set_side_effect(
-                combined(
-                    advance_head(fake_repo, "bbb"),
-                    mark_task_complete(plan_path, 1, 1, "Set up"),
-                )
-            )
-
-            mode, _, _, _, _ = _make_worktree_mode(
-                plan_path, idea_dir, tmpdir,
-                fake_repo=fake_repo, fake_runner=fake_runner,
-                opts=ImplementOpts(idea_directory=idea_dir, non_interactive=True, mock_claude="/mock"),
+            mode, _, _, _, _ = _make_non_interactive_mode(
+                tmpdir, "some output without success tag",
             )
 
             with pytest.raises(SystemExit) as exc_info:
@@ -548,16 +407,10 @@ class TestWorktreeModeWithRecovery:
     def test_recovery_needed_and_succeeds_then_main_loop_continues(self, capsys):
         """When recovery is needed and succeeds, recovery call happens before task-loop call."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-
-            # Task 1.1 already completed (recovered), task 1.2 pending
-            plan_path = write_plan_file(idea_dir, idea_name, [
+            plan_path, idea_dir = _setup_idea(tmpdir, [
                 (1, 1, "Already recovered", True),
                 (1, 2, "Next task", False),
-            ])
-            _write_ci_workflow(tmpdir)
+            ], ci_workflow=True)
 
             fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
             fake_runner = FakeClaudeRunner()
@@ -608,17 +461,9 @@ class TestWorktreeModeWithRecovery:
     def test_no_recovery_needed_main_loop_starts_normally(self, capsys):
         """When no recovery is needed, the main loop starts without recovery call."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up project", False),
-            ])
-            _write_ci_workflow(tmpdir)
-
-            fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
-            fake_runner = FakeClaudeRunner()
+            plan_path, idea_dir, fake_repo, fake_runner = _setup_task_with_success(
+                tmpdir, "Set up project",
+            )
 
             project = IdeaProject(idea_dir)
 
@@ -627,13 +472,6 @@ class TestWorktreeModeWithRecovery:
 
             commit_recovery = TaskCommitRecovery(
                 git_repo=fake_repo, project=project, claude_runner=fake_runner,
-            )
-
-            fake_runner.set_side_effect(
-                combined(
-                    advance_head(fake_repo, "bbb"),
-                    mark_task_complete(plan_path, 1, 1, "Set up project"),
-                )
             )
 
             mode, _, _, _, _ = _make_worktree_mode(

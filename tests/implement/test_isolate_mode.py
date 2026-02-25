@@ -2,7 +2,7 @@
 
 import pytest
 
-from i2code.implement.isolate_mode import IsolateMode
+from i2code.implement.isolate_mode import IsolateMode, IsolateOptions
 from i2code.implement.project_setup import ProjectInitializer
 
 from fake_claude_runner import FakeClaudeRunner
@@ -47,58 +47,49 @@ class FakeSubprocessRunner:
         return self._returncode
 
 
+def _make_mode(project=None, git_repo=None, setup_success=True):
+    """Build an IsolateMode with fakes, returning (mode, initializer, subprocess_runner)."""
+    initializer = _make_fake_project_initializer(setup_success)
+    subprocess_runner = FakeSubprocessRunner()
+    mode = IsolateMode(
+        git_repo=git_repo or FakeGitRepository(),
+        project=project or FakeIdeaProject(),
+        project_initializer=initializer,
+        subprocess_runner=subprocess_runner,
+    )
+    return mode, initializer, subprocess_runner
+
+
+def _execute_and_get_cmd(options=None, project=None, git_repo=None):
+    """Execute IsolateMode and return the subprocess command."""
+    mode, _, subprocess_runner = _make_mode(project=project, git_repo=git_repo)
+    mode.execute(options)
+    return subprocess_runner.calls[0][1]
+
+
 @pytest.mark.unit
 class TestIsolateModeExecute:
     """IsolateMode.execute() runs project setup then delegates to isolarium."""
 
     def test_calls_ensure_project_setup_then_runs_subprocess(self):
-        fake_initializer = _make_fake_project_initializer()
-        fake_subprocess = FakeSubprocessRunner()
-        project = FakeIdeaProject()
-        git_repo = FakeGitRepository()
-
-        mode = IsolateMode(
-            git_repo=git_repo,
-            project=project,
-            project_initializer=fake_initializer,
-            subprocess_runner=fake_subprocess,
-        )
+        mode, initializer, subprocess_runner = _make_mode()
         returncode = mode.execute()
 
-        assert any(c[0] == "ensure_project_setup" for c in fake_initializer._setup_calls)
-        assert len(fake_subprocess.calls) == 1
+        assert any(c[0] == "ensure_project_setup" for c in initializer._setup_calls)
+        assert len(subprocess_runner.calls) == 1
         assert returncode == 0
 
     def test_exits_when_project_setup_fails(self):
-        fake_initializer = _make_fake_project_initializer(setup_success=False)
-        fake_subprocess = FakeSubprocessRunner()
-        project = FakeIdeaProject()
-
-        mode = IsolateMode(
-            git_repo=FakeGitRepository(),
-            project=project,
-            project_initializer=fake_initializer,
-            subprocess_runner=fake_subprocess,
-        )
+        mode, _, subprocess_runner = _make_mode(setup_success=False)
 
         with pytest.raises(SystemExit) as exc_info:
             mode.execute()
 
         assert exc_info.value.code == 1
-        assert len(fake_subprocess.calls) == 0
+        assert len(subprocess_runner.calls) == 0
 
     def test_forwards_options_to_isolarium_command(self):
-        fake_initializer = _make_fake_project_initializer()
-        fake_subprocess = FakeSubprocessRunner()
-        project = FakeIdeaProject()
-
-        mode = IsolateMode(
-            git_repo=FakeGitRepository(),
-            project=project,
-            project_initializer=fake_initializer,
-            subprocess_runner=fake_subprocess,
-        )
-        mode.execute(
+        options = IsolateOptions(
             non_interactive=True,
             mock_claude="/mock.sh",
             cleanup=True,
@@ -108,8 +99,8 @@ class TestIsolateModeExecute:
             ci_fix_retries=5,
             ci_timeout=900,
         )
+        cmd = _execute_and_get_cmd(options)
 
-        cmd = fake_subprocess.calls[0][1]
         assert "--non-interactive" in cmd
         assert "--mock-claude" in cmd
         assert "/mock.sh" in cmd
@@ -124,60 +115,34 @@ class TestIsolateModeExecute:
         assert "900" in cmd
 
     def test_builds_isolarium_command_with_idea_name(self):
-        fake_initializer = _make_fake_project_initializer()
-        fake_subprocess = FakeSubprocessRunner()
         project = FakeIdeaProject(directory="/home/user/project/docs/features/test-feature")
+        git_repo = FakeGitRepository(working_tree_dir="/home/user/project")
+        cmd = _execute_and_get_cmd(project=project, git_repo=git_repo)
 
-        mode = IsolateMode(
-            git_repo=FakeGitRepository(working_tree_dir="/home/user/project"),
-            project=project,
-            project_initializer=fake_initializer,
-            subprocess_runner=fake_subprocess,
-        )
-        mode.execute()
-
-        cmd = fake_subprocess.calls[0][1]
         assert "isolarium" in cmd
         assert "--name" in cmd
         assert "i2code-test-feature" in cmd
         assert "--isolated" in cmd
 
     def test_returns_subprocess_returncode(self):
-        fake_initializer = _make_fake_project_initializer()
-        fake_subprocess = FakeSubprocessRunner()
-        fake_subprocess.set_returncode(42)
-        project = FakeIdeaProject()
-
-        mode = IsolateMode(
-            git_repo=FakeGitRepository(),
-            project=project,
-            project_initializer=fake_initializer,
-            subprocess_runner=fake_subprocess,
-        )
+        mode, _, subprocess_runner = _make_mode()
+        subprocess_runner.set_returncode(42)
         returncode = mode.execute()
 
         assert returncode == 42
 
     def test_forwards_setup_parameters(self):
-        fake_initializer = _make_fake_project_initializer()
-        fake_subprocess = FakeSubprocessRunner()
-        project = FakeIdeaProject()
-
-        mode = IsolateMode(
-            git_repo=FakeGitRepository(),
-            project=project,
-            project_initializer=fake_initializer,
-            subprocess_runner=fake_subprocess,
-        )
-        mode.execute(
+        options = IsolateOptions(
             non_interactive=True,
             mock_claude="/mock.sh",
             ci_fix_retries=5,
             ci_timeout=900,
             skip_ci_wait=True,
         )
+        mode, initializer, _ = _make_mode()
+        mode.execute(options)
 
-        setup_calls = [c for c in fake_initializer._setup_calls if c[0] == "ensure_project_setup"]
+        setup_calls = [c for c in initializer._setup_calls if c[0] == "ensure_project_setup"]
         assert len(setup_calls) == 1
         kwargs = setup_calls[0][1]
         assert kwargs["idea_directory"] == "/tmp/fake-idea"
@@ -188,36 +153,14 @@ class TestIsolateModeExecute:
         assert kwargs["skip_ci_wait"] is True
 
     def test_interactive_mode_passes_interactive_flag_to_isolarium(self):
-        fake_initializer = _make_fake_project_initializer()
-        fake_subprocess = FakeSubprocessRunner()
-        project = FakeIdeaProject()
+        cmd = _execute_and_get_cmd(IsolateOptions(non_interactive=False))
 
-        mode = IsolateMode(
-            git_repo=FakeGitRepository(),
-            project=project,
-            project_initializer=fake_initializer,
-            subprocess_runner=fake_subprocess,
-        )
-        mode.execute(non_interactive=False)
-
-        cmd = fake_subprocess.calls[0][1]
         assert "--interactive" in cmd
         assert "--non-interactive" not in cmd
 
     def test_non_interactive_omits_interactive_flag(self):
-        fake_initializer = _make_fake_project_initializer()
-        fake_subprocess = FakeSubprocessRunner()
-        project = FakeIdeaProject()
+        cmd = _execute_and_get_cmd(IsolateOptions(non_interactive=True))
 
-        mode = IsolateMode(
-            git_repo=FakeGitRepository(),
-            project=project,
-            project_initializer=fake_initializer,
-            subprocess_runner=fake_subprocess,
-        )
-        mode.execute(non_interactive=True)
-
-        cmd = fake_subprocess.calls[0][1]
         assert "--interactive" not in cmd
 
 
@@ -225,19 +168,8 @@ class TestIsolateModeExecute:
 class TestIsolateModeIsolationType:
     """IsolateMode inserts --type TYPE into isolarium global args when isolation_type is provided."""
 
-    def _execute_and_capture_cmd(self, isolation_type):
-        fake_subprocess = FakeSubprocessRunner()
-        mode = IsolateMode(
-            git_repo=FakeGitRepository(),
-            project=FakeIdeaProject(),
-            project_initializer=_make_fake_project_initializer(),
-            subprocess_runner=fake_subprocess,
-        )
-        mode.execute(isolation_type=isolation_type)
-        return fake_subprocess.calls[0][1]
-
-    def test_includes_type_in_isolarium_global_args_when_isolation_type_provided(self):
-        cmd = self._execute_and_capture_cmd(isolation_type="docker")
+    def test_includes_type_in_isolarium_global_args(self):
+        cmd = _execute_and_get_cmd(IsolateOptions(isolation_type="docker"))
 
         name_idx = cmd.index("--name")
         run_idx = cmd.index("run")
@@ -246,17 +178,45 @@ class TestIsolateModeIsolationType:
         assert type_idx > name_idx
         assert type_idx < run_idx
 
-    def test_omits_type_from_isolarium_when_isolation_type_is_none(self):
-        cmd = self._execute_and_capture_cmd(isolation_type=None)
+    def test_omits_type_when_isolation_type_is_none(self):
+        cmd = _execute_and_get_cmd(IsolateOptions())
 
         assert "--type" not in cmd
 
     def test_isolation_type_not_forwarded_to_inner_command(self):
-        cmd = self._execute_and_capture_cmd(isolation_type="docker")
+        cmd = _execute_and_get_cmd(IsolateOptions(isolation_type="docker"))
 
         separator_idx = cmd.index("--")
         inner_cmd = cmd[separator_idx + 1:]
         assert "--type" not in inner_cmd
+
+
+@pytest.mark.unit
+class TestIsolateModeEnvFile:
+    """IsolateMode passes --env-file to isolarium when .env.local exists in main repo."""
+
+    def test_includes_env_file_when_present(self, tmp_path):
+        main_repo = tmp_path / "main-repo"
+        main_repo.mkdir()
+        env_file = main_repo / ".env.local"
+        env_file.write_text("SECRET=value\n")
+        git_repo = FakeGitRepository(main_repo_dir=str(main_repo))
+
+        cmd = _execute_and_get_cmd(git_repo=git_repo)
+
+        assert "--env-file" in cmd
+        env_idx = cmd.index("--env-file")
+        assert cmd[env_idx + 1] == str(env_file)
+        run_idx = cmd.index("run")
+        assert env_idx < run_idx
+
+    def test_omits_env_file_when_not_present(self, tmp_path):
+        main_repo = tmp_path / "main-repo"
+        main_repo.mkdir()
+        git_repo = FakeGitRepository(main_repo_dir=str(main_repo))
+
+        cmd = _execute_and_get_cmd(git_repo=git_repo)
+        assert "--env-file" not in cmd
 
 
 @pytest.mark.unit

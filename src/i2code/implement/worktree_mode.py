@@ -57,6 +57,9 @@ class WorktreeMode:
         """Run the worktree task loop until all tasks are complete."""
         self._loop_steps.commit_recovery.commit_if_needed()
 
+        if self._git_repo.has_unpushed_commits():
+            self._push_and_ensure_pr()
+
         while True:
             if self._loop_steps.build_fixer.check_and_fix_ci():
                 continue
@@ -79,7 +82,9 @@ class WorktreeMode:
         start = self._clock()
         self._run_claude_and_validate(next_task, task_description)
         elapsed = self._clock() - start
-        self._push_and_ensure_pr(elapsed)
+        duration = _format_duration(elapsed)
+        print(f"Task completed successfully in {duration}.")
+        self._push_and_ensure_pr()
         self._loop_steps.ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)
 
     def _run_claude_and_validate(self, next_task, task_description):
@@ -108,10 +113,9 @@ class WorktreeMode:
             print("Tasks must create a CI workflow (e.g., .github/workflows/ci.yml) before pushing.", file=sys.stderr)
             sys.exit(1)
 
-    def _push_and_ensure_pr(self, elapsed_seconds):
+    def _push_and_ensure_pr(self):
         """Push changes and create a Draft PR if one doesn't exist."""
-        duration = _format_duration(elapsed_seconds)
-        print(f"Task completed successfully in {duration}. Pushing changes...")
+        print("Pushing changes...")
 
         if not self._git_repo.push():
             print("Error: Could not push commit to branch", file=sys.stderr)

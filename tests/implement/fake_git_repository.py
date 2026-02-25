@@ -14,9 +14,10 @@ class FakeGitRepository:
         assert fake.head_sha == "abc123"
     """
 
-    def __init__(self, working_tree_dir="/fake/repo", gh_client=None):
+    def __init__(self, working_tree_dir="/fake/repo", gh_client=None, main_repo_dir=None):
         self._working_tree_dir = working_tree_dir
         self._gh_client = gh_client
+        self._main_repo_dir = main_repo_dir or working_tree_dir
         self._head_sha = "aaa"
         self._branches = set()
         self._checked_out = None
@@ -28,6 +29,10 @@ class FakeGitRepository:
         self.branch = None
         self.pr_number = None
         self.calls = []
+
+    @property
+    def main_repo_dir(self):
+        return self._main_repo_dir
 
     @property
     def gh_client(self):
@@ -63,10 +68,17 @@ class FakeGitRepository:
             idea_name,
             f"{self._working_tree_dir}-wt-{idea_name}",
         )
-        return FakeGitRepository(working_tree_dir=worktree_path)
+        return FakeGitRepository(
+            working_tree_dir=worktree_path,
+            main_repo_dir=self._working_tree_dir,
+        )
 
     def set_worktree_path(self, idea_name, path):
         self._worktrees[idea_name] = path
+
+    def has_unpushed_commits(self):
+        self.calls.append(("has_unpushed_commits",))
+        return not self._pushed
 
     def branch_has_been_pushed(self):
         self.calls.append(("branch_has_been_pushed",))
@@ -101,6 +113,9 @@ class FakeGitRepository:
 
     def set_file_at_head(self, file_path, content):
         self._files_at_head[file_path] = content
+
+    def set_upstream(self, branch_name):
+        self.calls.append(("set_upstream", branch_name))
 
     def ensure_idea_branch(self, idea_name):
         branch_name = f"idea/{idea_name}"

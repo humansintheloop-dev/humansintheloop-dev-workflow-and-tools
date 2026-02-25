@@ -168,6 +168,7 @@ class TestImplementCommandIsolateMode:
         git_repo.ensure_idea_branch.return_value = "idea/test-feature"
         mock_wt_git_repo = MagicMock()
         mock_wt_git_repo.working_tree_dir = "/tmp/fake-repo-wt-test-feature"
+        mock_wt_git_repo.main_repo_dir = "/tmp/fake-repo"
         git_repo.ensure_worktree.return_value = mock_wt_git_repo
         mode_factory.make_isolate_mode.return_value.execute.return_value = 0
         return cmd, project, git_repo, mock_wt_git_repo
@@ -251,8 +252,8 @@ class TestIsolateModeReceivesIsolationType:
         cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
         with pytest.raises(SystemExit):
             cmd.execute()
-        call_kwargs = cmd.mode_factory.make_isolate_mode.return_value.execute.call_args
-        assert call_kwargs.kwargs.get("isolation_type") == "docker"
+        options = cmd.mode_factory.make_isolate_mode.return_value.execute.call_args.args[0]
+        assert options.isolation_type == "docker"
 
     def test_isolate_mode_receives_none_when_not_set(self):
         cmd, project, git_repo = _make_command(
@@ -262,8 +263,8 @@ class TestIsolateModeReceivesIsolationType:
         cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
         with pytest.raises(SystemExit):
             cmd.execute()
-        call_kwargs = cmd.mode_factory.make_isolate_mode.return_value.execute.call_args
-        assert call_kwargs.kwargs.get("isolation_type") is None
+        options = cmd.mode_factory.make_isolate_mode.return_value.execute.call_args.args[0]
+        assert options.isolation_type is None
 
 
 @pytest.mark.unit

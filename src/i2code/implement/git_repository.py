@@ -22,11 +22,12 @@ class GitRepository:
         gh_client: GitHubClient for PR and CI operations.
     """
 
-    def __init__(self, repo, gh_client):
+    def __init__(self, repo, gh_client, main_repo_dir=None):
         self._repo = repo
         self._gh_client = gh_client
         self._branch = None
         self._pr_number = None
+        self._main_repo_dir = main_repo_dir or repo.working_tree_dir
 
     @property
     def branch(self):
@@ -43,6 +44,10 @@ class GitRepository:
     @pr_number.setter
     def pr_number(self, value):
         self._pr_number = value
+
+    @property
+    def main_repo_dir(self):
+        return self._main_repo_dir
 
     @property
     def gh_client(self):
@@ -131,7 +136,10 @@ class GitRepository:
         if not os.path.isdir(worktree_path):
             self._repo.git.worktree("add", worktree_path, branch_name)
 
-        return GitRepository(Repo(worktree_path), gh_client=self._gh_client)
+        return GitRepository(
+            Repo(worktree_path), gh_client=self._gh_client,
+            main_repo_dir=self._repo.working_tree_dir,
+        )
 
     def set_upstream(self, branch_name):
         """Configure the upstream tracking branch to origin/<branch_name>.
@@ -141,6 +149,22 @@ class GitRepository:
         """
         self._repo.config_writer().set_value(f'branch "{branch_name}"', "remote", "origin").release()
         self._repo.config_writer().set_value(f'branch "{branch_name}"', "merge", f"refs/heads/{branch_name}").release()
+
+    def has_unpushed_commits(self):
+        """Check if the local branch has commits not yet on the remote.
+
+        Returns True if there are local commits ahead of upstream, or if
+        no upstream is configured (branch never pushed).
+        """
+        result = subprocess.run(
+            ["git", "rev-list", "--count", "@{upstream}..HEAD"],
+            capture_output=True,
+            text=True,
+            cwd=self._repo.working_tree_dir,
+        )
+        if result.returncode != 0:
+            return True
+        return int(result.stdout.strip()) > 0
 
     def branch_has_been_pushed(self):
         """Check if the tracked branch exists on the remote.

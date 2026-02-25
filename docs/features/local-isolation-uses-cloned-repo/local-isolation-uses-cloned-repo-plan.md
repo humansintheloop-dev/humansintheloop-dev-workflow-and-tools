@@ -86,20 +86,20 @@ Use TDD for all tasks.
     - [x] Write new unit tests in `tests/implement/test_isolate_mode.py`: (a) verify `create_clone()` called with correct args after scaffolding; (b) verify subprocess `cwd` is clone path; (c) verify `create_clone()` not called when scaffolding fails
     - [x] Update existing unit tests in `tests/implement/test_isolate_mode.py` to pass `clone_creator=FakeRepoCloner()` to `_make_mode()` helper
 
-- [ ] **Task 1.2: RepoCloner creates shallow clone with GitHub origin**
+- [x] **Task 1.2: RepoCloner creates shallow clone with GitHub origin**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest -m unit tests/implement/test_repo_cloner.py`
   - Observable: `RepoCloner.create_clone()` creates a shallow git clone at `<parent>/<repo-basename>-cl-<idea_name>`, with the `origin` remote URL set to the provided GitHub URL (not the source worktree path), an independent `.git` directory (a directory, not a worktree pointer file), and a depth of 1. When the clone directory already exists, it returns the path without re-cloning.
   - Evidence: Tests create a real git repo in `tmp_path`, call `create_clone()`, and verify: (1) clone directory exists at expected sibling path; (2) `git remote get-url origin` in clone returns the provided GitHub URL; (3) clone's `.git` is a directory; (4) clone is shallow (single commit); (5) `create_clone()` returns existing path when clone already exists
   - Steps:
-    - [ ] Implement `RepoCloner.create_clone()` in `src/i2code/implement/repo_cloner.py`: compute clone path via `clone_path_for()`, if clone dir exists return path early, otherwise run `git clone --depth 1 <source> <clone>`, then run `git remote set-url origin <github_url>` in the clone, return clone path
-    - [ ] Create `tests/implement/test_repo_cloner.py` — helper to set up a bare-minimum git repo in `tmp_path`
-    - [ ] Test: clone directory is created at expected sibling path (e.g., `<parent>/<name>-cl-<idea>`)
-    - [ ] Test: clone's `origin` URL is the provided GitHub URL (not the source worktree path)
-    - [ ] Test: clone has independent `.git` directory (is a directory, not a file)
-    - [ ] Test: clone is shallow (verify with `git rev-list --count HEAD` returning 1)
-    - [ ] Test: `create_clone()` returns existing path when clone directory already exists (idempotent)
-    - [ ] Test: `clone_path_for()` computes correct path
+    - [x] Implement `RepoCloner.create_clone()` in `src/i2code/implement/repo_cloner.py`: compute clone path via `clone_path_for()`, if clone dir exists return path early, otherwise run `git clone --depth 1 <source> <clone>`, then run `git remote set-url origin <github_url>` in the clone, return clone path
+    - [x] Create `tests/implement/test_repo_cloner.py` — helper to set up a bare-minimum git repo in `tmp_path`
+    - [x] Test: clone directory is created at expected sibling path (e.g., `<parent>/<name>-cl-<idea>`)
+    - [x] Test: clone's `origin` URL is the provided GitHub URL (not the source worktree path)
+    - [x] Test: clone has independent `.git` directory (is a directory, not a file)
+    - [x] Test: clone is shallow (verify with `git rev-list --count HEAD` returning 1)
+    - [x] Test: `create_clone()` returns existing path when clone directory already exists (idempotent)
+    - [x] Test: `clone_path_for()` computes correct path
 
 - [ ] **Task 1.3: End-to-end integration test verifies isolarium runs in clone**
   - TaskType: OUTCOME
@@ -131,3 +131,9 @@ Use TDD for all tasks.
     - [ ] In `src/i2code/implement/implement_command.py:ImplementCommand._isolate_mode()`: at the top, compute the clone path via `clone_path_for(self.git_repo.working_tree_dir, self.project.name)`; if the clone directory exists, create a `GitRepository` wrapping the clone (with `main_repo_dir=self.git_repo.working_tree_dir`), compute the clone's `IdeaProject` via `worktree_idea_project()`, create `IsolateMode` via `ModeFactory`, call `launch()`, and `sys.exit(returncode)` — skipping worktree creation and scaffolding entirely
     - [ ] Write unit tests in `tests/implement/test_implement_command.py`: (a) when clone dir exists, `ensure_worktree` and `ensure_idea_branch` are NOT called, isolarium runs in clone; (b) when clone dir does NOT exist, the normal worktree → scaffolding → clone flow proceeds as before
     - [ ] Verify existing tests still pass (the non-isolate paths are unchanged)
+
+---
+
+## Change History
+### 2026-02-26 08:15 - mark-task-complete
+All 7 tests pass verifying: clone at expected sibling path, origin URL is GitHub URL, independent .git directory, shallow clone (depth 1), idempotent re-run, and clone_path_for computes correct path

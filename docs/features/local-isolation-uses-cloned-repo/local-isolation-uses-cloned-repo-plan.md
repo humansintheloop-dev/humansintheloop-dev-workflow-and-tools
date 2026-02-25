@@ -70,21 +70,21 @@ Also covers Scenario 3 (worktree exists with scaffolding guard, no clone) — th
 
 Use TDD for all tasks.
 
-- [ ] **Task 1.1: IsolateMode runs isolarium in clone directory after scaffolding**
+- [x] **Task 1.1: IsolateMode runs isolarium in clone directory after scaffolding**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest -m unit tests/implement/test_isolate_mode.py`
   - Observable: After scaffolding succeeds, `IsolateMode.execute()` calls `clone_creator.create_clone()` with the worktree path, idea name, and origin URL, then runs the isolarium subprocess with `cwd` set to the returned clone path (not the worktree path)
   - Evidence: Unit tests using `FakeRepoCloner` verify: (1) `create_clone()` is called with `(worktree_path, idea_name, origin_url)`; (2) isolarium subprocess `cwd` is the clone path returned by `create_clone()`; (3) when scaffolding fails, `create_clone()` is never called
   - Steps:
-    - [ ] Add `origin_url` property to `src/i2code/implement/git_repository.py:GitRepository` — returns `self._repo.remotes.origin.url`
-    - [ ] Add `origin_url` property (default `"https://github.com/test/repo.git"`) and `set_origin_url()` method to `tests/implement/fake_git_repository.py:FakeGitRepository`
-    - [ ] Create `src/i2code/implement/repo_cloner.py` with: (a) module-level function `clone_path_for(repo_root, idea_name)` that returns `os.path.join(parent_dir, f"{basename}-cl-{idea_name}")`; (b) `RepoCloner` class with method `create_clone(source_path, idea_name, origin_url)` that raises `NotImplementedError`
-    - [ ] Create `tests/implement/fake_repo_cloner.py` with `FakeRepoCloner` that records calls and returns a configurable clone path
-    - [ ] Add `clone_creator` parameter to `IsolateMode.__init__()` in `src/i2code/implement/isolate_mode.py`
-    - [ ] Modify `IsolateMode.execute()`: after scaffolding, call `self._clone_creator.create_clone(source_path=self._git_repo.working_tree_dir, idea_name=self._project.name, origin_url=self._git_repo.origin_url)`, use the returned clone path as the `cwd` argument to `self._subprocess_runner.run()`
-    - [ ] Update `src/i2code/implement/mode_factory.py:ModeFactory.make_isolate_mode()` to instantiate `RepoCloner()` and pass it as `clone_creator` to `IsolateMode`
-    - [ ] Write new unit tests in `tests/implement/test_isolate_mode.py`: (a) verify `create_clone()` called with correct args after scaffolding; (b) verify subprocess `cwd` is clone path; (c) verify `create_clone()` not called when scaffolding fails
-    - [ ] Update existing unit tests in `tests/implement/test_isolate_mode.py` to pass `clone_creator=FakeRepoCloner()` to `_make_mode()` helper
+    - [x] Add `origin_url` property to `src/i2code/implement/git_repository.py:GitRepository` — returns `self._repo.remotes.origin.url`
+    - [x] Add `origin_url` property (default `"https://github.com/test/repo.git"`) and `set_origin_url()` method to `tests/implement/fake_git_repository.py:FakeGitRepository`
+    - [x] Create `src/i2code/implement/repo_cloner.py` with: (a) module-level function `clone_path_for(repo_root, idea_name)` that returns `os.path.join(parent_dir, f"{basename}-cl-{idea_name}")`; (b) `RepoCloner` class with method `create_clone(source_path, idea_name, origin_url)` that raises `NotImplementedError`
+    - [x] Create `tests/implement/fake_repo_cloner.py` with `FakeRepoCloner` that records calls and returns a configurable clone path
+    - [x] Add `clone_creator` parameter to `IsolateMode.__init__()` in `src/i2code/implement/isolate_mode.py`
+    - [x] Modify `IsolateMode.execute()`: after scaffolding, call `self._clone_creator.create_clone(source_path=self._git_repo.working_tree_dir, idea_name=self._project.name, origin_url=self._git_repo.origin_url)`, use the returned clone path as the `cwd` argument to `self._subprocess_runner.run()`
+    - [x] Update `src/i2code/implement/mode_factory.py:ModeFactory.make_isolate_mode()` to instantiate `RepoCloner()` and pass it as `clone_creator` to `IsolateMode`
+    - [x] Write new unit tests in `tests/implement/test_isolate_mode.py`: (a) verify `create_clone()` called with correct args after scaffolding; (b) verify subprocess `cwd` is clone path; (c) verify `create_clone()` not called when scaffolding fails
+    - [x] Update existing unit tests in `tests/implement/test_isolate_mode.py` to pass `clone_creator=FakeRepoCloner()` to `_make_mode()` helper
 
 - [ ] **Task 1.2: RepoCloner creates shallow clone with GitHub origin**
   - TaskType: OUTCOME

@@ -35,17 +35,18 @@ class IsolateMode:
     """Execution mode that runs project setup on the host then delegates to isolarium VM.
 
     Args:
-        git_repo: GitRepository for branch and working-tree operations.
-        project: IdeaProject with directory and name.
+        workspace: Workspace bundling git_repo and project.
         project_scaffolder: ProjectScaffolder providing ensure_scaffolding_setup().
         subprocess_runner: Object providing run(cmd) -> returncode.
+        clone_creator: Object providing create_clone(source_path, idea_name, origin_url).
     """
 
-    def __init__(self, git_repo, project, project_scaffolder, subprocess_runner):
-        self._git_repo = git_repo
-        self._project = project
+    def __init__(self, workspace, project_scaffolder, subprocess_runner, clone_creator):
+        self._git_repo = workspace.git_repo
+        self._project = workspace.project
         self._project_scaffolder = project_scaffolder
         self._subprocess_runner = subprocess_runner
+        self._clone_creator = clone_creator
 
     def execute(self, options):
         """Run project setup on host (because host token can configure Github Actions workflow files), then delegate to Isolarium
@@ -62,9 +63,15 @@ class IsolateMode:
             print("Error: Project scaffolding setup failed", file=sys.stderr)
             sys.exit(1)
 
+        clone_path = self._clone_creator.create_clone(
+            source_path=self._git_repo.working_tree_dir,
+            idea_name=self._project.name,
+            origin_url=self._git_repo.origin_url,
+        )
+
         cmd = self._build_isolarium_command(options)
         print(f"Running: {' '.join(cmd)}")
-        return self._subprocess_runner.run(cmd, cwd=self._git_repo.working_tree_dir)
+        return self._subprocess_runner.run(cmd, cwd=clone_path)
 
     def _build_isolarium_command(self, options):
         outer = self._build_outer_args(options)

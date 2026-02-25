@@ -4,6 +4,7 @@ from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.isolate_mode import IsolateMode, SubprocessRunner
+from i2code.implement.repo_cloner import RepoCloner
 from i2code.implement.pr_helpers import push_branch_to_remote
 from i2code.implement.project_scaffolding import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
@@ -49,11 +50,12 @@ class ModeFactory:
             git_repo=git_repo,
             steps=steps,
         )
+        workspace = Workspace(git_repo=git_repo, project=project)
         return IsolateMode(
-            git_repo=git_repo,
-            project=project,
+            workspace=workspace,
             project_scaffolder=project_scaffolder,
             subprocess_runner=SubprocessRunner(),
+            clone_creator=RepoCloner(),
         )
 
     def make_worktree_mode(self, git_repo, state, work_project):

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from fake_claude_runner import FakeClaudeRunner
-from i2code.implement.claude_runner import CapturedOutput, ClaudeResult, run_claude_with_output_capture
+from i2code.implement.claude_runner import CapturedOutput, ClaudeResult, ClaudeRunner, run_claude_with_output_capture
 
 
 @pytest.mark.unit
@@ -47,6 +47,11 @@ class TestFakeClaudeRunner:
         r2 = fake.run_batch(["claude", "t2"], cwd="/r")
         assert r1.returncode == 0
         assert r2.returncode == 1
+
+    def test_records_run_call(self):
+        fake = FakeClaudeRunner()
+        fake.run(["claude", "do task"], cwd="/repo")
+        assert fake.calls == [("run", ["claude", "do task"], "/repo")]
 
     def test_falls_back_to_default_after_sequence_exhausted(self):
 
@@ -217,3 +222,32 @@ class TestClaudeInvocationResult:
         assert check_claude_success(exit_code=1, head_before="abc", head_after="def") is False
         # Both conditions met
         assert check_claude_success(exit_code=0, head_before="abc", head_after="def") is True
+
+
+@pytest.mark.unit
+class TestClaudeRunnerRun:
+    """ClaudeRunner.run() dispatches to run_interactive or run_batch."""
+
+    def test_interactive_true_delegates_to_run_interactive(self, mocker):
+        runner = ClaudeRunner(interactive=True)
+        mock_result = ClaudeResult(returncode=0)
+        mocker.patch.object(runner, 'run_interactive', return_value=mock_result)
+        mocker.patch.object(runner, 'run_batch', return_value=mock_result)
+
+        result = runner.run(["claude", "task"], cwd="/repo")
+
+        runner.run_interactive.assert_called_once_with(["claude", "task"], cwd="/repo")
+        runner.run_batch.assert_not_called()
+        assert result is mock_result
+
+    def test_interactive_false_delegates_to_run_batch(self, mocker):
+        runner = ClaudeRunner(interactive=False)
+        mock_result = ClaudeResult(returncode=0)
+        mocker.patch.object(runner, 'run_interactive', return_value=mock_result)
+        mocker.patch.object(runner, 'run_batch', return_value=mock_result)
+
+        result = runner.run(["claude", "-p", "task"], cwd="/repo")
+
+        runner.run_batch.assert_called_once_with(["claude", "-p", "task"], cwd="/repo")
+        runner.run_interactive.assert_not_called()
+        assert result is mock_result

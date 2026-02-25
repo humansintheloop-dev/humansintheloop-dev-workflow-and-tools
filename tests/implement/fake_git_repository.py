@@ -80,6 +80,9 @@ class FakeGitRepository:
         self.calls.append(("has_unpushed_commits",))
         return not self._pushed
 
+    def set_upstream(self, branch_name):
+        self.calls.append(("set_upstream", branch_name))
+
     def branch_has_been_pushed(self):
         self.calls.append(("branch_has_been_pushed",))
         return self._pushed
@@ -113,9 +116,6 @@ class FakeGitRepository:
 
     def set_file_at_head(self, file_path, content):
         self._files_at_head[file_path] = content
-
-    def set_upstream(self, branch_name):
-        self.calls.append(("set_upstream", branch_name))
 
     def ensure_idea_branch(self, idea_name):
         branch_name = f"idea/{idea_name}"

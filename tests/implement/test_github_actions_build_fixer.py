@@ -115,7 +115,7 @@ class TestGithubActionsBuildFixerFixCiFailure:
 
         assert result is False
         assert len(fake_runner.calls) == 1
-        assert fake_runner.calls[0][0] == "run_batch"
+        assert fake_runner.calls[0][0] == "run"
 
     def test_pushes_and_returns_true_when_ci_passes(self):
         fake_gh = FakeGitHubClient()

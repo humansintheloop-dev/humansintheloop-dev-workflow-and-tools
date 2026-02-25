@@ -64,10 +64,7 @@ class ProjectInitializer:
         cmd = self._command_builder.build_scaffolding_command(
             idea_directory, interactive=interactive, mock_claude=mock_claude,
         )
-        if interactive:
-            result = self._claude_runner.run_interactive(cmd, cwd=cwd)
-        else:
-            result = self._claude_runner.run_batch(cmd, cwd=cwd)
+        result = self._claude_runner.run(cmd, cwd=cwd)
 
         if interactive or "<SUCCESS>" in result.output.stdout or "<NOTHING-TO-DO>" in result.output.stdout:
             return

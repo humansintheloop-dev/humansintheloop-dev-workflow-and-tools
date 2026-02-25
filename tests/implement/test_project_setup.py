@@ -181,7 +181,7 @@ class TestRunScaffoldingFailure:
 class TestRunScaffolding:
     """Test ProjectInitializer.run_scaffolding() delegates to correct runner."""
 
-    def test_interactive_calls_run_interactive(self):
+    def test_interactive_calls_run(self):
         from i2code.implement.command_builder import CommandBuilder
         from i2code.implement.project_setup import ProjectInitializer
         from tests.implement.fake_claude_runner import FakeClaudeRunner
@@ -193,11 +193,11 @@ class TestRunScaffolding:
 
         assert len(fake.calls) == 1
         method, cmd, cwd = fake.calls[0]
-        assert method == "run_interactive"
+        assert method == "run"
         assert cmd[0] == "claude"
         assert cwd == "/tmp/repo"
 
-    def test_non_interactive_calls_run_batch(self):
+    def test_non_interactive_calls_run(self):
         from i2code.implement.command_builder import CommandBuilder
         from i2code.implement.project_setup import ProjectInitializer
         from tests.implement.fake_claude_runner import FakeClaudeRunner
@@ -212,7 +212,7 @@ class TestRunScaffolding:
 
         assert len(fake.calls) == 1
         method, cmd, cwd = fake.calls[0]
-        assert method == "run_batch"
+        assert method == "run"
         assert cmd[0] == "claude"
         assert "-p" in cmd
         assert cwd == "/tmp/repo"
@@ -229,7 +229,7 @@ class TestRunScaffolding:
 
         assert len(fake.calls) == 1
         method, cmd, cwd = fake.calls[0]
-        assert method == "run_interactive"
+        assert method == "run"
         assert cmd == ["/mock.sh", "setup"]
 
 

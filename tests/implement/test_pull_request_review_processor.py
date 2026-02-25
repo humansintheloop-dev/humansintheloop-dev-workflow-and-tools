@@ -211,8 +211,8 @@ class TestProcessPrFeedbackFixGroup:
         push_calls = [c for c in fake_repo.calls if c[0] == "push"]
         assert len(push_calls) == 1
 
-    def test_fix_interactive_uses_run_interactive(self):
-        """Interactive mode uses claude_runner.run_interactive for fix."""
+    def test_fix_uses_runner_run(self):
+        """Fix invokes claude_runner.run() instead of if/else dispatch."""
         triage_json = self._triage_with_fix([1])
         triage_result = ClaudeResult(returncode=0, output=CapturedOutput(triage_json))
         fix_result = ClaudeResult(returncode=0)
@@ -231,9 +231,9 @@ class TestProcessPrFeedbackFixGroup:
 
         processor.process_pr_feedback()
 
-        # First call is triage (run_batch), second is fix (run_interactive)
+        # First call is triage (run_batch), second is fix (run)
         assert fake_claude.calls[0][0] == "run_batch"
-        assert fake_claude.calls[1][0] == "run_interactive"
+        assert fake_claude.calls[1][0] == "run"
 
     def test_fix_marks_all_feedback_processed(self):
         """After processing, all feedback IDs are marked processed in state."""

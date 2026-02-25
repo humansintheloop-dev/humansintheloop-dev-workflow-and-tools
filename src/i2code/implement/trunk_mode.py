@@ -51,7 +51,7 @@ class TrunkMode:
         claude_cmd = self._build_command(
             task_description, non_interactive, mock_claude, extra_prompt,
         )
-        claude_result = self._run_claude(claude_cmd, non_interactive)
+        claude_result = self._run_claude(claude_cmd)
 
         head_after = self._git_repo.head_sha
 
@@ -83,8 +83,5 @@ class TrunkMode:
             extra_cli_args=extra_cli_args,
         )
 
-    def _run_claude(self, claude_cmd, non_interactive):
-        if non_interactive:
-            return self._claude_runner.run_batch(claude_cmd, cwd=self._git_repo.working_tree_dir)
-        else:
-            return self._claude_runner.run_interactive(claude_cmd, cwd=self._git_repo.working_tree_dir)
+    def _run_claude(self, claude_cmd):
+        return self._claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)

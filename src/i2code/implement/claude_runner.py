@@ -240,6 +240,14 @@ def print_task_failure_diagnostics(
 class ClaudeRunner:
     """Delegates to the module-level run functions."""
 
+    def __init__(self, interactive: bool = True):
+        self._interactive = interactive
+
+    def run(self, cmd: List[str], cwd: str) -> ClaudeResult:
+        if self._interactive:
+            return self.run_interactive(cmd, cwd=cwd)
+        return self.run_batch(cmd, cwd=cwd)
+
     def run_interactive(self, cmd: List[str], cwd: str) -> ClaudeResult:
         return run_claude_interactive(cmd, cwd=cwd)
 

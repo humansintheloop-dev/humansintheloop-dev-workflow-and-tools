@@ -101,19 +101,19 @@ Use TDD for all tasks.
     - [x] Test: `create_clone()` returns existing path when clone directory already exists (idempotent)
     - [x] Test: `clone_path_for()` computes correct path
 
-- [ ] **Task 1.3: End-to-end integration test verifies isolarium runs in clone**
+- [x] **Task 1.3: End-to-end integration test verifies isolarium runs in clone**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest -m integration_gh tests/implement/test_isolate_mode_integration.py`
   - Observable: When running `i2code implement --isolate`, the fake isolarium's captured `cwd` is the clone path (contains `-cl-`), the clone's `origin` remote URL matches the GitHub remote, and the clone has an independent `.git` directory. Both worktree (`-wt-`) and clone (`-cl-`) directories exist on disk. Main repo branch is unchanged.
   - Evidence: Integration test creates a GitHub repo, runs the full isolate flow with a fake isolarium, and asserts: (1) isolarium `cwd` contains `-cl-` (clone path); (2) clone's `origin` URL matches GitHub; (3) clone's `.git` is a directory; (4) worktree directory exists; (5) main repo branch unchanged
   - Steps:
-    - [ ] Compute expected clone path in test using `-cl-` convention (add `_clone_path_for()` helper alongside existing `_worktree_path_for()`)
-    - [ ] Update `_assert_isolarium_ran_in_worktree` (rename to `_assert_isolarium_ran_in_clone`) to verify `cwd` is the clone path
-    - [ ] Add `_assert_clone_origin_is_github()`: verify clone's `origin` URL matches the GitHub repo URL (using `git -C <clone> remote get-url origin`)
-    - [ ] Add `_assert_clone_has_independent_git()`: verify clone's `.git` is a directory (not a file pointing to main repo's `.git`)
-    - [ ] Retain `_assert_worktree_created()` — worktree should still exist as scaffolding staging area
-    - [ ] Retain `_assert_main_branch_unchanged()` — main repo is protected
-    - [ ] Add clone directory to fixture teardown cleanup (`shutil.rmtree`)
+    - [x] Compute expected clone path in test using `-cl-` convention (add `_clone_path_for()` helper alongside existing `_worktree_path_for()`)
+    - [x] Update `_assert_isolarium_ran_in_worktree` (rename to `_assert_isolarium_ran_in_clone`) to verify `cwd` is the clone path
+    - [x] Add `_assert_clone_origin_is_github()`: verify clone's `origin` URL matches the GitHub repo URL (using `git -C <clone> remote get-url origin`)
+    - [x] Add `_assert_clone_has_independent_git()`: verify clone's `.git` is a directory (not a file pointing to main repo's `.git`)
+    - [x] Retain `_assert_worktree_created()` — worktree should still exist as scaffolding staging area
+    - [x] Retain `_assert_main_branch_unchanged()` — main repo is protected
+    - [x] Add clone directory to fixture teardown cleanup (`shutil.rmtree`)
 
 ## Steel Thread 2: Re-run Reuses Existing Clone
 

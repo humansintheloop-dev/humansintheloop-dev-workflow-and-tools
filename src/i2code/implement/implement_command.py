@@ -1,7 +1,9 @@
 """ImplementCommand encapsulates the implement workflow logic."""
 
+import os
 import sys
 
+from i2code.implement.repo_cloner import clone_path_for
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import validate_idea_files_committed
 from i2code.implement.worktree_setup import setup_project
@@ -48,6 +50,10 @@ class ImplementCommand:
 
     def _isolate_mode(self):
         """Delegate execution to an isolarium VM."""
+        clone_path = clone_path_for(self.git_repo.working_tree_dir, self.project.name)
+        if os.path.isdir(clone_path):
+            return self._launch_in_existing_clone(clone_path)
+
         idea_branch = self.git_repo.ensure_idea_branch(self.project.name)
         print(f"Idea branch: {idea_branch}")
         self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
@@ -63,6 +69,18 @@ class ImplementCommand:
             project=work_project,
         )
         returncode = isolate_mode.execute(self.opts)
+        sys.exit(returncode)
+
+    def _launch_in_existing_clone(self, clone_path):
+        """Launch isolarium in a pre-existing clone, skipping worktree and scaffolding."""
+        work_project = self.project.worktree_idea_project(
+            clone_path, self.git_repo.working_tree_dir,
+        )
+        isolate_mode = self.mode_factory.make_isolate_mode(
+            git_repo=self.git_repo,
+            project=work_project,
+        )
+        returncode = isolate_mode.launch(self.opts)
         sys.exit(returncode)
 
     def _worktree_mode(self):

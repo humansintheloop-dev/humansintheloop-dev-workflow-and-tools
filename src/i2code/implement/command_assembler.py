@@ -10,7 +10,7 @@ from i2code.implement.github_client import GitHubClient
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.mode_factory import ModeFactory
-from i2code.implement.project_setup import ProjectScaffolder
+from i2code.implement.project_setup import ScaffoldingCreator
 from i2code.implement.scaffold_command import ScaffoldCommand
 
 
@@ -41,11 +41,12 @@ def assemble_scaffold(opts):
 
     repo = Repo(project.directory, search_parent_directories=True)
 
-    initializer = ProjectScaffolder(
-        claude_runner=ClaudeRunner(interactive=not opts.non_interactive),
+    claude_runner = ClaudeRunner(interactive=not opts.non_interactive)
+    scaffolding_creator = ScaffoldingCreator(
         command_builder=CommandBuilder(),
+        claude_runner=claude_runner,
     )
-    return ScaffoldCommand(opts, initializer, cwd=repo.working_tree_dir)
+    return ScaffoldCommand(opts, scaffolding_creator, cwd=repo.working_tree_dir)
 
 
 def assemble_command(ctx, default_factory, opts):

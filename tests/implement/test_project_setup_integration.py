@@ -12,7 +12,7 @@ from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.git_repository import GitRepository
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.pr_helpers import push_branch_to_remote
-from i2code.implement.project_setup import ProjectScaffolder
+from i2code.implement.project_setup import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
 
 from fake_github_client import FakeGitHubClient
 
@@ -85,11 +85,19 @@ class TestEnsureProjectSetupWithMockClaude:
             idea_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_idea_branch("test-idea")
 
             git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
-            initializer = ProjectScaffolder(
-                claude_runner=ClaudeRunner(),
+            scaffolding_creator = ScaffoldingCreator(
                 command_builder=CommandBuilder(),
-                git_repo=git_repo,
+                claude_runner=ClaudeRunner(),
+            )
+            steps = ScaffoldingSteps(
+                claude_runner=ClaudeRunner(),
+                build_fixer=None,
                 push_fn=push_branch_to_remote,
+            )
+            initializer = ProjectScaffolder(
+                scaffolding_creator=scaffolding_creator,
+                git_repo=git_repo,
+                steps=steps,
             )
             result = initializer.ensure_scaffolding_setup(
                 _opts(mock_claude=mock_script, skip_ci_wait=True),
@@ -117,11 +125,19 @@ class TestEnsureProjectSetupWithMockClaude:
             idea_branch = GitRepository(repo, gh_client=FakeGitHubClient()).ensure_idea_branch("test-idea")
 
             git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
-            initializer = ProjectScaffolder(
-                claude_runner=ClaudeRunner(),
+            scaffolding_creator = ScaffoldingCreator(
                 command_builder=CommandBuilder(),
-                git_repo=git_repo,
+                claude_runner=ClaudeRunner(),
+            )
+            steps = ScaffoldingSteps(
+                claude_runner=ClaudeRunner(),
+                build_fixer=None,
                 push_fn=push_branch_to_remote,
+            )
+            initializer = ProjectScaffolder(
+                scaffolding_creator=scaffolding_creator,
+                git_repo=git_repo,
+                steps=steps,
             )
 
             # First run — creates scaffolding

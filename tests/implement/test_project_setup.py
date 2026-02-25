@@ -95,20 +95,20 @@ class TestBuildScaffoldingPrompt:
 class TestRunScaffoldingFailure:
     """Test ProjectScaffolder.run_scaffolding() exits on Claude failure."""
 
-    def _make_initializer(self, fake):
+    def _make_scaffolding_creator(self, fake):
         from i2code.implement.command_builder import CommandBuilder
-        from i2code.implement.project_setup import ProjectScaffolder
-        return ProjectScaffolder(claude_runner=fake, command_builder=CommandBuilder())
+        from i2code.implement.project_setup import ScaffoldingCreator
+        return ScaffoldingCreator(command_builder=CommandBuilder(), claude_runner=fake)
 
     def test_non_zero_exit_code_exits(self):
         from tests.implement.fake_claude_runner import FakeClaudeRunner
 
         fake = FakeClaudeRunner()
         fake.set_result(ClaudeResult(returncode=1, diagnostics=DiagnosticInfo(error_message="Something broke")))
-        initializer = self._make_initializer(fake)
+        creator = self._make_scaffolding_creator(fake)
 
         with pytest.raises(SystemExit) as exc_info:
-            initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+            creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
         assert exc_info.value.code == 1
 
@@ -117,10 +117,10 @@ class TestRunScaffoldingFailure:
 
         fake = FakeClaudeRunner()
         fake.set_result(ClaudeResult(returncode=0, output=CapturedOutput("no tag here")))
-        initializer = self._make_initializer(fake)
+        creator = self._make_scaffolding_creator(fake)
 
         with pytest.raises(SystemExit) as exc_info:
-            initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+            creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
         assert exc_info.value.code == 1
 
@@ -135,10 +135,10 @@ class TestRunScaffoldingFailure:
                 permission_denials=[{"tool_name": "Bash", "tool_input": {"command": "git commit"}}],
             ),
         ))
-        initializer = self._make_initializer(fake)
+        creator = self._make_scaffolding_creator(fake)
 
         with pytest.raises(SystemExit):
-            initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+            creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
         captured = capsys.readouterr()
         assert "Permission denied" in captured.err
@@ -154,10 +154,10 @@ class TestRunScaffoldingFailure:
                 {"type": "result", "result": "No permissions to complete task"},
             ]),
         ))
-        initializer = self._make_initializer(fake)
+        creator = self._make_scaffolding_creator(fake)
 
         with pytest.raises(SystemExit):
-            initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+            creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
         captured = capsys.readouterr()
         assert "I cannot write files" in captured.err
@@ -170,33 +170,37 @@ class TestRunScaffoldingFailure:
         fake.set_result(ClaudeResult(
             returncode=0, output=CapturedOutput("...<SUCCESS>Scaffold created</SUCCESS>...")
         ))
-        initializer = self._make_initializer(fake)
+        creator = self._make_scaffolding_creator(fake)
 
-        initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+        creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
     def test_interactive_mode_does_not_check_stdout(self):
         """Interactive mode has empty stdout — should not exit."""
         from tests.implement.fake_claude_runner import FakeClaudeRunner
 
         fake = FakeClaudeRunner()
-        initializer = self._make_initializer(fake)
+        creator = self._make_scaffolding_creator(fake)
 
-        initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=True)
+        creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=True)
 
 
 @pytest.mark.unit
 class TestRunScaffolding:
-    """Test ProjectScaffolder.run_scaffolding() delegates to correct runner."""
+    """Test ScaffoldingCreator.run_scaffolding() delegates to correct runner."""
+
+    def _make_creator(self, fake_runner):
+        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.project_setup import ScaffoldingCreator
+
+        return ScaffoldingCreator(command_builder=CommandBuilder(), claude_runner=fake_runner)
 
     def test_interactive_calls_run(self):
-        from i2code.implement.command_builder import CommandBuilder
-        from i2code.implement.project_setup import ProjectScaffolder
         from tests.implement.fake_claude_runner import FakeClaudeRunner
 
         fake = FakeClaudeRunner()
-        initializer = ProjectScaffolder(claude_runner=fake, command_builder=CommandBuilder())
+        creator = self._make_creator(fake)
 
-        initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=True)
+        creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=True)
 
         assert len(fake.calls) == 1
         method, cmd, cwd = fake.calls[0]
@@ -205,17 +209,15 @@ class TestRunScaffolding:
         assert cwd == "/tmp/repo"
 
     def test_non_interactive_calls_run(self):
-        from i2code.implement.command_builder import CommandBuilder
-        from i2code.implement.project_setup import ProjectScaffolder
         from tests.implement.fake_claude_runner import FakeClaudeRunner
 
         fake = FakeClaudeRunner()
         fake.set_result(ClaudeResult(
             returncode=0, output=CapturedOutput("<SUCCESS>Scaffold created</SUCCESS>")
         ))
-        initializer = ProjectScaffolder(claude_runner=fake, command_builder=CommandBuilder())
+        creator = self._make_creator(fake)
 
-        initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+        creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
 
         assert len(fake.calls) == 1
         method, cmd, cwd = fake.calls[0]
@@ -225,14 +227,12 @@ class TestRunScaffolding:
         assert cwd == "/tmp/repo"
 
     def test_forwards_mock_claude(self):
-        from i2code.implement.command_builder import CommandBuilder
-        from i2code.implement.project_setup import ProjectScaffolder
         from tests.implement.fake_claude_runner import FakeClaudeRunner
 
         fake = FakeClaudeRunner()
-        initializer = ProjectScaffolder(claude_runner=fake, command_builder=CommandBuilder())
+        creator = self._make_creator(fake)
 
-        initializer.run_scaffolding("/tmp/idea", cwd="/tmp/repo", mock_claude="/mock.sh")
+        creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", mock_claude="/mock.sh")
 
         assert len(fake.calls) == 1
         method, cmd, cwd = fake.calls[0]
@@ -240,25 +240,23 @@ class TestRunScaffolding:
         assert cmd == ["/mock.sh", "setup"]
 
 
+class FakeBuildFixer:
+    """Records fix_ci_failure calls and returns a canned result."""
+
+    def __init__(self, result=True):
+        self.calls = []
+        self.result = result
+
+    def fix_ci_failure(self):
+        self.calls.append("fix_ci_failure")
+        return self.result
+
+
 @pytest.mark.unit
 class TestEnsureProjectSetupMethod:
     """Test ProjectScaffolder.ensure_scaffolding_setup() with fakes — no @patch."""
 
-    def _make_initializer(self, fake_runner=None, git_repo=None, build_fixer=None, push_fn=None):
-        from i2code.implement.command_builder import CommandBuilder
-        from i2code.implement.project_setup import ProjectScaffolder
-        from tests.implement.fake_claude_runner import FakeClaudeRunner
-
-        return ProjectScaffolder(
-            claude_runner=fake_runner or FakeClaudeRunner(),
-            command_builder=CommandBuilder(),
-            git_repo=git_repo,
-            build_fixer=build_fixer,
-            push_fn=push_fn,
-        )
-
-    def test_no_new_commits_returns_true_without_waiting_for_ci(self, tmp_path):
-        """When scaffolding makes no commits, should return True without waiting for CI."""
+    def _make_fakes(self, tmp_path):
         from tests.implement.fake_claude_runner import FakeClaudeRunner
         from tests.implement.fake_git_repository import FakeGitRepository
         from tests.implement.fake_github_client import FakeGitHubClient
@@ -266,12 +264,65 @@ class TestEnsureProjectSetupMethod:
         fake_gh = FakeGitHubClient()
         fake_runner = FakeClaudeRunner()
         fake_git = FakeGitRepository(working_tree_dir=str(tmp_path), gh_client=fake_gh)
+        return fake_runner, fake_git, fake_gh
+
+    def _make_initializer(self, fake_runner=None, git_repo=None, build_fixer=None, push_fn=None):
+        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.project_setup import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
+        from tests.implement.fake_claude_runner import FakeClaudeRunner
+
+        runner = fake_runner or FakeClaudeRunner()
+        scaffolding_creator = ScaffoldingCreator(
+            command_builder=CommandBuilder(),
+            claude_runner=runner,
+        )
+        steps = ScaffoldingSteps(
+            claude_runner=runner,
+            build_fixer=build_fixer,
+            push_fn=push_fn,
+        )
+        return ProjectScaffolder(
+            scaffolding_creator=scaffolding_creator,
+            git_repo=git_repo,
+            steps=steps,
+        )
+
+    def _advance_head(self, fake_runner, fake_git, new_sha="bbb222"):
+        def side_effect():
+            fake_git.set_head_sha(new_sha)
+        fake_runner.set_side_effect(side_effect)
+
+    def _setup_with_push_tracking(self, tmp_path):
+        fake_runner, fake_git, fake_gh = self._make_fakes(tmp_path)
+        fake_git.set_head_sha("aaa111")
+        pushed = []
+        self._advance_head(fake_runner, fake_git)
+        initializer = self._make_initializer(
+            fake_runner=fake_runner, git_repo=fake_git,
+            push_fn=lambda branch: pushed.append(branch) or True,
+        )
+        return initializer, fake_gh, pushed
+
+    def _setup_ci_failure(self, tmp_path, ci_result, build_fixer):
+        fake_runner, fake_git, fake_gh = self._make_fakes(tmp_path)
+        fake_git.set_head_sha("aaa111")
+        self._advance_head(fake_runner, fake_git)
+        fake_gh.set_workflow_completion_result(
+            "idea/test/integration", "bbb222", ci_result,
+        )
+        initializer = self._make_initializer(
+            fake_runner=fake_runner, git_repo=fake_git,
+            build_fixer=build_fixer, push_fn=lambda branch: True,
+        )
+        return initializer, fake_git
+
+    def test_no_new_commits_returns_true_without_waiting_for_ci(self, tmp_path):
+        """When scaffolding makes no commits, should return True without waiting for CI."""
+        fake_runner, fake_git, fake_gh = self._make_fakes(tmp_path)
         fake_git.set_head_sha("abc123")
 
         initializer = self._make_initializer(
-            fake_runner=fake_runner,
-            git_repo=fake_git,
-            push_fn=lambda branch: True,
+            fake_runner=fake_runner, git_repo=fake_git, push_fn=lambda branch: True,
         )
 
         result = initializer.ensure_scaffolding_setup(
@@ -283,27 +334,8 @@ class TestEnsureProjectSetupMethod:
 
     def test_commits_made_pushes_and_waits_for_ci(self, tmp_path):
         """When scaffolding makes commits, should push and wait for CI."""
-        from tests.implement.fake_claude_runner import FakeClaudeRunner
-        from tests.implement.fake_git_repository import FakeGitRepository
-        from tests.implement.fake_github_client import FakeGitHubClient
-
-        fake_gh = FakeGitHubClient()
-        fake_runner = FakeClaudeRunner()
-        fake_git = FakeGitRepository(working_tree_dir=str(tmp_path), gh_client=fake_gh)
-        fake_git.set_head_sha("aaa111")
-        pushed = []
-
-        def scaffolding_side_effect():
-            fake_git.set_head_sha("bbb222")
-
-        fake_runner.set_side_effect(scaffolding_side_effect)
+        initializer, fake_gh, pushed = self._setup_with_push_tracking(tmp_path)
         fake_gh.set_workflow_completion_result("idea/test/integration", "bbb222", (True, None))
-
-        initializer = self._make_initializer(
-            fake_runner=fake_runner,
-            git_repo=fake_git,
-            push_fn=lambda branch: pushed.append(branch) or True,
-        )
 
         result = initializer.ensure_scaffolding_setup(
             _opts(ci_timeout=300), idea_directory=str(tmp_path),
@@ -316,26 +348,7 @@ class TestEnsureProjectSetupMethod:
 
     def test_skip_ci_wait_pushes_but_does_not_wait(self, tmp_path):
         """When skip_ci_wait=True, should push but not wait for CI."""
-        from tests.implement.fake_claude_runner import FakeClaudeRunner
-        from tests.implement.fake_git_repository import FakeGitRepository
-        from tests.implement.fake_github_client import FakeGitHubClient
-
-        fake_gh = FakeGitHubClient()
-        fake_runner = FakeClaudeRunner()
-        fake_git = FakeGitRepository(working_tree_dir=str(tmp_path), gh_client=fake_gh)
-        fake_git.set_head_sha("aaa111")
-        pushed = []
-
-        def scaffolding_side_effect():
-            fake_git.set_head_sha("bbb222")
-
-        fake_runner.set_side_effect(scaffolding_side_effect)
-
-        initializer = self._make_initializer(
-            fake_runner=fake_runner,
-            git_repo=fake_git,
-            push_fn=lambda branch: pushed.append(branch) or True,
-        )
+        initializer, fake_gh, pushed = self._setup_with_push_tracking(tmp_path)
 
         result = initializer.ensure_scaffolding_setup(
             _opts(skip_ci_wait=True), idea_directory=str(tmp_path),
@@ -348,39 +361,9 @@ class TestEnsureProjectSetupMethod:
 
     def test_ci_failure_sets_branch_and_calls_build_fixer(self, tmp_path):
         """When CI fails, should set git_repo.branch and call build_fixer.fix_ci_failure()."""
-        from tests.implement.fake_claude_runner import FakeClaudeRunner
-        from tests.implement.fake_git_repository import FakeGitRepository
-        from tests.implement.fake_github_client import FakeGitHubClient
-
-        fake_gh = FakeGitHubClient()
-        fake_runner = FakeClaudeRunner()
-        fake_git = FakeGitRepository(working_tree_dir=str(tmp_path), gh_client=fake_gh)
-        fake_git.set_head_sha("aaa111")
-
-        def scaffolding_side_effect():
-            fake_git.set_head_sha("bbb222")
-
-        fake_runner.set_side_effect(scaffolding_side_effect)
-        fake_gh.set_workflow_completion_result(
-            "idea/test/integration", "bbb222", (False, {"name": "CI", "id": 123})
-        )
-
-        class FakeBuildFixer:
-            def __init__(self):
-                self.calls = []
-                self.result = True
-
-            def fix_ci_failure(self):
-                self.calls.append("fix_ci_failure")
-                return self.result
-
-        fake_fixer = FakeBuildFixer()
-
-        initializer = self._make_initializer(
-            fake_runner=fake_runner,
-            git_repo=fake_git,
-            build_fixer=fake_fixer,
-            push_fn=lambda branch: True,
+        fake_fixer = FakeBuildFixer(result=True)
+        initializer, fake_git = self._setup_ci_failure(
+            tmp_path, ci_result=(False, {"name": "CI", "id": 123}), build_fixer=fake_fixer,
         )
 
         result = initializer.ensure_scaffolding_setup(
@@ -393,37 +376,9 @@ class TestEnsureProjectSetupMethod:
 
     def test_ci_failure_fix_fails_returns_false(self, tmp_path):
         """When CI fails and fix_ci_failure returns False, should return False."""
-        from tests.implement.fake_claude_runner import FakeClaudeRunner
-        from tests.implement.fake_git_repository import FakeGitRepository
-        from tests.implement.fake_github_client import FakeGitHubClient
-
-        fake_gh = FakeGitHubClient()
-        fake_runner = FakeClaudeRunner()
-        fake_git = FakeGitRepository(working_tree_dir=str(tmp_path), gh_client=fake_gh)
-        fake_git.set_head_sha("aaa111")
-
-        def scaffolding_side_effect():
-            fake_git.set_head_sha("bbb222")
-
-        fake_runner.set_side_effect(scaffolding_side_effect)
-        fake_gh.set_workflow_completion_result(
-            "idea/test/integration", "bbb222", (False, {"name": "CI", "id": 123})
-        )
-
-        class FakeBuildFixer:
-            def __init__(self):
-                self.result = False
-
-            def fix_ci_failure(self):
-                return self.result
-
-        fake_fixer = FakeBuildFixer()
-
-        initializer = self._make_initializer(
-            fake_runner=fake_runner,
-            git_repo=fake_git,
-            build_fixer=fake_fixer,
-            push_fn=lambda branch: True,
+        fake_fixer = FakeBuildFixer(result=False)
+        initializer, _ = self._setup_ci_failure(
+            tmp_path, ci_result=(False, {"name": "CI", "id": 123}), build_fixer=fake_fixer,
         )
 
         result = initializer.ensure_scaffolding_setup(
@@ -434,17 +389,11 @@ class TestEnsureProjectSetupMethod:
 
     def test_checkouts_branch(self, tmp_path):
         """Should checkout the branch before scaffolding."""
-        from tests.implement.fake_claude_runner import FakeClaudeRunner
-        from tests.implement.fake_git_repository import FakeGitRepository
-
-        fake_runner = FakeClaudeRunner()
-        fake_git = FakeGitRepository(working_tree_dir=str(tmp_path))
+        fake_runner, fake_git, _ = self._make_fakes(tmp_path)
         fake_git.set_head_sha("abc123")
 
         initializer = self._make_initializer(
-            fake_runner=fake_runner,
-            git_repo=fake_git,
-            push_fn=lambda branch: True,
+            fake_runner=fake_runner, git_repo=fake_git, push_fn=lambda branch: True,
         )
 
         initializer.ensure_scaffolding_setup(
@@ -455,27 +404,8 @@ class TestEnsureProjectSetupMethod:
 
     def test_ci_failure_no_failing_run_returns_false(self, tmp_path):
         """When CI reports failure but no failing run, should return False."""
-        from tests.implement.fake_claude_runner import FakeClaudeRunner
-        from tests.implement.fake_git_repository import FakeGitRepository
-        from tests.implement.fake_github_client import FakeGitHubClient
-
-        fake_gh = FakeGitHubClient()
-        fake_runner = FakeClaudeRunner()
-        fake_git = FakeGitRepository(working_tree_dir=str(tmp_path), gh_client=fake_gh)
-        fake_git.set_head_sha("aaa111")
-
-        def scaffolding_side_effect():
-            fake_git.set_head_sha("bbb222")
-
-        fake_runner.set_side_effect(scaffolding_side_effect)
-        fake_gh.set_workflow_completion_result(
-            "idea/test/integration", "bbb222", (False, None)
-        )
-
-        initializer = self._make_initializer(
-            fake_runner=fake_runner,
-            git_repo=fake_git,
-            push_fn=lambda branch: True,
+        initializer, _ = self._setup_ci_failure(
+            tmp_path, ci_result=(False, None), build_fixer=None,
         )
 
         result = initializer.ensure_scaffolding_setup(
@@ -486,17 +416,11 @@ class TestEnsureProjectSetupMethod:
 
     def test_guard_file_skips_scaffolding_on_second_call(self, tmp_path):
         """When guard file exists, should return True without running scaffolding."""
-        from tests.implement.fake_claude_runner import FakeClaudeRunner
-        from tests.implement.fake_git_repository import FakeGitRepository
-
-        fake_runner = FakeClaudeRunner()
-        fake_git = FakeGitRepository(working_tree_dir=str(tmp_path))
+        fake_runner, fake_git, _ = self._make_fakes(tmp_path)
         fake_git.set_head_sha("abc123")
 
         initializer = self._make_initializer(
-            fake_runner=fake_runner,
-            git_repo=fake_git,
-            push_fn=lambda branch: True,
+            fake_runner=fake_runner, git_repo=fake_git, push_fn=lambda branch: True,
         )
 
         # First call — runs scaffolding and creates guard file
@@ -540,7 +464,7 @@ def _all_files(directory):
     return result
 
 
-class FakeProjectScaffolderForScaffold:
+class FakeScaffoldingCreator:
     """Records run_scaffolding calls for testing scaffold_cmd."""
 
     def __init__(self):
@@ -555,8 +479,8 @@ class FakeProjectScaffolderForScaffold:
         })
 
 
-def _fake_assemble_scaffold(fake_initializer):
-    """Return an assemble_scaffold override that injects a fake initializer."""
+def _fake_assemble_scaffold(fake_creator):
+    """Return an assemble_scaffold override that injects a fake ScaffoldingCreator."""
     def assemble(opts):
         from git import Repo
         from i2code.implement.idea_project import IdeaProject
@@ -565,7 +489,7 @@ def _fake_assemble_scaffold(fake_initializer):
         project.validate()
         project.validate_files()
         repo = Repo(project.directory, search_parent_directories=True)
-        return ScaffoldCommand(opts, fake_initializer, cwd=repo.working_tree_dir)
+        return ScaffoldCommand(opts, fake_creator, cwd=repo.working_tree_dir)
     return assemble
 
 
@@ -573,60 +497,43 @@ def _fake_assemble_scaffold(fake_initializer):
 class TestScaffoldCmd:
     """Test scaffold CLI command — no @patch."""
 
-    def test_scaffold_validates_and_invokes_run_scaffolding(self):
+    def _invoke_scaffold(self, extra_args=None):
         from click.testing import CliRunner
         from i2code.implement.cli import scaffold_cmd
 
         with tempfile.TemporaryDirectory() as tmpdir:
             idea_dir = _create_idea_dir_in_git_repo(tmpdir)
-            fake_initializer = FakeProjectScaffolderForScaffold()
+            fake_initializer = FakeScaffoldingCreator()
 
+            args = [idea_dir] + (extra_args or [])
             runner = CliRunner(catch_exceptions=False)
             result = runner.invoke(
-                scaffold_cmd, [idea_dir],
+                scaffold_cmd, args,
                 obj={"command_factory": _fake_assemble_scaffold(fake_initializer)},
             )
+            return result, fake_initializer, idea_dir, tmpdir
 
-            assert result.exit_code == 0
-            assert len(fake_initializer.calls) == 1
-            call = fake_initializer.calls[0]
-            assert call["idea_directory"] == idea_dir
-            assert call["cwd"] == tmpdir
-            assert call["interactive"] is True
-            assert call["mock_claude"] is None
+    def test_scaffold_validates_and_invokes_run_scaffolding(self):
+        result, fake_initializer, idea_dir, tmpdir = self._invoke_scaffold()
+
+        assert result.exit_code == 0
+        assert len(fake_initializer.calls) == 1
+        call = fake_initializer.calls[0]
+        assert call["idea_directory"] == idea_dir
+        assert call["cwd"] == tmpdir
+        assert call["interactive"] is True
+        assert call["mock_claude"] is None
 
     def test_scaffold_non_interactive_forwards_flag(self):
-        from click.testing import CliRunner
-        from i2code.implement.cli import scaffold_cmd
+        result, fake_initializer, _, _ = self._invoke_scaffold(["--non-interactive"])
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_dir = _create_idea_dir_in_git_repo(tmpdir)
-            fake_initializer = FakeProjectScaffolderForScaffold()
-
-            runner = CliRunner(catch_exceptions=False)
-            result = runner.invoke(
-                scaffold_cmd, [idea_dir, "--non-interactive"],
-                obj={"command_factory": _fake_assemble_scaffold(fake_initializer)},
-            )
-
-            assert result.exit_code == 0
-            assert fake_initializer.calls[0]["interactive"] is False
+        assert result.exit_code == 0
+        assert fake_initializer.calls[0]["interactive"] is False
 
     def test_scaffold_forwards_mock_claude(self):
-        from click.testing import CliRunner
-        from i2code.implement.cli import scaffold_cmd
+        result, fake_initializer, _, _ = self._invoke_scaffold(["--mock-claude", "/mock.sh"])
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_dir = _create_idea_dir_in_git_repo(tmpdir)
-            fake_initializer = FakeProjectScaffolderForScaffold()
-
-            runner = CliRunner(catch_exceptions=False)
-            result = runner.invoke(
-                scaffold_cmd, [idea_dir, "--mock-claude", "/mock.sh"],
-                obj={"command_factory": _fake_assemble_scaffold(fake_initializer)},
-            )
-
-            assert result.exit_code == 0
-            assert fake_initializer.calls[0]["mock_claude"] == "/mock.sh"
+        assert result.exit_code == 0
+        assert fake_initializer.calls[0]["mock_claude"] == "/mock.sh"
 
 

@@ -4,7 +4,7 @@ import pytest
 
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.isolate_mode import IsolateMode
-from i2code.implement.project_setup import ProjectScaffolder
+from i2code.implement.project_setup import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
 
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
@@ -14,12 +14,19 @@ from fake_idea_project import FakeIdeaProject
 def _make_fake_project_scaffolder(setup_success=True):
     """Build a ProjectScaffolder with fakes and a controllable ensure_scaffolding_setup."""
     from i2code.implement.command_builder import CommandBuilder
-    initializer = ProjectScaffolder(
-        claude_runner=FakeClaudeRunner(),
+    scaffolding_creator = ScaffoldingCreator(
         command_builder=CommandBuilder(),
-        git_repo=FakeGitRepository(),
+        claude_runner=FakeClaudeRunner(),
+    )
+    steps = ScaffoldingSteps(
+        claude_runner=FakeClaudeRunner(),
         build_fixer=None,
         push_fn=lambda branch: True,
+    )
+    initializer = ProjectScaffolder(
+        scaffolding_creator=scaffolding_creator,
+        git_repo=FakeGitRepository(),
+        steps=steps,
     )
     # Monkey-patch ensure_scaffolding_setup to record calls and return canned result
     initializer._setup_success = setup_success

@@ -2,7 +2,6 @@
 
 import sys
 
-from i2code.implement.isolate_mode import IsolateOptions
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import validate_idea_files_committed
 from i2code.implement.worktree_setup import setup_project
@@ -105,18 +104,7 @@ class ImplementCommand:
             git_repo=self.git_repo,
             project=work_project,
         )
-        options = IsolateOptions(
-            non_interactive=self.opts.non_interactive,
-            mock_claude=self.opts.mock_claude,
-            cleanup=self.opts.cleanup,
-            setup_only=self.opts.setup_only,
-            extra_prompt=self.opts.extra_prompt,
-            skip_ci_wait=self.opts.skip_ci_wait,
-            ci_fix_retries=self.opts.ci_fix_retries,
-            ci_timeout=self.opts.ci_timeout,
-            isolation_type=self.opts.isolation_type,
-        )
-        returncode = isolate_mode.execute(options)
+        returncode = isolate_mode.execute(self.opts)
         sys.exit(returncode)
 
     def _worktree_mode(self):

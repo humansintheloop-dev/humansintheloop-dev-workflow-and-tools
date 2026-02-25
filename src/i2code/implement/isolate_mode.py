@@ -3,7 +3,6 @@
 import os
 import subprocess
 import sys
-from dataclasses import dataclass
 
 from i2code.implement.managed_subprocess import ManagedSubprocess
 
@@ -32,21 +31,6 @@ def _collect_value_flags(options):
     return result
 
 
-@dataclass
-class IsolateOptions:
-    """Options for IsolateMode.execute()."""
-
-    non_interactive: bool = False
-    mock_claude: str = None
-    cleanup: bool = False
-    setup_only: bool = False
-    extra_prompt: str = None
-    skip_ci_wait: bool = False
-    ci_fix_retries: int = 3
-    ci_timeout: int = 600
-    isolation_type: str = None
-
-
 class IsolateMode:
     """Execution mode that runs project setup on the host then delegates to isolarium VM.
 
@@ -63,14 +47,12 @@ class IsolateMode:
         self._project_initializer = project_initializer
         self._subprocess_runner = subprocess_runner
 
-    def execute(self, options=None):
+    def execute(self, options):
         """Run project setup on host, then delegate to isolarium VM.
 
         Returns:
             The subprocess return code from isolarium.
         """
-        if options is None:
-            options = IsolateOptions()
         idea_branch = f"idea/{self._project.name}"
 
         setup_ok = self._project_initializer.ensure_project_setup(

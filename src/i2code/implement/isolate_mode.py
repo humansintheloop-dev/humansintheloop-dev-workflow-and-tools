@@ -69,9 +69,23 @@ class IsolateMode:
             origin_url=self._git_repo.origin_url,
         )
 
+        return self.launch(options, cwd=clone_path)
+
+    def launch(self, options, cwd=None):
+        """Build the isolarium command and run the subprocess.
+
+        Args:
+            options: ImplementOpts with flags for the isolarium command.
+            cwd: Working directory for the subprocess. Defaults to
+                 self._git_repo.working_tree_dir.
+
+        Returns:
+            The subprocess return code.
+        """
+        run_dir = cwd if cwd is not None else self._git_repo.working_tree_dir
         cmd = self._build_isolarium_command(options)
         print(f"Running: {' '.join(cmd)}")
-        return self._subprocess_runner.run(cmd, cwd=clone_path)
+        return self._subprocess_runner.run(cmd, cwd=run_dir)
 
     def _build_isolarium_command(self, options):
         outer = self._build_outer_args(options)

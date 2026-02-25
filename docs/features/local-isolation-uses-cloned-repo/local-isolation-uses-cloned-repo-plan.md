@@ -121,19 +121,34 @@ Implements Scenario 2 from the specification: the clone directory already exists
 
 Use TDD for all tasks.
 
-- [ ] **Task 2.1: ImplementCommand skips worktree and scaffolding when clone exists**
+- [x] **Task 2.1: ImplementCommand skips worktree and scaffolding when clone exists**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest -m unit tests/implement/test_implement_command.py`
   - Observable: When the clone directory (`<repo>-cl-<idea>`) already exists, `ImplementCommand._isolate_mode()` does not call `ensure_worktree()` or `ensure_idea_branch()`, does not run scaffolding, and runs isolarium with `cwd` set to the existing clone path
   - Evidence: Unit test creates a pre-existing clone directory (using `tmp_path`), invokes the isolate mode flow, and verifies: (1) `ensure_worktree` was NOT called on the fake `git_repo`; (2) `ensure_idea_branch` was NOT called; (3) isolarium subprocess `cwd` is the pre-existing clone path
   - Steps:
-    - [ ] Extract `launch()` method from `IsolateMode.execute()` in `src/i2code/implement/isolate_mode.py` — `launch(options)` builds the isolarium command and runs the subprocess using `self._git_repo.working_tree_dir` as `cwd`. Update `execute()` to use `launch()` internally (passing clone path as needed). Existing tests must continue to pass.
-    - [ ] In `src/i2code/implement/implement_command.py:ImplementCommand._isolate_mode()`: at the top, compute the clone path via `clone_path_for(self.git_repo.working_tree_dir, self.project.name)`; if the clone directory exists, create a `GitRepository` wrapping the clone (with `main_repo_dir=self.git_repo.working_tree_dir`), compute the clone's `IdeaProject` via `worktree_idea_project()`, create `IsolateMode` via `ModeFactory`, call `launch()`, and `sys.exit(returncode)` — skipping worktree creation and scaffolding entirely
-    - [ ] Write unit tests in `tests/implement/test_implement_command.py`: (a) when clone dir exists, `ensure_worktree` and `ensure_idea_branch` are NOT called, isolarium runs in clone; (b) when clone dir does NOT exist, the normal worktree → scaffolding → clone flow proceeds as before
-    - [ ] Verify existing tests still pass (the non-isolate paths are unchanged)
+    - [x] Extract `launch()` method from `IsolateMode.execute()` in `src/i2code/implement/isolate_mode.py` — `launch(options)` builds the isolarium command and runs the subprocess using `self._git_repo.working_tree_dir` as `cwd`. Update `execute()` to use `launch()` internally (passing clone path as needed). Existing tests must continue to pass.
+    - [x] In `src/i2code/implement/implement_command.py:ImplementCommand._isolate_mode()`: at the top, compute the clone path via `clone_path_for(self.git_repo.working_tree_dir, self.project.name)`; if the clone directory exists, create a `GitRepository` wrapping the clone (with `main_repo_dir=self.git_repo.working_tree_dir`), compute the clone's `IdeaProject` via `worktree_idea_project()`, create `IsolateMode` via `ModeFactory`, call `launch()`, and `sys.exit(returncode)` — skipping worktree creation and scaffolding entirely
+    - [x] Write unit tests in `tests/implement/test_implement_command.py`: (a) when clone dir exists, `ensure_worktree` and `ensure_idea_branch` are NOT called, isolarium runs in clone; (b) when clone dir does NOT exist, the normal worktree → scaffolding → clone flow proceeds as before
+    - [x] Verify existing tests still pass (the non-isolate paths are unchanged)
 
 ---
 
 ## Change History
 ### 2026-02-26 08:15 - mark-task-complete
 All 7 tests pass verifying: clone at expected sibling path, origin URL is GitHub URL, independent .git directory, shallow clone (depth 1), idempotent re-run, and clone_path_for computes correct path
+
+### 2026-02-26 08:44 - mark-step-complete
+Extracted launch() method from IsolateMode.execute()
+
+### 2026-02-26 08:44 - mark-step-complete
+Added clone_path_for check and _launch_in_existing_clone in ImplementCommand._isolate_mode()
+
+### 2026-02-26 08:44 - mark-step-complete
+Added TestIsolateModeSkipsWorktreeWhenCloneExists and TestIsolateModeNormalFlowWhenNoClone test classes
+
+### 2026-02-26 08:44 - mark-step-complete
+All 58 tests pass (18 isolate_mode + 40 implement_command)
+
+### 2026-02-26 08:44 - mark-task-complete
+ImplementCommand skips worktree and scaffolding when clone exists; all 58 tests pass

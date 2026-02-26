@@ -41,73 +41,72 @@ class TestPlanReviseCommandRegistered:
 @pytest.mark.unit
 class TestPlanCreateInvokesPythonFunction:
 
-    def test_invokes_create_plan(self, tmp_path):
+    @pytest.fixture
+    def plan_create_mocks(self):
         with patch("i2code.plan.cli.create_plan") as mock_fn, \
              patch("i2code.plan.cli.ClaudeRunner") as mock_runner_cls:
             mock_runner = MagicMock()
             mock_runner_cls.return_value = mock_runner
-            runner = CliRunner()
-            result = runner.invoke(main, ["plan", "create", str(tmp_path)])
-            assert result.exit_code == 0
-            mock_fn.assert_called_once()
+            yield mock_fn, mock_runner
 
-    def test_constructs_idea_project_with_directory(self, tmp_path):
-        with patch("i2code.plan.cli.create_plan") as mock_fn, \
-             patch("i2code.plan.cli.ClaudeRunner"):
-            runner = CliRunner()
-            runner.invoke(main, ["plan", "create", str(tmp_path)])
-            project = mock_fn.call_args[0][0]
-            assert project.directory == str(tmp_path)
+    def test_invokes_create_plan(self, tmp_path, plan_create_mocks):
+        mock_fn, _ = plan_create_mocks
+        runner = CliRunner()
+        result = runner.invoke(main, ["plan", "create", str(tmp_path)])
+        assert result.exit_code == 0
+        mock_fn.assert_called_once()
 
-    def test_passes_claude_runner_instance(self, tmp_path):
-        with patch("i2code.plan.cli.create_plan") as mock_fn, \
-             patch("i2code.plan.cli.ClaudeRunner") as mock_runner_cls:
-            mock_runner = MagicMock()
-            mock_runner_cls.return_value = mock_runner
-            runner = CliRunner()
-            runner.invoke(main, ["plan", "create", str(tmp_path)])
-            assert mock_fn.call_args[0][1] is mock_runner
+    def test_constructs_idea_project_with_directory(self, tmp_path, plan_create_mocks):
+        mock_fn, _ = plan_create_mocks
+        runner = CliRunner()
+        runner.invoke(main, ["plan", "create", str(tmp_path)])
+        project = mock_fn.call_args[0][0]
+        assert project.directory == str(tmp_path)
 
-    def test_passes_plan_services(self, tmp_path):
-        with patch("i2code.plan.cli.create_plan") as mock_fn, \
-             patch("i2code.plan.cli.ClaudeRunner"):
-            runner = CliRunner()
-            runner.invoke(main, ["plan", "create", str(tmp_path)])
-            services = mock_fn.call_args[0][2]
-            assert callable(services.template_renderer)
-            assert callable(services.plugin_skills_fn)
-            assert callable(services.validator_fn)
+    def test_passes_claude_runner_instance(self, tmp_path, plan_create_mocks):
+        mock_fn, mock_runner = plan_create_mocks
+        runner = CliRunner()
+        runner.invoke(main, ["plan", "create", str(tmp_path)])
+        assert mock_fn.call_args[0][1] is mock_runner
+
+    def test_passes_plan_services(self, tmp_path, plan_create_mocks):
+        mock_fn, _ = plan_create_mocks
+        runner = CliRunner()
+        runner.invoke(main, ["plan", "create", str(tmp_path)])
+        services = mock_fn.call_args[0][2]
+        assert callable(services.template_renderer)
+        assert callable(services.plugin_skills_fn)
+        assert callable(services.validator_fn)
 
 
 @pytest.mark.unit
 class TestPlanReviseInvokesPythonFunction:
 
-    def test_invokes_revise_plan(self, tmp_path):
+    @pytest.fixture
+    def plan_revise_mocks(self):
         with patch("i2code.plan.cli.revise_plan") as mock_fn, \
              patch("i2code.plan.cli.ClaudeRunner") as mock_runner_cls:
             mock_runner = MagicMock()
             mock_runner_cls.return_value = mock_runner
             mock_fn.return_value = MagicMock(returncode=0)
-            runner = CliRunner()
-            result = runner.invoke(main, ["plan", "revise", str(tmp_path)])
-            assert result.exit_code == 0
-            mock_fn.assert_called_once()
+            yield mock_fn, mock_runner
 
-    def test_constructs_idea_project_with_directory(self, tmp_path):
-        with patch("i2code.plan.cli.revise_plan") as mock_fn, \
-             patch("i2code.plan.cli.ClaudeRunner"):
-            mock_fn.return_value = MagicMock(returncode=0)
-            runner = CliRunner()
-            runner.invoke(main, ["plan", "revise", str(tmp_path)])
-            project = mock_fn.call_args[0][0]
-            assert project.directory == str(tmp_path)
+    def test_invokes_revise_plan(self, tmp_path, plan_revise_mocks):
+        mock_fn, _ = plan_revise_mocks
+        runner = CliRunner()
+        result = runner.invoke(main, ["plan", "revise", str(tmp_path)])
+        assert result.exit_code == 0
+        mock_fn.assert_called_once()
 
-    def test_passes_claude_runner_instance(self, tmp_path):
-        with patch("i2code.plan.cli.revise_plan") as mock_fn, \
-             patch("i2code.plan.cli.ClaudeRunner") as mock_runner_cls:
-            mock_runner = MagicMock()
-            mock_runner_cls.return_value = mock_runner
-            mock_fn.return_value = MagicMock(returncode=0)
-            runner = CliRunner()
-            runner.invoke(main, ["plan", "revise", str(tmp_path)])
-            assert mock_fn.call_args[0][1] is mock_runner
+    def test_constructs_idea_project_with_directory(self, tmp_path, plan_revise_mocks):
+        mock_fn, _ = plan_revise_mocks
+        runner = CliRunner()
+        runner.invoke(main, ["plan", "revise", str(tmp_path)])
+        project = mock_fn.call_args[0][0]
+        assert project.directory == str(tmp_path)
+
+    def test_passes_claude_runner_instance(self, tmp_path, plan_revise_mocks):
+        mock_fn, mock_runner = plan_revise_mocks
+        runner = CliRunner()
+        runner.invoke(main, ["plan", "revise", str(tmp_path)])
+        assert mock_fn.call_args[0][1] is mock_runner

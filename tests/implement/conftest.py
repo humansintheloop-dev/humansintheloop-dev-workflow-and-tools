@@ -33,7 +33,7 @@ def create_github_repo(repo_name):
     Raises:
         RuntimeError: If repository creation fails
     """
-    repo_full_name = f"{os.environ['GH_TEST_ORG']}/{repo_name}"
+    repo_full_name = f"{os.environ.get('GH_TEST_ORG', 'humansintheloop-test-org')}/{repo_name}"
     result = subprocess.run(
         ["gh", "repo", "create", repo_full_name, "--private"],
         capture_output=True,

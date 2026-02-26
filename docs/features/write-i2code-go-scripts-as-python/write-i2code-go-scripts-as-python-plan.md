@@ -227,14 +227,14 @@ Migrate `make-plan.sh`, `revise-plan.sh`, and `list-plugin-skills.sh`. Includes 
     - [x] Implement repair logic: construct repair prompt matching `scripts/make-plan.sh:73-101`, invoke Claude again with plan + errors, validate repaired plan
     - [x] Write pytest tests: successful creation with valid plan, validation failure triggers repair, repair succeeds (valid after repair), repair fails (still invalid after repair — reports error), plan written to correct file path
 
-- [ ] **Task 4.4: `i2code plan revise` revises plan via Claude**
+- [x] **Task 4.4: `i2code plan revise` revises plan via Claude**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit -k revise_plan`
   - Observable: Validates idea, spec, and plan files exist. Renders `revise-plan.md` template with `$IDEA_FILE`, `$SPEC_FILE`, `$PLAN_WITHOUT_STORIES_FILE`. Invokes Claude interactively.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit -k revise_plan` passes with mocked ClaudeRunner
   - Steps:
-    - [ ] Create `src/i2code/go_cmd/revise_plan.py` — `revise_plan(project: IdeaProject, claude_runner, template_renderer)` function matching `scripts/revise-plan.sh`. Validates all three files, renders template, invokes Claude.
-    - [ ] Write pytest tests: validates all three files, template rendered with correct variables, Claude invoked
+    - [x] Create `src/i2code/go_cmd/revise_plan.py` — `revise_plan(project: IdeaProject, claude_runner, template_renderer)` function matching `scripts/revise-plan.sh`. Validates all three files, renders template, invokes Claude.
+    - [x] Write pytest tests: validates all three files, template rendered with correct variables, Claude invoked
 
 - [ ] **Task 4.5: Wire plan commands, update orchestrator, delete bash scripts**
   - TaskType: OUTCOME

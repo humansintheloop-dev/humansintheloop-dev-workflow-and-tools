@@ -4,7 +4,13 @@ import io
 
 import pytest
 
-from i2code.go_cmd.menu import get_user_choice
+from i2code.go_cmd.menu import MenuConfig, get_user_choice
+
+
+def _config(input_fn, output=None):
+    if output is None:
+        output = io.StringIO()
+    return MenuConfig(input_fn=input_fn, output=output)
 
 
 @pytest.mark.unit
@@ -13,32 +19,28 @@ class TestGetUserChoiceValidInput:
     def test_returns_selected_option_index(self):
         choice = get_user_choice(
             "Pick one:", 1, ["Alpha", "Beta"],
-            input_fn=lambda _: "2",
-            output=io.StringIO(),
+            config=_config(lambda _: "2"),
         )
         assert choice == 2
 
     def test_default_on_empty_input(self):
         choice = get_user_choice(
             "Pick one:", 2, ["Alpha", "Beta"],
-            input_fn=lambda _: "",
-            output=io.StringIO(),
+            config=_config(lambda _: ""),
         )
         assert choice == 2
 
     def test_first_option_selectable(self):
         choice = get_user_choice(
             "Pick one:", 1, ["Alpha", "Beta", "Gamma"],
-            input_fn=lambda _: "1",
-            output=io.StringIO(),
+            config=_config(lambda _: "1"),
         )
         assert choice == 1
 
     def test_last_option_selectable(self):
         choice = get_user_choice(
             "Pick one:", 1, ["Alpha", "Beta", "Gamma"],
-            input_fn=lambda _: "3",
-            output=io.StringIO(),
+            config=_config(lambda _: "3"),
         )
         assert choice == 3
 
@@ -50,8 +52,7 @@ class TestGetUserChoiceDisplaysMenu:
         buf = io.StringIO()
         get_user_choice(
             "Pick one:", 1, ["Alpha", "Beta"],
-            input_fn=lambda _: "1",
-            output=buf,
+            config=_config(lambda _: "1", output=buf),
         )
         displayed = buf.getvalue()
         assert "1) Alpha" in displayed
@@ -61,8 +62,7 @@ class TestGetUserChoiceDisplaysMenu:
         buf = io.StringIO()
         get_user_choice(
             "Pick one:", 2, ["Alpha", "Beta"],
-            input_fn=lambda _: "2",
-            output=buf,
+            config=_config(lambda _: "2", output=buf),
         )
         displayed = buf.getvalue()
         assert "[default]" in displayed
@@ -72,8 +72,7 @@ class TestGetUserChoiceDisplaysMenu:
         buf = io.StringIO()
         get_user_choice(
             "Pick one:", 1, ["Alpha", "Beta"],
-            input_fn=lambda _: "1",
-            output=buf,
+            config=_config(lambda _: "1", output=buf),
         )
         displayed = buf.getvalue()
         assert "Pick one:" in displayed
@@ -86,8 +85,7 @@ class TestGetUserChoiceInvalidInput:
         inputs = iter(["0", "99", "abc", "2"])
         choice = get_user_choice(
             "Pick one:", 1, ["Alpha", "Beta"],
-            input_fn=lambda _: next(inputs),
-            output=io.StringIO(),
+            config=_config(lambda _: next(inputs)),
         )
         assert choice == 2
 
@@ -96,8 +94,7 @@ class TestGetUserChoiceInvalidInput:
         buf = io.StringIO()
         get_user_choice(
             "Pick one:", 1, ["Alpha", "Beta"],
-            input_fn=lambda _: next(inputs),
-            output=buf,
+            config=_config(lambda _: next(inputs), output=buf),
         )
         displayed = buf.getvalue()
         assert "Invalid choice" in displayed
@@ -113,7 +110,6 @@ class TestGetUserChoiceEOF:
         with pytest.raises(SystemExit) as exc_info:
             get_user_choice(
                 "Pick one:", 1, ["Alpha", "Beta"],
-                input_fn=eof_input,
-                output=io.StringIO(),
+                config=_config(eof_input),
             )
         assert exc_info.value.code == 0

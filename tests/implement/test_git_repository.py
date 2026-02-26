@@ -400,6 +400,128 @@ class TestShowFileAtHead:
 
 
 @pytest.mark.unit
+class TestFindClone:
+
+    def test_returns_none_when_no_clone_exists(self):
+        with tempfile.TemporaryDirectory() as parent:
+            repo, _ = _named_repo_with_branch(parent, "idea/test")
+            git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+
+            result = git_repo.find_clone("test")
+
+            assert result is None
+
+    def test_returns_git_repository_when_clone_exists(self):
+        with tempfile.TemporaryDirectory() as parent:
+            repo, parent_dir = _named_repo_with_branch(parent, "idea/test")
+            clone_path = os.path.join(parent_dir, "my-repo-cl-test")
+            _init_git_repo(clone_path)
+
+            git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+            result = git_repo.find_clone("test")
+
+            assert isinstance(result, GitRepository)
+            assert result.working_tree_dir == clone_path
+
+
+def _init_git_repo(path):
+    """Create a minimal git repo with one commit at the given path."""
+    os.makedirs(path, exist_ok=True)
+    subprocess.run(["git", "init"], cwd=path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=path, check=True, capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=path, check=True, capture_output=True,
+    )
+    readme = os.path.join(path, "README.md")
+    with open(readme, "w") as f:
+        f.write("# test\n")
+    subprocess.run(["git", "add", "."], cwd=path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial commit"],
+        cwd=path, check=True, capture_output=True,
+    )
+
+
+_GITHUB_URL = "https://github.com/org/repo.git"
+
+
+@pytest.mark.unit
+class TestClone:
+
+    def _create_clone(self, parent):
+        repo, parent_dir = _named_repo_with_branch(parent, "idea/feat")
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        subprocess.run(
+            ["git", "remote", "add", "origin", _GITHUB_URL],
+            cwd=git_repo.working_tree_dir, check=True, capture_output=True,
+        )
+        clone_repo = git_repo.clone("feat")
+        return git_repo, clone_repo
+
+    def test_clone_directory_created_at_expected_path(self):
+        with tempfile.TemporaryDirectory() as parent:
+            _, clone_repo = self._create_clone(parent)
+
+            expected = os.path.join(parent, "my-repo-cl-feat")
+            assert clone_repo.working_tree_dir == expected
+            assert os.path.isdir(expected)
+
+    def test_clone_origin_is_github_url(self):
+        with tempfile.TemporaryDirectory() as parent:
+            _, clone_repo = self._create_clone(parent)
+
+            result = subprocess.run(
+                ["git", "remote", "get-url", "origin"],
+                cwd=clone_repo.working_tree_dir,
+                capture_output=True, text=True, check=True,
+            )
+            assert result.stdout.strip() == _GITHUB_URL
+
+    def test_clone_has_independent_git_directory(self):
+        with tempfile.TemporaryDirectory() as parent:
+            _, clone_repo = self._create_clone(parent)
+
+            assert os.path.isdir(os.path.join(clone_repo.working_tree_dir, ".git"))
+
+    def test_clone_is_shallow(self):
+        with tempfile.TemporaryDirectory() as parent:
+            _, clone_repo = self._create_clone(parent)
+
+            result = subprocess.run(
+                ["git", "rev-list", "--count", "HEAD"],
+                cwd=clone_repo.working_tree_dir,
+                capture_output=True, text=True, check=True,
+            )
+            assert result.stdout.strip() == "1"
+
+    def test_returns_existing_clone_when_already_exists(self):
+        with tempfile.TemporaryDirectory() as parent:
+            git_repo, first = self._create_clone(parent)
+            second = git_repo.clone("feat")
+
+            assert first.working_tree_dir == second.working_tree_dir
+
+    def test_clone_named_relative_to_main_repo_dir(self):
+        with tempfile.TemporaryDirectory() as parent:
+            repo, parent_dir = _named_repo_with_branch(parent, "idea/feat")
+            main_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+            subprocess.run(
+                ["git", "remote", "add", "origin", _GITHUB_URL],
+                cwd=main_repo.working_tree_dir, check=True, capture_output=True,
+            )
+
+            wt_repo = main_repo.ensure_worktree("feat", "idea/feat")
+            clone_repo = wt_repo.clone("feat")
+
+            expected = os.path.join(parent_dir, "my-repo-cl-feat")
+            assert clone_repo.working_tree_dir == expected
+
+
+@pytest.mark.unit
 class TestBranchHasBeenPushed:
 
     def test_returns_false_when_branch_not_on_remote(self, test_git_repo_with_commit, mocker):

@@ -70,6 +70,8 @@ class IsolateMode:
         return self._setup_worktree_and_launch()
 
     def _launch_in_existing_clone(self, clone_repo):
+        name, email = self._git_repo.get_user_config()
+        clone_repo.set_user_config(name, email)
         self._project_setup.setup_clone(clone_repo)
         self._project = self._project.worktree_idea_project(
             clone_repo.working_tree_dir, self._git_repo.working_tree_dir,

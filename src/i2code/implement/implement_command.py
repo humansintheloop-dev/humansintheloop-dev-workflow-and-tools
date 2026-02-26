@@ -68,7 +68,6 @@ class ImplementCommand:
 
         if self.opts.isolated:
             print(f"Worktree: {self.git_repo.working_tree_dir}")
-            self.git_repo.set_user_config("Test User", "test@test.com")
             ProjectSetup().setup_worktree(self.git_repo)
             work_project = self.project
         else:

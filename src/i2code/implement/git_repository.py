@@ -69,6 +69,13 @@ class GitRepository:
     def head_sha(self):
         return self._repo.head.commit.hexsha
 
+    def get_user_config(self):
+        """Read git user.name and user.email from the config cascade."""
+        reader = self._repo.config_reader()
+        name = reader.get_value("user", "name")
+        email = reader.get_value("user", "email")
+        return name, email
+
     def set_user_config(self, name, email):
         """Set git user.name and user.email in the repo config."""
         self._repo.config_writer().set_value("user", "email", email).release()
@@ -185,10 +192,13 @@ class GitRepository:
                 ["git", "remote", "set-url", "origin", self.origin_url],
                 cwd=clone_path, check=True,
             )
-        return GitRepository(
+        clone_repo = GitRepository(
             Repo(clone_path), gh_client=self._gh_client,
             main_repo_dir=self._main_repo_dir,
         )
+        name, email = self.get_user_config()
+        clone_repo.set_user_config(name, email)
+        return clone_repo
 
     def set_upstream(self, branch_name):
         """Configure the upstream tracking branch to origin/<branch_name>.

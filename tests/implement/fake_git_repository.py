@@ -19,6 +19,7 @@ class FakeGitRepository:
         self._gh_client = gh_client
         self._main_repo_dir = main_repo_dir or working_tree_dir
         self._origin_url = "https://github.com/test/repo.git"
+        self._user_config = ("Test", "test@test.com")
         self._head_sha = "aaa"
         self._branches = set()
         self._checked_out = None
@@ -125,6 +126,10 @@ class FakeGitRepository:
         self.calls.append(("push",))
         self._pushed = True
         return True
+
+    def get_user_config(self):
+        self.calls.append(("get_user_config",))
+        return self._user_config
 
     def set_user_config(self, name, email):
         self.calls.append(("set_user_config", name, email))

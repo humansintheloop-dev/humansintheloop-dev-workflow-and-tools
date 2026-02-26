@@ -358,6 +358,15 @@ class TestIsolateModeSkipsWorktreeWhenCloneExists:
         _, _, cwd = subprocess_runner.calls[0]
         assert cwd == "/fake/my-repo-cl-test-feature"
 
+    def test_copies_user_config_to_existing_clone(self):
+        mode, git_repo, _, _ = self._make_mode_with_clone()
+        mode.execute()
+
+        clone_repo = git_repo._clone_repos["test-feature"]
+        config_calls = [c for c in clone_repo.calls if c[0] == "set_user_config"]
+        assert len(config_calls) == 1
+        assert config_calls[0] == ("set_user_config", "Test", "test@test.com")
+
 
 def _extract_isolated_path(cmd):
     """Extract the --isolated path from the inner command (after --)."""

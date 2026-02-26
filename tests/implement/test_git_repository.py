@@ -52,6 +52,19 @@ class TestHeadAdvancedSince:
 
 
 @pytest.mark.unit
+class TestGetUserConfig:
+
+    def test_reads_name_and_email_from_config(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+
+        name, email = git_repo.get_user_config()
+
+        assert name == "Test"
+        assert email == "test@test.com"
+
+
+@pytest.mark.unit
 class TestEnsureBranch:
 
     def test_creates_branch_from_head(self, test_git_repo_with_commit):
@@ -519,6 +532,15 @@ class TestClone:
 
             expected = os.path.join(parent_dir, "my-repo-cl-feat")
             assert clone_repo.working_tree_dir == expected
+
+    def test_clone_copies_user_config_from_source(self):
+        with tempfile.TemporaryDirectory() as parent:
+            git_repo, clone_repo = self._create_clone(parent)
+
+            clone_raw = Repo(clone_repo.working_tree_dir)
+            reader = clone_raw.config_reader()
+            assert reader.get_value("user", "name") == "Test"
+            assert reader.get_value("user", "email") == "test@test.com"
 
 
 @pytest.mark.unit

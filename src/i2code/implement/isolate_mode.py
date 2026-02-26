@@ -3,8 +3,10 @@
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
 
 from i2code.implement.managed_subprocess import ManagedSubprocess
+from i2code.implement.repo_cloner import clone_path_for
 
 
 _BOOL_FLAGS = [
@@ -31,44 +33,79 @@ def _collect_value_flags(options):
     return result
 
 
+@dataclass
+class WorktreeSetupDeps:
+    """Dependencies for first-run worktree creation, scaffolding, and cloning."""
+
+    scaffolder_factory: object
+    clone_creator: object
+    project_setup_fn: object
+
+
 class IsolateMode:
     """Execution mode that runs project setup on the host then delegates to isolarium VM.
 
     Args:
         workspace: Workspace bundling git_repo and project.
-        project_scaffolder: ProjectScaffolder providing ensure_scaffolding_setup().
+        worktree_setup: WorktreeSetupDeps for first-run setup.
         subprocess_runner: Object providing run(cmd) -> returncode.
-        clone_creator: Object providing create_clone(source_path, idea_name, origin_url).
     """
 
-    def __init__(self, workspace, project_scaffolder, subprocess_runner, clone_creator):
+    def __init__(self, workspace, worktree_setup, subprocess_runner):
         self._git_repo = workspace.git_repo
         self._project = workspace.project
-        self._project_scaffolder = project_scaffolder
+        self._scaffolder_factory = worktree_setup.scaffolder_factory
+        self._clone_creator = worktree_setup.clone_creator
+        self._project_setup_fn = worktree_setup.project_setup_fn
         self._subprocess_runner = subprocess_runner
-        self._clone_creator = clone_creator
 
     def execute(self, options):
-        """Run project setup on host (because host token can configure Github Actions workflow files), then delegate to Isolarium
+        """Create worktree, scaffold, clone, and launch isolarium — or reuse an existing clone.
 
         Returns:
             The subprocess return code from isolarium.
         """
-        idea_branch = f"idea/{self._project.name}"
+        clone_path = clone_path_for(self._git_repo.working_tree_dir, self._project.name)
+        if os.path.isdir(clone_path):
+            return self._launch_in_existing_clone(clone_path, options)
+        return self._setup_worktree_and_launch(options)
 
-        setup_ok = self._project_scaffolder.ensure_scaffolding_setup(
-            options, idea_directory=self._project.directory, branch=idea_branch,
+    def _launch_in_existing_clone(self, clone_path, options):
+        self._project = self._project.worktree_idea_project(
+            clone_path, self._git_repo.working_tree_dir,
+        )
+        return self.launch(options, cwd=clone_path)
+
+    def _setup_worktree_and_launch(self, options):
+        idea_branch = self._git_repo.ensure_idea_branch(self._project.name)
+        print(f"Idea branch: {idea_branch}")
+        wt_git_repo = self._git_repo.ensure_worktree(self._project.name, idea_branch)
+        wt_git_repo.set_upstream(idea_branch)
+        print(f"Worktree: {wt_git_repo.working_tree_dir}")
+        self._project_setup_fn(wt_git_repo)
+
+        work_project = self._project.worktree_idea_project(
+            wt_git_repo.working_tree_dir, wt_git_repo.main_repo_dir,
+        )
+
+        scaffolder = self._scaffolder_factory(wt_git_repo)
+        setup_ok = scaffolder.ensure_scaffolding_setup(
+            options, idea_directory=work_project.directory,
+            branch=f"idea/{self._project.name}",
         )
         if not setup_ok:
             print("Error: Project scaffolding setup failed", file=sys.stderr)
             sys.exit(1)
 
         clone_path = self._clone_creator.create_clone(
-            source_path=self._git_repo.working_tree_dir,
+            source_path=wt_git_repo.working_tree_dir,
             idea_name=self._project.name,
-            origin_url=self._git_repo.origin_url,
+            origin_url=wt_git_repo.origin_url,
+            clone_base=self._git_repo.working_tree_dir,
         )
 
+        self._git_repo = wt_git_repo
+        self._project = work_project
         return self.launch(options, cwd=clone_path)
 
     def launch(self, options, cwd=None):

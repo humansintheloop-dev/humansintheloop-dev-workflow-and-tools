@@ -18,17 +18,24 @@ def clone_path_for(repo_root, idea_name):
 class RepoCloner:
     """Creates a local clone of a repository for isolated work."""
 
-    def create_clone(self, source_path, idea_name, origin_url):
+    def create_clone(self, source_path, idea_name, origin_url, clone_base=None):
         """Create a shallow clone of source_path for isolated work.
 
         If the clone directory already exists, returns its path without re-cloning.
         After cloning, reconfigures the clone's origin remote to point to origin_url
         (the GitHub remote) instead of the local source path.
 
+        Args:
+            source_path: The git repository to clone from.
+            idea_name: The idea name used in the clone directory name.
+            origin_url: The GitHub remote URL to set on the clone.
+            clone_base: Path used to derive the clone directory name.
+                Defaults to source_path when not provided.
+
         Returns:
             The path to the clone directory.
         """
-        clone_dir = clone_path_for(source_path, idea_name)
+        clone_dir = clone_path_for(clone_base or source_path, idea_name)
         if os.path.isdir(clone_dir):
             return clone_dir
 

@@ -130,6 +130,12 @@ class GitRepository:
         """Check out the named branch."""
         self._repo.git.checkout(branch_name)
 
+    @staticmethod
+    def _sibling_path(repo_root, suffix, idea_name):
+        parent_dir = os.path.dirname(repo_root)
+        basename = os.path.basename(repo_root)
+        return os.path.join(parent_dir, f"{basename}-{suffix}-{idea_name}")
+
     def ensure_worktree(self, idea_name, branch_name):
         """Ensure a worktree exists for the given idea and branch.
 
@@ -140,11 +146,9 @@ class GitRepository:
         Returns:
             A new GitRepository wrapping the worktree's Repo.
         """
-        repo_root = self._repo.working_tree_dir
-        repo_name = os.path.basename(repo_root)
-        parent_dir = os.path.dirname(repo_root)
-
-        worktree_path = os.path.join(parent_dir, f"{repo_name}-wt-{idea_name}")
+        worktree_path = self._sibling_path(
+            self._repo.working_tree_dir, "wt", idea_name,
+        )
 
         if not os.path.isdir(worktree_path):
             self._repo.git.worktree("add", worktree_path, branch_name)
@@ -152,6 +156,38 @@ class GitRepository:
         return GitRepository(
             Repo(worktree_path), gh_client=self._gh_client,
             main_repo_dir=self._repo.working_tree_dir,
+        )
+
+    def find_clone(self, idea_name):
+        """Return a GitRepository for an existing clone, or None."""
+        clone_path = self._sibling_path(self._main_repo_dir, "cl", idea_name)
+        if not os.path.isdir(clone_path):
+            return None
+        return GitRepository(
+            Repo(clone_path), gh_client=self._gh_client,
+            main_repo_dir=self._main_repo_dir,
+        )
+
+    def clone(self, idea_name):
+        """Create a shallow clone for isolated work, returning a GitRepository.
+
+        The clone is named relative to main_repo_dir and its origin is
+        reconfigured to the GitHub remote URL.
+        """
+        clone_path = self._sibling_path(self._main_repo_dir, "cl", idea_name)
+        if not os.path.isdir(clone_path):
+            subprocess.run(
+                ["git", "clone", "--depth", "1",
+                 self._repo.working_tree_dir, clone_path],
+                check=True,
+            )
+            subprocess.run(
+                ["git", "remote", "set-url", "origin", self.origin_url],
+                cwd=clone_path, check=True,
+            )
+        return GitRepository(
+            Repo(clone_path), gh_client=self._gh_client,
+            main_repo_dir=self._main_repo_dir,
         )
 
     def set_upstream(self, branch_name):

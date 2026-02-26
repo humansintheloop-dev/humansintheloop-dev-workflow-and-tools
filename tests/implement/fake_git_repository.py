@@ -23,6 +23,7 @@ class FakeGitRepository:
         self._branches = set()
         self._checked_out = None
         self._worktrees = {}
+        self._clone_repos = {}
         self._pushed = False
         self._default_diff_output = ""
         self._diff_outputs = {}
@@ -90,6 +91,21 @@ class FakeGitRepository:
 
     def set_worktree_path(self, idea_name, path):
         self._worktrees[idea_name] = path
+
+    def set_clone_repo(self, idea_name, git_repo):
+        self._clone_repos[idea_name] = git_repo
+
+    def find_clone(self, idea_name):
+        self.calls.append(("find_clone", idea_name))
+        return self._clone_repos.get(idea_name)
+
+    def clone(self, idea_name):
+        self.calls.append(("clone", idea_name))
+        clone_path = f"{self._working_tree_dir}-cl-{idea_name}"
+        return FakeGitRepository(
+            working_tree_dir=clone_path,
+            main_repo_dir=self._main_repo_dir,
+        )
 
     def has_unpushed_commits(self):
         self.calls.append(("has_unpushed_commits",))

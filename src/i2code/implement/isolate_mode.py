@@ -6,7 +6,6 @@ import sys
 from dataclasses import dataclass
 
 from i2code.implement.managed_subprocess import ManagedSubprocess
-from i2code.implement.repo_cloner import clone_path_for
 
 
 _BOOL_FLAGS = [
@@ -35,10 +34,9 @@ def _collect_value_flags(options):
 
 @dataclass
 class WorktreeSetupDeps:
-    """Dependencies for first-run worktree creation, scaffolding, and cloning."""
+    """Dependencies for first-run worktree creation and scaffolding."""
 
     scaffolder_factory: object
-    clone_creator: object
     project_setup_fn: object
 
 
@@ -57,7 +55,6 @@ class IsolateMode:
         self._project = workspace.project
         self._options = options
         self._scaffolder_factory = worktree_setup.scaffolder_factory
-        self._clone_creator = worktree_setup.clone_creator
         self._project_setup_fn = worktree_setup.project_setup_fn
         self._subprocess_runner = subprocess_runner
 
@@ -67,16 +64,16 @@ class IsolateMode:
         Returns:
             The subprocess return code from isolarium.
         """
-        clone_path = clone_path_for(self._git_repo.working_tree_dir, self._project.name)
-        if os.path.isdir(clone_path):
-            return self._launch_in_existing_clone(clone_path)
+        clone_repo = self._git_repo.find_clone(self._project.name)
+        if clone_repo is not None:
+            return self._launch_in_existing_clone(clone_repo)
         return self._setup_worktree_and_launch()
 
-    def _launch_in_existing_clone(self, clone_path):
+    def _launch_in_existing_clone(self, clone_repo):
         self._project = self._project.worktree_idea_project(
-            clone_path, self._git_repo.working_tree_dir,
+            clone_repo.working_tree_dir, self._git_repo.working_tree_dir,
         )
-        return self._launch(cwd=clone_path)
+        return self._launch(cwd=clone_repo.working_tree_dir)
 
     def _setup_worktree_and_launch(self):
         idea_branch = self._git_repo.ensure_idea_branch(self._project.name)
@@ -99,16 +96,11 @@ class IsolateMode:
             print("Error: Project scaffolding setup failed", file=sys.stderr)
             sys.exit(1)
 
-        clone_path = self._clone_creator.create_clone(
-            source_path=wt_git_repo.working_tree_dir,
-            idea_name=self._project.name,
-            origin_url=wt_git_repo.origin_url,
-            clone_base=self._git_repo.working_tree_dir,
-        )
+        clone_repo = wt_git_repo.clone(self._project.name)
 
         self._git_repo = wt_git_repo
         self._project = work_project
-        return self._launch(cwd=clone_path)
+        return self._launch(cwd=clone_repo.working_tree_dir)
 
     def _launch(self, cwd):
         cmd = self._build_isolarium_command()

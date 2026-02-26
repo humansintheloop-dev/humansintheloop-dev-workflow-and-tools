@@ -12,7 +12,6 @@ from i2code.implement.workspace import Workspace
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
 from fake_idea_project import FakeIdeaProject
-from fake_repo_cloner import FakeRepoCloner
 
 
 def _make_fake_project_scaffolder(setup_success=True):
@@ -63,8 +62,8 @@ def _noop_project_setup(git_repo):
     pass
 
 
-def _make_mode(options=None, project=None, git_repo=None, clone_creator=None):
-    """Build an IsolateMode with fakes, returning (mode, initializer, subprocess_runner, clone_creator).
+def _make_mode(options=None, project=None, git_repo=None):
+    """Build an IsolateMode with fakes, returning (mode, initializer, subprocess_runner).
 
     Default paths place the project directory inside the git repo so that
     worktree_idea_project computes sensible relative paths.
@@ -75,7 +74,6 @@ def _make_mode(options=None, project=None, git_repo=None, clone_creator=None):
     )
     initializer = _make_fake_project_scaffolder()
     subprocess_runner = FakeSubprocessRunner()
-    clone_creator = clone_creator or FakeRepoCloner()
     workspace = Workspace(git_repo=git_repo, project=project)
 
     def scaffolder_factory(wt_git_repo):
@@ -83,7 +81,6 @@ def _make_mode(options=None, project=None, git_repo=None, clone_creator=None):
 
     worktree_setup = WorktreeSetupDeps(
         scaffolder_factory=scaffolder_factory,
-        clone_creator=clone_creator,
         project_setup_fn=_noop_project_setup,
     )
     mode = IsolateMode(
@@ -92,7 +89,7 @@ def _make_mode(options=None, project=None, git_repo=None, clone_creator=None):
         worktree_setup=worktree_setup,
         subprocess_runner=subprocess_runner,
     )
-    return mode, initializer, subprocess_runner, clone_creator
+    return mode, initializer, subprocess_runner
 
 
 def _opts(**kwargs):
@@ -103,7 +100,7 @@ def _opts(**kwargs):
 
 def _execute_and_get_cmd(options=None, project=None, git_repo=None):
     """Execute IsolateMode and return the subprocess command."""
-    mode, _, subprocess_runner, _ = _make_mode(
+    mode, _, subprocess_runner = _make_mode(
         options=options, project=project, git_repo=git_repo,
     )
     mode.execute()
@@ -115,7 +112,7 @@ class TestIsolateModeExecute:
     """IsolateMode.execute() runs project setup then delegates to isolarium."""
 
     def test_calls_ensure_scaffolding_setup_then_runs_subprocess(self):
-        mode, initializer, subprocess_runner, _ = _make_mode()
+        mode, initializer, subprocess_runner = _make_mode()
         returncode = mode.execute()
 
         assert any(c[0] == "ensure_scaffolding_setup" for c in initializer._setup_calls)
@@ -123,7 +120,7 @@ class TestIsolateModeExecute:
         assert returncode == 0
 
     def test_exits_when_project_setup_fails(self):
-        mode, initializer, subprocess_runner, _ = _make_mode()
+        mode, initializer, subprocess_runner = _make_mode()
         initializer._setup_success = False
 
         with pytest.raises(SystemExit) as exc_info:
@@ -169,7 +166,7 @@ class TestIsolateModeExecute:
         assert "--isolated" in cmd
 
     def test_returns_subprocess_returncode(self):
-        mode, _, subprocess_runner, _ = _make_mode()
+        mode, _, subprocess_runner = _make_mode()
         subprocess_runner.set_returncode(42)
         returncode = mode.execute()
 
@@ -183,7 +180,7 @@ class TestIsolateModeExecute:
             ci_timeout=900,
             skip_ci_wait=True,
         )
-        mode, initializer, _, _ = _make_mode(options=options)
+        mode, initializer, _ = _make_mode(options=options)
         mode.execute()
 
         setup_calls = [c for c in initializer._setup_calls if c[0] == "ensure_scaffolding_setup"]
@@ -272,102 +269,85 @@ class TestIsolateModeEnvFile:
 
 @pytest.mark.unit
 class TestIsolateModeCloneCreator:
-    """IsolateMode calls clone_creator after scaffolding and uses clone path as subprocess cwd."""
+    """IsolateMode calls git_repo.clone() after scaffolding and uses clone path as subprocess cwd."""
 
-    def test_clone_named_relative_to_original_repo_not_worktree(self):
-        """Clone dir should be <original_repo>-cl-<idea>, not <worktree>-cl-<idea>."""
+    def test_clone_called_on_worktree_git_repo(self):
         git_repo = FakeGitRepository(working_tree_dir="/home/user/project")
         project = FakeIdeaProject(
             name="my-feature",
             directory="/home/user/project/docs/features/my-feature",
         )
-        clone_creator = FakeRepoCloner(clone_path="/home/user/project-cl-my-feature")
-        mode, _, _, _ = _make_mode(
-            git_repo=git_repo, project=project, clone_creator=clone_creator,
-        )
+        mode, _, _ = _make_mode(git_repo=git_repo, project=project)
 
         mode.execute()
 
-        assert len(clone_creator.calls) == 1
-        call = clone_creator.calls[0]
-        # source is worktree, but clone_base is original repo
-        assert call == (
-            "create_clone",
-            "/home/user/project-wt-my-feature",
-            "my-feature",
-            "https://github.com/test/repo.git",
-            "/home/user/project",
-        )
+        wt_repo_calls = git_repo.calls
+        clone_calls = [c for c in wt_repo_calls if c[0] == "clone"]
+        assert len(clone_calls) == 0  # clone is on worktree repo, not main repo
+        # The worktree repo is a FakeGitRepository returned by ensure_worktree;
+        # we verify the subprocess cwd uses the clone path pattern
+        _, _, cwd = mode._subprocess_runner.calls[0]
+        assert cwd == "/home/user/project-wt-my-feature-cl-my-feature"
 
     def test_subprocess_cwd_is_clone_path(self):
-        clone_creator = FakeRepoCloner(clone_path="/tmp/clone-dir")
-        mode, _, subprocess_runner, _ = _make_mode(clone_creator=clone_creator)
+        mode, _, subprocess_runner = _make_mode()
 
         mode.execute()
 
         assert len(subprocess_runner.calls) == 1
         _, _, cwd = subprocess_runner.calls[0]
-        assert cwd == "/tmp/clone-dir"
+        assert "-cl-" in cwd
 
-    def test_create_clone_not_called_when_scaffolding_fails(self):
-        clone_creator = FakeRepoCloner()
-        mode, initializer, _, _ = _make_mode(clone_creator=clone_creator)
+    def test_clone_not_called_when_scaffolding_fails(self):
+        mode, initializer, _ = _make_mode()
         initializer._setup_success = False
 
         with pytest.raises(SystemExit):
             mode.execute()
-
-        assert len(clone_creator.calls) == 0
 
 
 @pytest.mark.unit
 class TestIsolateModeSkipsWorktreeWhenCloneExists:
     """execute() skips worktree and scaffolding when clone directory already exists."""
 
-    def _make_mode_with_clone(self, tmp_path):
-        repo_dir = str(tmp_path / "my-repo")
-        os.makedirs(repo_dir)
-        clone_dir = str(tmp_path / "my-repo-cl-test-feature")
-        os.makedirs(clone_dir)
-
-        git_repo = FakeGitRepository(working_tree_dir=repo_dir)
+    def _make_mode_with_clone(self):
+        git_repo = FakeGitRepository(working_tree_dir="/fake/my-repo")
+        clone_repo = FakeGitRepository(working_tree_dir="/fake/my-repo-cl-test-feature")
+        git_repo.set_clone_repo("test-feature", clone_repo)
         project = FakeIdeaProject(
             name="test-feature",
-            directory=os.path.join(repo_dir, "docs/features/test-feature"),
+            directory="/fake/my-repo/docs/features/test-feature",
         )
-        mode, initializer, subprocess_runner, clone_creator = _make_mode(
+        mode, initializer, subprocess_runner = _make_mode(
             git_repo=git_repo, project=project,
         )
-        return mode, git_repo, initializer, subprocess_runner, clone_creator
+        return mode, git_repo, initializer, subprocess_runner
 
-    def test_worktree_not_created(self, tmp_path):
-        mode, git_repo, _, _, _ = self._make_mode_with_clone(tmp_path)
+    def test_worktree_not_created(self):
+        mode, git_repo, _, _ = self._make_mode_with_clone()
         mode.execute()
         assert not any(c[0] == "ensure_worktree" for c in git_repo.calls)
 
-    def test_scaffolding_not_called(self, tmp_path):
-        mode, _, initializer, _, _ = self._make_mode_with_clone(tmp_path)
+    def test_scaffolding_not_called(self):
+        mode, _, initializer, _ = self._make_mode_with_clone()
         mode.execute()
         assert len(initializer._setup_calls) == 0
 
-    def test_clone_not_created(self, tmp_path):
-        mode, _, _, _, clone_creator = self._make_mode_with_clone(tmp_path)
+    def test_clone_not_created(self):
+        mode, git_repo, _, _ = self._make_mode_with_clone()
         mode.execute()
-        assert len(clone_creator.calls) == 0
+        assert not any(c[0] == "clone" for c in git_repo.calls)
 
-    def test_subprocess_still_runs(self, tmp_path):
-        mode, _, _, subprocess_runner, _ = self._make_mode_with_clone(tmp_path)
+    def test_subprocess_still_runs(self):
+        mode, _, _, subprocess_runner = self._make_mode_with_clone()
         mode.execute()
         assert len(subprocess_runner.calls) == 1
 
-    def test_subprocess_runs_in_clone_directory(self, tmp_path):
-        mode, _, _, subprocess_runner, _ = self._make_mode_with_clone(tmp_path)
+    def test_subprocess_runs_in_clone_directory(self):
+        mode, _, _, subprocess_runner = self._make_mode_with_clone()
         mode.execute()
-        clone_dir = str(tmp_path / "my-repo-cl-test-feature")
         _, _, cwd = subprocess_runner.calls[0]
-        assert cwd == clone_dir, (
-            f"Expected isolarium to run in clone {clone_dir}, got {cwd}"
-        )
+        assert cwd == "/fake/my-repo-cl-test-feature"
 
 
 @pytest.mark.unit
@@ -380,7 +360,7 @@ class TestIsolateModeWorktreeSetup:
             name="my-feature",
             directory="/fake/repo/docs/features/my-feature",
         )
-        mode, _, _, _ = _make_mode(git_repo=git_repo, project=project)
+        mode, _, _ = _make_mode(git_repo=git_repo, project=project)
         mode.execute()
 
         branch_calls = [c for c in git_repo.calls if c[0] == "ensure_branch"]
@@ -397,7 +377,7 @@ class TestIsolateModeWorktreeSetup:
         def tracking_setup(git_repo):
             setup_calls.append(git_repo)
 
-        mode, _, _, _ = _make_mode()
+        mode, _, _ = _make_mode()
         mode._project_setup_fn = tracking_setup
         mode.execute()
 

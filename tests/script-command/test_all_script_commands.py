@@ -25,25 +25,7 @@ SCRIPT_COMMANDS = [
         ["my-dir", "--verbose"],
         id="idea-brainstorm-with-extra-flags",
     ),
-    # spec group
-    pytest.param(
-        ["spec", "create", "my-dir"],
-        "make-spec.sh",
-        ["my-dir"],
-        id="spec-create",
-    ),
-    pytest.param(
-        ["spec", "revise", "my-dir"],
-        "revise-spec.sh",
-        ["my-dir"],
-        id="spec-revise",
-    ),
-    pytest.param(
-        ["spec", "revise", "my-dir", "--feedback", "fix typos"],
-        "revise-spec.sh",
-        ["my-dir", "--feedback", "fix typos"],
-        id="spec-revise-with-extra-args",
-    ),
+    # spec group — migrated to Python in tests/spec-cmd/test_spec_cli.py
     # design group
     pytest.param(
         ["design", "create", "my-dir"],

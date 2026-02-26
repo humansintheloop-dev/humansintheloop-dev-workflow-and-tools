@@ -205,8 +205,8 @@ Migrate `make-plan.sh`, `revise-plan.sh`, and `list-plugin-skills.sh`. Includes 
   - Observable: Searches `$PLUGIN_CACHE_DIR` (default `~/.claude/plugins/cache`) for `idea-to-code` plugin. Lists subdirectory names under the plugin's `skills/` directory. Returns comma-separated list prefixed with `idea-to-code:`. Prints warning to stderr if plugin not found.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit -k plugin_skills` passes with temp directory containing mock skill directories
   - Steps:
-    - [ ] Create `src/i2code/go_cmd/plugin_skills.py` — `list_plugin_skills(cache_dir=None) -> str` function matching `scripts/list-plugin-skills.sh`. Uses `os.environ.get("PLUGIN_CACHE_DIR", "~/.claude/plugins/cache")` if cache_dir not provided. Finds `*idea-to-code*/skills` directory, lists subdirectories, returns `"idea-to-code:skill1, idea-to-code:skill2"` format.
-    - [ ] Write pytest tests: finds skills in mock directory structure, returns empty string with stderr warning when plugin not found, respects `PLUGIN_CACHE_DIR` env var
+    - [x] Create `src/i2code/go_cmd/plugin_skills.py` — `list_plugin_skills(cache_dir=None) -> str` function matching `scripts/list-plugin-skills.sh`. Uses `os.environ.get("PLUGIN_CACHE_DIR", "~/.claude/plugins/cache")` if cache_dir not provided. Finds `*idea-to-code*/skills` directory, lists subdirectories, returns `"idea-to-code:skill1, idea-to-code:skill2"` format.
+    - [x] Write pytest tests: finds skills in mock directory structure, returns empty string with stderr warning when plugin not found, respects `PLUGIN_CACHE_DIR` env var
 
 - [ ] **Task 4.2: Plan validator checks required task fields**
   - TaskType: OUTCOME

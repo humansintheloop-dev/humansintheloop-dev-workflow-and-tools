@@ -9,7 +9,11 @@ from conftest import TempIdeaProject
 @pytest.mark.unit
 class TestWriteAndReadConfigRoundTrip:
 
-    def test_write_then_read_preserves_interactive_true_trunk_false(self):
+    @pytest.mark.parametrize("interactive,trunk", [
+        (True, False),
+        (False, True),
+    ])
+    def test_write_then_read_preserves_config(self, interactive, trunk):
         from i2code.go_cmd.implement_config import (
             read_implement_config,
             write_implement_config,
@@ -17,23 +21,10 @@ class TestWriteAndReadConfigRoundTrip:
 
         with TempIdeaProject("my-feature") as project:
             path = project.implement_config_file
-            write_implement_config(path, interactive=True, trunk=False)
+            write_implement_config(path, interactive=interactive, trunk=trunk)
             config = read_implement_config(path)
-            assert config["interactive"] is True
-            assert config["trunk"] is False
-
-    def test_write_then_read_preserves_interactive_false_trunk_true(self):
-        from i2code.go_cmd.implement_config import (
-            read_implement_config,
-            write_implement_config,
-        )
-
-        with TempIdeaProject("my-feature") as project:
-            path = project.implement_config_file
-            write_implement_config(path, interactive=False, trunk=True)
-            config = read_implement_config(path)
-            assert config["interactive"] is False
-            assert config["trunk"] is True
+            assert config["interactive"] is interactive
+            assert config["trunk"] is trunk
 
 
 @pytest.mark.unit
@@ -136,7 +127,11 @@ class TestBuildImplementLabel:
             label = build_implement_label(project.implement_config_file)
             assert label == "Implement the entire plan: i2code implement"
 
-    def test_label_with_non_interactive_trunk_config(self):
+    @pytest.mark.parametrize("interactive,trunk,expected_suffix", [
+        (False, True, " --non-interactive --trunk"),
+        (True, False, ""),
+    ])
+    def test_label_with_config(self, interactive, trunk, expected_suffix):
         from i2code.go_cmd.implement_config import (
             build_implement_label,
             write_implement_config,
@@ -144,18 +139,7 @@ class TestBuildImplementLabel:
 
         with TempIdeaProject("my-feature") as project:
             path = project.implement_config_file
-            write_implement_config(path, interactive=False, trunk=True)
+            write_implement_config(path, interactive=interactive, trunk=trunk)
             label = build_implement_label(path)
-            assert label == "Implement the entire plan: i2code implement --non-interactive --trunk"
-
-    def test_label_with_interactive_worktree_config(self):
-        from i2code.go_cmd.implement_config import (
-            build_implement_label,
-            write_implement_config,
-        )
-
-        with TempIdeaProject("my-feature") as project:
-            path = project.implement_config_file
-            write_implement_config(path, interactive=True, trunk=False)
-            label = build_implement_label(path)
-            assert label == "Implement the entire plan: i2code implement"
+            expected = f"Implement the entire plan: i2code implement{expected_suffix}"
+            assert label == expected

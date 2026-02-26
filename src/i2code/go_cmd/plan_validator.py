@@ -16,6 +16,48 @@ _FIELD_PATTERNS = {
 }
 
 
+def _find_matching_field(line: str) -> str | None:
+    """Return the field name if *line* matches a required field pattern."""
+    for field, pattern in _FIELD_PATTERNS.items():
+        if pattern.match(line):
+            return field
+    return None
+
+
+def _collect_field(line: str, found_fields: set[str]) -> None:
+    """Add the matching field (if any) from *line* to *found_fields*."""
+    field = _find_matching_field(line)
+    if field:
+        found_fields.add(field)
+
+
+def _missing_fields_errors(task_id: str, found_fields: set[str]) -> list[str]:
+    """Return error messages for each required field missing from *found_fields*."""
+    return [f"Missing {field} in {task_id}" for field in _REQUIRED_FIELDS if field not in found_fields]
+
+
+def _parse_task_blocks(plan_text: str) -> list[tuple[str, set[str]]]:
+    """Parse *plan_text* into a list of ``(task_id, found_fields)`` tuples."""
+    blocks: list[tuple[str, set[str]]] = []
+    current_task: str | None = None
+    found_fields: set[str] = set()
+
+    for line in plan_text.splitlines():
+        header_match = _TASK_HEADER_RE.match(line)
+        if header_match:
+            if current_task is not None:
+                blocks.append((current_task, found_fields))
+            current_task = f"Task {header_match.group(1)}"
+            found_fields = set()
+        elif current_task is not None:
+            _collect_field(line, found_fields)
+
+    if current_task is not None:
+        blocks.append((current_task, found_fields))
+
+    return blocks
+
+
 def validate_plan(plan_text: str) -> tuple[bool, list[str]]:
     """Validate that every task block contains the required contract fields.
 
@@ -23,29 +65,6 @@ def validate_plan(plan_text: str) -> tuple[bool, list[str]]:
     one or more tasks are missing required fields.
     """
     errors: list[str] = []
-    current_task: str | None = None
-    found_fields: set[str] = set()
-
-    def check_current_task() -> None:
-        if current_task is None:
-            return
-        for field in _REQUIRED_FIELDS:
-            if field not in found_fields:
-                errors.append(f"Missing {field} in {current_task}")
-
-    for line in plan_text.splitlines():
-        header_match = _TASK_HEADER_RE.match(line)
-        if header_match:
-            check_current_task()
-            current_task = f"Task {header_match.group(1)}"
-            found_fields = set()
-            continue
-
-        if current_task is not None:
-            for field, pattern in _FIELD_PATTERNS.items():
-                if pattern.match(line):
-                    found_fields.add(field)
-
-    check_current_task()
-
+    for task_id, found_fields in _parse_task_blocks(plan_text):
+        errors.extend(_missing_fields_errors(task_id, found_fields))
     return (len(errors) == 0, errors)

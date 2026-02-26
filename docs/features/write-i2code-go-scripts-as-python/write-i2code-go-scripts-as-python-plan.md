@@ -170,15 +170,15 @@ Migrate `make-spec.sh` and `revise-spec.sh` to Python. Introduces the template r
 
 Migrate `brainstorm-idea.sh` to Python. Handles directory creation, editor detection, session management with UUID generation, and Claude invocation.
 
-- [ ] **Task 3.1: `i2code idea brainstorm` launches editor and invokes Claude**
+- [x] **Task 3.1: `i2code idea brainstorm` launches editor and invokes Claude**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/idea-cmd/ -v -m unit`
   - Observable: Creates idea directory if missing. Detects editor in order: `code --wait` → `$VISUAL` → `$EDITOR` → `vi`. Creates idea file with "PLEASE DESCRIBE YOUR IDEA" template and opens in editor. Generates UUID session ID for new sessions (writes to session ID file), resumes existing sessions. Invokes Claude with `brainstorm-idea.md` template.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/idea-cmd/ -v -m unit` passes with mocked subprocess verifying editor launch order, session ID generation, and Claude invocation
   - Steps:
-    - [ ] Extend `src/i2code/session_manager.py` with `create_session_id(path) -> str` that generates a UUID via `uuid.uuid4()`, writes it to the session ID file, and returns it. Add `get_or_create_session_args(session_id_path) -> list[str]` that returns `["--resume", id]` for existing sessions or `["--session-id", new_id]` for new ones.
-    - [ ] Create `src/i2code/idea_cmd/brainstorm.py` — `brainstorm_idea(project: IdeaProject, claude_runner, template_renderer, session_manager, *, run_editor)` function that: creates directory if needed, detects editor (`code`, `$VISUAL`, `$EDITOR`, `vi`), creates idea file with template text, launches editor via `run_editor` callback, renders `brainstorm-idea.md` template, builds session args, invokes Claude. Match `scripts/brainstorm-idea.sh`
-    - [ ] Write pytest tests: directory creation when missing, editor detection order (mock `shutil.which` for `code`, mock env vars for `VISUAL`/`EDITOR`), idea file creation with template, session ID generation for new session, session resume for existing, Claude invoked with correct prompt and session args
+    - [x] Extend `src/i2code/session_manager.py` with `create_session_id(path) -> str` that generates a UUID via `uuid.uuid4()`, writes it to the session ID file, and returns it. Add `get_or_create_session_args(session_id_path) -> list[str]` that returns `["--resume", id]` for existing sessions or `["--session-id", new_id]` for new ones.
+    - [x] Create `src/i2code/idea_cmd/brainstorm.py` — `brainstorm_idea(project: IdeaProject, claude_runner, template_renderer, session_manager, *, run_editor)` function that: creates directory if needed, detects editor (`code`, `$VISUAL`, `$EDITOR`, `vi`), creates idea file with template text, launches editor via `run_editor` callback, renders `brainstorm-idea.md` template, builds session args, invokes Claude. Match `scripts/brainstorm-idea.sh`
+    - [x] Write pytest tests: directory creation when missing, editor detection order (mock `shutil.which` for `code`, mock env vars for `VISUAL`/`EDITOR`), idea file creation with template, session ID generation for new session, session resume for existing, Claude invoked with correct prompt and session args
 
 - [ ] **Task 3.2: Wire brainstorm command, update orchestrator, delete bash script**
   - TaskType: OUTCOME

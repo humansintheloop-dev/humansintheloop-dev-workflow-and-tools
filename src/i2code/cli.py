@@ -6,11 +6,11 @@ import os
 import click
 
 from i2code.design_cmd.cli import design
+from i2code.go_cmd.cli import go_cmd
 from i2code.idea_cmd.cli import idea
 from i2code.implement.cli import implement_cmd, scaffold_cmd
 from i2code.improve.cli import improve
 from i2code.plan.cli import plan
-from i2code.script_command import script_command
 from i2code.setup_cmd.cli import setup_group
 from i2code.spec_cmd.cli import spec
 from i2code.tracking.cli import tracking
@@ -43,5 +43,4 @@ main.add_command(improve)
 main.add_command(scaffold_cmd)
 main.add_command(setup_group)
 main.add_command(tracking)
-
-script_command(main, "go", "idea-to-code.sh", "Run the idea-to-code orchestrator.")
+main.add_command(go_cmd)

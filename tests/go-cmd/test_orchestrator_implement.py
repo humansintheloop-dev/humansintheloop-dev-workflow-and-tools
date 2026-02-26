@@ -144,41 +144,30 @@ class TestImplementSelectionPromptsWhenNoConfig:
             assert os.path.isfile(project.implement_config_file)
 
 
-@pytest.mark.unit
-class TestImplementSelectionReusesConfig:
-
-    def test_implement_reuses_existing_config(self):
-        with TempIdeaProject("my-feature") as project:
-            mock_implement = MagicMock(return_value=_success_result())
-            # "2" = Implement, then "4" = Exit
-            _run_has_plan_orchestrator(
-                project, ["2", "4"],
-                config_kwargs=dict(interactive=False, trunk=True),
-                implement_runner=mock_implement,
-            )
-            flags = mock_implement.call_args[0][0]
-            assert "--non-interactive" in flags
-            assert "--trunk" in flags
-
-
 # ---------------------------------------------------------------------------
 # Implement runner receives correct flags and directory
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.unit
-class TestImplementRunnerArgs:
+class TestImplementRunnerReceivesConfig:
 
-    def test_implement_runner_receives_flags_and_directory(self):
+    @pytest.mark.parametrize("config_kwargs,expected_flags", [
+        (dict(interactive=False, trunk=True), ["--non-interactive", "--trunk"]),
+        (dict(interactive=False, trunk=False), ["--non-interactive"]),
+    ])
+    def test_implement_runner_receives_expected_flags(self, config_kwargs,
+                                                      expected_flags):
         with TempIdeaProject("my-feature") as project:
             mock_implement = MagicMock(return_value=_success_result())
             _run_has_plan_orchestrator(
                 project, ["2", "4"],
-                config_kwargs=dict(interactive=False, trunk=False),
+                config_kwargs=config_kwargs,
                 implement_runner=mock_implement,
             )
             flags, directory = mock_implement.call_args[0]
-            assert "--non-interactive" in flags
+            for flag in expected_flags:
+                assert flag in flags
             assert directory == project.directory
 
 
@@ -231,36 +220,32 @@ class TestDisplayImplementConfig:
 
 
 @pytest.mark.unit
-class TestPlanCompletionAllDone:
+class TestPlanCompletion:
 
-    def test_all_tasks_complete_prints_workflow_complete_and_exits(self):
+    @pytest.mark.parametrize("plan_content,choices,expect_complete", [
+        (
+            "- [x] **Task 1.1: Done**\n- [x] **Task 1.2: Also done**\n",
+            ["2"],
+            True,
+        ),
+        (
+            "- [x] **Task 1.1: Done**\n- [ ] **Task 1.2: Not done**\n",
+            ["2", "4"],
+            False,
+        ),
+    ])
+    def test_plan_completion_detection(self, plan_content, choices,
+                                       expect_complete):
         with TempIdeaProject("my-feature") as project:
-            _setup_has_plan(
-                project,
-                "- [x] **Task 1.1: Done**\n- [x] **Task 1.2: Also done**\n",
-            )
+            _setup_has_plan(project, plan_content)
             result = _run_has_plan_orchestrator(
-                project, ["2"],
+                project, choices,
                 config_kwargs=dict(interactive=True, trunk=False),
                 implement_runner=MagicMock(return_value=_success_result()),
             )
-            assert result.exit_code == 0
-            assert "Workflow Complete!" in result.output_displayed
-
-
-@pytest.mark.unit
-class TestPlanCompletionIncomplete:
-
-    def test_incomplete_tasks_continues_loop(self):
-        with TempIdeaProject("my-feature") as project:
-            _setup_has_plan(
-                project,
-                "- [x] **Task 1.1: Done**\n- [ ] **Task 1.2: Not done**\n",
-            )
-            result = _run_has_plan_orchestrator(
-                project, ["2", "4"],
-                config_kwargs=dict(interactive=True, trunk=False),
-                implement_runner=MagicMock(return_value=_success_result()),
-            )
-            assert "Plan has uncompleted tasks" in result.output_displayed
-            assert "Workflow Complete!" not in result.output_displayed
+            if expect_complete:
+                assert result.exit_code == 0
+                assert "Workflow Complete!" in result.output_displayed
+            else:
+                assert "Plan has uncompleted tasks" in result.output_displayed
+                assert "Workflow Complete!" not in result.output_displayed

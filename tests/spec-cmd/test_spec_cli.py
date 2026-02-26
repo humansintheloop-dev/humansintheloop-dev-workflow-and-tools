@@ -8,6 +8,12 @@ from click.testing import CliRunner
 from i2code.cli import main
 
 
+SPEC_COMMANDS = [
+    ("create", "i2code.spec_cmd.cli.create_spec"),
+    ("revise", "i2code.spec_cmd.cli.revise_spec"),
+]
+
+
 @pytest.mark.unit
 class TestSpecCreateCommandRegistered:
 
@@ -21,51 +27,6 @@ class TestSpecCreateCommandRegistered:
         runner = CliRunner()
         result = runner.invoke(main, ["spec", "create"])
         assert result.exit_code != 0
-
-
-@pytest.mark.unit
-class TestSpecCreateInvokesCreateSpec:
-
-    @patch("i2code.spec_cmd.cli.create_spec")
-    @patch("i2code.spec_cmd.cli.ClaudeRunner")
-    def test_invokes_create_spec_for_existing_directory(
-        self, mock_runner_cls, mock_create_spec, tmp_path,
-    ):
-        mock_create_spec.return_value = MagicMock(returncode=0)
-        runner = CliRunner()
-        result = runner.invoke(main, ["spec", "create", str(tmp_path)])
-
-        assert result.exit_code == 0
-        mock_create_spec.assert_called_once()
-
-    @patch("i2code.spec_cmd.cli.create_spec")
-    @patch("i2code.spec_cmd.cli.ClaudeRunner")
-    def test_constructs_idea_project_with_directory(
-        self, mock_runner_cls, mock_create_spec, tmp_path,
-    ):
-        mock_create_spec.return_value = MagicMock(returncode=0)
-        runner = CliRunner()
-        result = runner.invoke(main, ["spec", "create", str(tmp_path)])
-
-        assert result.exit_code == 0
-        call_args = mock_create_spec.call_args
-        project = call_args[0][0]
-        assert project.directory == str(tmp_path)
-
-    @patch("i2code.spec_cmd.cli.create_spec")
-    @patch("i2code.spec_cmd.cli.ClaudeRunner")
-    def test_passes_claude_runner_instance(
-        self, mock_runner_cls, mock_create_spec, tmp_path,
-    ):
-        mock_runner = MagicMock()
-        mock_runner_cls.return_value = mock_runner
-        mock_create_spec.return_value = MagicMock(returncode=0)
-        runner = CliRunner()
-        result = runner.invoke(main, ["spec", "create", str(tmp_path)])
-
-        assert result.exit_code == 0
-        call_args = mock_create_spec.call_args
-        assert call_args[0][1] is mock_runner
 
 
 @pytest.mark.unit
@@ -83,46 +44,50 @@ class TestSpecReviseCommandRegistered:
         assert result.exit_code != 0
 
 
-@pytest.mark.unit
-class TestSpecReviseInvokesReviseSpec:
+def invoke_spec_command(mock_target, subcommand, tmp_path):
+    """Invoke a spec subcommand with mocked spec function and ClaudeRunner.
 
-    @patch("i2code.spec_cmd.cli.revise_spec")
-    @patch("i2code.spec_cmd.cli.ClaudeRunner")
-    def test_invokes_revise_spec_for_existing_directory(
-        self, mock_runner_cls, mock_revise_spec, tmp_path,
-    ):
-        mock_revise_spec.return_value = MagicMock(returncode=0)
-        runner = CliRunner()
-        result = runner.invoke(main, ["spec", "revise", str(tmp_path)])
-
-        assert result.exit_code == 0
-        mock_revise_spec.assert_called_once()
-
-    @patch("i2code.spec_cmd.cli.revise_spec")
-    @patch("i2code.spec_cmd.cli.ClaudeRunner")
-    def test_constructs_idea_project_with_directory(
-        self, mock_runner_cls, mock_revise_spec, tmp_path,
-    ):
-        mock_revise_spec.return_value = MagicMock(returncode=0)
-        runner = CliRunner()
-        result = runner.invoke(main, ["spec", "revise", str(tmp_path)])
-
-        assert result.exit_code == 0
-        call_args = mock_revise_spec.call_args
-        project = call_args[0][0]
-        assert project.directory == str(tmp_path)
-
-    @patch("i2code.spec_cmd.cli.revise_spec")
-    @patch("i2code.spec_cmd.cli.ClaudeRunner")
-    def test_passes_claude_runner_instance(
-        self, mock_runner_cls, mock_revise_spec, tmp_path,
-    ):
+    Returns (result, mock_spec_fn, mock_runner) where mock_runner is the
+    ClaudeRunner instance passed to the spec function.
+    """
+    with patch(mock_target) as mock_spec_fn, \
+         patch("i2code.spec_cmd.cli.ClaudeRunner") as mock_runner_cls:
         mock_runner = MagicMock()
         mock_runner_cls.return_value = mock_runner
-        mock_revise_spec.return_value = MagicMock(returncode=0)
+        mock_spec_fn.return_value = MagicMock(returncode=0)
         runner = CliRunner()
-        result = runner.invoke(main, ["spec", "revise", str(tmp_path)])
+        result = runner.invoke(main, ["spec", subcommand, str(tmp_path)])
+        return result, mock_spec_fn, mock_runner
 
+
+@pytest.mark.unit
+@pytest.mark.parametrize("subcommand,mock_target", SPEC_COMMANDS)
+class TestSpecCommandInvokesSpecFunction:
+
+    def test_invokes_spec_function_for_existing_directory(
+        self, subcommand, mock_target, tmp_path,
+    ):
+        result, mock_spec_fn, _ = invoke_spec_command(
+            mock_target, subcommand, tmp_path,
+        )
         assert result.exit_code == 0
-        call_args = mock_revise_spec.call_args
-        assert call_args[0][1] is mock_runner
+        mock_spec_fn.assert_called_once()
+
+    def test_constructs_idea_project_with_directory(
+        self, subcommand, mock_target, tmp_path,
+    ):
+        result, mock_spec_fn, _ = invoke_spec_command(
+            mock_target, subcommand, tmp_path,
+        )
+        assert result.exit_code == 0
+        project = mock_spec_fn.call_args[0][0]
+        assert project.directory == str(tmp_path)
+
+    def test_passes_claude_runner_instance(
+        self, subcommand, mock_target, tmp_path,
+    ):
+        result, mock_spec_fn, mock_runner = invoke_spec_command(
+            mock_target, subcommand, tmp_path,
+        )
+        assert result.exit_code == 0
+        assert mock_spec_fn.call_args[0][1] is mock_runner

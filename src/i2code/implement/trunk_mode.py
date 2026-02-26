@@ -32,27 +32,34 @@ class TrunkMode:
             self._execute_task(next_task)
 
     def _execute_task(self, task):
+        max_attempts = 3
         task_description = task.print()
-        print(f"Executing task: {task_description}")
-
-        head_before = self._workspace.git_repo.head_sha
 
         claude_cmd = self._build_command(task_description)
-        claude_result = self._run_claude(claude_cmd)
+        head_before = self._workspace.git_repo.head_sha
 
-        head_after = self._workspace.git_repo.head_sha
+        for attempt in range(1, max_attempts + 1):
+            print(f"Executing task (attempt {attempt}/{max_attempts}): {task_description}")
 
-        if not check_claude_success(claude_result.returncode, head_before, head_after):
-            print_task_failure_diagnostics(claude_result, head_before, head_after)
-            sys.exit(1)
+            claude_result = self._run_claude(claude_cmd)
+            head_after = self._workspace.git_repo.head_sha
 
-        if self._opts.non_interactive and "<SUCCESS>" not in claude_result.output.stdout:
-            print_task_failure_diagnostics(claude_result, head_before, head_after)
-            sys.exit(1)
+            if not check_claude_success(claude_result.returncode, head_before, head_after):
+                print_task_failure_diagnostics(claude_result, head_before, head_after)
+                continue
 
-        if not self._workspace.project.is_task_completed(task.number.thread, task.number.task):
-            print("Error: Task was not marked complete in plan file.", file=sys.stderr)
-            sys.exit(1)
+            if self._opts.non_interactive and "<SUCCESS>" not in claude_result.output.stdout:
+                print_task_failure_diagnostics(claude_result, head_before, head_after)
+                sys.exit(1)
+
+            if not self._workspace.project.is_task_completed(task.number.thread, task.number.task):
+                print("Error: Task was not marked complete in plan file.", file=sys.stderr)
+                continue
+
+            return
+
+        print(f"Error: Task failed after {max_attempts} attempts.", file=sys.stderr)
+        sys.exit(1)
 
     def _build_command(self, task_description):
         if self._opts.mock_claude:

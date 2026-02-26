@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from contextlib import contextmanager
 
 import pytest
 
@@ -29,29 +30,39 @@ def _noop_commit_recovery(project, fake_runner):
     return TaskCommitRecovery(git_repo=fake_repo, project=project, claude_runner=fake_runner)
 
 
+@contextmanager
+def _trunk_mode_setup(tasks):
+    """Create common test infrastructure: tmpdir, project, fakes, and plan file."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        idea_name = "test-feature"
+        idea_dir = os.path.join(tmpdir, idea_name)
+        os.makedirs(idea_dir)
+        plan_path = write_plan_file(idea_dir, idea_name, tasks)
+        project = IdeaProject(idea_dir)
+        fake_repo = FakeGitRepository()
+        fake_runner = FakeClaudeRunner()
+        yield project, fake_repo, fake_runner, plan_path
+
+
+def _build_trunk_mode(project, fake_repo, fake_runner, **opts_kwargs):
+    """Build a TrunkMode with noop commit recovery."""
+    return TrunkMode(
+        opts=_opts(**opts_kwargs),
+        workspace=Workspace(fake_repo, project),
+        claude_runner=fake_runner,
+        commit_recovery=_noop_commit_recovery(project, fake_runner),
+    )
+
+
 @pytest.mark.unit
 class TestTrunkModeExecute:
     """TrunkMode.execute() drives the task loop using injected collaborators."""
 
     def test_no_tasks_remaining_prints_all_completed(self, capsys):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Already done", True),
-            ])
-
-            project = IdeaProject(idea_dir)
-            fake_repo = FakeGitRepository()
-            fake_runner = FakeClaudeRunner()
-
-            mode = TrunkMode(
-                opts=_opts(),
-                workspace=Workspace(fake_repo, project),
-                claude_runner=fake_runner,
-                commit_recovery=_noop_commit_recovery(project, fake_runner),
-            )
+        with _trunk_mode_setup([(1, 1, "Already done", True)]) as (
+            project, fake_repo, fake_runner, _plan_path,
+        ):
+            mode = _build_trunk_mode(project, fake_repo, fake_runner)
             mode.execute()
 
             captured = capsys.readouterr()
@@ -59,19 +70,9 @@ class TestTrunkModeExecute:
             assert len(fake_runner.calls) == 0
 
     def test_invokes_claude_for_first_task(self, capsys):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up project", False),
-            ])
-
-            project = IdeaProject(idea_dir)
-            fake_repo = FakeGitRepository()
-            fake_runner = FakeClaudeRunner()
-
-            # Simulate: Claude advances HEAD and marks task complete
+        with _trunk_mode_setup([(1, 1, "Set up project", False)]) as (
+            project, fake_repo, fake_runner, plan_path,
+        ):
             fake_runner.set_side_effect(
                 combined(
                     advance_head(fake_repo, "bbb"),
@@ -79,12 +80,7 @@ class TestTrunkModeExecute:
                 )
             )
 
-            mode = TrunkMode(
-                opts=_opts(),
-                workspace=Workspace(fake_repo, project),
-                claude_runner=fake_runner,
-                commit_recovery=_noop_commit_recovery(project, fake_runner),
-            )
+            mode = _build_trunk_mode(project, fake_repo, fake_runner)
             mode.execute()
 
             assert len(fake_runner.calls) == 1
@@ -94,48 +90,25 @@ class TestTrunkModeExecute:
             assert "All tasks completed!" in captured.out
 
     def test_exits_on_claude_failure(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up", False),
-            ])
-
-            project = IdeaProject(idea_dir)
-            fake_repo = FakeGitRepository()
-            fake_runner = FakeClaudeRunner()
+        with _trunk_mode_setup([(1, 1, "Set up", False)]) as (
+            project, fake_repo, fake_runner, _plan_path,
+        ):
             fake_runner.set_result(ClaudeResult(
                 returncode=1, output=CapturedOutput(stderr="error"),
             ))
 
-            mode = TrunkMode(
-                opts=_opts(),
-                workspace=Workspace(fake_repo, project),
-                claude_runner=fake_runner,
-                commit_recovery=_noop_commit_recovery(project, fake_runner),
-            )
+            mode = _build_trunk_mode(project, fake_repo, fake_runner)
 
             with pytest.raises(SystemExit) as exc_info:
                 mode.execute()
 
             assert exc_info.value.code == 1
-            assert len(fake_runner.calls) == 1
+            assert len(fake_runner.calls) == 3
 
     def test_loops_through_multiple_tasks(self, capsys):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Task 1", False),
-                (1, 2, "Task 2", False),
-            ])
-
-            project = IdeaProject(idea_dir)
-            fake_repo = FakeGitRepository()
-            fake_runner = FakeClaudeRunner()
-
+        with _trunk_mode_setup([
+            (1, 1, "Task 1", False), (1, 2, "Task 2", False),
+        ]) as (project, fake_repo, fake_runner, plan_path):
             fake_runner.set_side_effects([
                 combined(
                     advance_head(fake_repo, "bbb"),
@@ -147,12 +120,7 @@ class TestTrunkModeExecute:
                 ),
             ])
 
-            mode = TrunkMode(
-                opts=_opts(),
-                workspace=Workspace(fake_repo, project),
-                claude_runner=fake_runner,
-                commit_recovery=_noop_commit_recovery(project, fake_runner),
-            )
+            mode = _build_trunk_mode(project, fake_repo, fake_runner)
             mode.execute()
 
             assert len(fake_runner.calls) == 2
@@ -160,29 +128,12 @@ class TestTrunkModeExecute:
             assert "All tasks completed!" in captured.out
 
     def test_exits_when_task_not_marked_complete(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up", False),
-            ])
+        with _trunk_mode_setup([(1, 1, "Set up", False)]) as (
+            project, fake_repo, fake_runner, _plan_path,
+        ):
+            fake_runner.set_side_effect(advance_head(fake_repo, "bbb"))
 
-            project = IdeaProject(idea_dir)
-            fake_repo = FakeGitRepository()
-            fake_runner = FakeClaudeRunner()
-
-            # Advance HEAD (success) but do NOT mark task complete
-            fake_runner.set_side_effect(
-                advance_head(fake_repo, "bbb"),
-            )
-
-            mode = TrunkMode(
-                opts=_opts(),
-                workspace=Workspace(fake_repo, project),
-                claude_runner=fake_runner,
-                commit_recovery=_noop_commit_recovery(project, fake_runner),
-            )
+            mode = _build_trunk_mode(project, fake_repo, fake_runner)
 
             with pytest.raises(SystemExit) as exc_info:
                 mode.execute()
@@ -190,18 +141,9 @@ class TestTrunkModeExecute:
             assert exc_info.value.code == 1
 
     def test_non_interactive_uses_run(self, capsys):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up", False),
-            ])
-
-            project = IdeaProject(idea_dir)
-            fake_repo = FakeGitRepository()
-            fake_runner = FakeClaudeRunner()
-
+        with _trunk_mode_setup([(1, 1, "Set up", False)]) as (
+            project, fake_repo, fake_runner, plan_path,
+        ):
             fake_runner.set_side_effect(
                 combined(
                     advance_head(fake_repo, "bbb"),
@@ -213,11 +155,9 @@ class TestTrunkModeExecute:
                 output=CapturedOutput("<SUCCESS>task implemented: bbb</SUCCESS>"),
             ))
 
-            mode = TrunkMode(
-                opts=_opts(non_interactive=True, mock_claude="/mock"),
-                workspace=Workspace(fake_repo, project),
-                claude_runner=fake_runner,
-                commit_recovery=_noop_commit_recovery(project, fake_runner),
+            mode = _build_trunk_mode(
+                project, fake_repo, fake_runner,
+                non_interactive=True, mock_claude="/mock",
             )
             mode.execute()
 
@@ -227,18 +167,9 @@ class TestTrunkModeExecute:
             assert cmd[0] == "/mock"
 
     def test_mock_claude_bypasses_command_builder(self, capsys):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            idea_name = "test-feature"
-            idea_dir = os.path.join(tmpdir, idea_name)
-            os.makedirs(idea_dir)
-            plan_path = write_plan_file(idea_dir, idea_name, [
-                (1, 1, "Set up", False),
-            ])
-
-            project = IdeaProject(idea_dir)
-            fake_repo = FakeGitRepository()
-            fake_runner = FakeClaudeRunner()
-
+        with _trunk_mode_setup([(1, 1, "Set up", False)]) as (
+            project, fake_repo, fake_runner, plan_path,
+        ):
             fake_runner.set_side_effect(
                 combined(
                     advance_head(fake_repo, "bbb"),
@@ -246,11 +177,9 @@ class TestTrunkModeExecute:
                 )
             )
 
-            mode = TrunkMode(
-                opts=_opts(mock_claude="/path/to/mock-script"),
-                workspace=Workspace(fake_repo, project),
-                claude_runner=fake_runner,
-                commit_recovery=_noop_commit_recovery(project, fake_runner),
+            mode = _build_trunk_mode(
+                project, fake_repo, fake_runner,
+                mock_claude="/path/to/mock-script",
             )
             mode.execute()
 

@@ -88,30 +88,38 @@ class WorktreeMode:
         self._loop_steps.ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)
 
     def _run_claude_and_validate(self, next_task, task_description):
-        """Run Claude on the task and validate the result."""
+        """Run Claude on the task and validate the result, retrying up to 3 times."""
+        max_attempts = 3
+        claude_cmd = self._build_command(task_description)
         head_before = self._git_repo.head_sha
 
-        claude_cmd = self._build_command(task_description)
-        claude_result = self._run_claude(claude_cmd)
+        for attempt in range(1, max_attempts + 1):
+            print(f"Running Claude (attempt {attempt}/{max_attempts})...")
 
-        head_after = self._git_repo.head_sha
+            claude_result = self._run_claude(claude_cmd)
+            head_after = self._git_repo.head_sha
 
-        if not check_claude_success(claude_result.returncode, head_before, head_after):
-            print_task_failure_diagnostics(claude_result, head_before, head_after)
-            sys.exit(1)
+            if not check_claude_success(claude_result.returncode, head_before, head_after):
+                print_task_failure_diagnostics(claude_result, head_before, head_after)
+                continue
 
-        if self._opts.non_interactive and "<SUCCESS>" not in claude_result.output.stdout:
-            print_task_failure_diagnostics(claude_result, head_before, head_after)
-            sys.exit(1)
+            if self._opts.non_interactive and "<SUCCESS>" not in claude_result.output.stdout:
+                print_task_failure_diagnostics(claude_result, head_before, head_after)
+                sys.exit(1)
 
-        if not self._work_project.is_task_completed(next_task.number.thread, next_task.number.task):
-            print("Error: Task was not marked complete in plan file.", file=sys.stderr)
-            sys.exit(1)
+            if not self._work_project.is_task_completed(next_task.number.thread, next_task.number.task):
+                print("Error: Task was not marked complete in plan file.", file=sys.stderr)
+                continue
 
-        if not has_ci_workflow_files(self._git_repo.working_tree_dir):
-            print("Error: No GitHub Actions workflow file found in .github/workflows/", file=sys.stderr)
-            print("Tasks must create a CI workflow (e.g., .github/workflows/ci.yml) before pushing.", file=sys.stderr)
-            sys.exit(1)
+            if not has_ci_workflow_files(self._git_repo.working_tree_dir):
+                print("Error: No GitHub Actions workflow file found in .github/workflows/", file=sys.stderr)
+                print("Tasks must create a CI workflow (e.g., .github/workflows/ci.yml) before pushing.", file=sys.stderr)
+                continue
+
+            return
+
+        print(f"Error: Task failed after {max_attempts} attempts.", file=sys.stderr)
+        sys.exit(1)
 
     def _push_and_ensure_pr(self):
         """Push changes and create a Draft PR if one doesn't exist."""

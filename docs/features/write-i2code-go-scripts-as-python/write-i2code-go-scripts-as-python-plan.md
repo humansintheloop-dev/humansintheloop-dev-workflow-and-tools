@@ -76,18 +76,18 @@ All tasks should be implemented using TDD.
 
 Replace `idea-to-code.sh` (the largest and highest-risk script at ~490 lines) with a Python state machine. During this transition, the Python orchestrator delegates to remaining bash scripts via `script_runner.py`.
 
-- [ ] **Task 1.1: Orchestrator detects workflow state and presents correct menu**
+- [x] **Task 1.1: Orchestrator detects workflow state and presents correct menu**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit`
   - Observable: Given an idea project directory at each workflow state (`no_idea`, `has_idea_no_spec`, `has_spec`, `has_plan`), the orchestrator identifies the state based on file existence and presents the corresponding numbered menu with correct options
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit` passes with assertions for all four states and their menu options
   - Steps:
-    - [ ] Extend `IdeaProject` in `src/i2code/implement/idea_project.py` with derived path properties: `idea_file` (supports `.md` or `.txt` with glob), `spec_file`, `discussion_file`, `design_file`, `story_file`, `plan_with_stories_file`, `session_id_file`, `implement_config_file`. Follow the naming from `src/i2code/scripts/_helper.sh:1-35`
-    - [ ] Add validation methods to `IdeaProject`: `validate_idea()`, `validate_spec()`, `validate_plan()` that print to stderr and raise `SystemExit(1)` if the file is missing — matching `_helper.sh:38-79`
-    - [ ] Create `src/i2code/go_cmd/__init__.py`
-    - [ ] Create `src/i2code/go_cmd/menu.py` — reusable `get_user_choice(prompt, default, options, *, input_fn=input, output=sys.stderr)` that displays numbered options to stderr, validates input, handles EOF, returns the selected option index. Match behavior of `idea-to-code.sh:45-89`
-    - [ ] Create `src/i2code/go_cmd/orchestrator.py` — `Orchestrator` class with constructor-injected dependencies (`IdeaProject`, menu presenter, step dispatcher). `detect_state()` method checks file existence via `IdeaProject` properties and returns state enum. `run()` method implements the main loop: detect state → present menu → dispatch → repeat
-    - [ ] Create `tests/go-cmd/` directory with pytest tests covering: state detection for all four states, correct menu options per state, invalid input handling, EOF handling
+    - [x] Extend `IdeaProject` in `src/i2code/implement/idea_project.py` with derived path properties: `idea_file` (supports `.md` or `.txt` with glob), `spec_file`, `discussion_file`, `design_file`, `story_file`, `plan_with_stories_file`, `session_id_file`, `implement_config_file`. Follow the naming from `src/i2code/scripts/_helper.sh:1-35`
+    - [x] Add validation methods to `IdeaProject`: `validate_idea()`, `validate_spec()`, `validate_plan()` that print to stderr and raise `SystemExit(1)` if the file is missing — matching `_helper.sh:38-79`
+    - [x] Create `src/i2code/go_cmd/__init__.py`
+    - [x] Create `src/i2code/go_cmd/menu.py` — reusable `get_user_choice(prompt, default, options, *, input_fn=input, output=sys.stderr)` that displays numbered options to stderr, validates input, handles EOF, returns the selected option index. Match behavior of `idea-to-code.sh:45-89`
+    - [x] Create `src/i2code/go_cmd/orchestrator.py` — `Orchestrator` class with constructor-injected dependencies (`IdeaProject`, menu presenter, step dispatcher). `detect_state()` method checks file existence via `IdeaProject` properties and returns state enum. `run()` method implements the main loop: detect state → present menu → dispatch → repeat
+    - [x] Create `tests/go-cmd/` directory with pytest tests covering: state detection for all four states, correct menu options per state, invalid input handling, EOF handling
 
 - [ ] **Task 1.2: Orchestrator dispatches workflow steps and handles errors**
   - TaskType: OUTCOME
@@ -362,3 +362,27 @@ Migrate `setup-claude-files.sh` and `update-project-claude-files.sh`. Then delet
     - [ ] Remove any remaining bash test scripts from `test-scripts/` that tested migrated functionality (e.g., `test-subcommands-smoke.sh` if it tested bash-backed commands). Update `test-scripts/test-end-to-end.sh` accordingly.
     - [ ] Verify `find src/ -name "*.sh"` returns no results
     - [ ] Run `./test-scripts/test-end-to-end.sh`
+
+---
+
+## Change History
+### 2026-02-26 14:30 - mark-step-complete
+Added idea_file, spec_file, discussion_file, design_file, story_file, plan_with_stories_file, session_id_file, implement_config_file properties
+
+### 2026-02-26 14:30 - mark-step-complete
+Added validate_idea(), validate_spec(), validate_plan() methods
+
+### 2026-02-26 14:30 - mark-step-complete
+Created src/i2code/go_cmd/__init__.py
+
+### 2026-02-26 14:30 - mark-step-complete
+Created menu.py with get_user_choice function
+
+### 2026-02-26 14:30 - mark-step-complete
+Created orchestrator.py with Orchestrator class, detect_state, and menu_options_for
+
+### 2026-02-26 14:30 - mark-step-complete
+Created tests/go-cmd/ with 38 tests covering all four states, menu options, invalid input, and EOF
+
+### 2026-02-26 14:30 - mark-task-complete
+All 38 tests pass: state detection for 4 states, correct menu options, invalid input, EOF handling

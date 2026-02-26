@@ -14,13 +14,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "src" / "i2code" /
 SCRIPT_COMMANDS = [
     # idea group — migrated to Python in tests/idea-cmd/test_brainstorm_cli.py
     # spec group — migrated to Python in tests/spec-cmd/test_spec_cli.py
-    # design group
-    pytest.param(
-        ["design", "create", "my-dir"],
-        "create-design-doc.sh",
-        ["my-dir"],
-        id="design-create",
-    ),
+    # design group — migrated to Python in tests/design-cmd/test_design_cli.py
     # setup group
     pytest.param(
         ["setup", "claude-files", "--config-dir", "/path/to/config-files"],

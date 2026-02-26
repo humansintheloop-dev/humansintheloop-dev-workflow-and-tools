@@ -180,18 +180,18 @@ Migrate `brainstorm-idea.sh` to Python. Handles directory creation, editor detec
     - [x] Create `src/i2code/idea_cmd/brainstorm.py` — `brainstorm_idea(project: IdeaProject, claude_runner, template_renderer, session_manager, *, run_editor)` function that: creates directory if needed, detects editor (`code`, `$VISUAL`, `$EDITOR`, `vi`), creates idea file with template text, launches editor via `run_editor` callback, renders `brainstorm-idea.md` template, builds session args, invokes Claude. Match `scripts/brainstorm-idea.sh`
     - [x] Write pytest tests: directory creation when missing, editor detection order (mock `shutil.which` for `code`, mock env vars for `VISUAL`/`EDITOR`), idea file creation with template, session ID generation for new session, session resume for existing, Claude invoked with correct prompt and session args
 
-- [ ] **Task 3.2: Wire brainstorm command, update orchestrator, delete bash script**
+- [x] **Task 3.2: Wire brainstorm command, update orchestrator, delete bash script**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `i2code idea brainstorm <dir>` invokes Python implementation. Orchestrator calls Python function. Bash script `brainstorm-idea.sh` deleted. Editor resolution bash test replaced by pytest. CI passes.
   - Evidence: `./test-scripts/test-end-to-end.sh` passes
   - Steps:
-    - [ ] Update `src/i2code/idea_cmd/cli.py`: remove `script_command` calls, create direct Click command for `brainstorm` that constructs `IdeaProject` and calls `brainstorm_idea()` with injected dependencies
-    - [ ] Update orchestrator: replace `run_script("brainstorm-idea.sh", ...)` with direct call to `brainstorm_idea()`
-    - [ ] Write CLI integration test using CliRunner
-    - [ ] Delete `src/i2code/scripts/brainstorm-idea.sh`
-    - [ ] Remove `test-scripts/test-editor-resolution.sh` from `test-scripts/test-end-to-end.sh` and delete it (editor detection now covered by pytest)
-    - [ ] Run `./test-scripts/test-end-to-end.sh`
+    - [x] Update `src/i2code/idea_cmd/cli.py`: remove `script_command` calls, create direct Click command for `brainstorm` that constructs `IdeaProject` and calls `brainstorm_idea()` with injected dependencies
+    - [x] Update orchestrator: replace `run_script("brainstorm-idea.sh", ...)` with direct call to `brainstorm_idea()`
+    - [x] Write CLI integration test using CliRunner
+    - [x] Delete `src/i2code/scripts/brainstorm-idea.sh`
+    - [x] Remove `test-scripts/test-editor-resolution.sh` from `test-scripts/test-end-to-end.sh` and delete it (editor detection now covered by pytest)
+    - [x] Run `./test-scripts/test-end-to-end.sh`
 
 ---
 

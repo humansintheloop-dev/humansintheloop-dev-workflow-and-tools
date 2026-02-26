@@ -17,10 +17,10 @@ class TestRunScriptResolvesPath:
             mock_subprocess.run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0
             )
-            run_script("brainstorm-idea.sh")
+            run_script("make-plan.sh")
 
             called_path = Path(mock_subprocess.run.call_args[0][0][0])
-            assert called_path == SCRIPTS_DIR / "brainstorm-idea.sh"
+            assert called_path == SCRIPTS_DIR / "make-plan.sh"
 
 
 class TestRunScriptEnsuresExecutability:
@@ -46,7 +46,7 @@ class TestRunScriptForwardsArguments:
             mock_subprocess.run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0
             )
-            run_script("brainstorm-idea.sh", ["my-dir"])
+            run_script("make-plan.sh", ["my-dir"])
 
             call_args = mock_subprocess.run.call_args[0][0]
             assert call_args[1:] == ["my-dir"]
@@ -57,7 +57,7 @@ class TestRunScriptReturnsResult:
         expected = subprocess.CompletedProcess(args=[], returncode=42)
         with patch("i2code.script_runner.subprocess") as mock_subprocess:
             mock_subprocess.run.return_value = expected
-            result = run_script("brainstorm-idea.sh")
+            result = run_script("make-plan.sh")
             assert result is expected
 
 

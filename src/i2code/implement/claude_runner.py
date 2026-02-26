@@ -244,6 +244,7 @@ class ClaudeRunner:
         self._interactive = interactive
 
     def run(self, cmd: List[str], cwd: str) -> ClaudeResult:
+        print(f"Running Claude (cwd={cwd}): {' '.join(cmd)}")
         if self._interactive:
             return self.run_interactive(cmd, cwd=cwd)
         return self.run_batch(cmd, cwd=cwd)

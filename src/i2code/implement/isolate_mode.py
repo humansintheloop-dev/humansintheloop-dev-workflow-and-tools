@@ -37,7 +37,7 @@ class WorktreeSetupDeps:
     """Dependencies for first-run worktree creation and scaffolding."""
 
     scaffolder_factory: object
-    project_setup_fn: object
+    project_setup: object
 
 
 class IsolateMode:
@@ -55,7 +55,7 @@ class IsolateMode:
         self._project = workspace.project
         self._options = options
         self._scaffolder_factory = worktree_setup.scaffolder_factory
-        self._project_setup_fn = worktree_setup.project_setup_fn
+        self._project_setup = worktree_setup.project_setup
         self._subprocess_runner = subprocess_runner
 
     def execute(self):
@@ -70,6 +70,7 @@ class IsolateMode:
         return self._setup_worktree_and_launch()
 
     def _launch_in_existing_clone(self, clone_repo):
+        self._project_setup.setup_clone(clone_repo)
         self._project = self._project.worktree_idea_project(
             clone_repo.working_tree_dir, self._git_repo.working_tree_dir,
         )
@@ -81,7 +82,7 @@ class IsolateMode:
         wt_git_repo = self._git_repo.ensure_worktree(self._project.name, idea_branch)
         wt_git_repo.set_upstream(idea_branch)
         print(f"Worktree: {wt_git_repo.working_tree_dir}")
-        self._project_setup_fn(wt_git_repo)
+        self._project_setup.setup_worktree(wt_git_repo)
 
         work_project = self._project.worktree_idea_project(
             wt_git_repo.working_tree_dir, wt_git_repo.main_repo_dir,
@@ -97,19 +98,21 @@ class IsolateMode:
             sys.exit(1)
 
         clone_repo = wt_git_repo.clone(self._project.name)
+        self._project_setup.setup_clone(clone_repo)
 
-        self._git_repo = wt_git_repo
-        self._project = work_project
+        self._project = work_project.worktree_idea_project(
+            clone_repo.working_tree_dir, wt_git_repo.working_tree_dir,
+        )
         return self._launch(cwd=clone_repo.working_tree_dir)
 
     def _launch(self, cwd):
-        cmd = self._build_isolarium_command()
-        print(f"Running: {' '.join(cmd)}")
+        cmd = self._build_isolarium_command(clone_dir=cwd)
+        print(f"Running (cwd={cwd}): {' '.join(cmd)}")
         return self._subprocess_runner.run(cmd, cwd=cwd)
 
-    def _build_isolarium_command(self):
+    def _build_isolarium_command(self, clone_dir):
         outer = self._build_outer_args()
-        inner = self._build_inner_args()
+        inner = self._build_inner_args(clone_dir)
         return outer + ["--"] + inner
 
     def _build_outer_args(self):
@@ -124,9 +127,9 @@ class IsolateMode:
             args.append("--interactive")
         return args
 
-    def _build_inner_args(self):
+    def _build_inner_args(self, clone_dir):
         rel_idea_dir = os.path.relpath(
-            self._project.directory, self._git_repo.working_tree_dir,
+            self._project.directory, clone_dir,
         )
         args = ["i2code", "--with-sdkman", "implement", "--isolated", rel_idea_dir]
         args.extend(flag for attr, flag in _BOOL_FLAGS if getattr(self._options, attr))

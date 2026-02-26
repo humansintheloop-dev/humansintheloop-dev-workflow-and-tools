@@ -131,6 +131,12 @@ def github_repo_for_isolate():
 
         repo.remote("origin").push("HEAD:main")
 
+        # Create .claude/settings.local.json (gitignored in production)
+        claude_dir = os.path.join(tmpdir, ".claude")
+        os.makedirs(claude_dir)
+        with open(os.path.join(claude_dir, "settings.local.json"), "w") as f:
+            f.write('{"permissions": {"allow": []}}\n')
+
         yield {
             "tmpdir": tmpdir,
             "repo_full_name": repo_full_name,
@@ -238,6 +244,7 @@ class TestIsolateModeCreatesWorktree:
         self._assert_clone_has_independent_git(clone_path)
         self._assert_isolarium_args_correct(fake_bin, idea_name)
         self._assert_inner_idea_dir_is_relative(fake_bin, idea_name)
+        self._assert_clone_has_claude_settings(clone_path)
 
         # Second run: clone already exists, isolarium should still run from clone
         result2 = self._run_isolate_mode(tmpdir, idea_dir, fake_bin, mock_claude)
@@ -246,6 +253,8 @@ class TestIsolateModeCreatesWorktree:
             f"stdout: {result2.stdout}\nstderr: {result2.stderr}"
         )
         self._assert_isolarium_ran_in_clone(fake_bin, idea_name, clone_path)
+        self._assert_inner_idea_dir_is_relative(fake_bin, idea_name)
+        self._assert_clone_has_claude_settings(clone_path)
 
     def _run_isolate_mode(self, tmpdir, idea_dir, fake_bin, mock_claude):
         env = os.environ.copy()
@@ -310,6 +319,12 @@ class TestIsolateModeCreatesWorktree:
         assert "--name" in captured_args, "Expected --name in isolarium args"
         name_idx = captured_args.index("--name")
         assert captured_args[name_idx + 1] == f"i2code-{idea_name}"
+
+    def _assert_clone_has_claude_settings(self, clone_path):
+        settings_file = os.path.join(clone_path, ".claude", "settings.local.json")
+        assert os.path.isfile(settings_file), (
+            f"Expected .claude/settings.local.json in clone at {settings_file}"
+        )
 
     def _assert_inner_idea_dir_is_relative(self, fake_bin, idea_name):
         captured_args = _read_capture(fake_bin, "args").splitlines()

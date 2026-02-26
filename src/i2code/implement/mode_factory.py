@@ -10,7 +10,7 @@ from i2code.implement.pull_request_review_processor import PullRequestReviewProc
 from i2code.implement.trunk_mode import TrunkMode
 from i2code.implement.workspace import Workspace
 from i2code.implement.worktree_mode import LoopSteps, WorktreeMode
-from i2code.implement.worktree_setup import setup_project
+from i2code.implement.worktree_setup import ProjectSetup
 
 
 class ModeFactory:
@@ -56,7 +56,7 @@ class ModeFactory:
         workspace = Workspace(git_repo=git_repo, project=project)
         worktree_setup = WorktreeSetupDeps(
             scaffolder_factory=scaffolder_factory,
-            project_setup_fn=setup_project,
+            project_setup=ProjectSetup(),
         )
         return IsolateMode(
             workspace=workspace,

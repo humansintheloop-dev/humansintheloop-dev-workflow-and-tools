@@ -252,42 +252,42 @@ class TestImplementCommandWorktreeMode:
         return cmd, project, git_repo, mock_wt_git_repo
 
     @patch("i2code.implement.implement_command.WorkflowState.load")
-    @patch("i2code.implement.implement_command.setup_project")
+    @patch("i2code.implement.implement_command.ProjectSetup")
     def test_calls_ensure_idea_branch(self, mock_setup, mock_load_state):
         cmd, project, git_repo, _ = self._setup_worktree_command()
         cmd.execute()
         git_repo.ensure_idea_branch.assert_called_once_with(project.name)
 
     @patch("i2code.implement.implement_command.WorkflowState.load")
-    @patch("i2code.implement.implement_command.setup_project")
+    @patch("i2code.implement.implement_command.ProjectSetup")
     def test_ensure_worktree_receives_idea_branch(self, mock_setup, mock_load_state):
         cmd, project, git_repo, _ = self._setup_worktree_command()
         cmd.execute()
         git_repo.ensure_worktree.assert_called_once_with(project.name, "idea/fake-idea")
 
     @patch("i2code.implement.implement_command.WorkflowState.load")
-    @patch("i2code.implement.implement_command.setup_project")
+    @patch("i2code.implement.implement_command.ProjectSetup")
     def test_sets_branch_to_idea_branch(self, mock_setup, mock_load_state):
         cmd, _, git_repo, mock_wt_git_repo = self._setup_worktree_command()
         cmd.execute()
         assert mock_wt_git_repo.branch == "idea/fake-idea"
 
     @patch("i2code.implement.implement_command.WorkflowState.load")
-    @patch("i2code.implement.implement_command.setup_project")
+    @patch("i2code.implement.implement_command.ProjectSetup")
     def test_find_pr_uses_idea_branch(self, mock_setup, mock_load_state):
         cmd, _, git_repo, mock_wt_git_repo = self._setup_worktree_command()
         cmd.execute()
         mock_wt_git_repo.gh_client.find_pr.assert_called_once_with("idea/fake-idea")
 
     @patch("i2code.implement.implement_command.WorkflowState.load")
-    @patch("i2code.implement.implement_command.setup_project")
+    @patch("i2code.implement.implement_command.ProjectSetup")
     def test_checkout_not_called(self, mock_setup, mock_load_state):
         cmd, _, git_repo, mock_wt_git_repo = self._setup_worktree_command()
         cmd.execute()
         mock_wt_git_repo.checkout.assert_not_called()
 
     @patch("i2code.implement.implement_command.WorkflowState.load")
-    @patch("i2code.implement.implement_command.setup_project")
+    @patch("i2code.implement.implement_command.ProjectSetup")
     def test_delegates_to_mode_factory(self, mock_setup, mock_load_state):
         cmd, _, _, _ = self._setup_worktree_command()
         cmd.execute()
@@ -384,8 +384,8 @@ class TestDeferredPRCreation:
             lambda x: MagicMock(),
         )
         monkeypatch.setattr(
-            "i2code.implement.implement_command.setup_project",
-            lambda *a, **kw: None,
+            "i2code.implement.implement_command.ProjectSetup",
+            lambda: MagicMock(),
         )
 
         cmd, _project, git_repo = _make_command(

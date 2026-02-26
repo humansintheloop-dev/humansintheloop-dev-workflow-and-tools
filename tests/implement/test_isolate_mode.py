@@ -58,8 +58,17 @@ class FakeSubprocessRunner:
         return self._returncode
 
 
-def _noop_project_setup(git_repo):
-    pass
+class FakeProjectSetup:
+    """Test double for ProjectSetup that records calls without touching the filesystem."""
+
+    def __init__(self):
+        self.calls = []
+
+    def setup_worktree(self, git_repo):
+        self.calls.append(("setup_worktree", git_repo))
+
+    def setup_clone(self, git_repo):
+        self.calls.append(("setup_clone", git_repo))
 
 
 def _make_mode(options=None, project=None, git_repo=None):
@@ -81,7 +90,7 @@ def _make_mode(options=None, project=None, git_repo=None):
 
     worktree_setup = WorktreeSetupDeps(
         scaffolder_factory=scaffolder_factory,
-        project_setup_fn=_noop_project_setup,
+        project_setup=FakeProjectSetup(),
     )
     mode = IsolateMode(
         workspace=workspace,
@@ -350,6 +359,85 @@ class TestIsolateModeSkipsWorktreeWhenCloneExists:
         assert cwd == "/fake/my-repo-cl-test-feature"
 
 
+def _extract_isolated_path(cmd):
+    """Extract the --isolated path from the inner command (after --)."""
+    separator_idx = cmd.index("--")
+    inner_cmd = cmd[separator_idx + 1:]
+    isolated_idx = inner_cmd.index("--isolated")
+    return inner_cmd[isolated_idx + 1]
+
+
+@pytest.mark.unit
+class TestIsolateModeIsolatedPathRelativeToClone:
+    """--isolated path must be relative to the clone dir (subprocess cwd), not to git_repo."""
+
+    def test_existing_clone_isolated_path_is_relative_to_clone(self):
+        git_repo = FakeGitRepository(working_tree_dir="/fake/my-repo")
+        clone_repo = FakeGitRepository(working_tree_dir="/fake/my-repo-cl-test-feature")
+        git_repo.set_clone_repo("test-feature", clone_repo)
+        project = FakeIdeaProject(
+            name="test-feature",
+            directory="/fake/my-repo/docs/features/test-feature",
+        )
+
+        mode, _, subprocess_runner = _make_mode(git_repo=git_repo, project=project)
+        mode.execute()
+
+        _, cmd, _ = subprocess_runner.calls[0]
+        idea_dir_arg = _extract_isolated_path(cmd)
+        assert idea_dir_arg == "docs/features/test-feature", (
+            f"Expected 'docs/features/test-feature', got '{idea_dir_arg}'"
+        )
+
+
+@pytest.mark.unit
+class TestIsolateModeCloneSettings:
+    """IsolateMode copies .claude/settings.local.json into the clone."""
+
+    def test_clone_gets_settings_when_clone_already_exists(self, tmp_path):
+        from i2code.implement.worktree_setup import ProjectSetup
+
+        main_repo = str(tmp_path / "my-repo")
+        clone_dir = str(tmp_path / "my-repo-cl-test-feature")
+        os.makedirs(os.path.join(main_repo, ".claude"))
+        os.makedirs(clone_dir)
+        settings = os.path.join(main_repo, ".claude", "settings.local.json")
+        with open(settings, "w") as f:
+            f.write('{"permissions": {"allow": []}}\n')
+
+        git_repo = FakeGitRepository(
+            working_tree_dir=main_repo, main_repo_dir=main_repo,
+        )
+        clone_repo = FakeGitRepository(
+            working_tree_dir=clone_dir, main_repo_dir=main_repo,
+        )
+        git_repo.set_clone_repo("test-feature", clone_repo)
+        project = FakeIdeaProject(
+            name="test-feature",
+            directory=os.path.join(main_repo, "docs/features/test-feature"),
+        )
+
+        initializer = _make_fake_project_scaffolder()
+        subprocess_runner = FakeSubprocessRunner()
+        workspace = Workspace(git_repo=git_repo, project=project)
+        worktree_setup = WorktreeSetupDeps(
+            scaffolder_factory=lambda wt: initializer,
+            project_setup=ProjectSetup(),
+        )
+        mode = IsolateMode(
+            workspace=workspace,
+            options=_opts(),
+            worktree_setup=worktree_setup,
+            subprocess_runner=subprocess_runner,
+        )
+        mode.execute()
+
+        clone_settings = os.path.join(clone_dir, ".claude", "settings.local.json")
+        assert os.path.isfile(clone_settings), (
+            "Expected .claude/settings.local.json in clone directory"
+        )
+
+
 @pytest.mark.unit
 class TestIsolateModeWorktreeSetup:
     """execute() creates worktree and calls project_setup_fn when no clone exists."""
@@ -371,18 +459,14 @@ class TestIsolateModeWorktreeSetup:
         assert len(wt_calls) == 1
         assert wt_calls[0] == ("ensure_worktree", "my-feature", "idea/my-feature")
 
-    def test_calls_project_setup_fn_with_worktree_git_repo(self):
-        setup_calls = []
-
-        def tracking_setup(git_repo):
-            setup_calls.append(git_repo)
-
+    def test_calls_setup_worktree_with_worktree_git_repo(self):
         mode, _, _ = _make_mode()
-        mode._project_setup_fn = tracking_setup
         mode.execute()
 
-        assert len(setup_calls) == 1
-        assert setup_calls[0].is_worktree
+        setup = mode._project_setup
+        worktree_calls = [c for c in setup.calls if c[0] == "setup_worktree"]
+        assert len(worktree_calls) == 1
+        assert worktree_calls[0][1].is_worktree
 
 
 @pytest.mark.unit

@@ -13,6 +13,12 @@ def _config(input_fn, output=None):
     return MenuConfig(input_fn=input_fn, output=output)
 
 
+def _displayed_output(prompt, default, options, input_fn):
+    buf = io.StringIO()
+    get_user_choice(prompt, default, options, config=_config(input_fn, output=buf))
+    return buf.getvalue()
+
+
 @pytest.mark.unit
 class TestGetUserChoiceValidInput:
 
@@ -49,32 +55,17 @@ class TestGetUserChoiceValidInput:
 class TestGetUserChoiceDisplaysMenu:
 
     def test_displays_numbered_options_to_output(self):
-        buf = io.StringIO()
-        get_user_choice(
-            "Pick one:", 1, ["Alpha", "Beta"],
-            config=_config(lambda _: "1", output=buf),
-        )
-        displayed = buf.getvalue()
+        displayed = _displayed_output("Pick one:", 1, ["Alpha", "Beta"], lambda _: "1")
         assert "1) Alpha" in displayed
         assert "2) Beta" in displayed
 
     def test_marks_default_option(self):
-        buf = io.StringIO()
-        get_user_choice(
-            "Pick one:", 2, ["Alpha", "Beta"],
-            config=_config(lambda _: "2", output=buf),
-        )
-        displayed = buf.getvalue()
+        displayed = _displayed_output("Pick one:", 2, ["Alpha", "Beta"], lambda _: "2")
         assert "[default]" in displayed
         assert "2) Beta [default]" in displayed
 
     def test_displays_prompt(self):
-        buf = io.StringIO()
-        get_user_choice(
-            "Pick one:", 1, ["Alpha", "Beta"],
-            config=_config(lambda _: "1", output=buf),
-        )
-        displayed = buf.getvalue()
+        displayed = _displayed_output("Pick one:", 1, ["Alpha", "Beta"], lambda _: "1")
         assert "Pick one:" in displayed
 
 
@@ -91,12 +82,9 @@ class TestGetUserChoiceInvalidInput:
 
     def test_invalid_input_shows_error_message(self):
         inputs = iter(["bad", "1"])
-        buf = io.StringIO()
-        get_user_choice(
-            "Pick one:", 1, ["Alpha", "Beta"],
-            config=_config(lambda _: next(inputs), output=buf),
+        displayed = _displayed_output(
+            "Pick one:", 1, ["Alpha", "Beta"], lambda _: next(inputs),
         )
-        displayed = buf.getvalue()
         assert "Invalid choice" in displayed
 
 

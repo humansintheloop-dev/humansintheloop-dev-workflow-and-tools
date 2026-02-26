@@ -199,7 +199,7 @@ Migrate `brainstorm-idea.sh` to Python. Handles directory creation, editor detec
 
 Migrate `make-plan.sh`, `revise-plan.sh`, and `list-plugin-skills.sh`. Includes the plan validator (rewriting AWK as Python) and auto-repair logic.
 
-- [ ] **Task 4.1: Plugin skill enumeration lists installed skills**
+- [x] **Task 4.1: Plugin skill enumeration lists installed skills**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit -k plugin_skills`
   - Observable: Searches `$PLUGIN_CACHE_DIR` (default `~/.claude/plugins/cache`) for `idea-to-code` plugin. Lists subdirectory names under the plugin's `skills/` directory. Returns comma-separated list prefixed with `idea-to-code:`. Prints warning to stderr if plugin not found.

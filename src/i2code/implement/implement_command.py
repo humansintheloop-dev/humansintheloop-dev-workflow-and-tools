@@ -51,8 +51,9 @@ class ImplementCommand:
         isolate_mode = self.mode_factory.make_isolate_mode(
             git_repo=self.git_repo,
             project=self.project,
+            opts=self.opts,
         )
-        returncode = isolate_mode.execute(self.opts)
+        returncode = isolate_mode.execute()
         sys.exit(returncode)
 
     def _worktree_mode(self):

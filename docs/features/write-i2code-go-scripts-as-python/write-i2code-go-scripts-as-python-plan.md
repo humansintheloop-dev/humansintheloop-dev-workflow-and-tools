@@ -236,18 +236,18 @@ Migrate `make-plan.sh`, `revise-plan.sh`, and `list-plugin-skills.sh`. Includes 
     - [x] Create `src/i2code/go_cmd/revise_plan.py` — `revise_plan(project: IdeaProject, claude_runner, template_renderer)` function matching `scripts/revise-plan.sh`. Validates all three files, renders template, invokes Claude.
     - [x] Write pytest tests: validates all three files, template rendered with correct variables, Claude invoked
 
-- [ ] **Task 4.5: Wire plan commands, update orchestrator, delete bash scripts**
+- [x] **Task 4.5: Wire plan commands, update orchestrator, delete bash scripts**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `i2code plan create <dir>` and `i2code plan revise <dir>` invoke Python implementations. Orchestrator calls Python functions. Bash scripts deleted. Plugin skills bash test replaced by pytest. CI passes.
   - Evidence: `./test-scripts/test-end-to-end.sh` passes
   - Steps:
-    - [ ] Check how `plan create` and `plan revise` are currently registered (they may be in `src/i2code/plan/cli.py` alongside existing plan management commands). Add direct Click commands there for `create` and `revise`, replacing any `script_command` registrations.
-    - [ ] Update orchestrator: replace `run_script("make-plan.sh", ...)` and `run_script("revise-plan.sh", ...)` with direct Python function calls
-    - [ ] Write CLI integration tests using CliRunner
-    - [ ] Delete `src/i2code/scripts/make-plan.sh`, `src/i2code/scripts/revise-plan.sh`, `src/i2code/scripts/list-plugin-skills.sh`
-    - [ ] Remove `test-scripts/test-list-plugin-skills.sh` from `test-scripts/test-end-to-end.sh` and delete it
-    - [ ] Run `./test-scripts/test-end-to-end.sh`
+    - [x] Check how `plan create` and `plan revise` are currently registered (they may be in `src/i2code/plan/cli.py` alongside existing plan management commands). Add direct Click commands there for `create` and `revise`, replacing any `script_command` registrations.
+    - [x] Update orchestrator: replace `run_script("make-plan.sh", ...)` and `run_script("revise-plan.sh", ...)` with direct Python function calls
+    - [x] Write CLI integration tests using CliRunner
+    - [x] Delete `src/i2code/scripts/make-plan.sh`, `src/i2code/scripts/revise-plan.sh`, `src/i2code/scripts/list-plugin-skills.sh`
+    - [x] Remove `test-scripts/test-list-plugin-skills.sh` from `test-scripts/test-end-to-end.sh` and delete it
+    - [x] Run `./test-scripts/test-end-to-end.sh`
 
 ---
 

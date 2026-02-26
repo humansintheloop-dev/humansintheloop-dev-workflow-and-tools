@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, TextIO
 
+from i2code.go_cmd.create_plan import PlanServices, create_plan
 from i2code.go_cmd.implement_config import (
     build_implement_flags,
     build_implement_label,
@@ -16,10 +17,14 @@ from i2code.go_cmd.implement_config import (
     write_implement_config,
 )
 from i2code.go_cmd.menu import MenuConfig, get_user_choice
+from i2code.go_cmd.plan_validator import validate_plan
+from i2code.go_cmd.plugin_skills import list_plugin_skills
+from i2code.go_cmd.revise_plan import revise_plan
 from i2code.idea_cmd.brainstorm import brainstorm_idea
 from i2code.implement.claude_runner import ClaudeRunner
 from i2code.spec_cmd.create_spec import create_spec
 from i2code.spec_cmd.revise_spec import revise_spec
+from i2code.template_renderer import render_template
 
 
 class WorkflowState(Enum):
@@ -59,14 +64,12 @@ _STEP_DISPATCH = {
     },
     WorkflowState.HAS_SPEC: {
         1: ("Revising specification", "revise_spec"),
-        2: ("Creating implementation plan", "make-plan.sh"),
+        2: ("Creating implementation plan", "create_plan"),
     },
     WorkflowState.HAS_PLAN: {
-        1: ("Revising plan", "revise-plan.sh"),
+        1: ("Revising plan", "revise_plan"),
     },
 }
-
-_PYTHON_STEPS = {"brainstorm_idea", "create_spec", "revise_spec"}
 
 _MENU_PROMPTS = {
     WorkflowState.HAS_IDEA_NO_SPEC: "Idea exists. What would you like to do?",
@@ -101,6 +104,31 @@ def _default_revise_spec(project):
     return revise_spec(project, ClaudeRunner())
 
 
+def _default_create_plan(project):
+    runner = ClaudeRunner()
+    services = PlanServices(
+        template_renderer=render_template,
+        plugin_skills_fn=list_plugin_skills,
+        validator_fn=validate_plan,
+    )
+    return create_plan(project, runner, services)
+
+
+def _default_revise_plan(project):
+    return revise_plan(project, ClaudeRunner(), render_template)
+
+
+_CALLABLE_DEFAULTS = {
+    "git_runner": _default_git_runner,
+    "implement_runner": _default_implement_runner,
+    "brainstorm_idea_fn": _default_brainstorm_idea,
+    "create_spec_fn": _default_create_spec,
+    "revise_spec_fn": _default_revise_spec,
+    "create_plan_fn": _default_create_plan,
+    "revise_plan_fn": _default_revise_plan,
+}
+
+
 @dataclass
 class OrchestratorDeps:
     """Injectable dependencies for the orchestrator."""
@@ -113,20 +141,15 @@ class OrchestratorDeps:
     brainstorm_idea_fn: Callable = None
     create_spec_fn: Callable = None
     revise_spec_fn: Callable = None
+    create_plan_fn: Callable = None
+    revise_plan_fn: Callable = None
 
     def __post_init__(self):
         if self.output is None:
             self.output = sys.stderr
-        if self.git_runner is None:
-            self.git_runner = _default_git_runner
-        if self.implement_runner is None:
-            self.implement_runner = _default_implement_runner
-        if self.brainstorm_idea_fn is None:
-            self.brainstorm_idea_fn = _default_brainstorm_idea
-        if self.create_spec_fn is None:
-            self.create_spec_fn = _default_create_spec
-        if self.revise_spec_fn is None:
-            self.revise_spec_fn = _default_revise_spec
+        for attr, default in _CALLABLE_DEFAULTS.items():
+            if getattr(self, attr) is None:
+                setattr(self, attr, default)
 
 
 class Orchestrator:
@@ -215,7 +238,7 @@ class Orchestrator:
         if selected == "Commit changes":
             self._commit_changes()
         elif selected == "Revise the plan":
-            self._run_step_with_retry("Revising plan", "revise-plan.sh")
+            self._run_step_with_retry("Revising plan", "revise_plan")
         elif selected == "Configure implement options":
             self._configure_implement()
         elif selected.startswith("Implement the entire plan"):
@@ -331,15 +354,15 @@ class Orchestrator:
         print("", file=self._deps.output)
         print(f"{description}...", file=self._deps.output)
         print("", file=self._deps.output)
-        if step_key in _PYTHON_STEPS:
-            return self._run_python_step(step_key)
-        return self._deps.script_runner(step_key, (self._project.directory,))
+        return self._run_python_step(step_key)
 
     def _run_python_step(self, step_key):
         step_fns = {
             "brainstorm_idea": self._deps.brainstorm_idea_fn,
             "create_spec": self._deps.create_spec_fn,
             "revise_spec": self._deps.revise_spec_fn,
+            "create_plan": self._deps.create_plan_fn,
+            "revise_plan": self._deps.revise_plan_fn,
         }
         return step_fns[step_key](self._project)
 

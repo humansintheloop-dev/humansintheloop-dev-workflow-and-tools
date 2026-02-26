@@ -208,14 +208,14 @@ Migrate `make-plan.sh`, `revise-plan.sh`, and `list-plugin-skills.sh`. Includes 
     - [x] Create `src/i2code/go_cmd/plugin_skills.py` — `list_plugin_skills(cache_dir=None) -> str` function matching `scripts/list-plugin-skills.sh`. Uses `os.environ.get("PLUGIN_CACHE_DIR", "~/.claude/plugins/cache")` if cache_dir not provided. Finds `*idea-to-code*/skills` directory, lists subdirectories, returns `"idea-to-code:skill1, idea-to-code:skill2"` format.
     - [x] Write pytest tests: finds skills in mock directory structure, returns empty string with stderr warning when plugin not found, respects `PLUGIN_CACHE_DIR` env var
 
-- [ ] **Task 4.2: Plan validator checks required task fields**
+- [x] **Task 4.2: Plan validator checks required task fields**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit -k plan_validator`
   - Observable: Parses plan markdown and validates each `- [ ] **Task X.Y:** ...` block contains `TaskType:`, `Entrypoint:`, `Observable:`, and `Evidence:` fields. Returns `(is_valid, errors)` tuple with specific error messages per missing field.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit -k plan_validator` passes with valid plans, plans missing fields, and edge cases
   - Steps:
-    - [ ] Create `src/i2code/go_cmd/plan_validator.py` — `validate_plan(plan_text: str) -> tuple[bool, list[str]]` function rewriting `scripts/make-plan.sh:22-66` AWK logic in Python. Scan lines for task headers (`- [ ] **Task X.Y:`), track which required fields appear before the next task header, report missing fields per task.
-    - [ ] Write pytest tests: valid plan passes, plan missing TaskType fails, plan missing Evidence fails, plan with multiple errors reports all, empty plan passes (no tasks to validate), plan with only completed tasks (`- [x]`) still validates
+    - [x] Create `src/i2code/go_cmd/plan_validator.py` — `validate_plan(plan_text: str) -> tuple[bool, list[str]]` function rewriting `scripts/make-plan.sh:22-66` AWK logic in Python. Scan lines for task headers (`- [ ] **Task X.Y:`), track which required fields appear before the next task header, report missing fields per task.
+    - [x] Write pytest tests: valid plan passes, plan missing TaskType fails, plan missing Evidence fails, plan with multiple errors reports all, empty plan passes (no tasks to validate), plan with only completed tasks (`- [x]`) still validates
 
 - [ ] **Task 4.3: `i2code plan create` generates, validates, and auto-repairs plan**
   - TaskType: OUTCOME

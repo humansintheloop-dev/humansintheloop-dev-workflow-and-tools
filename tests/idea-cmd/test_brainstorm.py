@@ -10,25 +10,28 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "implement"))
 from conftest import TempIdeaProject
 from fake_claude_runner import FakeClaudeRunner
 from i2code.idea_cmd.brainstorm import brainstorm_idea, detect_editor
+from i2code.implement.idea_project import IdeaProject
+
+
+def run_brainstorm(tmp_path, idea_name="my-idea", runner=None):
+    """Create a temporary project, run brainstorm_idea, and return all test-relevant objects."""
+    project = IdeaProject(str(tmp_path / idea_name))
+    if runner is None:
+        runner = FakeClaudeRunner()
+    editor_calls = []
+    result = brainstorm_idea(
+        project, runner,
+        run_editor=lambda cmd: editor_calls.append(cmd),
+    )
+    return project, runner, editor_calls, result
 
 
 @pytest.mark.unit
 class TestDirectoryCreation:
 
     def test_creates_directory_when_missing(self, tmp_path):
-        from i2code.implement.idea_project import IdeaProject
-
-        idea_dir = str(tmp_path / "new-feature")
-        project = IdeaProject(idea_dir)
-        runner = FakeClaudeRunner()
-        editor_calls = []
-
-        brainstorm_idea(
-            project, runner,
-            run_editor=lambda cmd: editor_calls.append(cmd),
-        )
-
-        assert os.path.isdir(idea_dir)
+        project, _, _, _ = run_brainstorm(tmp_path, idea_name="new-feature")
+        assert os.path.isdir(project.directory)
 
 
 @pytest.mark.unit
@@ -74,18 +77,8 @@ class TestEditorDetection:
 class TestIdeaFileCreation:
 
     def test_creates_idea_file_with_template(self, tmp_path):
-        from i2code.implement.idea_project import IdeaProject
-
-        idea_dir = str(tmp_path / "my-idea")
-        project = IdeaProject(idea_dir)
-        runner = FakeClaudeRunner()
-
-        brainstorm_idea(
-            project, runner,
-            run_editor=lambda cmd: None,
-        )
-
-        idea_file = os.path.join(idea_dir, "my-idea-idea.md")
+        project, _, _, _ = run_brainstorm(tmp_path)
+        idea_file = os.path.join(project.directory, "my-idea-idea.md")
         assert os.path.isfile(idea_file)
         with open(idea_file) as f:
             assert "PLEASE DESCRIBE YOUR IDEA" in f.read()
@@ -107,18 +100,7 @@ class TestIdeaFileCreation:
             assert len(editor_calls) == 0
 
     def test_launches_editor_for_new_idea(self, tmp_path):
-        from i2code.implement.idea_project import IdeaProject
-
-        idea_dir = str(tmp_path / "my-idea")
-        project = IdeaProject(idea_dir)
-        runner = FakeClaudeRunner()
-        editor_calls = []
-
-        brainstorm_idea(
-            project, runner,
-            run_editor=lambda cmd: editor_calls.append(cmd),
-        )
-
+        _, _, editor_calls, _ = run_brainstorm(tmp_path)
         assert len(editor_calls) == 1
         assert editor_calls[0][-1].endswith("my-idea-idea.md")
 
@@ -127,17 +109,7 @@ class TestIdeaFileCreation:
 class TestSessionManagement:
 
     def test_generates_session_id_for_new_session(self, tmp_path):
-        from i2code.implement.idea_project import IdeaProject
-
-        idea_dir = str(tmp_path / "my-idea")
-        project = IdeaProject(idea_dir)
-        runner = FakeClaudeRunner()
-
-        brainstorm_idea(
-            project, runner,
-            run_editor=lambda cmd: None,
-        )
-
+        project, runner, _, _ = run_brainstorm(tmp_path)
         _, cmd, _ = runner.calls[0]
         assert "--session-id" in cmd
         assert os.path.isfile(project.session_id_file)
@@ -165,64 +137,25 @@ class TestSessionManagement:
 class TestClaudeInvocation:
 
     def test_invokes_claude_interactively(self, tmp_path):
-        from i2code.implement.idea_project import IdeaProject
-
-        idea_dir = str(tmp_path / "my-idea")
-        project = IdeaProject(idea_dir)
-        runner = FakeClaudeRunner()
-
-        brainstorm_idea(
-            project, runner,
-            run_editor=lambda cmd: None,
-        )
-
+        _, runner, _, _ = run_brainstorm(tmp_path)
         method, _, _ = runner.calls[0]
         assert method == "run_interactive"
 
     def test_claude_prompt_contains_idea_and_discussion_files(self, tmp_path):
-        from i2code.implement.idea_project import IdeaProject
-
-        idea_dir = str(tmp_path / "my-idea")
-        project = IdeaProject(idea_dir)
-        runner = FakeClaudeRunner()
-
-        brainstorm_idea(
-            project, runner,
-            run_editor=lambda cmd: None,
-        )
-
+        project, runner, _, _ = run_brainstorm(tmp_path)
         _, cmd, _ = runner.calls[0]
         prompt = cmd[-1]
         assert project.idea_file in prompt
         assert project.discussion_file in prompt
 
     def test_claude_command_starts_with_claude(self, tmp_path):
-        from i2code.implement.idea_project import IdeaProject
-
-        idea_dir = str(tmp_path / "my-idea")
-        project = IdeaProject(idea_dir)
-        runner = FakeClaudeRunner()
-
-        brainstorm_idea(
-            project, runner,
-            run_editor=lambda cmd: None,
-        )
-
+        _, runner, _, _ = run_brainstorm(tmp_path)
         _, cmd, _ = runner.calls[0]
         assert cmd[0] == "claude"
 
     def test_returns_claude_result(self, tmp_path):
         from i2code.implement.claude_runner import ClaudeResult
-        from i2code.implement.idea_project import IdeaProject
-
-        idea_dir = str(tmp_path / "my-idea")
-        project = IdeaProject(idea_dir)
         runner = FakeClaudeRunner()
         runner.set_result(ClaudeResult(returncode=0))
-
-        result = brainstorm_idea(
-            project, runner,
-            run_editor=lambda cmd: None,
-        )
-
+        _, _, _, result = run_brainstorm(tmp_path, runner=runner)
         assert result.returncode == 0

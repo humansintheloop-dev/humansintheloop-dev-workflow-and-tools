@@ -80,7 +80,7 @@ def github_repo_for_isolate():
         )
 
         repo = Repo(tmpdir)
-        repo.config_writer().set_value("user", "email", "test@test.com").release()
+        repo.config_writer().set_value("user", "email", "testuser@test.com").release()
         repo.config_writer().set_value("user", "name", "Test").release()
 
         readme = os.path.join(tmpdir, "README.md")
@@ -243,8 +243,10 @@ class TestIsolateModeCreatesWorktree:
         self._assert_clone_origin_is_github(clone_path, info["repo_full_name"])
         self._assert_clone_has_independent_git(clone_path)
         self._assert_isolarium_args_correct(fake_bin, idea_name)
+        self._assert_isolarium_has_read_flag(fake_bin)
         self._assert_inner_idea_dir_is_relative(fake_bin, idea_name)
         self._assert_clone_has_claude_settings(clone_path)
+        self._assert_clone_has_user_config(clone_path, "Test", "testuser@test.com")
 
         # Second run: clone already exists, isolarium should still run from clone
         result2 = self._run_isolate_mode(tmpdir, idea_dir, fake_bin, mock_claude)
@@ -253,8 +255,10 @@ class TestIsolateModeCreatesWorktree:
             f"stdout: {result2.stdout}\nstderr: {result2.stderr}"
         )
         self._assert_isolarium_ran_in_clone(fake_bin, idea_name, clone_path)
+        self._assert_isolarium_has_read_flag(fake_bin)
         self._assert_inner_idea_dir_is_relative(fake_bin, idea_name)
         self._assert_clone_has_claude_settings(clone_path)
+        self._assert_clone_has_user_config(clone_path, "Test", "testuser@test.com")
 
     def _run_isolate_mode(self, tmpdir, idea_dir, fake_bin, mock_claude):
         env = os.environ.copy()
@@ -324,6 +328,32 @@ class TestIsolateModeCreatesWorktree:
         settings_file = os.path.join(clone_path, ".claude", "settings.local.json")
         assert os.path.isfile(settings_file), (
             f"Expected .claude/settings.local.json in clone at {settings_file}"
+        )
+
+    def _assert_clone_has_user_config(self, clone_path, expected_name, expected_email):
+        repo = Repo(clone_path)
+        reader = repo.config_reader()
+        name = reader.get_value("user", "name")
+        email = reader.get_value("user", "email")
+        assert name == expected_name, (
+            f"Expected clone user.name '{expected_name}', got '{name}'"
+        )
+        assert email == expected_email, (
+            f"Expected clone user.email '{expected_email}', got '{email}'"
+        )
+
+    def _assert_isolarium_has_read_flag(self, fake_bin):
+        captured_args = _read_capture(fake_bin, "args").splitlines()
+        separator_idx = captured_args.index("--")
+        outer_args = captured_args[:separator_idx]
+        assert "--read" in outer_args, "Expected --read in isolarium outer args"
+        read_idx = outer_args.index("--read")
+        read_path = outer_args[read_idx + 1]
+        assert read_path.endswith("/src"), (
+            f"Expected --read path to end with /src, got {read_path}"
+        )
+        assert os.path.isdir(read_path), (
+            f"Expected --read path to be an existing directory, got {read_path}"
         )
 
     def _assert_inner_idea_dir_is_relative(self, fake_bin, idea_name):

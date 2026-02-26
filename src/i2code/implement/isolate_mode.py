@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 from i2code.implement.managed_subprocess import ManagedSubprocess
 
@@ -21,6 +22,20 @@ _VALUE_FLAGS = [
     ("ci_fix_retries", "--ci-fix-retries", 3),
     ("ci_timeout", "--ci-timeout", 600),
 ]
+
+
+def _find_i2code_src_dir():
+    """Return the i2code source directory if running from an editable install."""
+    try:
+        path = Path(__file__).resolve()
+        if "site-packages" in path.parts:
+            return None
+        for parent in path.parents:
+            if (parent / "pyproject.toml").exists():
+                return str(parent / "src")
+    except OSError:
+        pass
+    return None
 
 
 def _collect_value_flags(options):
@@ -125,6 +140,9 @@ class IsolateMode:
         if env_file:
             args.extend(["--env-file", env_file])
         args.append("run")
+        src_dir = _find_i2code_src_dir()
+        if src_dir:
+            args.extend(["--read", src_dir])
         if not self._options.non_interactive:
             args.append("--interactive")
         return args

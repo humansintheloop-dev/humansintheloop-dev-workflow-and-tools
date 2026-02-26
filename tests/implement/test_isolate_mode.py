@@ -479,6 +479,69 @@ class TestIsolateModeWorktreeSetup:
 
 
 @pytest.mark.unit
+class TestFindI2codeSrcDir:
+    """_find_i2code_src_dir detects the i2code source directory for editable installs."""
+
+    def test_returns_src_dir_for_editable_install(self):
+        from i2code.implement.isolate_mode import _find_i2code_src_dir
+
+        result = _find_i2code_src_dir()
+
+        assert result is not None
+        assert result.endswith("/src")
+        assert os.path.isdir(result)
+
+    def test_returns_none_when_site_packages_in_path(self):
+        import i2code.implement.isolate_mode as mod
+        from i2code.implement.isolate_mode import _find_i2code_src_dir
+
+        original = mod.__file__
+        try:
+            mod.__file__ = "/usr/lib/python3/site-packages/i2code/implement/isolate_mode.py"
+            assert _find_i2code_src_dir() is None
+        finally:
+            mod.__file__ = original
+
+    def test_returns_none_when_no_pyproject_toml(self, tmp_path):
+        import i2code.implement.isolate_mode as mod
+        from i2code.implement.isolate_mode import _find_i2code_src_dir
+
+        fake_file = tmp_path / "some" / "deep" / "path" / "isolate_mode.py"
+        fake_file.parent.mkdir(parents=True)
+        fake_file.write_text("")
+
+        original = mod.__file__
+        try:
+            mod.__file__ = str(fake_file)
+            assert _find_i2code_src_dir() is None
+        finally:
+            mod.__file__ = original
+
+
+@pytest.mark.unit
+class TestIsolateModeReadFlag:
+    """IsolateMode adds --read <src_dir> to isolarium outer args for editable installs."""
+
+    def test_includes_read_flag_after_run(self):
+        cmd = _execute_and_get_cmd()
+
+        run_idx = cmd.index("run")
+        separator_idx = cmd.index("--")
+        read_idx = cmd.index("--read")
+        assert read_idx > run_idx
+        assert read_idx < separator_idx
+        assert cmd[read_idx + 1].endswith("/src")
+
+    def test_omits_read_flag_when_src_dir_not_found(self):
+        from unittest.mock import patch
+
+        with patch("i2code.implement.isolate_mode._find_i2code_src_dir", return_value=None):
+            cmd = _execute_and_get_cmd()
+
+        assert "--read" not in cmd
+
+
+@pytest.mark.unit
 class TestSubprocessRunner:
     """SubprocessRunner uses Popen + ManagedSubprocess for clean interrupt handling."""
 

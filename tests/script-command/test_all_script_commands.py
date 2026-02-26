@@ -12,19 +12,6 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "src" / "i2code" /
 
 # (cli_args, expected_script_name, expected_forwarded_args)
 SCRIPT_COMMANDS = [
-    # go (top-level command)
-    pytest.param(
-        ["go", "my-dir"],
-        "idea-to-code.sh",
-        ["my-dir"],
-        id="go",
-    ),
-    pytest.param(
-        ["go", "my-dir", "--verbose", "extra"],
-        "idea-to-code.sh",
-        ["my-dir", "--verbose", "extra"],
-        id="go-with-extra-flags",
-    ),
     # idea group
     pytest.param(
         ["idea", "brainstorm", "my-dir"],

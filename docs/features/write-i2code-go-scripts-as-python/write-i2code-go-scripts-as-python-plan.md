@@ -113,18 +113,18 @@ Replace `idea-to-code.sh` (the largest and highest-risk script at ~490 lines) wi
     - [x] Implement plan completion check: after successful implement, check for remaining `[ ]` in plan file. If all complete, print "Workflow Complete!" and exit 0. Match `idea-to-code.sh:387-398`
     - [x] Write pytest tests for: config write/read round-trip, prompt flow with mocked menu, flag construction (`--non-interactive`, `--trunk`), label formatting, plan completion detection
 
-- [ ] **Task 1.4: Wire orchestrator as Click command, delete bash script and tests**
+- [x] **Task 1.4: Wire orchestrator as Click command, delete bash script and tests**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `i2code go <directory>` invokes the Python orchestrator. Directory creation prompt works for non-existent directories. Banner displays project name and directory. The bash script `idea-to-code.sh` is deleted. Bash test scripts for `i2code go` are replaced by pytest tests. CI passes.
   - Evidence: `./test-scripts/test-end-to-end.sh` passes (includes both pytest unit tests and remaining bash tests)
   - Steps:
-    - [ ] Create `src/i2code/go_cmd/cli.py` with Click command `go_cmd` that: takes `directory` argument, handles non-existent directory with create prompt (matching `idea-to-code.sh:215-233`), constructs `IdeaProject`, assembles `Orchestrator` with all dependencies, calls `orchestrator.run()`. Follow `command_assembler.py` pattern for dependency wiring.
-    - [ ] In `src/i2code/cli.py`: remove `script_command(main, "go", ...)` on line 47, add `from i2code.go_cmd.cli import go_cmd` and `main.add_command(go_cmd)`
-    - [ ] Write CLI integration test using Click's `CliRunner` verifying the command is registered and invokes the orchestrator
-    - [ ] Delete `src/i2code/scripts/idea-to-code.sh`
-    - [ ] Remove `test-scripts/test-i2code-go.sh` invocation from `test-scripts/test-end-to-end.sh`. Delete `test-scripts/test-i2code-go.sh`, `test-scripts/test-go-commit-menu.sh`, `test-scripts/test-go-commit-action.sh`, `test-scripts/test-go-commit-failure.sh`, `test-scripts/test-go-skip-commit.sh`, `test-scripts/test-implement-config.sh`
-    - [ ] Run `./test-scripts/test-end-to-end.sh` to verify CI-equivalent passes
+    - [x] Create `src/i2code/go_cmd/cli.py` with Click command `go_cmd` that: takes `directory` argument, handles non-existent directory with create prompt (matching `idea-to-code.sh:215-233`), constructs `IdeaProject`, assembles `Orchestrator` with all dependencies, calls `orchestrator.run()`. Follow `command_assembler.py` pattern for dependency wiring.
+    - [x] In `src/i2code/cli.py`: remove `script_command(main, "go", ...)` on line 47, add `from i2code.go_cmd.cli import go_cmd` and `main.add_command(go_cmd)`
+    - [x] Write CLI integration test using Click's `CliRunner` verifying the command is registered and invokes the orchestrator
+    - [x] Delete `src/i2code/scripts/idea-to-code.sh`
+    - [x] Remove `test-scripts/test-i2code-go.sh` invocation from `test-scripts/test-end-to-end.sh`. Delete `test-scripts/test-i2code-go.sh`, `test-scripts/test-go-commit-menu.sh`, `test-scripts/test-go-commit-action.sh`, `test-scripts/test-go-commit-failure.sh`, `test-scripts/test-go-skip-commit.sh`, `test-scripts/test-implement-config.sh`
+    - [x] Run `./test-scripts/test-end-to-end.sh` to verify CI-equivalent passes
 
 ---
 

@@ -22,8 +22,6 @@ echo ""
 echo "--- Editor resolution tests ---"
 "$SCRIPT_DIR/test-editor-resolution.sh"
 
-"$SCRIPT_DIR/test-i2code-go.sh"
-
 "$SCRIPT_DIR/test-integration.sh"
 
 "$SCRIPT_DIR/test-plugin-javascript.sh"

@@ -217,15 +217,15 @@ Migrate `make-plan.sh`, `revise-plan.sh`, and `list-plugin-skills.sh`. Includes 
     - [x] Create `src/i2code/go_cmd/plan_validator.py` — `validate_plan(plan_text: str) -> tuple[bool, list[str]]` function rewriting `scripts/make-plan.sh:22-66` AWK logic in Python. Scan lines for task headers (`- [ ] **Task X.Y:`), track which required fields appear before the next task header, report missing fields per task.
     - [x] Write pytest tests: valid plan passes, plan missing TaskType fails, plan missing Evidence fails, plan with multiple errors reports all, empty plan passes (no tasks to validate), plan with only completed tasks (`- [x]`) still validates
 
-- [ ] **Task 4.3: `i2code plan create` generates, validates, and auto-repairs plan**
+- [x] **Task 4.3: `i2code plan create` generates, validates, and auto-repairs plan**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit -k create_plan`
   - Observable: Validates idea and spec exist. Enumerates plugin skills. Renders `create-implementation-plan.md` template with `$IDEA_FILE`, `$SPEC_FILE`, `$PLAN_SKILLS`. Invokes Claude in non-interactive mode (`-p` flag). Validates output plan. If validation fails, invokes Claude again with repair prompt (one attempt). Writes final plan to `{name}-plan.md`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit -k create_plan` passes with mocked ClaudeRunner for generation, validation, repair, and file write
   - Steps:
-    - [ ] Create `src/i2code/go_cmd/create_plan.py` — `create_plan(project: IdeaProject, claude_runner, template_renderer, plugin_skills_fn, validator_fn)` function matching `scripts/make-plan.sh:104-119`. Uses `claude_runner.run_with_capture()` for non-interactive invocation with `-p` flag. Validates result, attempts one repair if invalid, writes to plan file.
-    - [ ] Implement repair logic: construct repair prompt matching `scripts/make-plan.sh:73-101`, invoke Claude again with plan + errors, validate repaired plan
-    - [ ] Write pytest tests: successful creation with valid plan, validation failure triggers repair, repair succeeds (valid after repair), repair fails (still invalid after repair — reports error), plan written to correct file path
+    - [x] Create `src/i2code/go_cmd/create_plan.py` — `create_plan(project: IdeaProject, claude_runner, template_renderer, plugin_skills_fn, validator_fn)` function matching `scripts/make-plan.sh:104-119`. Uses `claude_runner.run_with_capture()` for non-interactive invocation with `-p` flag. Validates result, attempts one repair if invalid, writes to plan file.
+    - [x] Implement repair logic: construct repair prompt matching `scripts/make-plan.sh:73-101`, invoke Claude again with plan + errors, validate repaired plan
+    - [x] Write pytest tests: successful creation with valid plan, validation failure triggers repair, repair succeeds (valid after repair), repair fails (still invalid after repair — reports error), plan written to correct file path
 
 - [ ] **Task 4.4: `i2code plan revise` revises plan via Claude**
   - TaskType: OUTCOME

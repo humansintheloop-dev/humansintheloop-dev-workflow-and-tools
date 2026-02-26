@@ -143,15 +143,19 @@ class TestDispatchHasSpec:
             _setup_has_spec, ["1", "3"], "revise_spec_fn",
         )
 
-    def test_create_plan_runs_make_plan_script(self):
-        _run_dispatch_test(_setup_has_spec, ["2", "3"], "make-plan.sh")
+    def test_create_plan_calls_python_function(self):
+        _run_python_step_test(
+            _setup_has_spec, ["2", "3"], "create_plan_fn",
+        )
 
 
 @pytest.mark.unit
 class TestDispatchHasPlan:
 
-    def test_revise_plan_runs_revise_plan_script(self):
-        _run_dispatch_test(_setup_has_plan, ["1", "3"], "revise-plan.sh")
+    def test_revise_plan_calls_python_function(self):
+        _run_python_step_test(
+            _setup_has_plan, ["1", "3"], "revise_plan_fn",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -200,11 +204,15 @@ class TestErrorHandlingRetry:
         with TempIdeaProject("my-feature") as project:
             _setup_has_spec(project)
             results = iter([_failure_result(), _success_result()])
-            mock_runner = MagicMock(side_effect=lambda *a, **kw: next(results))
+            mock_fn = MagicMock(side_effect=lambda _: next(results))
             config = _menu_config(["2", "1", "3"])
-            orch = Orchestrator(project, script_runner=mock_runner, menu_config=config)
+            deps = OrchestratorDeps(
+                menu_config=config,
+                create_plan_fn=mock_fn,
+            )
+            orch = Orchestrator(project, deps=deps)
             orch.run()
-            assert mock_runner.call_count == 2
+            assert mock_fn.call_count == 2
 
 
 @pytest.mark.unit
@@ -213,9 +221,13 @@ class TestErrorHandlingAbort:
     def test_abort_exits_with_code_1(self):
         with TempIdeaProject("my-feature") as project:
             _setup_has_spec(project)
-            mock_runner = MagicMock(return_value=_failure_result())
+            mock_fn = MagicMock(return_value=_failure_result())
             config = _menu_config(["2", "2"])
-            orch = Orchestrator(project, script_runner=mock_runner, menu_config=config)
+            deps = OrchestratorDeps(
+                menu_config=config,
+                create_plan_fn=mock_fn,
+            )
+            orch = Orchestrator(project, deps=deps)
             with pytest.raises(SystemExit) as exc_info:
                 orch.run()
             assert exc_info.value.code == 1

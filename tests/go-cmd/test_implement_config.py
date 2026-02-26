@@ -6,6 +6,15 @@ import pytest
 from conftest import TempIdeaProject
 
 
+def _write_config_file(project, interactive, trunk):
+    """Write implement config and return the config file path."""
+    from i2code.go_cmd.implement_config import write_implement_config
+
+    path = project.implement_config_file
+    write_implement_config(path, interactive=interactive, trunk=trunk)
+    return path
+
+
 @pytest.mark.unit
 class TestWriteAndReadConfigRoundTrip:
 
@@ -14,14 +23,10 @@ class TestWriteAndReadConfigRoundTrip:
         (False, True),
     ])
     def test_write_then_read_preserves_config(self, interactive, trunk):
-        from i2code.go_cmd.implement_config import (
-            read_implement_config,
-            write_implement_config,
-        )
+        from i2code.go_cmd.implement_config import read_implement_config
 
         with TempIdeaProject("my-feature") as project:
-            path = project.implement_config_file
-            write_implement_config(path, interactive=interactive, trunk=trunk)
+            path = _write_config_file(project, interactive, trunk)
             config = read_implement_config(path)
             assert config["interactive"] is interactive
             assert config["trunk"] is trunk
@@ -132,14 +137,10 @@ class TestBuildImplementLabel:
         (True, False, ""),
     ])
     def test_label_with_config(self, interactive, trunk, expected_suffix):
-        from i2code.go_cmd.implement_config import (
-            build_implement_label,
-            write_implement_config,
-        )
+        from i2code.go_cmd.implement_config import build_implement_label
 
         with TempIdeaProject("my-feature") as project:
-            path = project.implement_config_file
-            write_implement_config(path, interactive=interactive, trunk=trunk)
-            label = build_implement_label(path)
+            _write_config_file(project, interactive, trunk)
+            label = build_implement_label(project.implement_config_file)
             expected = f"Implement the entire plan: i2code implement{expected_suffix}"
             assert label == expected

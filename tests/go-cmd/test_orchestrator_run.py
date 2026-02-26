@@ -126,7 +126,7 @@ class TestDispatchHasSpec:
 class TestDispatchHasPlan:
 
     def test_revise_plan_runs_revise_plan_script(self):
-        _run_dispatch_test(_setup_has_plan, ["1", "4"], "revise-plan.sh")
+        _run_dispatch_test(_setup_has_plan, ["1", "3"], "revise-plan.sh")
 
 
 # ---------------------------------------------------------------------------
@@ -219,13 +219,13 @@ class TestGitDirtyDetection:
     def test_dirty_adds_commit_option_to_has_plan_menu(self):
         with TempIdeaProject("my-feature") as project:
             _setup_has_plan(project)
-            displayed = _run_has_plan_with_git(project, "5", "M  some-file.md\n")
+            displayed = _run_has_plan_with_git(project, "4", "M  some-file.md\n")
             assert "Commit changes" in displayed
 
     def test_clean_repo_does_not_add_commit_option(self):
         with TempIdeaProject("my-feature") as project:
             _setup_has_plan(project)
-            displayed = _run_has_plan_with_git(project, "4", "")
+            displayed = _run_has_plan_with_git(project, "3", "")
             assert "Commit changes" not in displayed
 
 
@@ -246,7 +246,7 @@ class TestCommitAction:
                     return _git_result("")
                 return MagicMock(returncode=0)
 
-            config = _menu_config(["2", "4"])
+            config = _menu_config(["2", "3"])
             orch = Orchestrator(
                 project, script_runner=MagicMock(), menu_config=config,
                 git_runner=mock_git,

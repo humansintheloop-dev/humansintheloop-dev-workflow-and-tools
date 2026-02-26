@@ -255,16 +255,16 @@ Migrate `make-plan.sh`, `revise-plan.sh`, and `list-plugin-skills.sh`. Includes 
 
 Migrate `create-design-doc.sh`, `analyze-sessions.sh`, `create-summary-reports.sh`, `review-issues.sh`, and `update-claude-files-from-project.sh`. These scripts range from simple (template + Claude) to moderately complex (argument parsing, date filtering, file discovery).
 
-- [ ] **Task 5.1: `i2code design create` generates design document**
+- [x] **Task 5.1: `i2code design create` generates design document**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/design-cmd/ -v -m unit`
   - Observable: Validates idea and spec exist. Archives existing design file to `archive/` subdirectory with timestamp. Enumerates plugin skills. Renders `create-design-doc.md` template with `$IDEA_FILE`, `$DISCUSSION_FILE`, `$SPEC_FILE`, `$DESIGN_SKILLS`. Manages session (resume or new). Invokes Claude interactively.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/design-cmd/ -v -m unit` passes with mocked ClaudeRunner and filesystem
   - Steps:
-    - [ ] Create `src/i2code/design_cmd/create_design.py` — `create_design(project: IdeaProject, claude_runner, template_renderer, session_manager, plugin_skills_fn)` matching `scripts/create-design-doc.sh`. Includes archive logic: if design file exists, move to `archive/<name>-design-<timestamp>.md`.
-    - [ ] Update `src/i2code/design_cmd/cli.py`: replace `script_command` with direct Click command
-    - [ ] Write pytest tests: validates files, archives existing design, template variables correct, session management, Claude invoked
-    - [ ] Delete `src/i2code/scripts/create-design-doc.sh`
+    - [x] Create `src/i2code/design_cmd/create_design.py` — `create_design(project: IdeaProject, claude_runner, template_renderer, session_manager, plugin_skills_fn)` matching `scripts/create-design-doc.sh`. Includes archive logic: if design file exists, move to `archive/<name>-design-<timestamp>.md`.
+    - [x] Update `src/i2code/design_cmd/cli.py`: replace `script_command` with direct Click command
+    - [x] Write pytest tests: validates files, archives existing design, template variables correct, session management, Claude invoked
+    - [x] Delete `src/i2code/scripts/create-design-doc.sh`
 
 - [ ] **Task 5.2: `i2code improve analyze-sessions` analyzes Claude sessions**
   - TaskType: OUTCOME

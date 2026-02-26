@@ -1,7 +1,6 @@
 """Tests for ImplementCommand class."""
 
 
-import os
 import click
 import pytest
 from unittest.mock import MagicMock, patch
@@ -148,52 +147,20 @@ class TestImplementCommandTrunkMode:
 
 @pytest.mark.unit
 class TestImplementCommandIsolateMode:
-    """_isolate_mode() creates a worktree then delegates to mode_factory.make_isolate_mode()."""
+    """_isolate_mode() delegates to mode_factory.make_isolate_mode().execute()."""
 
-    def _setup_isolate_command(self):
-        opts = _make_opts(isolate=True, ignore_uncommitted_idea_changes=True)
-        project = FakeIdeaProject(
-            name="test-feature",
-            directory="/tmp/fake-repo/docs/features/test-feature",
+    def test_delegates_to_mode_factory(self):
+        cmd, project, git_repo = _make_command(
+            isolate=True, ignore_uncommitted_idea_changes=True,
         )
-        project.set_next_task(_DEFAULT_TASK)
-        git_repo = MagicMock()
-        mode_factory = MagicMock()
-        cmd = ImplementCommand(opts, project, git_repo, mode_factory)
-
-        git_repo.working_tree_dir = "/tmp/fake-repo"
-        git_repo.ensure_idea_branch.return_value = "idea/test-feature"
-        mock_wt_git_repo = MagicMock()
-        mock_wt_git_repo.working_tree_dir = "/tmp/fake-repo-wt-test-feature"
-        mock_wt_git_repo.main_repo_dir = "/tmp/fake-repo"
-        git_repo.ensure_worktree.return_value = mock_wt_git_repo
-        mode_factory.make_isolate_mode.return_value.execute.return_value = 0
-        return cmd, project, git_repo, mock_wt_git_repo
-
-    @patch("i2code.implement.implement_command.setup_project")
-    def test_creates_worktree_before_delegating(self, mock_setup):
-        cmd, project, git_repo, mock_wt_git_repo = self._setup_isolate_command()
+        cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
         with pytest.raises(SystemExit):
             cmd.execute()
-        git_repo.ensure_idea_branch.assert_called_once_with(project.name)
-        git_repo.ensure_worktree.assert_called_once_with(project.name, "idea/test-feature")
-
-    @patch("i2code.implement.implement_command.setup_project")
-    def test_passes_worktree_git_repo_and_project_to_mode_factory(self, mock_setup):
-        cmd, project, git_repo, mock_wt_git_repo = self._setup_isolate_command()
-        with pytest.raises(SystemExit):
-            cmd.execute()
-        call_kwargs = cmd.mode_factory.make_isolate_mode.call_args.kwargs
-        assert call_kwargs["git_repo"] is mock_wt_git_repo
-        work_project = call_kwargs["project"]
-        assert work_project.directory == "/tmp/fake-repo-wt-test-feature/docs/features/test-feature"
-
-    @patch("i2code.implement.implement_command.setup_project")
-    def test_calls_setup_project_on_worktree(self, mock_setup):
-        cmd, project, git_repo, mock_wt_git_repo = self._setup_isolate_command()
-        with pytest.raises(SystemExit):
-            cmd.execute()
-        mock_setup.assert_called_once_with(mock_wt_git_repo)
+        cmd.mode_factory.make_isolate_mode.assert_called_once_with(
+            git_repo=git_repo,
+            project=project,
+        )
+        cmd.mode_factory.make_isolate_mode.return_value.execute.assert_called_once()
 
 
 @pytest.mark.unit
@@ -432,85 +399,3 @@ class TestDeferredPRCreation:
         mock_wt_git_repo.gh_client.find_pr.assert_not_called()
 
 
-@pytest.mark.unit
-class TestIsolateModeSkipsWorktreeWhenCloneExists:
-    """_isolate_mode() skips worktree and scaffolding when clone directory already exists."""
-
-    def _setup_with_clone(self, tmp_path):
-        """Set up command where the clone directory already exists on disk."""
-        repo_dir = str(tmp_path / "my-repo")
-        os.makedirs(repo_dir)
-        clone_dir = str(tmp_path / "my-repo-cl-test-feature")
-        os.makedirs(clone_dir)
-
-        opts = _make_opts(isolate=True, ignore_uncommitted_idea_changes=True)
-        project = FakeIdeaProject(
-            name="test-feature",
-            directory=os.path.join(repo_dir, "docs/features/test-feature"),
-        )
-        project.set_next_task(_DEFAULT_TASK)
-        git_repo = MagicMock()
-        git_repo.working_tree_dir = repo_dir
-        mode_factory = MagicMock()
-        mode_factory.make_isolate_mode.return_value.launch.return_value = 0
-        cmd = ImplementCommand(opts, project, git_repo, mode_factory)
-        return cmd, project, git_repo, mode_factory, clone_dir
-
-    def test_ensure_worktree_not_called(self, tmp_path):
-        cmd, _, git_repo, _, _ = self._setup_with_clone(tmp_path)
-        with pytest.raises(SystemExit):
-            cmd.execute()
-        git_repo.ensure_worktree.assert_not_called()
-
-    def test_ensure_idea_branch_not_called(self, tmp_path):
-        cmd, _, git_repo, _, _ = self._setup_with_clone(tmp_path)
-        with pytest.raises(SystemExit):
-            cmd.execute()
-        git_repo.ensure_idea_branch.assert_not_called()
-
-    def test_isolarium_runs_in_clone_via_launch(self, tmp_path):
-        cmd, _, _, mode_factory, clone_dir = self._setup_with_clone(tmp_path)
-        with pytest.raises(SystemExit):
-            cmd.execute()
-        mode_factory.make_isolate_mode.return_value.launch.assert_called_once()
-
-    def test_execute_not_called_on_isolate_mode(self, tmp_path):
-        """When clone exists, execute() (with scaffolding) is NOT called — only launch()."""
-        cmd, _, _, mode_factory, _ = self._setup_with_clone(tmp_path)
-        with pytest.raises(SystemExit):
-            cmd.execute()
-        mode_factory.make_isolate_mode.return_value.execute.assert_not_called()
-
-
-@pytest.mark.unit
-class TestIsolateModeNormalFlowWhenNoClone:
-    """_isolate_mode() follows the normal worktree→scaffolding→clone flow when no clone exists."""
-
-    @patch("i2code.implement.implement_command.setup_project")
-    def test_ensure_worktree_called_when_no_clone(self, mock_setup, tmp_path):
-        repo_dir = str(tmp_path / "my-repo")
-        os.makedirs(repo_dir)
-        # No clone directory exists
-
-        opts = _make_opts(isolate=True, ignore_uncommitted_idea_changes=True)
-        project = FakeIdeaProject(
-            name="test-feature",
-            directory=os.path.join(repo_dir, "docs/features/test-feature"),
-        )
-        project.set_next_task(_DEFAULT_TASK)
-        git_repo = MagicMock()
-        git_repo.working_tree_dir = repo_dir
-        git_repo.ensure_idea_branch.return_value = "idea/test-feature"
-        mock_wt_git_repo = MagicMock()
-        mock_wt_git_repo.working_tree_dir = str(tmp_path / "my-repo-wt-test-feature")
-        mock_wt_git_repo.main_repo_dir = repo_dir
-        git_repo.ensure_worktree.return_value = mock_wt_git_repo
-        mode_factory = MagicMock()
-        mode_factory.make_isolate_mode.return_value.execute.return_value = 0
-        cmd = ImplementCommand(opts, project, git_repo, mode_factory)
-
-        with pytest.raises(SystemExit):
-            cmd.execute()
-
-        git_repo.ensure_idea_branch.assert_called_once_with("test-feature")
-        git_repo.ensure_worktree.assert_called_once_with("test-feature", "idea/test-feature")

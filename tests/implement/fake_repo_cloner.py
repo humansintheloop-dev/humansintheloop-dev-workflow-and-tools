@@ -14,6 +14,6 @@ class FakeRepoCloner:
     def set_clone_path(self, path):
         self._clone_path = path
 
-    def create_clone(self, source_path, idea_name, origin_url):
-        self.calls.append(("create_clone", source_path, idea_name, origin_url))
+    def create_clone(self, source_path, idea_name, origin_url, clone_base=None):
+        self.calls.append(("create_clone", source_path, idea_name, origin_url, clone_base))
         return self._clone_path

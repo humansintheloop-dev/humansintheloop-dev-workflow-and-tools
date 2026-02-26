@@ -143,7 +143,7 @@ def github_repo_for_isolate():
         delete_github_repo(repo_full_name)
         if "tmpdir" in locals():
             worktree_path = _worktree_path_for(tmpdir, idea_name)
-            clone_path = _clone_path_for(worktree_path, idea_name)
+            clone_path = _clone_path_for(tmpdir, idea_name)
             shutil.rmtree(clone_path, ignore_errors=True)
             shutil.rmtree(worktree_path, ignore_errors=True)
             shutil.rmtree(tmpdir, ignore_errors=True)
@@ -201,10 +201,10 @@ def _worktree_path_for(tmpdir, idea_name):
     return os.path.join(os.path.dirname(tmpdir), f"{tmpdir_name}-wt-{idea_name}")
 
 
-def _clone_path_for(worktree_path, idea_name):
-    """Compute the expected clone path for a given worktree."""
-    worktree_name = os.path.basename(worktree_path)
-    return os.path.join(os.path.dirname(worktree_path), f"{worktree_name}-cl-{idea_name}")
+def _clone_path_for(repo_path, idea_name):
+    """Compute the expected clone path for a given repo."""
+    repo_name = os.path.basename(repo_path)
+    return os.path.join(os.path.dirname(repo_path), f"{repo_name}-cl-{idea_name}")
 
 
 @pytest.mark.integration_gh
@@ -229,7 +229,7 @@ class TestIsolateModeCreatesWorktree:
         )
 
         worktree_path = _worktree_path_for(tmpdir, idea_name)
-        clone_path = _clone_path_for(worktree_path, idea_name)
+        clone_path = _clone_path_for(tmpdir, idea_name)
 
         self._assert_main_branch_unchanged(tmpdir, original_branch)
         self._assert_worktree_created(worktree_path)
@@ -238,6 +238,14 @@ class TestIsolateModeCreatesWorktree:
         self._assert_clone_has_independent_git(clone_path)
         self._assert_isolarium_args_correct(fake_bin, idea_name)
         self._assert_inner_idea_dir_is_relative(fake_bin, idea_name)
+
+        # Second run: clone already exists, isolarium should still run from clone
+        result2 = self._run_isolate_mode(tmpdir, idea_dir, fake_bin, mock_claude)
+        assert result2.returncode == 0, (
+            f"Second i2code run failed: rc={result2.returncode}\n"
+            f"stdout: {result2.stdout}\nstderr: {result2.stderr}"
+        )
+        self._assert_isolarium_ran_in_clone(fake_bin, idea_name, clone_path)
 
     def _run_isolate_mode(self, tmpdir, idea_dir, fake_bin, mock_claude):
         env = os.environ.copy()

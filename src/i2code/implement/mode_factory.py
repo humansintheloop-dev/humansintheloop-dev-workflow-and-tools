@@ -3,7 +3,7 @@
 from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
-from i2code.implement.isolate_mode import IsolateMode, SubprocessRunner
+from i2code.implement.isolate_mode import IsolateMode, SubprocessRunner, WorktreeSetupDeps
 from i2code.implement.repo_cloner import RepoCloner
 from i2code.implement.pr_helpers import push_branch_to_remote
 from i2code.implement.project_scaffolding import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
@@ -11,6 +11,7 @@ from i2code.implement.pull_request_review_processor import PullRequestReviewProc
 from i2code.implement.trunk_mode import TrunkMode
 from i2code.implement.workspace import Workspace
 from i2code.implement.worktree_mode import LoopSteps, WorktreeMode
+from i2code.implement.worktree_setup import setup_project
 
 
 class ModeFactory:
@@ -40,22 +41,29 @@ class ModeFactory:
             command_builder=CommandBuilder(),
             claude_runner=self._claude_runner,
         )
-        steps = ScaffoldingSteps(
-            claude_runner=self._claude_runner,
-            build_fixer=self._build_fixer_factory.create(git_repo),
-            push_fn=push_branch_to_remote,
-        )
-        project_scaffolder = ProjectScaffolder(
-            scaffolding_creator=scaffolding_creator,
-            git_repo=git_repo,
-            steps=steps,
-        )
+
+        def scaffolder_factory(wt_git_repo):
+            steps = ScaffoldingSteps(
+                claude_runner=self._claude_runner,
+                build_fixer=self._build_fixer_factory.create(wt_git_repo),
+                push_fn=push_branch_to_remote,
+            )
+            return ProjectScaffolder(
+                scaffolding_creator=scaffolding_creator,
+                git_repo=wt_git_repo,
+                steps=steps,
+            )
+
         workspace = Workspace(git_repo=git_repo, project=project)
+        worktree_setup = WorktreeSetupDeps(
+            scaffolder_factory=scaffolder_factory,
+            clone_creator=RepoCloner(),
+            project_setup_fn=setup_project,
+        )
         return IsolateMode(
             workspace=workspace,
-            project_scaffolder=project_scaffolder,
+            worktree_setup=worktree_setup,
             subprocess_runner=SubprocessRunner(),
-            clone_creator=RepoCloner(),
         )
 
     def make_worktree_mode(self, git_repo, state, work_project):

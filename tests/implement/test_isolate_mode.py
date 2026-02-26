@@ -1,9 +1,11 @@
 """Tests for IsolateMode class using fakes — zero @patch decorators."""
 
+import os
+
 import pytest
 
 from i2code.implement.implement_opts import ImplementOpts
-from i2code.implement.isolate_mode import IsolateMode
+from i2code.implement.isolate_mode import IsolateMode, WorktreeSetupDeps
 from i2code.implement.project_scaffolding import ProjectScaffolder, ScaffoldingCreator, ScaffoldingSteps
 from i2code.implement.workspace import Workspace
 
@@ -57,20 +59,37 @@ class FakeSubprocessRunner:
         return self._returncode
 
 
+def _noop_project_setup(git_repo):
+    pass
+
+
 def _make_mode(project=None, git_repo=None, setup_success=True, clone_creator=None):
-    """Build an IsolateMode with fakes, returning (mode, initializer, subprocess_runner, clone_creator)."""
+    """Build an IsolateMode with fakes, returning (mode, initializer, subprocess_runner, clone_creator).
+
+    Default paths place the project directory inside the git repo so that
+    worktree_idea_project computes sensible relative paths.
+    """
+    git_repo = git_repo or FakeGitRepository()
+    project = project or FakeIdeaProject(
+        directory=os.path.join(git_repo.working_tree_dir, "docs/features/test-feature"),
+    )
     initializer = _make_fake_project_scaffolder(setup_success)
     subprocess_runner = FakeSubprocessRunner()
     clone_creator = clone_creator or FakeRepoCloner()
-    workspace = Workspace(
-        git_repo=git_repo or FakeGitRepository(),
-        project=project or FakeIdeaProject(),
+    workspace = Workspace(git_repo=git_repo, project=project)
+
+    def scaffolder_factory(wt_git_repo):
+        return initializer
+
+    worktree_setup = WorktreeSetupDeps(
+        scaffolder_factory=scaffolder_factory,
+        clone_creator=clone_creator,
+        project_setup_fn=_noop_project_setup,
     )
     mode = IsolateMode(
         workspace=workspace,
-        project_scaffolder=initializer,
+        worktree_setup=worktree_setup,
         subprocess_runner=subprocess_runner,
-        clone_creator=clone_creator,
     )
     return mode, initializer, subprocess_runner, clone_creator
 
@@ -169,7 +188,7 @@ class TestIsolateModeExecute:
         assert len(setup_calls) == 1
         kwargs = setup_calls[0][1]
         assert kwargs["opts"] is options
-        assert kwargs["idea_directory"] == "/tmp/fake-idea"
+        assert kwargs["idea_directory"] == "/fake/repo-wt-test-feature/docs/features/test-feature"
         assert kwargs["branch"] == "idea/test-feature"
 
     def test_interactive_mode_passes_interactive_flag_to_isolarium(self):
@@ -220,9 +239,14 @@ class TestIsolateModeEnvFile:
         main_repo.mkdir()
         env_file = main_repo / ".env.local"
         env_file.write_text("SECRET=value\n")
-        git_repo = FakeGitRepository(main_repo_dir=str(main_repo))
+        git_repo = FakeGitRepository(
+            working_tree_dir=str(main_repo), main_repo_dir=str(main_repo),
+        )
+        project = FakeIdeaProject(
+            directory=os.path.join(str(main_repo), "docs/features/test-feature"),
+        )
 
-        cmd = _execute_and_get_cmd(git_repo=git_repo)
+        cmd = _execute_and_get_cmd(git_repo=git_repo, project=project)
 
         assert "--env-file" in cmd
         env_idx = cmd.index("--env-file")
@@ -233,9 +257,14 @@ class TestIsolateModeEnvFile:
     def test_omits_env_file_when_not_present(self, tmp_path):
         main_repo = tmp_path / "main-repo"
         main_repo.mkdir()
-        git_repo = FakeGitRepository(main_repo_dir=str(main_repo))
+        git_repo = FakeGitRepository(
+            working_tree_dir=str(main_repo), main_repo_dir=str(main_repo),
+        )
+        project = FakeIdeaProject(
+            directory=os.path.join(str(main_repo), "docs/features/test-feature"),
+        )
 
-        cmd = _execute_and_get_cmd(git_repo=git_repo)
+        cmd = _execute_and_get_cmd(git_repo=git_repo, project=project)
         assert "--env-file" not in cmd
 
 
@@ -243,9 +272,13 @@ class TestIsolateModeEnvFile:
 class TestIsolateModeCloneCreator:
     """IsolateMode calls clone_creator after scaffolding and uses clone path as subprocess cwd."""
 
-    def test_create_clone_called_with_worktree_path_idea_name_and_origin_url(self):
+    def test_clone_named_relative_to_original_repo_not_worktree(self):
+        """Clone dir should be <original_repo>-cl-<idea>, not <worktree>-cl-<idea>."""
         git_repo = FakeGitRepository(working_tree_dir="/home/user/project")
-        project = FakeIdeaProject(name="my-feature")
+        project = FakeIdeaProject(
+            name="my-feature",
+            directory="/home/user/project/docs/features/my-feature",
+        )
         clone_creator = FakeRepoCloner(clone_path="/home/user/project-cl-my-feature")
         mode, _, _, _ = _make_mode(
             git_repo=git_repo, project=project, clone_creator=clone_creator,
@@ -255,7 +288,14 @@ class TestIsolateModeCloneCreator:
 
         assert len(clone_creator.calls) == 1
         call = clone_creator.calls[0]
-        assert call == ("create_clone", "/home/user/project", "my-feature", "https://github.com/test/repo.git")
+        # source is worktree, but clone_base is original repo
+        assert call == (
+            "create_clone",
+            "/home/user/project-wt-my-feature",
+            "my-feature",
+            "https://github.com/test/repo.git",
+            "/home/user/project",
+        )
 
     def test_subprocess_cwd_is_clone_path(self):
         clone_creator = FakeRepoCloner(clone_path="/tmp/clone-dir")
@@ -275,6 +315,91 @@ class TestIsolateModeCloneCreator:
             mode.execute(_opts())
 
         assert len(clone_creator.calls) == 0
+
+
+@pytest.mark.unit
+class TestIsolateModeSkipsWorktreeWhenCloneExists:
+    """execute() skips worktree and scaffolding when clone directory already exists."""
+
+    def _make_mode_with_clone(self, tmp_path):
+        repo_dir = str(tmp_path / "my-repo")
+        os.makedirs(repo_dir)
+        clone_dir = str(tmp_path / "my-repo-cl-test-feature")
+        os.makedirs(clone_dir)
+
+        git_repo = FakeGitRepository(working_tree_dir=repo_dir)
+        project = FakeIdeaProject(
+            name="test-feature",
+            directory=os.path.join(repo_dir, "docs/features/test-feature"),
+        )
+        mode, initializer, subprocess_runner, clone_creator = _make_mode(
+            git_repo=git_repo, project=project,
+        )
+        return mode, git_repo, initializer, subprocess_runner, clone_creator
+
+    def test_worktree_not_created(self, tmp_path):
+        mode, git_repo, _, _, _ = self._make_mode_with_clone(tmp_path)
+        mode.execute(_opts())
+        assert not any(c[0] == "ensure_worktree" for c in git_repo.calls)
+
+    def test_scaffolding_not_called(self, tmp_path):
+        mode, _, initializer, _, _ = self._make_mode_with_clone(tmp_path)
+        mode.execute(_opts())
+        assert len(initializer._setup_calls) == 0
+
+    def test_clone_not_created(self, tmp_path):
+        mode, _, _, _, clone_creator = self._make_mode_with_clone(tmp_path)
+        mode.execute(_opts())
+        assert len(clone_creator.calls) == 0
+
+    def test_subprocess_still_runs(self, tmp_path):
+        mode, _, _, subprocess_runner, _ = self._make_mode_with_clone(tmp_path)
+        mode.execute(_opts())
+        assert len(subprocess_runner.calls) == 1
+
+    def test_subprocess_runs_in_clone_directory(self, tmp_path):
+        mode, _, _, subprocess_runner, _ = self._make_mode_with_clone(tmp_path)
+        mode.execute(_opts())
+        clone_dir = str(tmp_path / "my-repo-cl-test-feature")
+        _, _, cwd = subprocess_runner.calls[0]
+        assert cwd == clone_dir, (
+            f"Expected isolarium to run in clone {clone_dir}, got {cwd}"
+        )
+
+
+@pytest.mark.unit
+class TestIsolateModeWorktreeSetup:
+    """execute() creates worktree and calls project_setup_fn when no clone exists."""
+
+    def test_creates_worktree_via_ensure_idea_branch_and_ensure_worktree(self):
+        git_repo = FakeGitRepository(working_tree_dir="/fake/repo")
+        project = FakeIdeaProject(
+            name="my-feature",
+            directory="/fake/repo/docs/features/my-feature",
+        )
+        mode, _, _, _ = _make_mode(git_repo=git_repo, project=project)
+        mode.execute(_opts())
+
+        branch_calls = [c for c in git_repo.calls if c[0] == "ensure_branch"]
+        assert len(branch_calls) == 1
+        assert branch_calls[0][1] == "idea/my-feature"
+
+        wt_calls = [c for c in git_repo.calls if c[0] == "ensure_worktree"]
+        assert len(wt_calls) == 1
+        assert wt_calls[0] == ("ensure_worktree", "my-feature", "idea/my-feature")
+
+    def test_calls_project_setup_fn_with_worktree_git_repo(self):
+        setup_calls = []
+
+        def tracking_setup(git_repo):
+            setup_calls.append(git_repo)
+
+        mode, _, _, _ = _make_mode()
+        mode._project_setup_fn = tracking_setup
+        mode.execute(_opts())
+
+        assert len(setup_calls) == 1
+        assert setup_calls[0].is_worktree
 
 
 @pytest.mark.unit

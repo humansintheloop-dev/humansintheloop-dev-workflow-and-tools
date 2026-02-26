@@ -89,18 +89,18 @@ Replace `idea-to-code.sh` (the largest and highest-risk script at ~490 lines) wi
     - [x] Create `src/i2code/go_cmd/orchestrator.py` — `Orchestrator` class with constructor-injected dependencies (`IdeaProject`, menu presenter, step dispatcher). `detect_state()` method checks file existence via `IdeaProject` properties and returns state enum. `run()` method implements the main loop: detect state → present menu → dispatch → repeat
     - [x] Create `tests/go-cmd/` directory with pytest tests covering: state detection for all four states, correct menu options per state, invalid input handling, EOF handling
 
-- [ ] **Task 1.2: Orchestrator dispatches workflow steps and handles errors**
+- [x] **Task 1.2: Orchestrator dispatches workflow steps and handles errors**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit`
   - Observable: When a user selects a menu option, the orchestrator invokes the corresponding bash script via `script_runner` and loops back. On step failure, presents Retry/Abort menu. On Ctrl+C, exits with code 130. When git has uncommitted changes in the idea directory, adds "Commit changes" to the `has_plan` menu.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit` passes with mocked `script_runner` and mocked `subprocess` for git
   - Steps:
-    - [ ] Add step dispatch to the orchestrator: map each menu selection to its `run_script()` call — brainstorm → `brainstorm-idea.sh`, create spec → `make-spec.sh`, revise spec → `revise-spec.sh`, create plan → `make-plan.sh`, revise plan → `revise-plan.sh`. Match `idea-to-code.sh:261-338`
-    - [ ] Implement `run_step(description, callback)` that prints description and calls the callback, matching `idea-to-code.sh:24-42`
-    - [ ] Implement error handling: on non-zero exit code, present Retry/Abort menu via `get_user_choice`. Retry re-runs the step; Abort exits with code 1. Match `idea-to-code.sh:108-123`
-    - [ ] Implement `KeyboardInterrupt` handler that prints "Workflow interrupted." and calls `sys.exit(130)`. Match `idea-to-code.sh:126`
-    - [ ] Implement git dirty detection: call `git status --porcelain -- <dir>` via `subprocess`. When dirty, insert "Commit changes" option in `has_plan` menu. Commit action runs `git add <dir>` then `git commit -m "Add idea docs for <name>"`. Match `idea-to-code.sh:92-105`
-    - [ ] Write pytest tests for: dispatch invokes correct script, retry/abort flow, KeyboardInterrupt exit code, git dirty adds commit option, commit action stages and commits
+    - [x] Add step dispatch to the orchestrator: map each menu selection to its `run_script()` call — brainstorm → `brainstorm-idea.sh`, create spec → `make-spec.sh`, revise spec → `revise-spec.sh`, create plan → `make-plan.sh`, revise plan → `revise-plan.sh`. Match `idea-to-code.sh:261-338`
+    - [x] Implement `run_step(description, callback)` that prints description and calls the callback, matching `idea-to-code.sh:24-42`
+    - [x] Implement error handling: on non-zero exit code, present Retry/Abort menu via `get_user_choice`. Retry re-runs the step; Abort exits with code 1. Match `idea-to-code.sh:108-123`
+    - [x] Implement `KeyboardInterrupt` handler that prints "Workflow interrupted." and calls `sys.exit(130)`. Match `idea-to-code.sh:126`
+    - [x] Implement git dirty detection: call `git status --porcelain -- <dir>` via `subprocess`. When dirty, insert "Commit changes" option in `has_plan` menu. Commit action runs `git add <dir>` then `git commit -m "Add idea docs for <name>"`. Match `idea-to-code.sh:92-105`
+    - [x] Write pytest tests for: dispatch invokes correct script, retry/abort flow, KeyboardInterrupt exit code, git dirty adds commit option, commit action stages and commits
 
 - [ ] **Task 1.3: Orchestrator manages implement configuration**
   - TaskType: OUTCOME

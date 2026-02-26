@@ -31,6 +31,41 @@ class IdeaProject:
         return os.path.join(self._directory, f"{self._name}-plan.md")
 
     @property
+    def idea_file(self) -> str:
+        matches = glob.glob(os.path.join(self._directory, f"{self._name}-idea.*"))
+        if matches:
+            return matches[0]
+        return os.path.join(self._directory, f"{self._name}-idea.txt")
+
+    @property
+    def spec_file(self) -> str:
+        return os.path.join(self._directory, f"{self._name}-spec.md")
+
+    @property
+    def discussion_file(self) -> str:
+        return os.path.join(self._directory, f"{self._name}-discussion.md")
+
+    @property
+    def design_file(self) -> str:
+        return os.path.join(self._directory, f"{self._name}-design.md")
+
+    @property
+    def story_file(self) -> str:
+        return os.path.join(self._directory, f"{self._name}-stories.md")
+
+    @property
+    def plan_with_stories_file(self) -> str:
+        return os.path.join(self._directory, f"{self._name}-story-plan.md")
+
+    @property
+    def session_id_file(self) -> str:
+        return os.path.join(self._directory, f"{self._name}-sessionID.txt")
+
+    @property
+    def implement_config_file(self) -> str:
+        return os.path.join(self._directory, f"{self._name}-implement-config.yaml")
+
+    @property
     def state_file(self) -> str:
         return os.path.join(self._directory, f"{self._name}-wt-state.json")
 
@@ -92,6 +127,21 @@ class IdeaProject:
     def is_task_completed(self, thread: int, task: int) -> bool:
         with with_plan_file(self.plan_file) as plan:
             return plan.is_task_completed(thread, task)
+
+    def validate_idea(self) -> None:
+        if not glob.glob(os.path.join(self._directory, f"{self._name}-idea.*")):
+            print(f"Error: Idea file not found: {self.idea_file}", file=sys.stderr)
+            sys.exit(1)
+
+    def validate_spec(self) -> None:
+        if not os.path.isfile(self.spec_file):
+            print(f"Error: Spec file not found: {self.spec_file}", file=sys.stderr)
+            sys.exit(1)
+
+    def validate_plan(self) -> None:
+        if not os.path.isfile(self.plan_file):
+            print(f"Error: Plan file not found: {self.plan_file}", file=sys.stderr)
+            sys.exit(1)
 
     def validate_files(self) -> None:
         """Validate that all required idea files exist.

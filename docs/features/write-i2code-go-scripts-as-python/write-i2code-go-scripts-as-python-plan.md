@@ -132,16 +132,16 @@ Replace `idea-to-code.sh` (the largest and highest-risk script at ~490 lines) wi
 
 Migrate `make-spec.sh` and `revise-spec.sh` to Python. Introduces the template renderer and session manager as shared infrastructure.
 
-- [ ] **Task 2.1: `i2code spec create` generates specification via Claude**
+- [x] **Task 2.1: `i2code spec create` generates specification via Claude**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/spec-cmd/ -v -m unit`
   - Observable: Given an idea project with an idea file, loads `create-spec.md` from `src/i2code/prompt-templates/`, substitutes `$IDEA_FILE` and `$DISCUSSION_FILE` using `string.Template`, reads session ID if present (resumes session) or starts new session, and invokes Claude interactively with the rendered prompt
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/spec-cmd/ -v -m unit` passes with mocked ClaudeRunner verifying template rendering, session flag construction, and Claude invocation with correct arguments
   - Steps:
-    - [ ] Create `src/i2code/template_renderer.py` — `render_template(template_name, variables) -> str` that loads a file from `src/i2code/prompt-templates/<template_name>` and substitutes `$VARIABLE` placeholders using `string.Template`. Uses `importlib.resources` or `Path(__file__).parent` to locate the templates directory.
-    - [ ] Create `src/i2code/session_manager.py` — `read_session_id(path) -> Optional[str]` that reads session ID from file if it exists. `build_session_args(session_id_path) -> list[str]` that returns `["--resume", id]` if session file exists, else empty list.
-    - [ ] Create `src/i2code/spec_cmd/create_spec.py` — `create_spec(project: IdeaProject, claude_runner, template_renderer, session_manager)` function that: validates idea via `project.validate_idea()`, renders `create-spec.md` with `IDEA_FILE` and `DISCUSSION_FILE`, builds session args, invokes Claude interactively via `claude_runner.run_interactive()`. Match `scripts/make-spec.sh`
-    - [ ] Write pytest tests in `tests/spec-cmd/` with mocked ClaudeRunner: idea validation, template rendered with correct variables, session resume when session file exists, new session when no session file, Claude invoked with correct command
+    - [x] Create `src/i2code/template_renderer.py` — `render_template(template_name, variables) -> str` that loads a file from `src/i2code/prompt-templates/<template_name>` and substitutes `$VARIABLE` placeholders using `string.Template`. Uses `importlib.resources` or `Path(__file__).parent` to locate the templates directory.
+    - [x] Create `src/i2code/session_manager.py` — `read_session_id(path) -> Optional[str]` that reads session ID from file if it exists. `build_session_args(session_id_path) -> list[str]` that returns `["--resume", id]` if session file exists, else empty list.
+    - [x] Create `src/i2code/spec_cmd/create_spec.py` — `create_spec(project: IdeaProject, claude_runner, template_renderer, session_manager)` function that: validates idea via `project.validate_idea()`, renders `create-spec.md` with `IDEA_FILE` and `DISCUSSION_FILE`, builds session args, invokes Claude interactively via `claude_runner.run_interactive()`. Match `scripts/make-spec.sh`
+    - [x] Write pytest tests in `tests/spec-cmd/` with mocked ClaudeRunner: idea validation, template rendered with correct variables, session resume when session file exists, new session when no session file, Claude invoked with correct command
 
 - [ ] **Task 2.2: `i2code spec revise` revises specification via Claude**
   - TaskType: OUTCOME

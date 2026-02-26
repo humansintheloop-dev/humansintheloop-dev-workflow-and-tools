@@ -8,7 +8,7 @@ import pytest
 
 from conftest import TempIdeaProject
 from i2code.go_cmd.menu import MenuConfig
-from i2code.go_cmd.orchestrator import Orchestrator
+from i2code.go_cmd.orchestrator import Orchestrator, OrchestratorDeps
 
 
 def _create_file(project, filename, content=""):
@@ -99,8 +99,19 @@ class TestDispatchHasIdeaNoSpec:
     def test_revise_idea_runs_brainstorm_script(self):
         _run_dispatch_test(_setup_has_idea, ["1", "3"], "brainstorm-idea.sh")
 
-    def test_create_spec_runs_make_spec_script(self):
-        _run_dispatch_test(_setup_has_idea, ["2", "3"], "make-spec.sh")
+    def test_create_spec_calls_python_function(self):
+        with TempIdeaProject("my-feature") as project:
+            _setup_has_idea(project)
+            mock_create_spec = MagicMock(return_value=_success_result())
+            config = _menu_config(["2", "3"])
+            deps = OrchestratorDeps(
+                script_runner=MagicMock(return_value=_success_result()),
+                menu_config=config,
+                create_spec_fn=mock_create_spec,
+            )
+            orch = Orchestrator(project, deps=deps)
+            orch.run()
+            mock_create_spec.assert_called_once_with(project)
 
     def test_exit_does_not_run_any_script(self):
         with TempIdeaProject("my-feature") as project:
@@ -115,8 +126,19 @@ class TestDispatchHasIdeaNoSpec:
 @pytest.mark.unit
 class TestDispatchHasSpec:
 
-    def test_revise_spec_runs_revise_spec_script(self):
-        _run_dispatch_test(_setup_has_spec, ["1", "3"], "revise-spec.sh")
+    def test_revise_spec_calls_python_function(self):
+        with TempIdeaProject("my-feature") as project:
+            _setup_has_spec(project)
+            mock_revise_spec = MagicMock(return_value=_success_result())
+            config = _menu_config(["1", "3"])
+            deps = OrchestratorDeps(
+                script_runner=MagicMock(return_value=_success_result()),
+                menu_config=config,
+                revise_spec_fn=mock_revise_spec,
+            )
+            orch = Orchestrator(project, deps=deps)
+            orch.run()
+            mock_revise_spec.assert_called_once_with(project)
 
     def test_create_plan_runs_make_plan_script(self):
         _run_dispatch_test(_setup_has_spec, ["2", "3"], "make-plan.sh")

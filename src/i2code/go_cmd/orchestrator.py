@@ -16,6 +16,9 @@ from i2code.go_cmd.implement_config import (
     write_implement_config,
 )
 from i2code.go_cmd.menu import MenuConfig, get_user_choice
+from i2code.implement.claude_runner import ClaudeRunner
+from i2code.spec_cmd.create_spec import create_spec
+from i2code.spec_cmd.revise_spec import revise_spec
 
 
 class WorkflowState(Enum):
@@ -51,16 +54,18 @@ _STEP_DISPATCH = {
     },
     WorkflowState.HAS_IDEA_NO_SPEC: {
         1: ("Revising idea", "brainstorm-idea.sh"),
-        2: ("Creating specification", "make-spec.sh"),
+        2: ("Creating specification", "create_spec"),
     },
     WorkflowState.HAS_SPEC: {
-        1: ("Revising specification", "revise-spec.sh"),
+        1: ("Revising specification", "revise_spec"),
         2: ("Creating implementation plan", "make-plan.sh"),
     },
     WorkflowState.HAS_PLAN: {
         1: ("Revising plan", "revise-plan.sh"),
     },
 }
+
+_PYTHON_STEPS = {"create_spec", "revise_spec"}
 
 _MENU_PROMPTS = {
     WorkflowState.HAS_IDEA_NO_SPEC: "Idea exists. What would you like to do?",
@@ -83,6 +88,14 @@ def _default_implement_runner(flags, directory):
     return subprocess.run(cmd)
 
 
+def _default_create_spec(project):
+    return create_spec(project, ClaudeRunner())
+
+
+def _default_revise_spec(project):
+    return revise_spec(project, ClaudeRunner())
+
+
 @dataclass
 class OrchestratorDeps:
     """Injectable dependencies for the orchestrator."""
@@ -92,6 +105,8 @@ class OrchestratorDeps:
     output: TextIO = None
     git_runner: Callable = None
     implement_runner: Callable = None
+    create_spec_fn: Callable = None
+    revise_spec_fn: Callable = None
 
     def __post_init__(self):
         if self.output is None:
@@ -100,6 +115,10 @@ class OrchestratorDeps:
             self.git_runner = _default_git_runner
         if self.implement_runner is None:
             self.implement_runner = _default_implement_runner
+        if self.create_spec_fn is None:
+            self.create_spec_fn = _default_create_spec
+        if self.revise_spec_fn is None:
+            self.revise_spec_fn = _default_revise_spec
 
 
 class Orchestrator:
@@ -292,19 +311,28 @@ class Orchestrator:
             print("================================================", file=output)
             sys.exit(0)
 
-    def _run_step_with_retry(self, description, script):
+    def _run_step_with_retry(self, description, step_key):
         while True:
-            result = self._run_step(description, script)
+            result = self._run_step(description, step_key)
             if result.returncode == 0:
                 return
             if not self._handle_error():
                 return
 
-    def _run_step(self, description, script):
+    def _run_step(self, description, step_key):
         print("", file=self._deps.output)
         print(f"{description}...", file=self._deps.output)
         print("", file=self._deps.output)
-        return self._deps.script_runner(script, (self._project.directory,))
+        if step_key in _PYTHON_STEPS:
+            return self._run_python_step(step_key)
+        return self._deps.script_runner(step_key, (self._project.directory,))
+
+    def _run_python_step(self, step_key):
+        step_fns = {
+            "create_spec": self._deps.create_spec_fn,
+            "revise_spec": self._deps.revise_spec_fn,
+        }
+        return step_fns[step_key](self._project)
 
     def _handle_error(self):
         choice = get_user_choice(

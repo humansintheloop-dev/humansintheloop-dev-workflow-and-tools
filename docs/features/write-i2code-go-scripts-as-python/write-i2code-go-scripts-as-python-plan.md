@@ -143,26 +143,26 @@ Migrate `make-spec.sh` and `revise-spec.sh` to Python. Introduces the template r
     - [x] Create `src/i2code/spec_cmd/create_spec.py` — `create_spec(project: IdeaProject, claude_runner, template_renderer, session_manager)` function that: validates idea via `project.validate_idea()`, renders `create-spec.md` with `IDEA_FILE` and `DISCUSSION_FILE`, builds session args, invokes Claude interactively via `claude_runner.run_interactive()`. Match `scripts/make-spec.sh`
     - [x] Write pytest tests in `tests/spec-cmd/` with mocked ClaudeRunner: idea validation, template rendered with correct variables, session resume when session file exists, new session when no session file, Claude invoked with correct command
 
-- [ ] **Task 2.2: `i2code spec revise` revises specification via Claude**
+- [x] **Task 2.2: `i2code spec revise` revises specification via Claude**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/spec-cmd/ -v -m unit`
   - Observable: Validates idea and spec files exist, constructs inline revision prompt referencing the three files (idea, discussion, spec), and invokes Claude interactively
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/spec-cmd/ -v -m unit` passes with mocked ClaudeRunner
   - Steps:
-    - [ ] Create `src/i2code/spec_cmd/revise_spec.py` — `revise_spec(project: IdeaProject, claude_runner)` function that: validates idea and spec exist, constructs inline prompt matching `scripts/revise-spec.sh:11-17` (lists idea, discussion, and spec file paths), invokes Claude interactively
-    - [ ] Write pytest tests: validates both files, prompt contains all three file paths, Claude invoked
+    - [x] Create `src/i2code/spec_cmd/revise_spec.py` — `revise_spec(project: IdeaProject, claude_runner)` function that: validates idea and spec exist, constructs inline prompt matching `scripts/revise-spec.sh:11-17` (lists idea, discussion, and spec file paths), invokes Claude interactively
+    - [x] Write pytest tests: validates both files, prompt contains all three file paths, Claude invoked
 
-- [ ] **Task 2.3: Wire spec commands, update orchestrator, delete bash scripts**
+- [x] **Task 2.3: Wire spec commands, update orchestrator, delete bash scripts**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `i2code spec create <dir>` and `i2code spec revise <dir>` invoke Python implementations. Orchestrator calls Python functions instead of `script_runner`. Bash scripts `make-spec.sh` and `revise-spec.sh` are deleted. CI passes.
   - Evidence: `./test-scripts/test-end-to-end.sh` passes
   - Steps:
-    - [ ] Update `src/i2code/spec_cmd/cli.py`: remove `script_command` imports and calls, create direct Click commands for `create` and `revise` that take `directory` argument, construct `IdeaProject`, and call the Python functions with injected dependencies
-    - [ ] Update `src/i2code/go_cmd/orchestrator.py`: replace `run_script("make-spec.sh", ...)` and `run_script("revise-spec.sh", ...)` calls with direct Python function calls to `create_spec()` and `revise_spec()`
-    - [ ] Write CLI integration tests using CliRunner for both `i2code spec create` and `i2code spec revise`
-    - [ ] Delete `src/i2code/scripts/make-spec.sh` and `src/i2code/scripts/revise-spec.sh`
-    - [ ] Run `./test-scripts/test-end-to-end.sh`
+    - [x] Update `src/i2code/spec_cmd/cli.py`: remove `script_command` imports and calls, create direct Click commands for `create` and `revise` that take `directory` argument, construct `IdeaProject`, and call the Python functions with injected dependencies
+    - [x] Update `src/i2code/go_cmd/orchestrator.py`: replace `run_script("make-spec.sh", ...)` and `run_script("revise-spec.sh", ...)` calls with direct Python function calls to `create_spec()` and `revise_spec()`
+    - [x] Write CLI integration tests using CliRunner for both `i2code spec create` and `i2code spec revise`
+    - [x] Delete `src/i2code/scripts/make-spec.sh` and `src/i2code/scripts/revise-spec.sh`
+    - [x] Run `./test-scripts/test-end-to-end.sh`
 
 ---
 

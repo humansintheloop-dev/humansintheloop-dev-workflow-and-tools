@@ -54,6 +54,29 @@ def _run_dispatch_test(setup_fn, choices, expected_script):
         mock_runner.assert_called_once_with(expected_script, (project.directory,))
 
 
+def _run_python_step_test(setup_fn, choices, dep_name, side_effect=None):
+    """Run a dispatch test for a Python step function (not a script).
+
+    Creates a mock for the given dep_name, runs the orchestrator with
+    the specified choices, and asserts the mock was called once with the project.
+    """
+    with TempIdeaProject("my-feature") as project:
+        setup_fn(project)
+        mock_fn = MagicMock(
+            side_effect=side_effect,
+            return_value=_success_result(),
+        )
+        config = _menu_config(choices)
+        deps = OrchestratorDeps(
+            script_runner=MagicMock(return_value=_success_result()),
+            menu_config=config,
+            **{dep_name: mock_fn},
+        )
+        orch = Orchestrator(project, deps=deps)
+        orch.run()
+        mock_fn.assert_called_once_with(project)
+
+
 def _git_result(stdout):
     return MagicMock(stdout=stdout, returncode=0)
 
@@ -78,40 +101,29 @@ def _run_has_plan_with_git(project, exit_choice, git_stdout):
 @pytest.mark.unit
 class TestDispatchNoIdea:
 
-    def test_no_idea_runs_brainstorm_script(self):
-        with TempIdeaProject("my-feature") as project:
-            mock_runner = MagicMock()
-            mock_runner.side_effect = lambda script, args=(): (
-                _create_file(project, "my-feature-idea.md", "idea"),
-                _success_result(),
-            )[-1]
-            config = _menu_config(["3"])
-            orch = Orchestrator(project, script_runner=mock_runner, menu_config=config)
-            orch.run()
-            mock_runner.assert_called_once_with(
-                "brainstorm-idea.sh", (project.directory,)
-            )
+    def test_no_idea_calls_brainstorm_function(self):
+        def brainstorm_side_effect(p):
+            _create_file(p, f"{p.name}-idea.md", "idea")
+            return _success_result()
+
+        _run_python_step_test(
+            lambda _: None, ["3"], "brainstorm_idea_fn",
+            side_effect=brainstorm_side_effect,
+        )
 
 
 @pytest.mark.unit
 class TestDispatchHasIdeaNoSpec:
 
-    def test_revise_idea_runs_brainstorm_script(self):
-        _run_dispatch_test(_setup_has_idea, ["1", "3"], "brainstorm-idea.sh")
+    def test_revise_idea_calls_brainstorm_function(self):
+        _run_python_step_test(
+            _setup_has_idea, ["1", "3"], "brainstorm_idea_fn",
+        )
 
     def test_create_spec_calls_python_function(self):
-        with TempIdeaProject("my-feature") as project:
-            _setup_has_idea(project)
-            mock_create_spec = MagicMock(return_value=_success_result())
-            config = _menu_config(["2", "3"])
-            deps = OrchestratorDeps(
-                script_runner=MagicMock(return_value=_success_result()),
-                menu_config=config,
-                create_spec_fn=mock_create_spec,
-            )
-            orch = Orchestrator(project, deps=deps)
-            orch.run()
-            mock_create_spec.assert_called_once_with(project)
+        _run_python_step_test(
+            _setup_has_idea, ["2", "3"], "create_spec_fn",
+        )
 
     def test_exit_does_not_run_any_script(self):
         with TempIdeaProject("my-feature") as project:
@@ -127,18 +139,9 @@ class TestDispatchHasIdeaNoSpec:
 class TestDispatchHasSpec:
 
     def test_revise_spec_calls_python_function(self):
-        with TempIdeaProject("my-feature") as project:
-            _setup_has_spec(project)
-            mock_revise_spec = MagicMock(return_value=_success_result())
-            config = _menu_config(["1", "3"])
-            deps = OrchestratorDeps(
-                script_runner=MagicMock(return_value=_success_result()),
-                menu_config=config,
-                revise_spec_fn=mock_revise_spec,
-            )
-            orch = Orchestrator(project, deps=deps)
-            orch.run()
-            mock_revise_spec.assert_called_once_with(project)
+        _run_python_step_test(
+            _setup_has_spec, ["1", "3"], "revise_spec_fn",
+        )
 
     def test_create_plan_runs_make_plan_script(self):
         _run_dispatch_test(_setup_has_spec, ["2", "3"], "make-plan.sh")
@@ -156,21 +159,33 @@ class TestDispatchHasPlan:
 # ---------------------------------------------------------------------------
 
 
+def _run_with_python_deps(setup_fn, choices, extra_deps=None):
+    """Run orchestrator with OrchestratorDeps and return the deps for assertions."""
+    with TempIdeaProject("my-feature") as project:
+        setup_fn(project)
+        config = _menu_config(choices)
+        kwargs = {
+            "script_runner": MagicMock(return_value=_success_result()),
+            "menu_config": config,
+            "brainstorm_idea_fn": MagicMock(return_value=_success_result()),
+        }
+        if extra_deps:
+            kwargs.update(extra_deps)
+        deps = OrchestratorDeps(**kwargs)
+        orch = Orchestrator(project, deps=deps)
+        orch.run()
+        return deps
+
+
 @pytest.mark.unit
 class TestRunStep:
 
     def test_run_step_prints_description(self):
-        with TempIdeaProject("my-feature") as project:
-            _setup_has_idea(project)
-            mock_runner = MagicMock(return_value=_success_result())
-            output = io.StringIO()
-            config = _menu_config(["1", "3"])
-            orch = Orchestrator(
-                project, script_runner=mock_runner, menu_config=config,
-                output=output,
-            )
-            orch.run()
-            assert "Revising idea" in output.getvalue()
+        output = io.StringIO()
+        _run_with_python_deps(
+            _setup_has_idea, ["1", "3"], {"output": output},
+        )
+        assert "Revising idea" in output.getvalue()
 
 
 # ---------------------------------------------------------------------------
@@ -215,19 +230,17 @@ class TestErrorHandlingAbort:
 class TestKeyboardInterrupt:
 
     def test_keyboard_interrupt_exits_with_130(self):
-        with TempIdeaProject("my-feature") as project:
-            _setup_has_idea(project)
-            mock_runner = MagicMock(side_effect=KeyboardInterrupt)
-            config = _menu_config(["1"])
-            output = io.StringIO()
-            orch = Orchestrator(
-                project, script_runner=mock_runner, menu_config=config,
-                output=output,
+        output = io.StringIO()
+        with pytest.raises(SystemExit) as exc_info:
+            _run_with_python_deps(
+                _setup_has_idea, ["1"],
+                {
+                    "output": output,
+                    "brainstorm_idea_fn": MagicMock(side_effect=KeyboardInterrupt),
+                },
             )
-            with pytest.raises(SystemExit) as exc_info:
-                orch.run()
-            assert exc_info.value.code == 130
-            assert "Workflow interrupted" in output.getvalue()
+        assert exc_info.value.code == 130
+        assert "Workflow interrupted" in output.getvalue()
 
 
 # ---------------------------------------------------------------------------

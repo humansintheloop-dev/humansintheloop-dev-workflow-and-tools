@@ -12,19 +12,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "src" / "i2code" /
 
 # (cli_args, expected_script_name, expected_forwarded_args)
 SCRIPT_COMMANDS = [
-    # idea group
-    pytest.param(
-        ["idea", "brainstorm", "my-dir"],
-        "brainstorm-idea.sh",
-        ["my-dir"],
-        id="idea-brainstorm",
-    ),
-    pytest.param(
-        ["idea", "brainstorm", "my-dir", "--verbose"],
-        "brainstorm-idea.sh",
-        ["my-dir", "--verbose"],
-        id="idea-brainstorm-with-extra-flags",
-    ),
+    # idea group — migrated to Python in tests/idea-cmd/test_brainstorm_cli.py
     # spec group — migrated to Python in tests/spec-cmd/test_spec_cli.py
     # design group
     pytest.param(

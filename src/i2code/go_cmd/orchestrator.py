@@ -16,6 +16,7 @@ from i2code.go_cmd.implement_config import (
     write_implement_config,
 )
 from i2code.go_cmd.menu import MenuConfig, get_user_choice
+from i2code.idea_cmd.brainstorm import brainstorm_idea
 from i2code.implement.claude_runner import ClaudeRunner
 from i2code.spec_cmd.create_spec import create_spec
 from i2code.spec_cmd.revise_spec import revise_spec
@@ -50,10 +51,10 @@ _MENU_OPTIONS = {
 
 _STEP_DISPATCH = {
     WorkflowState.NO_IDEA: {
-        1: ("Creating idea", "brainstorm-idea.sh"),
+        1: ("Creating idea", "brainstorm_idea"),
     },
     WorkflowState.HAS_IDEA_NO_SPEC: {
-        1: ("Revising idea", "brainstorm-idea.sh"),
+        1: ("Revising idea", "brainstorm_idea"),
         2: ("Creating specification", "create_spec"),
     },
     WorkflowState.HAS_SPEC: {
@@ -65,7 +66,7 @@ _STEP_DISPATCH = {
     },
 }
 
-_PYTHON_STEPS = {"create_spec", "revise_spec"}
+_PYTHON_STEPS = {"brainstorm_idea", "create_spec", "revise_spec"}
 
 _MENU_PROMPTS = {
     WorkflowState.HAS_IDEA_NO_SPEC: "Idea exists. What would you like to do?",
@@ -88,6 +89,10 @@ def _default_implement_runner(flags, directory):
     return subprocess.run(cmd)
 
 
+def _default_brainstorm_idea(project):
+    return brainstorm_idea(project, ClaudeRunner())
+
+
 def _default_create_spec(project):
     return create_spec(project, ClaudeRunner())
 
@@ -105,6 +110,7 @@ class OrchestratorDeps:
     output: TextIO = None
     git_runner: Callable = None
     implement_runner: Callable = None
+    brainstorm_idea_fn: Callable = None
     create_spec_fn: Callable = None
     revise_spec_fn: Callable = None
 
@@ -115,6 +121,8 @@ class OrchestratorDeps:
             self.git_runner = _default_git_runner
         if self.implement_runner is None:
             self.implement_runner = _default_implement_runner
+        if self.brainstorm_idea_fn is None:
+            self.brainstorm_idea_fn = _default_brainstorm_idea
         if self.create_spec_fn is None:
             self.create_spec_fn = _default_create_spec
         if self.revise_spec_fn is None:
@@ -329,6 +337,7 @@ class Orchestrator:
 
     def _run_python_step(self, step_key):
         step_fns = {
+            "brainstorm_idea": self._deps.brainstorm_idea_fn,
             "create_spec": self._deps.create_spec_fn,
             "revise_spec": self._deps.revise_spec_fn,
         }

@@ -159,8 +159,9 @@ class TestImplementCommandIsolateMode:
         cmd.mode_factory.make_isolate_mode.assert_called_once_with(
             git_repo=git_repo,
             project=project,
+            opts=cmd.opts,
         )
-        cmd.mode_factory.make_isolate_mode.return_value.execute.assert_called_once()
+        cmd.mode_factory.make_isolate_mode.return_value.execute.assert_called_once_with()
 
 
 @pytest.mark.unit
@@ -204,7 +205,7 @@ class TestWorktreeModeAllTasksComplete:
 
 @pytest.mark.unit
 class TestIsolateModeReceivesIsolationType:
-    """_isolate_mode() passes isolation_type to isolate_mode.execute()."""
+    """_isolate_mode() passes isolation_type via opts to make_isolate_mode()."""
 
     def test_isolate_mode_receives_isolation_type(self):
         cmd, project, git_repo = _make_command(
@@ -214,8 +215,8 @@ class TestIsolateModeReceivesIsolationType:
         cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
         with pytest.raises(SystemExit):
             cmd.execute()
-        options = cmd.mode_factory.make_isolate_mode.return_value.execute.call_args.args[0]
-        assert options.isolation_type == "docker"
+        opts = cmd.mode_factory.make_isolate_mode.call_args.kwargs["opts"]
+        assert opts.isolation_type == "docker"
 
     def test_isolate_mode_receives_none_when_not_set(self):
         cmd, project, git_repo = _make_command(
@@ -225,8 +226,8 @@ class TestIsolateModeReceivesIsolationType:
         cmd.mode_factory.make_isolate_mode.return_value.execute.return_value = 0
         with pytest.raises(SystemExit):
             cmd.execute()
-        options = cmd.mode_factory.make_isolate_mode.return_value.execute.call_args.args[0]
-        assert options.isolation_type is None
+        opts = cmd.mode_factory.make_isolate_mode.call_args.kwargs["opts"]
+        assert opts.isolation_type is None
 
 
 @pytest.mark.unit

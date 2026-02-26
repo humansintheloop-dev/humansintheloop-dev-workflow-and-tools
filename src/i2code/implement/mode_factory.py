@@ -36,7 +36,7 @@ class ModeFactory:
             commit_recovery=commit_recovery,
         )
 
-    def make_isolate_mode(self, git_repo, project):
+    def make_isolate_mode(self, git_repo, project, opts):
         scaffolding_creator = ScaffoldingCreator(
             command_builder=CommandBuilder(),
             claude_runner=self._claude_runner,
@@ -62,6 +62,7 @@ class ModeFactory:
         )
         return IsolateMode(
             workspace=workspace,
+            options=opts,
             worktree_setup=worktree_setup,
             subprocess_runner=SubprocessRunner(),
         )

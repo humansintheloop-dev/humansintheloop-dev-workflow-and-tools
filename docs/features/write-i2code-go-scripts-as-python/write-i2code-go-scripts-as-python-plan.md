@@ -102,16 +102,16 @@ Replace `idea-to-code.sh` (the largest and highest-risk script at ~490 lines) wi
     - [x] Implement git dirty detection: call `git status --porcelain -- <dir>` via `subprocess`. When dirty, insert "Commit changes" option in `has_plan` menu. Commit action runs `git add <dir>` then `git commit -m "Add idea docs for <name>"`. Match `idea-to-code.sh:92-105`
     - [x] Write pytest tests for: dispatch invokes correct script, retry/abort flow, KeyboardInterrupt exit code, git dirty adds commit option, commit action stages and commits
 
-- [ ] **Task 1.3: Orchestrator manages implement configuration**
+- [x] **Task 1.3: Orchestrator manages implement configuration**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit`
   - Observable: Orchestrator reads and writes `{name}-implement-config.yaml` containing `interactive` and `trunk` boolean flags. Prompts on first implement run; reuses config on subsequent runs. "Configure implement options" menu item available after config exists. Implement menu label shows `i2code implement` with correct flags.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit` passes with assertions on config file creation, re-reading, flag construction, and menu label
   - Steps:
-    - [ ] Create `src/i2code/go_cmd/implement_config.py` with functions: `read_implement_config(path) -> dict`, `write_implement_config(path, interactive, trunk)`, `prompt_implement_config(menu_fn) -> (interactive, trunk)`, `build_implement_flags(config) -> list[str]`, `build_implement_label(config_path) -> str`. Match `idea-to-code.sh:129-199`
-    - [ ] Integrate into orchestrator's `has_plan` state: on "Implement" selection, check for config file → prompt if missing → display config → invoke `i2code implement` with flags. "Configure implement options" re-prompts and overwrites config. Match `idea-to-code.sh:340-468`
-    - [ ] Implement plan completion check: after successful implement, check for remaining `[ ]` in plan file. If all complete, print "Workflow Complete!" and exit 0. Match `idea-to-code.sh:387-398`
-    - [ ] Write pytest tests for: config write/read round-trip, prompt flow with mocked menu, flag construction (`--non-interactive`, `--trunk`), label formatting, plan completion detection
+    - [x] Create `src/i2code/go_cmd/implement_config.py` with functions: `read_implement_config(path) -> dict`, `write_implement_config(path, interactive, trunk)`, `prompt_implement_config(menu_fn) -> (interactive, trunk)`, `build_implement_flags(config) -> list[str]`, `build_implement_label(config_path) -> str`. Match `idea-to-code.sh:129-199`
+    - [x] Integrate into orchestrator's `has_plan` state: on "Implement" selection, check for config file → prompt if missing → display config → invoke `i2code implement` with flags. "Configure implement options" re-prompts and overwrites config. Match `idea-to-code.sh:340-468`
+    - [x] Implement plan completion check: after successful implement, check for remaining `[ ]` in plan file. If all complete, print "Workflow Complete!" and exit 0. Match `idea-to-code.sh:387-398`
+    - [x] Write pytest tests for: config write/read round-trip, prompt flow with mocked menu, flag construction (`--non-interactive`, `--trunk`), label formatting, plan completion detection
 
 - [ ] **Task 1.4: Wire orchestrator as Click command, delete bash script and tests**
   - TaskType: OUTCOME

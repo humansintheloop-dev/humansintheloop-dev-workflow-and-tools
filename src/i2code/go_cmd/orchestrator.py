@@ -8,6 +8,13 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, TextIO
 
+from i2code.go_cmd.implement_config import (
+    build_implement_flags,
+    build_implement_label,
+    prompt_implement_config,
+    read_implement_config,
+    write_implement_config,
+)
 from i2code.go_cmd.menu import MenuConfig, get_user_choice
 
 
@@ -71,6 +78,11 @@ def _default_git_runner(cmd, **kwargs):
     return subprocess.run(cmd, **kwargs)
 
 
+def _default_implement_runner(flags, directory):
+    cmd = ["i2code", "implement"] + flags + [directory]
+    return subprocess.run(cmd)
+
+
 @dataclass
 class OrchestratorDeps:
     """Injectable dependencies for the orchestrator."""
@@ -79,12 +91,15 @@ class OrchestratorDeps:
     menu_config: MenuConfig = field(default_factory=MenuConfig)
     output: TextIO = None
     git_runner: Callable = None
+    implement_runner: Callable = None
 
     def __post_init__(self):
         if self.output is None:
             self.output = sys.stderr
         if self.git_runner is None:
             self.git_runner = _default_git_runner
+        if self.implement_runner is None:
+            self.implement_runner = _default_implement_runner
 
 
 class Orchestrator:
@@ -99,6 +114,7 @@ class Orchestrator:
                 menu_config=kwargs.get("menu_config") or MenuConfig(),
                 output=kwargs.get("output"),
                 git_runner=kwargs.get("git_runner"),
+                implement_runner=kwargs.get("implement_runner"),
             )
 
     def detect_state(self) -> WorkflowState:
@@ -173,14 +189,20 @@ class Orchestrator:
             self._commit_changes()
         elif selected == "Revise the plan":
             self._run_step_with_retry("Revising plan", "revise-plan.sh")
+        elif selected == "Configure implement options":
+            self._configure_implement()
+        elif selected.startswith("Implement the entire plan"):
+            self._run_implement()
         return True
 
     def _build_has_plan_options(self):
+        config_path = self._project.implement_config_file
         options = ["Revise the plan"]
         if self._has_uncommitted_changes():
             options.append("Commit changes")
-        options.append("Implement the entire plan")
-        options.append("Configure implement options")
+        options.append(build_implement_label(config_path))
+        if os.path.isfile(config_path):
+            options.append("Configure implement options")
         options.append("Exit")
         return options
 
@@ -205,6 +227,70 @@ class Orchestrator:
              f"Add idea docs for {self._project.name}",
              "--", self._project.directory],
         )
+
+    def _ensure_implement_config(self):
+        config_path = self._project.implement_config_file
+        config = read_implement_config(config_path)
+        if config is None:
+            menu_fn = self._menu_fn_for_prompts()
+            interactive, trunk = prompt_implement_config(menu_fn)
+            write_implement_config(config_path, interactive, trunk)
+        return read_implement_config(config_path)
+
+    def _menu_fn_for_prompts(self):
+        def menu_fn(prompt, default, options):
+            return get_user_choice(
+                prompt, default, options, config=self._deps.menu_config,
+            )
+        return menu_fn
+
+    def _display_implement_config(self, config):
+        output = self._deps.output
+        print("Implementation options:", file=output)
+        mode = "interactive" if config["interactive"] else "non-interactive"
+        print(f"  Mode: {mode}", file=output)
+        branch = "trunk" if config["trunk"] else "worktree"
+        print(f"  Branch: {branch}", file=output)
+
+    def _run_implement(self):
+        config = self._ensure_implement_config()
+        self._display_implement_config(config)
+        flags = build_implement_flags(config)
+        print("", file=self._deps.output)
+        print("Implementing plan...", file=self._deps.output)
+        print("", file=self._deps.output)
+        result = self._deps.implement_runner(flags, self._project.directory)
+        if result.returncode == 0:
+            self._check_plan_completion()
+        else:
+            self._handle_error()
+
+    def _configure_implement(self):
+        menu_fn = self._menu_fn_for_prompts()
+        interactive, trunk = prompt_implement_config(menu_fn)
+        write_implement_config(
+            self._project.implement_config_file, interactive, trunk,
+        )
+
+    def _check_plan_completion(self):
+        plan_path = self._project.plan_file
+        if not os.path.isfile(plan_path):
+            return
+        with open(plan_path) as f:
+            content = f.read()
+        output = self._deps.output
+        if "[ ]" in content:
+            print("", file=output)
+            print("================================================", file=output)
+            print("  Plan has uncompleted tasks", file=output)
+            print("================================================", file=output)
+            print("", file=output)
+        else:
+            print("", file=output)
+            print("================================================", file=output)
+            print("  Workflow Complete!", file=output)
+            print("================================================", file=output)
+            sys.exit(0)
 
     def _run_step_with_retry(self, description, script):
         while True:

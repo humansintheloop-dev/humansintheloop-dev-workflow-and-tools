@@ -41,55 +41,7 @@ SCRIPT_COMMANDS = [
         id="update-project-with-separator",
     ),
     # plan group — migrated to Python in tests/go-cmd/test_plan_cli.py
-    # improve group
-    pytest.param(
-        ["improve", "analyze-sessions", "my-tracking-dir"],
-        "analyze-sessions.sh",
-        ["my-tracking-dir"],
-        id="analyze-sessions",
-    ),
-    pytest.param(
-        ["improve", "analyze-sessions", "dir1", "--verbose", "extra"],
-        "analyze-sessions.sh",
-        ["dir1", "--verbose", "extra"],
-        id="analyze-sessions-with-extra-flags",
-    ),
-    pytest.param(
-        ["improve", "summary-reports", "my-hitl-dir"],
-        "create-summary-reports.sh",
-        ["my-hitl-dir"],
-        id="summary-reports",
-    ),
-    pytest.param(
-        ["improve", "summary-reports", "my-hitl-dir", "--project-name", "my-project"],
-        "create-summary-reports.sh",
-        ["my-hitl-dir", "--project-name", "my-project"],
-        id="summary-reports-with-project-name",
-    ),
-    pytest.param(
-        ["improve", "review-issues", "my-hitl-dir"],
-        "review-issues.sh",
-        ["my-hitl-dir"],
-        id="review-issues",
-    ),
-    pytest.param(
-        ["improve", "review-issues", "my-hitl-dir", "--project", "my-project"],
-        "review-issues.sh",
-        ["my-hitl-dir", "--project", "my-project"],
-        id="review-issues-with-extra-args",
-    ),
-    pytest.param(
-        ["improve", "update-claude-files", "my-project-dir", "--config-dir", "/path/to/config-files"],
-        "update-claude-files-from-project.sh",
-        ["my-project-dir", "--config-dir", "/path/to/config-files"],
-        id="update-claude-files",
-    ),
-    pytest.param(
-        ["improve", "update-claude-files", "my-project-dir", "--config-dir", "/path/to/config-files", "--verbose"],
-        "update-claude-files-from-project.sh",
-        ["my-project-dir", "--config-dir", "/path/to/config-files", "--verbose"],
-        id="update-claude-files-with-extra-flag",
-    ),
+    # improve group — migrated to Python in tests/improve/test_improve_cli.py
 ]
 
 

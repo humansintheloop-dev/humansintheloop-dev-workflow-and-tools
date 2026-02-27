@@ -7,7 +7,6 @@ import click
 
 from i2code.go_cmd.orchestrator import Orchestrator, OrchestratorDeps
 from i2code.implement.idea_project import IdeaProject
-from i2code.script_runner import run_script
 
 
 @click.command("go")
@@ -34,6 +33,6 @@ def go_cmd(directory):
     click.echo(f"Project name: {project.name}")
     click.echo("")
 
-    deps = OrchestratorDeps(script_runner=run_script)
+    deps = OrchestratorDeps()
     orchestrator = Orchestrator(project, deps=deps)
     orchestrator.run()

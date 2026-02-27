@@ -44,16 +44,6 @@ def _setup_has_plan(project):
     _create_file(project, "my-feature-plan.md")
 
 
-def _run_dispatch_test(setup_fn, choices, expected_script):
-    with TempIdeaProject("my-feature") as project:
-        setup_fn(project)
-        mock_runner = MagicMock(return_value=_success_result())
-        config = _menu_config(choices)
-        orch = Orchestrator(project, script_runner=mock_runner, menu_config=config)
-        orch.run()
-        mock_runner.assert_called_once_with(expected_script, (project.directory,))
-
-
 def _run_python_step_test(setup_fn, choices, dep_name, side_effect=None):
     """Run a dispatch test for a Python step function (not a script).
 
@@ -68,7 +58,6 @@ def _run_python_step_test(setup_fn, choices, dep_name, side_effect=None):
         )
         config = _menu_config(choices)
         deps = OrchestratorDeps(
-            script_runner=MagicMock(return_value=_success_result()),
             menu_config=config,
             **{dep_name: mock_fn},
         )
@@ -86,7 +75,7 @@ def _run_has_plan_with_git(project, exit_choice, git_stdout):
     config = MenuConfig(input_fn=lambda _: exit_choice, output=menu_output)
     mock_git = MagicMock(return_value=_git_result(git_stdout))
     orch = Orchestrator(
-        project, script_runner=MagicMock(), menu_config=config,
+        project, menu_config=config,
         git_runner=mock_git,
     )
     orch.run()
@@ -125,14 +114,18 @@ class TestDispatchHasIdeaNoSpec:
             _setup_has_idea, ["2", "3"], "create_spec_fn",
         )
 
-    def test_exit_does_not_run_any_script(self):
+    def test_exit_does_not_run_any_step(self):
         with TempIdeaProject("my-feature") as project:
             _setup_has_idea(project)
-            mock_runner = MagicMock()
+            mock_fn = MagicMock()
             config = _menu_config(["3"])
-            orch = Orchestrator(project, script_runner=mock_runner, menu_config=config)
+            deps = OrchestratorDeps(
+                menu_config=config,
+                brainstorm_idea_fn=mock_fn,
+            )
+            orch = Orchestrator(project, deps=deps)
             orch.run()
-            mock_runner.assert_not_called()
+            mock_fn.assert_not_called()
 
 
 @pytest.mark.unit
@@ -169,7 +162,6 @@ def _run_with_python_deps(setup_fn, choices, extra_deps=None):
         setup_fn(project)
         config = _menu_config(choices)
         kwargs = {
-            "script_runner": MagicMock(return_value=_success_result()),
             "menu_config": config,
             "brainstorm_idea_fn": MagicMock(return_value=_success_result()),
         }
@@ -295,7 +287,7 @@ class TestCommitAction:
 
             config = _menu_config(["2", "3"])
             orch = Orchestrator(
-                project, script_runner=MagicMock(), menu_config=config,
+                project, menu_config=config,
                 git_runner=mock_git,
             )
             orch.run()

@@ -33,6 +33,16 @@ def _create_issue_file(tracking_dir, filename, content):
         f.write(content)
 
 
+@pytest.fixture
+def analyzed_session(fake_runner, fake_renderer):
+    """Create tracking dir with one session file and run analyze_sessions."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tracking_dir = _create_tracking_dir(tmpdir)
+        _create_session_file(tracking_dir, "session-2025-01-15-143022-abc123.md")
+        analyze_sessions(tracking_dir, fake_runner, fake_renderer)
+        yield tracking_dir, fake_runner, fake_renderer
+
+
 @pytest.mark.unit
 class TestAnalyzeSessionsValidation:
 
@@ -126,99 +136,59 @@ class TestIssueFileCorrelation:
 @pytest.mark.unit
 class TestTemplateRendering:
 
-    def test_renders_analyze_sessions_template(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tracking_dir = _create_tracking_dir(tmpdir)
-            _create_session_file(tracking_dir, "session-2025-01-15-143022-abc123.md")
+    def test_renders_analyze_sessions_template(self, analyzed_session):
+        _, _, fake_renderer = analyzed_session
+        template_name, _ = fake_renderer.calls[0]
+        assert template_name == "analyze-sessions.md"
 
-            analyze_sessions(tracking_dir, fake_runner, fake_renderer)
+    def test_template_receives_sessions_dir(self, analyzed_session):
+        tracking_dir, _, fake_renderer = analyzed_session
+        _, variables = fake_renderer.calls[0]
+        assert variables["SESSIONS_DIR"] == os.path.join(tracking_dir, "sessions")
 
-            template_name, _ = fake_renderer.calls[0]
-            assert template_name == "analyze-sessions.md"
-
-    def test_template_receives_sessions_dir(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tracking_dir = _create_tracking_dir(tmpdir)
-            _create_session_file(tracking_dir, "session-2025-01-15-143022-abc123.md")
-
-            analyze_sessions(tracking_dir, fake_runner, fake_renderer)
-
-            _, variables = fake_renderer.calls[0]
-            assert variables["SESSIONS_DIR"] == os.path.join(tracking_dir, "sessions")
-
-    def test_template_receives_report_file(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tracking_dir = _create_tracking_dir(tmpdir)
-            _create_session_file(tracking_dir, "session-2025-01-15-143022-abc123.md")
-
-            analyze_sessions(tracking_dir, fake_runner, fake_renderer)
-
-            _, variables = fake_renderer.calls[0]
-            report_file = variables["REPORT_FILE"]
-            assert report_file.startswith(tracking_dir)
-            assert "report-" in report_file
-            assert report_file.endswith(".adoc")
+    def test_template_receives_report_file(self, analyzed_session):
+        tracking_dir, _, fake_renderer = analyzed_session
+        _, variables = fake_renderer.calls[0]
+        report_file = variables["REPORT_FILE"]
+        assert report_file.startswith(tracking_dir)
+        assert "report-" in report_file
+        assert report_file.endswith(".adoc")
 
 
 @pytest.mark.unit
 class TestClaudeInvocation:
 
-    def test_invokes_claude_non_interactively(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tracking_dir = _create_tracking_dir(tmpdir)
-            _create_session_file(tracking_dir, "session-2025-01-15-143022-abc123.md")
+    def test_invokes_claude_non_interactively(self, analyzed_session):
+        _, fake_runner, _ = analyzed_session
+        method, _, _ = fake_runner.calls[0]
+        assert method == "run_batch"
 
-            analyze_sessions(tracking_dir, fake_runner, fake_renderer)
+    def test_claude_command_includes_add_dir_for_sessions(self, analyzed_session):
+        tracking_dir, fake_runner, _ = analyzed_session
+        _, cmd, _ = fake_runner.calls[0]
+        sessions_dir = os.path.join(tracking_dir, "sessions")
+        add_dir_idx = cmd.index("--add-dir")
+        assert cmd[add_dir_idx + 1] == sessions_dir
 
-            method, _, _ = fake_runner.calls[0]
-            assert method == "run_batch"
+    def test_claude_command_includes_add_dir_for_issues(self, analyzed_session):
+        tracking_dir, fake_runner, _ = analyzed_session
+        _, cmd, _ = fake_runner.calls[0]
+        issues_dir = os.path.join(tracking_dir, "issues")
+        # Find the second --add-dir
+        indices = [i for i, x in enumerate(cmd) if x == "--add-dir"]
+        assert len(indices) == 2
+        assert cmd[indices[1] + 1] == issues_dir
 
-    def test_claude_command_includes_add_dir_for_sessions(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tracking_dir = _create_tracking_dir(tmpdir)
-            _create_session_file(tracking_dir, "session-2025-01-15-143022-abc123.md")
+    def test_claude_command_includes_allowed_tools(self, analyzed_session):
+        _, fake_runner, _ = analyzed_session
+        _, cmd, _ = fake_runner.calls[0]
+        tools_idx = cmd.index("--allowedTools")
+        assert cmd[tools_idx + 1] == "Read,Edit,Write"
 
-            analyze_sessions(tracking_dir, fake_runner, fake_renderer)
-
-            _, cmd, _ = fake_runner.calls[0]
-            sessions_dir = os.path.join(tracking_dir, "sessions")
-            add_dir_idx = cmd.index("--add-dir")
-            assert cmd[add_dir_idx + 1] == sessions_dir
-
-    def test_claude_command_includes_add_dir_for_issues(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tracking_dir = _create_tracking_dir(tmpdir)
-            _create_session_file(tracking_dir, "session-2025-01-15-143022-abc123.md")
-
-            analyze_sessions(tracking_dir, fake_runner, fake_renderer)
-
-            _, cmd, _ = fake_runner.calls[0]
-            issues_dir = os.path.join(tracking_dir, "issues")
-            # Find the second --add-dir
-            indices = [i for i, x in enumerate(cmd) if x == "--add-dir"]
-            assert len(indices) == 2
-            assert cmd[indices[1] + 1] == issues_dir
-
-    def test_claude_command_includes_allowed_tools(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tracking_dir = _create_tracking_dir(tmpdir)
-            _create_session_file(tracking_dir, "session-2025-01-15-143022-abc123.md")
-
-            analyze_sessions(tracking_dir, fake_runner, fake_renderer)
-
-            _, cmd, _ = fake_runner.calls[0]
-            tools_idx = cmd.index("--allowedTools")
-            assert cmd[tools_idx + 1] == "Read,Edit,Write"
-
-    def test_claude_command_uses_print_flag(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tracking_dir = _create_tracking_dir(tmpdir)
-            _create_session_file(tracking_dir, "session-2025-01-15-143022-abc123.md")
-
-            analyze_sessions(tracking_dir, fake_runner, fake_renderer)
-
-            _, cmd, _ = fake_runner.calls[0]
-            assert "-p" in cmd
+    def test_claude_command_uses_print_flag(self, analyzed_session):
+        _, fake_runner, _ = analyzed_session
+        _, cmd, _ = fake_runner.calls[0]
+        assert "-p" in cmd
 
     def test_returns_claude_result(self, fake_runner, fake_renderer):
         from i2code.implement.claude_runner import ClaudeResult

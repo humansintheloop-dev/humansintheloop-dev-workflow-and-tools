@@ -348,20 +348,20 @@ Migrate `setup-claude-files.sh` and `update-project-claude-files.sh`. Then delet
     - [x] Delete `src/i2code/scripts/setup-claude-files.sh` and `src/i2code/scripts/update-project-claude-files.sh`
     - [x] Run `./test-scripts/test-end-to-end.sh`
 
-- [ ] **Task 6.4: Delete remaining bash infrastructure**
+- [x] **Task 6.4: Delete remaining bash infrastructure**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `src/i2code/scripts/` directory deleted (including `_helper.sh`). `src/i2code/script_command.py` deleted. `src/i2code/script_runner.py` deleted. No `.sh` files remain under `src/`. All imports of `script_command` and `script_runner` removed. All tests pass. CI passes.
   - Evidence: `./test-scripts/test-end-to-end.sh` passes and `find src/ -name "*.sh"` returns no results
   - Steps:
-    - [ ] Delete `src/i2code/scripts/` directory (should contain only `_helper.sh` at this point — verify all other scripts are already deleted)
-    - [ ] Delete `src/i2code/script_command.py`
-    - [ ] Delete `src/i2code/script_runner.py`
-    - [ ] Remove all imports of `script_command` and `script_runner` from `src/i2code/cli.py` and any other files (search with Grep)
-    - [ ] Delete `tests/script-runner/` and `tests/script-command/` test directories (they test the now-deleted bash delegation infrastructure)
-    - [ ] Remove any remaining bash test scripts from `test-scripts/` that tested migrated functionality (e.g., `test-subcommands-smoke.sh` if it tested bash-backed commands). Update `test-scripts/test-end-to-end.sh` accordingly.
-    - [ ] Verify `find src/ -name "*.sh"` returns no results
-    - [ ] Run `./test-scripts/test-end-to-end.sh`
+    - [x] Delete `src/i2code/scripts/` directory (should contain only `_helper.sh` at this point — verify all other scripts are already deleted)
+    - [x] Delete `src/i2code/script_command.py`
+    - [x] Delete `src/i2code/script_runner.py`
+    - [x] Remove all imports of `script_command` and `script_runner` from `src/i2code/cli.py` and any other files (search with Grep)
+    - [x] Delete `tests/script-runner/` and `tests/script-command/` test directories (they test the now-deleted bash delegation infrastructure)
+    - [x] Remove any remaining bash test scripts from `test-scripts/` that tested migrated functionality (e.g., `test-subcommands-smoke.sh` if it tested bash-backed commands). Update `test-scripts/test-end-to-end.sh` accordingly.
+    - [x] Verify `find src/ -name "*.sh"` returns no results
+    - [x] Run `./test-scripts/test-end-to-end.sh`
 
 ---
 

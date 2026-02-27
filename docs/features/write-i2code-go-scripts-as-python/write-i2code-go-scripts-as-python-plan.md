@@ -328,14 +328,14 @@ Migrate `setup-claude-files.sh` and `update-project-claude-files.sh`. Then delet
     - [x] Create `src/i2code/setup_cmd/claude_files.py` — `setup_claude_files(config_dir)` matching `scripts/setup-claude-files.sh`. Pure file operations: copy CLAUDE.md, create .claude/, copy settings.local.json.
     - [x] Write pytest tests: copies files correctly, creates .claude directory, errors on missing config-dir
 
-- [ ] **Task 6.2: `i2code setup update-project` pushes template updates into project**
+- [x] **Task 6.2: `i2code setup update-project` pushes template updates into project**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/setup-cmd/ -v -m unit -k update_project`
   - Observable: Takes project directory and `--config-dir` arguments. Validates directories. Derives git repo root from config-dir. Extracts previous SHA from project's CLAUDE.md `claude-config-files-sha:` marker. Generates git diff between previous and current config-files SHA. Renders `update-project-claude-files.md` template with all variables. Invokes Claude interactively.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/setup-cmd/ -v -m unit -k update_project` passes with mocked subprocess and ClaudeRunner
   - Steps:
-    - [ ] Create `src/i2code/setup_cmd/update_project.py` — `update_project(project_dir, config_dir, claude_runner, template_renderer)` matching `scripts/update-project-claude-files.sh`. Includes git SHA extraction, diff generation, template rendering.
-    - [ ] Write pytest tests: validates directories, extracts SHA from CLAUDE.md, generates diff, handles first sync (no previous SHA), template variables correct, Claude invoked
+    - [x] Create `src/i2code/setup_cmd/update_project.py` — `update_project(project_dir, config_dir, claude_runner, template_renderer)` matching `scripts/update-project-claude-files.sh`. Includes git SHA extraction, diff generation, template rendering.
+    - [x] Write pytest tests: validates directories, extracts SHA from CLAUDE.md, generates diff, handles first sync (no previous SHA), template variables correct, Claude invoked
 
 - [ ] **Task 6.3: Wire setup commands, delete bash scripts**
   - TaskType: OUTCOME

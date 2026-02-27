@@ -62,7 +62,7 @@ def _run_has_plan_orchestrator(project, choices, *,
     it = iter(choices)
     menu_config = MenuConfig(input_fn=lambda _: next(it), output=menu_output)
     orch = Orchestrator(
-        project, script_runner=MagicMock(), menu_config=menu_config,
+        project, menu_config=menu_config,
         git_runner=_clean_git(),
         implement_runner=implement_runner, output=output,
     )

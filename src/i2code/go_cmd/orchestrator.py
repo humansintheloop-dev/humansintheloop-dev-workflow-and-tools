@@ -133,7 +133,6 @@ _CALLABLE_DEFAULTS = {
 class OrchestratorDeps:
     """Injectable dependencies for the orchestrator."""
 
-    script_runner: Callable = None
     menu_config: MenuConfig = field(default_factory=MenuConfig)
     output: TextIO = None
     git_runner: Callable = None
@@ -160,7 +159,6 @@ class Orchestrator:
             self._deps = deps
         else:
             self._deps = OrchestratorDeps(
-                script_runner=kwargs.get("script_runner"),
                 menu_config=kwargs.get("menu_config") or MenuConfig(),
                 output=kwargs.get("output"),
                 git_runner=kwargs.get("git_runner"),

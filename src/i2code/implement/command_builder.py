@@ -5,9 +5,18 @@ _with_mode() helper so the if interactive: ... else: ... pattern
 exists in one place.
 """
 
+from dataclasses import dataclass
 from typing import List, Optional
 
 from i2code.templates.template_renderer import render_template
+
+
+@dataclass
+class TaskCommandOpts:
+    """Optional execution modifiers for build_task_command."""
+    interactive: bool = True
+    extra_prompt: Optional[str] = None
+    extra_cli_args: Optional[List[str]] = None
 
 
 class CommandBuilder:
@@ -72,32 +81,29 @@ class CommandBuilder:
         self,
         idea_directory: str,
         task_description: str,
-        interactive: bool = True,
-        extra_prompt: Optional[str] = None,
-        extra_cli_args: Optional[List[str]] = None,
+        opts: Optional[TaskCommandOpts] = None,
     ) -> List[str]:
         """Build the command to invoke Claude for a task.
 
         Args:
             idea_directory: Path to the idea directory.
             task_description: The task to implement.
-            interactive: If True, run Claude interactively.
-            extra_prompt: Optional extra text to append to the prompt.
-            extra_cli_args: Optional extra CLI arguments.
+            opts: Optional execution modifiers.
 
         Returns:
             Command list suitable for subprocess.
         """
+        opts = opts or TaskCommandOpts()
         prompt = render_template(
             "task_execution.j2",
             package="i2code.implement",
             idea_directory=idea_directory,
             task_description=task_description,
-            extra_prompt=extra_prompt,
-            interactive=interactive,
+            extra_prompt=opts.extra_prompt,
+            interactive=opts.interactive,
         )
 
-        return self._with_mode(prompt, interactive, extra_cli_args)
+        return self._with_mode(prompt, opts.interactive, opts.extra_cli_args)
 
     def build_scaffolding_command(
         self,

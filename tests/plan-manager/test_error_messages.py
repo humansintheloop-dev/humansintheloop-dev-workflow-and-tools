@@ -2,7 +2,7 @@
 
 import pytest
 
-from i2code.plan_domain.task import Task
+from i2code.plan_domain.task import Task, TaskMetadata
 from i2code.plan_domain.thread import Thread
 from i2code.plan_domain.parser import parse
 
@@ -79,7 +79,7 @@ class TestErrorMessageFormat:
 
     def test_insert_task_before_nonexistent(self):
         plan = parse(SIMPLE_PLAN)
-        new_task = Task.create("t", "INFRA", "e", "o", "v", ["s"])
+        new_task = Task.create("t", TaskMetadata("INFRA", "e", "o", "v"), ["s"])
         with pytest.raises(ValueError, match="task 99 does not exist"):
             plan.insert_task_before(1, 99, new_task)
 

@@ -11,7 +11,7 @@ from i2code.implement.claude_runner import (
     check_claude_success,
     print_task_failure_diagnostics,
 )
-from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 
 
 def _format_duration(seconds):
@@ -152,8 +152,10 @@ class WorktreeMode:
         return CommandBuilder().build_task_command(
             self._work_project.directory,
             task_description,
-            interactive=not self._opts.non_interactive,
-            extra_prompt=self._opts.extra_prompt,
+            TaskCommandOpts(
+                interactive=not self._opts.non_interactive,
+                extra_prompt=self._opts.extra_prompt,
+            ),
         )
 
     def _run_claude(self, claude_cmd):

@@ -2,7 +2,7 @@
 
 
 from i2code.plan_domain.parser import parse
-from i2code.plan_domain.task import Task
+from i2code.plan_domain.task import Task, TaskMetadata
 
 
 PLAN_TEXT = """\
@@ -41,7 +41,7 @@ class TestThreadInsertTask:
     def test_inserts_at_beginning(self):
         plan = parse(PLAN_TEXT)
         thread = plan.threads[0]
-        new_task = Task.create("New task", "INFRA", "echo new", "New works", "echo new-done", ["Step new"])
+        new_task = Task.create("New task", TaskMetadata("INFRA", "echo new", "New works", "echo new-done"), ["Step new"])
         thread.insert_task(0, new_task)
         assert len(thread.tasks) == 3
         assert thread.tasks[0].title == "New task"
@@ -51,7 +51,7 @@ class TestThreadInsertTask:
     def test_inserts_in_middle(self):
         plan = parse(PLAN_TEXT)
         thread = plan.threads[0]
-        new_task = Task.create("New task", "INFRA", "echo new", "New works", "echo new-done", ["Step new"])
+        new_task = Task.create("New task", TaskMetadata("INFRA", "echo new", "New works", "echo new-done"), ["Step new"])
         thread.insert_task(1, new_task)
         assert len(thread.tasks) == 3
         assert thread.tasks[0].title == "First task"
@@ -61,7 +61,7 @@ class TestThreadInsertTask:
     def test_inserts_at_end(self):
         plan = parse(PLAN_TEXT)
         thread = plan.threads[0]
-        new_task = Task.create("New task", "INFRA", "echo new", "New works", "echo new-done", ["Step new"])
+        new_task = Task.create("New task", TaskMetadata("INFRA", "echo new", "New works", "echo new-done"), ["Step new"])
         thread.insert_task(2, new_task)
         assert len(thread.tasks) == 3
         assert thread.tasks[0].title == "First task"

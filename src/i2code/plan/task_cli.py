@@ -6,7 +6,37 @@ import sys
 import click
 
 from i2code.plan.plan_file_io import with_error_handling, with_plan_file_update
-from i2code.plan_domain.task import Task
+from i2code.plan_domain.task import Task, TaskMetadata
+
+
+def _task_spec_options(fn):
+    """Apply the shared Click options for specifying a new task."""
+    for option in reversed([
+        click.option("--title", required=True, help="Task title"),
+        click.option("--task-type", required=True, help="Task type (INFRA or OUTCOME)"),
+        click.option("--entrypoint", required=True, help="Entrypoint command"),
+        click.option("--observable", required=True, help="Observable outcome"),
+        click.option("--evidence", required=True, help="Evidence command"),
+        click.option("--steps", required=True, help="JSON array of step descriptions"),
+    ]):
+        fn = option(fn)
+    return fn
+
+
+def _parse_task_spec(command_name, **kwargs):
+    """Parse steps JSON and create a Task, exiting on invalid input."""
+    try:
+        steps = json.loads(kwargs['steps'])
+    except json.JSONDecodeError as e:
+        click.echo(f"{command_name}: --steps is not valid JSON: {e}", err=True)
+        sys.exit(1)
+    metadata = TaskMetadata(
+        task_type=kwargs['task_type'],
+        entrypoint=kwargs['entrypoint'],
+        observable=kwargs['observable'],
+        evidence=kwargs['evidence'],
+    )
+    return Task.create(kwargs['title'], metadata, steps)
 
 
 @click.command("mark-task-complete")
@@ -35,6 +65,7 @@ def mark_task_incomplete_cmd(plan_file, thread, task, rationale):
     click.echo(f"Marked task {thread}.{task} as incomplete")
 
 
+# @codescene(disable:"Excess Number of Function Arguments")
 @click.command("mark-step-complete")
 @click.argument("plan_file")
 @click.option("--thread", required=True, type=int, help="Thread number")
@@ -49,6 +80,7 @@ def mark_step_complete_cmd(plan_file, thread, task, step, rationale):
     click.echo(f"Marked step {step} of task {thread}.{task} as complete")
 
 
+# @codescene(disable:"Excess Number of Function Arguments")
 @click.command("mark-step-incomplete")
 @click.argument("plan_file")
 @click.option("--thread", required=True, type=int, help="Thread number")
@@ -63,58 +95,36 @@ def mark_step_incomplete_cmd(plan_file, thread, task, step, rationale):
     click.echo(f"Marked step {step} of task {thread}.{task} as incomplete")
 
 
+# @codescene(disable:"Excess Number of Function Arguments")
 @click.command("insert-task-before")
 @click.argument("plan_file")
 @click.option("--thread", required=True, type=int, help="Thread number")
 @click.option("--before", required=True, type=int, help="Insert before this task number")
-@click.option("--title", required=True, help="Task title")
-@click.option("--task-type", required=True, help="Task type (INFRA or OUTCOME)")
-@click.option("--entrypoint", required=True, help="Entrypoint command")
-@click.option("--observable", required=True, help="Observable outcome")
-@click.option("--evidence", required=True, help="Evidence command")
-@click.option("--steps", required=True, help="JSON array of step descriptions")
+@_task_spec_options
 @click.option("--rationale", required=True, help="Rationale for change history")
-def insert_task_before_cmd(plan_file, thread, before, title, task_type,
-                           entrypoint, observable, evidence, steps, rationale):
+def insert_task_before_cmd(plan_file, thread, before, rationale, **kwargs):
     """Insert a task before a specified task within a thread."""
-    try:
-        steps_list = json.loads(steps)
-    except json.JSONDecodeError as e:
-        click.echo(f"insert-task-before: --steps is not valid JSON: {e}", err=True)
-        sys.exit(1)
-
+    new_task = _parse_task_spec("insert-task-before", **kwargs)
     with with_error_handling():
         with with_plan_file_update(plan_file, "insert-task-before", rationale) as domain_plan:
-            new_task = Task.create(title, task_type, entrypoint, observable, evidence, steps_list)
             domain_plan.insert_task_before(thread, before, new_task)
-    click.echo(f"Inserted task '{title}' in thread {thread}")
+    click.echo(f"Inserted task '{kwargs['title']}' in thread {thread}")
 
 
+# @codescene(disable:"Excess Number of Function Arguments")
 @click.command("insert-task-after")
 @click.argument("plan_file")
 @click.option("--thread", required=True, type=int, help="Thread number")
 @click.option("--after", required=True, type=int, help="Insert after this task number")
-@click.option("--title", required=True, help="Task title")
-@click.option("--task-type", required=True, help="Task type (INFRA or OUTCOME)")
-@click.option("--entrypoint", required=True, help="Entrypoint command")
-@click.option("--observable", required=True, help="Observable outcome")
-@click.option("--evidence", required=True, help="Evidence command")
-@click.option("--steps", required=True, help="JSON array of step descriptions")
+@_task_spec_options
 @click.option("--rationale", required=True, help="Rationale for change history")
-def insert_task_after_cmd(plan_file, thread, after, title, task_type,
-                          entrypoint, observable, evidence, steps, rationale):
+def insert_task_after_cmd(plan_file, thread, after, rationale, **kwargs):
     """Insert a task after a specified task within a thread."""
-    try:
-        steps_list = json.loads(steps)
-    except json.JSONDecodeError as e:
-        click.echo(f"insert-task-after: --steps is not valid JSON: {e}", err=True)
-        sys.exit(1)
-
+    new_task = _parse_task_spec("insert-task-after", **kwargs)
     with with_error_handling():
         with with_plan_file_update(plan_file, "insert-task-after", rationale) as domain_plan:
-            new_task = Task.create(title, task_type, entrypoint, observable, evidence, steps_list)
             domain_plan.insert_task_after(thread, after, new_task)
-    click.echo(f"Inserted task '{title}' in thread {thread}")
+    click.echo(f"Inserted task '{kwargs['title']}' in thread {thread}")
 
 
 @click.command("delete-task")
@@ -130,29 +140,18 @@ def delete_task_cmd(plan_file, thread, task, rationale):
     click.echo(f"Deleted task {thread}.{task}")
 
 
+# @codescene(disable:"Excess Number of Function Arguments")
 @click.command("replace-task")
 @click.argument("plan_file")
 @click.option("--thread", required=True, type=int, help="Thread number")
 @click.option("--task", required=True, type=int, help="Task number to replace")
-@click.option("--title", required=True, help="New task title")
-@click.option("--task-type", required=True, help="Task type (INFRA or OUTCOME)")
-@click.option("--entrypoint", required=True, help="Entrypoint command")
-@click.option("--observable", required=True, help="Observable outcome")
-@click.option("--evidence", required=True, help="Evidence command")
-@click.option("--steps", required=True, help="JSON array of step descriptions")
+@_task_spec_options
 @click.option("--rationale", required=True, help="Rationale for change history")
-def replace_task_cmd(plan_file, thread, task, title, task_type,
-                     entrypoint, observable, evidence, steps, rationale):
+def replace_task_cmd(plan_file, thread, task, rationale, **kwargs):
     """Replace a task's content in place within a thread."""
-    try:
-        steps_list = json.loads(steps)
-    except json.JSONDecodeError as e:
-        click.echo(f"replace-task: --steps is not valid JSON: {e}", err=True)
-        sys.exit(1)
-
+    new_task = _parse_task_spec("replace-task", **kwargs)
     with with_error_handling():
         with with_plan_file_update(plan_file, "replace-task", rationale) as domain_plan:
-            new_task = Task.create(title, task_type, entrypoint, observable, evidence, steps_list)
             domain_plan.replace_task(thread, task, new_task)
     click.echo(f"Replaced task {thread}.{task}")
 
@@ -176,6 +175,7 @@ def reorder_tasks_cmd(plan_file, thread, order, rationale):
     click.echo(f"Reordered tasks in thread {thread} to [{order}]")
 
 
+# @codescene(disable:"Excess Number of Function Arguments")
 @click.command("move-task-before")
 @click.argument("plan_file")
 @click.option("--thread", required=True, type=int, help="Thread number")
@@ -190,6 +190,7 @@ def move_task_before_cmd(plan_file, thread, task, before, rationale):
     click.echo(f"Moved task {thread}.{task} before task {thread}.{before}")
 
 
+# @codescene(disable:"Excess Number of Function Arguments")
 @click.command("move-task-after")
 @click.argument("plan_file")
 @click.option("--thread", required=True, type=int, help="Thread number")

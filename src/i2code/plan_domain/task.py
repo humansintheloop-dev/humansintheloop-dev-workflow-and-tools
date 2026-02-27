@@ -9,6 +9,15 @@ _STEP_RE = re.compile(r'^\s+- \[([ x])\] (.+)$')
 
 
 @dataclass
+class TaskMetadata:
+    """Verification contract for a task: type, how to run, what to observe, how to verify."""
+    task_type: str
+    entrypoint: str
+    observable: str
+    evidence: str
+
+
+@dataclass
 class Task:
     _lines: list[str]
 
@@ -98,13 +107,12 @@ class Task:
                 self._lines[i] = line.replace('[x]', '[ ]', 1)
 
     @classmethod
-    def create(cls, title: str, task_type: str, entrypoint: str,
-               observable: str, evidence: str, steps: list[str]) -> 'Task':
+    def create(cls, title: str, metadata: TaskMetadata, steps: list[str]) -> 'Task':
         lines = [f'- [ ] **Task 0.0: {title}**']
-        lines.append(f'  - TaskType: {task_type}')
-        lines.append(f'  - Entrypoint: `{entrypoint}`')
-        lines.append(f'  - Observable: {observable}')
-        lines.append(f'  - Evidence: `{evidence}`')
+        lines.append(f'  - TaskType: {metadata.task_type}')
+        lines.append(f'  - Entrypoint: `{metadata.entrypoint}`')
+        lines.append(f'  - Observable: {metadata.observable}')
+        lines.append(f'  - Evidence: `{metadata.evidence}`')
         lines.append('  - Steps:')
         for step in steps:
             lines.append(f'    - [ ] {step}')

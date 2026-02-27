@@ -37,10 +37,11 @@ class Plan:
             if line.startswith(heading):
                 in_section = True
                 continue
-            if in_section:
-                if line.startswith('##') or line.strip() == '---':
-                    break
-                section_lines.append(line)
+            if not in_section:
+                continue
+            if line.startswith('##') or line.strip() == '---':
+                break
+            section_lines.append(line)
         return '\n'.join(section_lines).strip()
 
     def get_thread(self, thread: int) -> Thread:

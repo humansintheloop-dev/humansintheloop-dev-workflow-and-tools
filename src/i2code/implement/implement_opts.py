@@ -25,19 +25,18 @@ class ImplementOpts:
     dry_run: bool = False
     ignore_uncommitted_idea_changes: bool = False
 
+    _TRUNK_INCOMPATIBLE = [
+        ("cleanup", "--cleanup"),
+        ("setup_only", "--setup-only"),
+        ("isolate", "--isolate"),
+        ("isolated", "--isolated"),
+        ("skip_ci_wait", "--skip-ci-wait"),
+    ]
+
     def validate_trunk_options(self):
         """Raise click.UsageError if --trunk is combined with incompatible options."""
-        incompatible = []
-        if self.cleanup:
-            incompatible.append("--cleanup")
-        if self.setup_only:
-            incompatible.append("--setup-only")
-        if self.isolate:
-            incompatible.append("--isolate")
-        if self.isolated:
-            incompatible.append("--isolated")
-        if self.skip_ci_wait:
-            incompatible.append("--skip-ci-wait")
+        incompatible = [flag for attr, flag in self._TRUNK_INCOMPATIBLE
+                        if getattr(self, attr)]
         if self.ci_fix_retries != 3:
             incompatible.append("--ci-fix-retries")
         if self.ci_timeout != 600:

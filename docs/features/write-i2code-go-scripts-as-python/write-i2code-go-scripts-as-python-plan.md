@@ -266,14 +266,14 @@ Migrate `create-design-doc.sh`, `analyze-sessions.sh`, `create-summary-reports.s
     - [x] Write pytest tests: validates files, archives existing design, template variables correct, session management, Claude invoked
     - [x] Delete `src/i2code/scripts/create-design-doc.sh`
 
-- [ ] **Task 5.2: `i2code improve analyze-sessions` analyzes Claude sessions**
+- [x] **Task 5.2: `i2code improve analyze-sessions` analyzes Claude sessions**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k analyze`
   - Observable: Takes tracking directory argument. Validates sessions directory exists. Extracts session IDs from filenames, finds related issue files. Renders `analyze-sessions.md` template with `$SESSIONS_DIR`, `$ISSUES`, `$REPORT_FILE`. Invokes Claude non-interactively with `--add-dir` and `--allowedTools` flags.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k analyze` passes with mocked ClaudeRunner
   - Steps:
-    - [ ] Create `src/i2code/improve/analyze_sessions.py` — `analyze_sessions(tracking_dir, claude_runner, template_renderer)` matching `scripts/analyze-sessions.sh`. Includes session ID extraction from filenames and issue file correlation.
-    - [ ] Write pytest tests: validates directory, session ID extraction, issue file correlation, template rendering, Claude invoked with correct flags
+    - [x] Create `src/i2code/improve/analyze_sessions.py` — `analyze_sessions(tracking_dir, claude_runner, template_renderer)` matching `scripts/analyze-sessions.sh`. Includes session ID extraction from filenames and issue file correlation.
+    - [x] Write pytest tests: validates directory, session ID extraction, issue file correlation, template rendering, Claude invoked with correct flags
 
 - [ ] **Task 5.3: `i2code improve summary-reports` generates summary reports**
   - TaskType: OUTCOME

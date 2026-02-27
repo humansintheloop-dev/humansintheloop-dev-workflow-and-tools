@@ -19,16 +19,20 @@ def _find_active_issue_files(search_path: str, year: str) -> list[str]:
     """
     results = []
     for dirpath, _dirnames, filenames in os.walk(search_path):
-        if not dirpath.endswith(os.path.join("issues", "active")):
-            continue
-        for filename in sorted(filenames):
-            if not filename.startswith(f"{year}-") or not filename.endswith(".md"):
-                continue
-            filepath = os.path.join(dirpath, filename)
-            if _is_type_unknown(filepath):
-                continue
-            results.append(filepath)
+        if dirpath.endswith(os.path.join("issues", "active")):
+            results.extend(_collect_year_issues(dirpath, filenames, year))
     return sorted(results)
+
+
+def _collect_year_issues(dirpath: str, filenames: list[str], year: str) -> list[str]:
+    issues = []
+    for filename in sorted(filenames):
+        if not filename.startswith(f"{year}-") or not filename.endswith(".md"):
+            continue
+        filepath = os.path.join(dirpath, filename)
+        if not _is_type_unknown(filepath):
+            issues.append(filepath)
+    return issues
 
 
 def _is_type_unknown(filepath: str) -> bool:

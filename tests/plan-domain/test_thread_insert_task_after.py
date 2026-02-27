@@ -3,7 +3,7 @@
 import pytest
 
 from i2code.plan_domain.parser import parse
-from i2code.plan_domain.task import Task
+from i2code.plan_domain.task import Task, TaskMetadata
 
 
 PLAN_TEXT = """\
@@ -42,7 +42,7 @@ class TestThreadInsertTaskAfter:
     def test_inserts_after_first_task(self):
         plan = parse(PLAN_TEXT)
         thread = plan.threads[0]
-        new_task = Task.create("New", "INFRA", "echo new", "New", "echo new-done", ["Do new"])
+        new_task = Task.create("New", TaskMetadata("INFRA", "echo new", "New", "echo new-done"), ["Do new"])
         thread.insert_task_after(1, new_task)
         assert len(thread.tasks) == 3
         assert thread.tasks[0].title == "First task"
@@ -52,7 +52,7 @@ class TestThreadInsertTaskAfter:
     def test_inserts_after_last_task(self):
         plan = parse(PLAN_TEXT)
         thread = plan.threads[0]
-        new_task = Task.create("New", "INFRA", "echo new", "New", "echo new-done", ["Do new"])
+        new_task = Task.create("New", TaskMetadata("INFRA", "echo new", "New", "echo new-done"), ["Do new"])
         thread.insert_task_after(2, new_task)
         assert thread.tasks[0].title == "First task"
         assert thread.tasks[1].title == "Second task"
@@ -61,6 +61,6 @@ class TestThreadInsertTaskAfter:
     def test_error_for_nonexistent_task(self):
         plan = parse(PLAN_TEXT)
         thread = plan.threads[0]
-        new_task = Task.create("New", "INFRA", "echo new", "New", "echo new-done", ["Do new"])
+        new_task = Task.create("New", TaskMetadata("INFRA", "echo new", "New", "echo new-done"), ["Do new"])
         with pytest.raises(ValueError, match="task 99 does not exist"):
             thread.insert_task_after(99, new_task)

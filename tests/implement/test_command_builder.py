@@ -16,7 +16,6 @@ class TestCommandBuilderTaskCommand:
         cmd = builder.build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file",
-            interactive=True,
         )
 
         assert cmd[0] == "claude"
@@ -25,13 +24,13 @@ class TestCommandBuilderTaskCommand:
 
     def test_non_interactive_includes_p_flag(self):
         """Non-interactive command should include -p flag."""
-        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 
         builder = CommandBuilder()
         cmd = builder.build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file",
-            interactive=False,
+            opts=TaskCommandOpts(interactive=False),
         )
 
         assert cmd[0] == "claude"
@@ -47,7 +46,6 @@ class TestCommandBuilderTaskCommand:
         cmd = builder.build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file",
-            interactive=True,
         )
 
         assert "docs/features/my-feature" in cmd[1]
@@ -60,21 +58,19 @@ class TestCommandBuilderTaskCommand:
         cmd = builder.build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file",
-            interactive=True,
         )
 
         assert "Task 1.1" in cmd[1]
 
     def test_extra_cli_args_in_interactive(self):
         """Interactive command should include extra_cli_args."""
-        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 
         builder = CommandBuilder()
         cmd = builder.build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file",
-            interactive=True,
-            extra_cli_args=["--allowedTools", "Bash(git commit:*)"],
+            opts=TaskCommandOpts(extra_cli_args=["--allowedTools", "Bash(git commit:*)"]),
         )
 
         assert "--allowedTools" in cmd
@@ -82,14 +78,16 @@ class TestCommandBuilderTaskCommand:
 
     def test_extra_cli_args_in_non_interactive(self):
         """Non-interactive command should include extra_cli_args before -p."""
-        from i2code.implement.command_builder import CommandBuilder
+        from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 
         builder = CommandBuilder()
         cmd = builder.build_task_command(
             idea_directory="docs/features/my-feature",
             task_description="Task 1.1: Create config file",
-            interactive=False,
-            extra_cli_args=["--allowedTools", "Bash(git commit:*),Write(/repo/)"],
+            opts=TaskCommandOpts(
+                interactive=False,
+                extra_cli_args=["--allowedTools", "Bash(git commit:*),Write(/repo/)"],
+            ),
         )
 
         assert "--allowedTools" in cmd

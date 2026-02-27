@@ -101,30 +101,34 @@ class GithubActionsBuildFixer:
 
             if not self._git_repo.head_advanced_since(head_before):
                 print("  Claude did not make any commits")
-                if attempt == max_retries:
-                    return False
                 continue
 
-            print("  Pushing fix...")
-            if not self._git_repo.push():
-                print("  Error: Could not push fix", file=sys.stderr)
-                return False
-
+            passed = self._push_and_wait_for_ci(current_sha)
+            if passed:
+                return True
             current_sha = self._git_repo.head_sha
 
-            print("  Waiting for CI to complete...")
-            ci_success, new_failing_run = self._git_repo.gh_client.wait_for_workflow_completion(
-                self._git_repo.branch, current_sha,
-            )
-
-            if ci_success:
-                print("  CI passed!")
-                return True
-
-            if new_failing_run:
-                print(f"  CI still failing: {new_failing_run.get('name', 'unknown')}")
-
         print(f"Max retries ({max_retries}) exceeded")
+        return False
+
+    def _push_and_wait_for_ci(self, current_sha):
+        print("  Pushing fix...")
+        if not self._git_repo.push():
+            print("  Error: Could not push fix", file=sys.stderr)
+            return False
+
+        current_sha = self._git_repo.head_sha
+        print("  Waiting for CI to complete...")
+        ci_success, new_failing_run = self._git_repo.gh_client.wait_for_workflow_completion(
+            self._git_repo.branch, current_sha,
+        )
+
+        if ci_success:
+            print("  CI passed!")
+            return True
+
+        if new_failing_run:
+            print(f"  CI still failing: {new_failing_run.get('name', 'unknown')}")
         return False
 
     def _invoke_claude_for_fix(self, run_id, workflow_name, failure_logs):

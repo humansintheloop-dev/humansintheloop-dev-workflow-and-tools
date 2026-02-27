@@ -158,36 +158,40 @@ class GitHubClient:
     def wait_for_workflow_completion(
         self, branch: str, sha: str, timeout_seconds: int = 600
     ) -> tuple:
-        start_time = time.time()
-        poll_interval = 10
+        runs = self._poll_until_runs_appear(branch, sha, timeout_seconds)
+        if runs is None:
+            return (False, None)
 
-        runs = []
-        while not runs:
-            elapsed = time.time() - start_time
-            if elapsed >= timeout_seconds:
-                print(f"Timeout waiting for CI runs to appear after {timeout_seconds}s")
-                return (False, None)
-            runs = self.get_workflow_runs_for_commit(branch, sha)
-            if not runs:
-                print("  No workflow runs found yet, waiting...")
-                time.sleep(poll_interval)
-
-        for run in runs:
-            if run.get("status") != "completed":
-                run_id = run.get("databaseId")
-                run_name = run.get("name", "unknown")
-                print(f"  Watching workflow '{run_name}' (run {run_id})...")
-                self._run_gh(
-                    ["gh", "run", "watch", str(run_id)],
-                    timeout=timeout_seconds,
-                )
+        self._watch_in_progress_runs(runs, timeout_seconds)
 
         runs = self.get_workflow_runs_for_commit(branch, sha)
-        for run in runs:
-            if run.get("conclusion") == "failure":
-                return (False, run)
+        failed = next((r for r in runs if r.get("conclusion") == "failure"), None)
+        return (False, failed) if failed else (True, None)
 
-        return (True, None)
+    def _poll_until_runs_appear(self, branch, sha, timeout_seconds):
+        start_time = time.time()
+        poll_interval = 10
+        while True:
+            runs = self.get_workflow_runs_for_commit(branch, sha)
+            if runs:
+                return runs
+            if time.time() - start_time >= timeout_seconds:
+                print(f"Timeout waiting for CI runs to appear after {timeout_seconds}s")
+                return None
+            print("  No workflow runs found yet, waiting...")
+            time.sleep(poll_interval)
+
+    def _watch_in_progress_runs(self, runs, timeout_seconds):
+        for run in runs:
+            if run.get("status") == "completed":
+                continue
+            run_id = run.get("databaseId")
+            run_name = run.get("name", "unknown")
+            print(f"  Watching workflow '{run_name}' (run {run_id})...")
+            self._run_gh(
+                ["gh", "run", "watch", str(run_id)],
+                timeout=timeout_seconds,
+            )
 
     def get_default_branch(self) -> str:
         result = self._run_gh(

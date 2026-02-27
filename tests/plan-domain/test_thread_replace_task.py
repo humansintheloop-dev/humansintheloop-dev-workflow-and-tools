@@ -3,7 +3,7 @@
 import pytest
 
 from i2code.plan_domain.parser import parse
-from i2code.plan_domain.task import Task
+from i2code.plan_domain.task import Task, TaskMetadata
 
 
 PLAN_TEXT = """\
@@ -50,7 +50,7 @@ class TestThreadReplaceTask:
     def test_replaces_task(self):
         plan = parse(PLAN_TEXT)
         thread = plan.threads[0]
-        new_task = Task.create("Replaced", "INFRA", "echo r", "R done", "echo r-done", ["Step R"])
+        new_task = Task.create("Replaced", TaskMetadata("INFRA", "echo r", "R done", "echo r-done"), ["Step R"])
         thread.replace_task(2, new_task)
         assert len(thread.tasks) == 3
         assert thread.tasks[1].title == "Replaced"
@@ -58,6 +58,6 @@ class TestThreadReplaceTask:
     def test_error_for_nonexistent_task(self):
         plan = parse(PLAN_TEXT)
         thread = plan.threads[0]
-        new_task = Task.create("New", "INFRA", "echo", "obs", "ev", ["step"])
+        new_task = Task.create("New", TaskMetadata("INFRA", "echo", "obs", "ev"), ["step"])
         with pytest.raises(ValueError, match="task 99 does not exist"):
             thread.replace_task(99, new_task)

@@ -57,7 +57,8 @@ class PullRequestReviewProcessor:
             self._fetch_unprocessed_feedback(pr_number)
         )
 
-        if not new_review_comments and not new_reviews and not new_conversation:
+        has_feedback = any([new_review_comments, new_reviews, new_conversation])
+        if not has_feedback:
             return (False, False)
 
         return self._triage_and_apply_feedback(
@@ -332,47 +333,50 @@ class PullRequestReviewProcessor:
         return [f for f in all_feedback if f.get("id") not in processed_ids]
 
     @staticmethod
+    def _format_review(review: Dict[str, Any]) -> str:
+        state = review.get("state", "COMMENTED")
+        body = review.get("body", "").strip()
+        user = review.get("user", {}).get("login", "unknown")
+        review_id = review.get("id")
+        header = f"### Review by {user} (ID: {review_id}, State: {state})"
+        return f"{header}\n{body or '(No body text)'}\n"
+
+    @staticmethod
+    def _format_review_comment(comment: Dict[str, Any]) -> str:
+        body = comment.get("body", "").strip()
+        user = comment.get("user", {}).get("login", "unknown")
+        path = comment.get("path", "unknown file")
+        line = comment.get("line") or comment.get("original_line", "?")
+        comment_id = comment.get("id")
+        header = f"### Comment by {user} on {path}:{line} (ID: {comment_id})"
+        return f"{header}\n{body}\n"
+
+    @staticmethod
+    def _format_conversation_comment(comment: Dict[str, Any]) -> str:
+        body = comment.get("body", "").strip()
+        user = comment.get("user", {}).get("login", "unknown")
+        comment_id = comment.get("id")
+        header = f"### Comment by {user} (ID: {comment_id})"
+        return f"{header}\n{body}\n"
+
+    @classmethod
     def _format_all_feedback(
+        cls,
         review_comments: List[Dict[str, Any]],
         reviews: List[Dict[str, Any]],
         conversation_comments: List[Dict[str, Any]],
     ) -> str:
         """Format all feedback types into a single string for Claude."""
         sections = []
-
         if reviews:
             sections.append("## PR Reviews\n")
-            for review in reviews:
-                state = review.get("state", "COMMENTED")
-                body = review.get("body", "").strip()
-                user = review.get("user", {}).get("login", "unknown")
-                review_id = review.get("id")
-                sections.append(f"### Review by {user} (ID: {review_id}, State: {state})")
-                if body:
-                    sections.append(f"{body}\n")
-                else:
-                    sections.append("(No body text)\n")
-
+            sections.extend(cls._format_review(r) for r in reviews)
         if review_comments:
             sections.append("## Review Comments (on specific code lines)\n")
-            for comment in review_comments:
-                body = comment.get("body", "").strip()
-                user = comment.get("user", {}).get("login", "unknown")
-                path = comment.get("path", "unknown file")
-                line = comment.get("line") or comment.get("original_line", "?")
-                comment_id = comment.get("id")
-                sections.append(f"### Comment by {user} on {path}:{line} (ID: {comment_id})")
-                sections.append(f"{body}\n")
-
+            sections.extend(cls._format_review_comment(c) for c in review_comments)
         if conversation_comments:
             sections.append("## General PR Comments\n")
-            for comment in conversation_comments:
-                body = comment.get("body", "").strip()
-                user = comment.get("user", {}).get("login", "unknown")
-                comment_id = comment.get("id")
-                sections.append(f"### Comment by {user} (ID: {comment_id})")
-                sections.append(f"{body}\n")
-
+            sections.extend(cls._format_conversation_comment(c) for c in conversation_comments)
         return "\n".join(sections)
 
     @staticmethod

@@ -54,6 +54,20 @@ def get_summary_cmd(plan_file):
         click.echo(f"Tasks: {completed_tasks}/{total_tasks} completed")
 
 
+def _print_task(thread_num, task_num, task):
+    status = 'x' if task.is_completed else ' '
+    click.echo(f"- [{status}] Task {thread_num}.{task_num}: {task.title}")
+    click.echo(f"  TaskType: {task.task_type}")
+    click.echo(f"  Entrypoint: {task.entrypoint}")
+    click.echo(f"  Observable: {task.observable}")
+    click.echo(f"  Evidence: {task.evidence}")
+    click.echo("  Steps:")
+    for i, step in enumerate(task.steps, 1):
+        step_status = 'x' if step['completed'] else ' '
+        click.echo(f"    {i}. [{step_status}] {step['description']}")
+    click.echo()
+
+
 @click.command("get-thread")
 @click.argument("plan_file")
 @click.option("--thread", required=True, type=int, help="Thread number")
@@ -67,17 +81,7 @@ def get_thread_cmd(plan_file, thread):
             click.echo(domain_thread.introduction)
             click.echo()
             for task_num, task in enumerate(domain_thread.tasks, 1):
-                status = 'x' if task.is_completed else ' '
-                click.echo(f"- [{status}] Task {thread}.{task_num}: {task.title}")
-                click.echo(f"  TaskType: {task.task_type}")
-                click.echo(f"  Entrypoint: {task.entrypoint}")
-                click.echo(f"  Observable: {task.observable}")
-                click.echo(f"  Evidence: {task.evidence}")
-                click.echo("  Steps:")
-                for i, step in enumerate(task.steps, 1):
-                    step_status = 'x' if step['completed'] else ' '
-                    click.echo(f"    {i}. [{step_status}] {step['description']}")
-                click.echo()
+                _print_task(thread, task_num, task)
 
 
 def register(group):

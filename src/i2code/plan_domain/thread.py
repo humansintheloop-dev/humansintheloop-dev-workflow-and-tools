@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 import re
 
-from i2code.plan_domain.task import Task
+from i2code.plan_domain.task import Task, TaskMetadata
 
 
 @dataclass
@@ -60,24 +60,20 @@ class Thread:
         del self.tasks[task_number - 1]
 
     def move_task_before(self, task_number: int, before_task: int) -> None:
-        if task_number == before_task:
-            raise ValueError("move-task-before: cannot move task to before the same task")
-        self.get_task(task_number)
-        self.get_task(before_task)
-        current_order = list(range(1, len(self.tasks) + 1))
-        new_order = [n for n in current_order if n != task_number]
-        insert_idx = new_order.index(before_task)
-        new_order.insert(insert_idx, task_number)
-        self.reorder_tasks(new_order)
+        self._move_task(task_number, before_task, "before", offset=0)
 
     def move_task_after(self, task_number: int, after_task: int) -> None:
-        if task_number == after_task:
-            raise ValueError("move-task-after: cannot move task to after the same task")
+        self._move_task(task_number, after_task, "after", offset=1)
+
+    def _move_task(self, task_number: int, anchor_task: int,
+                   direction: str, offset: int) -> None:
+        if task_number == anchor_task:
+            raise ValueError(f"move-task-{direction}: cannot move task to {direction} the same task")
         self.get_task(task_number)
-        self.get_task(after_task)
+        self.get_task(anchor_task)
         current_order = list(range(1, len(self.tasks) + 1))
         new_order = [n for n in current_order if n != task_number]
-        insert_idx = new_order.index(after_task) + 1
+        insert_idx = new_order.index(anchor_task) + offset
         new_order.insert(insert_idx, task_number)
         self.reorder_tasks(new_order)
 
@@ -104,12 +100,14 @@ class Thread:
         header_lines = [f'## Steel Thread 0: {title}', introduction, '']
         domain_tasks = [
             Task.create(
-                title=t['title'],
-                task_type=t['task_type'],
-                entrypoint=t['entrypoint'],
-                observable=t['observable'],
-                evidence=t['evidence'],
-                steps=t['steps'],
+                t['title'],
+                TaskMetadata(
+                    task_type=t['task_type'],
+                    entrypoint=t['entrypoint'],
+                    observable=t['observable'],
+                    evidence=t['evidence'],
+                ),
+                t['steps'],
             )
             for t in tasks
         ]

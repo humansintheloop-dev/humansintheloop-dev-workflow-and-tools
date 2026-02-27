@@ -16,7 +16,7 @@ from git import Repo
 
 from conftest import SCRIPT_CMD, create_github_repo, delete_github_repo
 from i2code.plan_domain.parser import parse as parse_plan
-from i2code.plan_domain.task import Task
+from i2code.plan_domain.task import Task, TaskMetadata
 
 
 @dataclass
@@ -238,12 +238,9 @@ class TestTaskDetectionAndExecution:
         with open(self.repo.worktree_plan_path, 'r') as f:
             plan = parse_plan(f.read())
         plan.insert_task_after(thread=1, after_task=after_task, task=Task.create(
-            title="Fourth task",
-            task_type="code",
-            entrypoint="src/main.py",
-            observable="Fourth thing works",
-            evidence="pytest",
-            steps=["Do something fourth"],
+            "Fourth task",
+            TaskMetadata("code", "src/main.py", "Fourth thing works", "pytest"),
+            ["Do something fourth"],
         ))
         with open(self.repo.worktree_plan_path, 'w') as f:
             f.write(plan.to_text())

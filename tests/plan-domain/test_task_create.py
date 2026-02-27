@@ -1,18 +1,15 @@
 """Unit tests for Task.create() factory method."""
 
-from i2code.plan_domain.task import Task
+from i2code.plan_domain.task import Task, TaskMetadata
 
 
 class TestTaskCreate:
 
     def test_creates_task_with_correct_properties(self):
         task = Task.create(
-            title='Set up database',
-            task_type='INFRA',
-            entrypoint='uv run pytest tests/',
-            observable='Database schema created',
-            evidence='uv run pytest tests/ -v',
-            steps=['Create migration', 'Run migration'],
+            'Set up database',
+            TaskMetadata('INFRA', 'uv run pytest tests/', 'Database schema created', 'uv run pytest tests/ -v'),
+            ['Create migration', 'Run migration'],
         )
 
         assert task.title == 'Set up database'
@@ -28,12 +25,9 @@ class TestTaskCreate:
 
     def test_to_lines_produces_correctly_numbered_output(self):
         task = Task.create(
-            title='Add endpoint',
-            task_type='OUTCOME',
-            entrypoint='curl localhost:8080/api',
-            observable='Returns 200 OK',
-            evidence='uv run pytest tests/api/',
-            steps=['Write test', 'Implement handler'],
+            'Add endpoint',
+            TaskMetadata('OUTCOME', 'curl localhost:8080/api', 'Returns 200 OK', 'uv run pytest tests/api/'),
+            ['Write test', 'Implement handler'],
         )
 
         lines = task.to_lines(thread_num=3, task_num=2)

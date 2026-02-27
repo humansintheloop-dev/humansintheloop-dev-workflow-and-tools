@@ -284,14 +284,14 @@ Migrate `create-design-doc.sh`, `analyze-sessions.sh`, `create-summary-reports.s
     - [x] Create `src/i2code/improve/summary_reports.py` — `create_summary_reports(tracking_dir, claude_runner, template_renderer, *, project_name=None)` matching `scripts/create-summary-reports.sh`. Includes date filtering, project discovery, per-project report generation.
     - [x] Write pytest tests: finds projects with today's sessions, filters by project name, creates reports directory, generates correct template variables, Claude invoked per project
 
-- [ ] **Task 5.4: `i2code improve review-issues` reviews GitHub issues**
+- [x] **Task 5.4: `i2code improve review-issues` reviews GitHub issues**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k review`
   - Observable: Takes HITL tracking directory. Accepts optional `--project` argument to restrict scope. Finds active issues from current year excluding `type: unknown`. Creates `resolved/` directories. Renders `review-issues.md` template with `$ACTIVE_ISSUES` and `$HITL_TRACKING_DIR`. Invokes Claude interactively.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k review` passes with mocked ClaudeRunner
   - Steps:
-    - [ ] Create `src/i2code/improve/review_issues.py` — `review_issues(tracking_dir, claude_runner, template_renderer, *, project=None)` matching `scripts/review-issues.sh`. Includes argument parsing, issue filtering, `resolved/` directory creation.
-    - [ ] Write pytest tests: finds active issues, excludes `type: unknown`, creates resolved dirs, respects `--project` filter, handles no issues found (exit 0)
+    - [x] Create `src/i2code/improve/review_issues.py` — `review_issues(tracking_dir, claude_runner, template_renderer, *, project=None)` matching `scripts/review-issues.sh`. Includes argument parsing, issue filtering, `resolved/` directory creation.
+    - [x] Write pytest tests: finds active issues, excludes `type: unknown`, creates resolved dirs, respects `--project` filter, handles no issues found (exit 0)
 
 - [ ] **Task 5.5: `i2code improve update-claude-files` updates Claude files from project**
   - TaskType: OUTCOME

@@ -325,8 +325,8 @@ Migrate `setup-claude-files.sh` and `update-project-claude-files.sh`. Then delet
   - Observable: Takes `--config-dir` argument. Copies `CLAUDE.md` from config dir to current directory. Creates `.claude/` directory and copies `settings.local.json`. This script does NOT invoke Claude — it is a pure file-copy operation.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/setup-cmd/ -v -m unit -k claude_files` passes with temp directory assertions
   - Steps:
-    - [ ] Create `src/i2code/setup_cmd/claude_files.py` — `setup_claude_files(config_dir)` matching `scripts/setup-claude-files.sh`. Pure file operations: copy CLAUDE.md, create .claude/, copy settings.local.json.
-    - [ ] Write pytest tests: copies files correctly, creates .claude directory, errors on missing config-dir
+    - [x] Create `src/i2code/setup_cmd/claude_files.py` — `setup_claude_files(config_dir)` matching `scripts/setup-claude-files.sh`. Pure file operations: copy CLAUDE.md, create .claude/, copy settings.local.json.
+    - [x] Write pytest tests: copies files correctly, creates .claude directory, errors on missing config-dir
 
 - [ ] **Task 6.2: `i2code setup update-project` pushes template updates into project**
   - TaskType: OUTCOME

@@ -293,14 +293,14 @@ Migrate `create-design-doc.sh`, `analyze-sessions.sh`, `create-summary-reports.s
     - [x] Create `src/i2code/improve/review_issues.py` — `review_issues(tracking_dir, claude_runner, template_renderer, *, project=None)` matching `scripts/review-issues.sh`. Includes argument parsing, issue filtering, `resolved/` directory creation.
     - [x] Write pytest tests: finds active issues, excludes `type: unknown`, creates resolved dirs, respects `--project` filter, handles no issues found (exit 0)
 
-- [ ] **Task 5.5: `i2code improve update-claude-files` updates Claude files from project**
+- [x] **Task 5.5: `i2code improve update-claude-files` updates Claude files from project**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k update_claude`
   - Observable: Takes project directory and `--config-dir` argument. Validates both directories exist and project has Claude files. Renders `update-claude-files-from-project.md` template with `$PROJECT_DIR`, `$PROJECT_CLAUDE_MD`, `$PROJECT_SETTINGS`, `$CONFIG_CLAUDE_MD`, `$CONFIG_SETTINGS`. Invokes Claude interactively.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k update_claude` passes with mocked ClaudeRunner
   - Steps:
-    - [ ] Create `src/i2code/improve/update_claude_files.py` — `update_claude_files(project_dir, config_dir, claude_runner, template_renderer)` matching `scripts/update-claude-files-from-project.sh`. Validates Claude files exist in project.
-    - [ ] Write pytest tests: validates directories, validates Claude files exist, template variables correct, Claude invoked
+    - [x] Create `src/i2code/improve/update_claude_files.py` — `update_claude_files(project_dir, config_dir, claude_runner, template_renderer)` matching `scripts/update-claude-files-from-project.sh`. Validates Claude files exist in project.
+    - [x] Write pytest tests: validates directories, validates Claude files exist, template variables correct, Claude invoked
 
 - [ ] **Task 5.6: Wire all improve and design commands, delete bash scripts**
   - TaskType: OUTCOME

@@ -302,16 +302,16 @@ Migrate `create-design-doc.sh`, `analyze-sessions.sh`, `create-summary-reports.s
     - [x] Create `src/i2code/improve/update_claude_files.py` — `update_claude_files(project_dir, config_dir, claude_runner, template_renderer)` matching `scripts/update-claude-files-from-project.sh`. Validates Claude files exist in project.
     - [x] Write pytest tests: validates directories, validates Claude files exist, template variables correct, Claude invoked
 
-- [ ] **Task 5.6: Wire all improve and design commands, delete bash scripts**
+- [x] **Task 5.6: Wire all improve and design commands, delete bash scripts**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: All improve and design subcommands invoke Python implementations. Bash scripts deleted. CI passes.
   - Evidence: `./test-scripts/test-end-to-end.sh` passes
   - Steps:
-    - [ ] Update `src/i2code/improve/cli.py`: replace all `script_command` calls with direct Click commands for `analyze-sessions`, `summary-reports`, `review-issues`, and `update-claude-files`. Each command takes its arguments via Click options/arguments matching the bash script's interface.
-    - [ ] Write CLI integration tests for all improve and design subcommands
-    - [ ] Delete `src/i2code/scripts/analyze-sessions.sh`, `src/i2code/scripts/create-summary-reports.sh`, `src/i2code/scripts/review-issues.sh`, `src/i2code/scripts/update-claude-files-from-project.sh`, `src/i2code/scripts/create-design-doc.sh`
-    - [ ] Run `./test-scripts/test-end-to-end.sh`
+    - [x] Update `src/i2code/improve/cli.py`: replace all `script_command` calls with direct Click commands for `analyze-sessions`, `summary-reports`, `review-issues`, and `update-claude-files`. Each command takes its arguments via Click options/arguments matching the bash script's interface.
+    - [x] Write CLI integration tests for all improve and design subcommands
+    - [x] Delete `src/i2code/scripts/analyze-sessions.sh`, `src/i2code/scripts/create-summary-reports.sh`, `src/i2code/scripts/review-issues.sh`, `src/i2code/scripts/update-claude-files-from-project.sh`, `src/i2code/scripts/create-design-doc.sh`
+    - [x] Run `./test-scripts/test-end-to-end.sh`
 
 ---
 

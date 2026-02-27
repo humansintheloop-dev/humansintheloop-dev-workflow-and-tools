@@ -319,7 +319,7 @@ Migrate `create-design-doc.sh`, `analyze-sessions.sh`, `create-summary-reports.s
 
 Migrate `setup-claude-files.sh` and `update-project-claude-files.sh`. Then delete all remaining bash infrastructure.
 
-- [ ] **Task 6.1: `i2code setup claude-files` copies Claude config files into project**
+- [x] **Task 6.1: `i2code setup claude-files` copies Claude config files into project**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/setup-cmd/ -v -m unit -k claude_files`
   - Observable: Takes `--config-dir` argument. Copies `CLAUDE.md` from config dir to current directory. Creates `.claude/` directory and copies `settings.local.json`. This script does NOT invoke Claude — it is a pure file-copy operation.

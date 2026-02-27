@@ -275,14 +275,14 @@ Migrate `create-design-doc.sh`, `analyze-sessions.sh`, `create-summary-reports.s
     - [x] Create `src/i2code/improve/analyze_sessions.py` — `analyze_sessions(tracking_dir, claude_runner, template_renderer)` matching `scripts/analyze-sessions.sh`. Includes session ID extraction from filenames and issue file correlation.
     - [x] Write pytest tests: validates directory, session ID extraction, issue file correlation, template rendering, Claude invoked with correct flags
 
-- [ ] **Task 5.3: `i2code improve summary-reports` generates summary reports**
+- [x] **Task 5.3: `i2code improve summary-reports` generates summary reports**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k summary`
   - Observable: Takes tracking directory and optional `--project-name` argument. Finds projects with sessions from today. For each project: gathers today's session and issue files, renders `create-summary-report.md` template, invokes Claude non-interactively with `--print` and `--add-dir` flags, saves output to `summary-reports/summary-<timestamp>.md`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k summary` passes with mocked ClaudeRunner and temp directory
   - Steps:
-    - [ ] Create `src/i2code/improve/summary_reports.py` — `create_summary_reports(tracking_dir, claude_runner, template_renderer, *, project_name=None)` matching `scripts/create-summary-reports.sh`. Includes date filtering, project discovery, per-project report generation.
-    - [ ] Write pytest tests: finds projects with today's sessions, filters by project name, creates reports directory, generates correct template variables, Claude invoked per project
+    - [x] Create `src/i2code/improve/summary_reports.py` — `create_summary_reports(tracking_dir, claude_runner, template_renderer, *, project_name=None)` matching `scripts/create-summary-reports.sh`. Includes date filtering, project discovery, per-project report generation.
+    - [x] Write pytest tests: finds projects with today's sessions, filters by project name, creates reports directory, generates correct template variables, Claude invoked per project
 
 - [ ] **Task 5.4: `i2code improve review-issues` reviews GitHub issues**
   - TaskType: OUTCOME

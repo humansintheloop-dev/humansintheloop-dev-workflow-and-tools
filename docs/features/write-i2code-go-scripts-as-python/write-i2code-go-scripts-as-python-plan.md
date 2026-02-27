@@ -337,16 +337,16 @@ Migrate `setup-claude-files.sh` and `update-project-claude-files.sh`. Then delet
     - [x] Create `src/i2code/setup_cmd/update_project.py` — `update_project(project_dir, config_dir, claude_runner, template_renderer)` matching `scripts/update-project-claude-files.sh`. Includes git SHA extraction, diff generation, template rendering.
     - [x] Write pytest tests: validates directories, extracts SHA from CLAUDE.md, generates diff, handles first sync (no previous SHA), template variables correct, Claude invoked
 
-- [ ] **Task 6.3: Wire setup commands, delete bash scripts**
+- [x] **Task 6.3: Wire setup commands, delete bash scripts**
   - TaskType: OUTCOME
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `i2code setup claude-files` and `i2code setup update-project` invoke Python implementations. Bash scripts deleted. CI passes.
   - Evidence: `./test-scripts/test-end-to-end.sh` passes
   - Steps:
-    - [ ] Update `src/i2code/setup_cmd/cli.py`: replace `script_command` calls with direct Click commands
-    - [ ] Write CLI integration tests
-    - [ ] Delete `src/i2code/scripts/setup-claude-files.sh` and `src/i2code/scripts/update-project-claude-files.sh`
-    - [ ] Run `./test-scripts/test-end-to-end.sh`
+    - [x] Update `src/i2code/setup_cmd/cli.py`: replace `script_command` calls with direct Click commands
+    - [x] Write CLI integration tests
+    - [x] Delete `src/i2code/scripts/setup-claude-files.sh` and `src/i2code/scripts/update-project-claude-files.sh`
+    - [x] Run `./test-scripts/test-end-to-end.sh`
 
 - [ ] **Task 6.4: Delete remaining bash infrastructure**
   - TaskType: OUTCOME

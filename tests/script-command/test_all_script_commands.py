@@ -15,31 +15,7 @@ SCRIPT_COMMANDS = [
     # idea group — migrated to Python in tests/idea-cmd/test_brainstorm_cli.py
     # spec group — migrated to Python in tests/spec-cmd/test_spec_cli.py
     # design group — migrated to Python in tests/design-cmd/test_design_cli.py
-    # setup group
-    pytest.param(
-        ["setup", "claude-files", "--config-dir", "/path/to/config-files"],
-        "setup-claude-files.sh",
-        ["--config-dir", "/path/to/config-files"],
-        id="claude-files",
-    ),
-    pytest.param(
-        ["setup", "claude-files", "--config-dir", "/path/to/config-files", "--extra-flag"],
-        "setup-claude-files.sh",
-        ["--config-dir", "/path/to/config-files", "--extra-flag"],
-        id="claude-files-with-extra-flag",
-    ),
-    pytest.param(
-        ["setup", "update-project", "my-project-dir", "--config-dir", "/path/to/config-files"],
-        "update-project-claude-files.sh",
-        ["my-project-dir", "--config-dir", "/path/to/config-files"],
-        id="update-project",
-    ),
-    pytest.param(
-        ["setup", "update-project", "my-project-dir", "--config-dir", "/path/to/config-files", "--", "--verbose"],
-        "update-project-claude-files.sh",
-        ["my-project-dir", "--config-dir", "/path/to/config-files", "--verbose"],
-        id="update-project-with-separator",
-    ),
+    # setup group — migrated to Python in tests/setup-cmd/test_setup_cli.py
     # plan group — migrated to Python in tests/go-cmd/test_plan_cli.py
     # improve group — migrated to Python in tests/improve/test_improve_cli.py
 ]

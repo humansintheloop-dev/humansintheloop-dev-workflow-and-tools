@@ -6,9 +6,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from conftest import TempIdeaProject
-from i2code.go_cmd.menu import MenuConfig
-from i2code.go_cmd.orchestrator import Orchestrator
+from conftest import TempIdeaProject, menu_config_by_label
+from i2code.go_cmd.implement_config import (
+    INTERACTIVE, NON_INTERACTIVE, TRUNK_MODE, WORKTREE_MODE,
+)
+from i2code.go_cmd.orchestrator import (
+    CONFIGURE_IMPLEMENT, EXIT, IMPLEMENT_PLAN,
+    Orchestrator, OrchestratorDeps,
+)
 
 
 def _create_file(project, filename, content=""):
@@ -40,7 +45,7 @@ class _OrchestratorRun:
         self.exit_code = None
 
 
-def _run_has_plan_orchestrator(project, choices, *,
+def _run_has_plan_orchestrator(project, menu_labels, *,
                                config_kwargs=None, implement_runner=None):
     """Setup a has-plan project, run an orchestrator, and return captured output.
 
@@ -57,22 +62,22 @@ def _run_has_plan_orchestrator(project, choices, *,
         from i2code.go_cmd.implement_config import write_implement_config
         write_implement_config(project.implement_config_file, **config_kwargs)
 
-    menu_output = io.StringIO()
+    config = menu_config_by_label(menu_labels)
     output = io.StringIO()
-    it = iter(choices)
-    menu_config = MenuConfig(input_fn=lambda _: next(it), output=menu_output)
-    orch = Orchestrator(
-        project, menu_config=menu_config,
+    deps = OrchestratorDeps(
+        menu_config=config,
         git_runner=_clean_git(),
-        implement_runner=implement_runner, output=output,
+        implement_runner=implement_runner,
+        output=output,
     )
+    orch = Orchestrator(project, deps=deps)
 
     result = _OrchestratorRun()
     try:
         orch.run()
     except SystemExit as e:
         result.exit_code = e.code
-    result.menu_displayed = menu_output.getvalue()
+    result.menu_displayed = config.output.getvalue()
     result.output_displayed = output.getvalue()
     return result
 
@@ -85,16 +90,16 @@ def _run_has_plan_orchestrator(project, choices, *,
 @pytest.mark.unit
 class TestImplementMenuLabel:
 
-    @pytest.mark.parametrize("config_kwargs,exit_choice,expected_text", [
-        (None, "3", "Implement the entire plan: i2code implement"),
-        (dict(interactive=False, trunk=True), "4",
+    @pytest.mark.parametrize("config_kwargs,expected_text", [
+        (None, "Implement the entire plan: i2code implement"),
+        (dict(interactive=False, trunk=True),
          "i2code implement --non-interactive --trunk"),
     ])
     def test_has_plan_menu_shows_implement_label(self, config_kwargs,
-                                                 exit_choice, expected_text):
+                                                 expected_text):
         with TempIdeaProject("my-feature") as project:
             result = _run_has_plan_orchestrator(
-                project, [exit_choice], config_kwargs=config_kwargs,
+                project, [EXIT], config_kwargs=config_kwargs,
             )
             assert expected_text in result.menu_displayed
 
@@ -107,20 +112,19 @@ class TestImplementMenuLabel:
 @pytest.mark.unit
 class TestConfigureOptionVisibility:
 
-    @pytest.mark.parametrize("config_kwargs,exit_choice,should_show", [
-        (None, "3", False),
-        (dict(interactive=True, trunk=False), "4", True),
+    @pytest.mark.parametrize("config_kwargs,should_show", [
+        (None, False),
+        (dict(interactive=True, trunk=False), True),
     ])
-    def test_configure_option_visibility(self, config_kwargs, exit_choice,
-                                         should_show):
+    def test_configure_option_visibility(self, config_kwargs, should_show):
         with TempIdeaProject("my-feature") as project:
             result = _run_has_plan_orchestrator(
-                project, [exit_choice], config_kwargs=config_kwargs,
+                project, [EXIT], config_kwargs=config_kwargs,
             )
             if should_show:
-                assert "Configure implement options" in result.menu_displayed
+                assert CONFIGURE_IMPLEMENT in result.menu_displayed
             else:
-                assert "Configure implement options" not in result.menu_displayed
+                assert CONFIGURE_IMPLEMENT not in result.menu_displayed
 
 
 # ---------------------------------------------------------------------------
@@ -134,10 +138,9 @@ class TestImplementSelectionPromptsWhenNoConfig:
     def test_implement_prompts_for_config_then_runs(self):
         with TempIdeaProject("my-feature") as project:
             mock_implement = MagicMock(return_value=_success_result())
-            # Menu choices: "2" = Implement, then "1" = Interactive, "1" = Worktree,
-            # then "4" = Exit (config now exists so menu has 4 items)
+            user_choices = [IMPLEMENT_PLAN, INTERACTIVE, WORKTREE_MODE, EXIT]
             _run_has_plan_orchestrator(
-                project, ["2", "1", "1", "4"],
+                project, user_choices,
                 implement_runner=mock_implement,
             )
             mock_implement.assert_called_once()
@@ -161,7 +164,7 @@ class TestImplementRunnerReceivesConfig:
         with TempIdeaProject("my-feature") as project:
             mock_implement = MagicMock(return_value=_success_result())
             _run_has_plan_orchestrator(
-                project, ["2", "4"],
+                project, [IMPLEMENT_PLAN, EXIT],
                 config_kwargs=config_kwargs,
                 implement_runner=mock_implement,
             )
@@ -183,9 +186,11 @@ class TestConfigureImplementOptions:
         from i2code.go_cmd.implement_config import read_implement_config
 
         with TempIdeaProject("my-feature") as project:
-            # "3" = Configure, "2" = Non-interactive, "2" = Trunk, "4" = Exit
+            user_choices = [
+                CONFIGURE_IMPLEMENT, NON_INTERACTIVE, TRUNK_MODE, EXIT,
+            ]
             _run_has_plan_orchestrator(
-                project, ["3", "2", "2", "4"],
+                project, user_choices,
                 config_kwargs=dict(interactive=True, trunk=False),
             )
             updated = read_implement_config(project.implement_config_file)
@@ -205,7 +210,7 @@ class TestDisplayImplementConfig:
         with TempIdeaProject("my-feature") as project:
             mock_implement = MagicMock(return_value=_success_result())
             result = _run_has_plan_orchestrator(
-                project, ["2", "4"],
+                project, [IMPLEMENT_PLAN, EXIT],
                 config_kwargs=dict(interactive=True, trunk=False),
                 implement_runner=mock_implement,
             )
@@ -222,24 +227,26 @@ class TestDisplayImplementConfig:
 @pytest.mark.unit
 class TestPlanCompletion:
 
-    @pytest.mark.parametrize("plan_content,choices,expect_complete", [
+    @pytest.mark.parametrize("plan_content,user_choices,expect_complete", [
         (
-            "## Steel Thread 1: Feature\n\n- [x] **Task 1.1: Done**\n- [x] **Task 1.2: Also done**\n",
-            ["2"],
+            "## Steel Thread 1: Feature\n\n"
+            "- [x] **Task 1.1: Done**\n- [x] **Task 1.2: Also done**\n",
+            [IMPLEMENT_PLAN],
             True,
         ),
         (
-            "## Steel Thread 1: Feature\n\n- [x] **Task 1.1: Done**\n- [ ] **Task 1.2: Not done**\n",
-            ["2", "4"],
+            "## Steel Thread 1: Feature\n\n"
+            "- [x] **Task 1.1: Done**\n- [ ] **Task 1.2: Not done**\n",
+            [IMPLEMENT_PLAN, EXIT],
             False,
         ),
     ])
-    def test_plan_completion_detection(self, plan_content, choices,
+    def test_plan_completion_detection(self, plan_content, user_choices,
                                        expect_complete):
         with TempIdeaProject("my-feature") as project:
             _setup_has_plan(project, plan_content)
             result = _run_has_plan_orchestrator(
-                project, choices,
+                project, user_choices,
                 config_kwargs=dict(interactive=True, trunk=False),
                 implement_runner=MagicMock(return_value=_success_result()),
             )

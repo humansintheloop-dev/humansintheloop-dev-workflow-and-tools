@@ -34,23 +34,36 @@ class WorkflowState(Enum):
     HAS_PLAN = "has_plan"
 
 
+CREATE_IDEA = "Create idea"
+REVISE_IDEA = "Revise idea"
+CREATE_SPEC = "Create specification"
+REVISE_SPEC = "Revise the specification"
+CREATE_PLAN = "Create implementation plan"
+REVISE_PLAN = "Revise the plan"
+IMPLEMENT_PLAN = "Implement the entire plan"
+CONFIGURE_IMPLEMENT = "Configure implement options"
+COMMIT_CHANGES = "Commit changes"
+EXIT = "Exit"
+RETRY = "Retry"
+ABORT = "Abort workflow"
+
 _MENU_OPTIONS = {
-    WorkflowState.NO_IDEA: ["Create idea"],
+    WorkflowState.NO_IDEA: [CREATE_IDEA],
     WorkflowState.HAS_IDEA_NO_SPEC: [
-        "Revise idea",
-        "Create specification",
-        "Exit",
+        REVISE_IDEA,
+        CREATE_SPEC,
+        EXIT,
     ],
     WorkflowState.HAS_SPEC: [
-        "Revise the specification",
-        "Create implementation plan",
-        "Exit",
+        REVISE_SPEC,
+        CREATE_PLAN,
+        EXIT,
     ],
     WorkflowState.HAS_PLAN: [
-        "Revise the plan",
-        "Implement the entire plan",
-        "Configure implement options",
-        "Exit",
+        REVISE_PLAN,
+        IMPLEMENT_PLAN,
+        CONFIGURE_IMPLEMENT,
+        EXIT,
     ],
 }
 
@@ -231,32 +244,32 @@ class Orchestrator:
         return self._handle_has_plan_choice(options[choice - 1])
 
     def _handle_has_plan_choice(self, selected):
-        if selected == "Exit":
+        if selected == EXIT:
             return False
-        if selected == "Commit changes":
+        if selected == COMMIT_CHANGES:
             self._commit_changes()
-        elif selected == "Revise the plan":
+        elif selected == REVISE_PLAN:
             self._run_step_with_retry("Revising plan", "revise_plan")
-        elif selected == "Configure implement options":
+        elif selected == CONFIGURE_IMPLEMENT:
             self._configure_implement()
-        elif selected.startswith("Implement the entire plan"):
+        elif selected.startswith(IMPLEMENT_PLAN):
             self._run_implement()
         return True
 
     def _build_has_plan_options(self):
         config_path = self._project.implement_config_file
-        options = ["Revise the plan"]
+        options = [REVISE_PLAN]
         if self._has_uncommitted_changes():
-            options.append("Commit changes")
+            options.append(COMMIT_CHANGES)
         options.append(build_implement_label(config_path))
         if os.path.isfile(config_path):
-            options.append("Configure implement options")
+            options.append(CONFIGURE_IMPLEMENT)
         options.append("Exit")
         return options
 
     def _commit_default(self, options):
-        if "Commit changes" in options:
-            return options.index("Commit changes") + 1
+        if COMMIT_CHANGES in options:
+            return options.index(COMMIT_CHANGES) + 1
         return 2
 
     def _has_uncommitted_changes(self):
@@ -364,7 +377,7 @@ class Orchestrator:
     def _handle_error(self):
         choice = get_user_choice(
             "What would you like to do?", 1,
-            ["Retry", "Abort workflow"], config=self._deps.menu_config,
+            [RETRY, ABORT], config=self._deps.menu_config,
         )
         if choice == 1:
             return True

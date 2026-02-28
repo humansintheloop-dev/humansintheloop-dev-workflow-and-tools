@@ -2,6 +2,11 @@
 
 import os
 
+INTERACTIVE = "Interactive"
+NON_INTERACTIVE = "Non-interactive"
+WORKTREE_MODE = "Worktree (branch + PR)"
+TRUNK_MODE = "Trunk (current branch, no PR)"
+
 
 def read_implement_config(path):
     """Read implement config from a YAML-like file.
@@ -45,12 +50,12 @@ def prompt_implement_config(menu_fn):
     Returns:
         (interactive, trunk) boolean tuple.
     """
-    mode_choice = menu_fn("How should Claude run?", 1, ["Interactive", "Non-interactive"])
+    mode_choice = menu_fn("How should Claude run?", 1, [INTERACTIVE, NON_INTERACTIVE])
     interactive = mode_choice == 1
 
     branch_choice = menu_fn(
         "Where should implementation happen?", 1,
-        ["Worktree (branch + PR)", "Trunk (current branch, no PR)"],
+        [WORKTREE_MODE, TRUNK_MODE],
     )
     trunk = branch_choice == 2
 

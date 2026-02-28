@@ -5,7 +5,7 @@ description: Provides a pre-commit checklist and commit message formatting stand
 
 # Pre-Commit Checklist
 
-Before committing, complete these steps in order:
+Before committing, first stage the files and then complete these steps in order:
 
 1. On the final task of a Steel Thread, check for dead code and review findings.
 2. If the project has a configured linter, run it with auto-fix. Resolve any unfixable errors.
@@ -14,7 +14,7 @@ Before committing, complete these steps in order:
    * If it fails with "Not inside a supported VCS root" (common in git worktrees), use `code_health_review` on each modified source file (production AND tests) instead.
    * **STOP if quality gates fail.** Do NOT commit until resolved. Do NOT dismiss findings as "pre-existing".
    * If Code Health regresses, refactor the flagged function before committing (boy scout rule).
-   * Target a score of 10 for both new and modified files.
+   * IMPORTANT A score of 10 for both new and modified files is mandatory
    * Do NOT think in terms of red/yellow/green color bands. The target is always 10.
 5. If adding or modifying production code and coverage tooling is available, verify test coverage and check that new/modified lines are covered.
 

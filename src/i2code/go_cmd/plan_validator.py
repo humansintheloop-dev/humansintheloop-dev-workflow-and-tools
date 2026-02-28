@@ -1,61 +1,40 @@
 """Validate required fields in plan task blocks.
 
-Rewrites the AWK validation logic from scripts/make-plan.sh:22-66 in Python.
 Each task block (``- [ ] **Task X.Y: ...`` or ``- [x] **Task X.Y: ...``)
 must contain TaskType, Entrypoint, Observable, and Evidence fields.
 """
 
-import re
+from i2code.plan_domain.parser import parse
 
-_TASK_HEADER_RE = re.compile(r"^- \[[ x]\] \*\*Task (\d+\.\d+):")
-
-_REQUIRED_FIELDS = ("TaskType", "Entrypoint", "Observable", "Evidence")
-
-_FIELD_PATTERNS = {
-    field: re.compile(rf"^\s*- {field}:") for field in _REQUIRED_FIELDS
-}
-
-
-def _find_matching_field(line: str) -> str | None:
-    """Return the field name if *line* matches a required field pattern."""
-    for field, pattern in _FIELD_PATTERNS.items():
-        if pattern.match(line):
-            return field
-    return None
+_REQUIRED_FIELDS = [
+    ("task_type", "TaskType"),
+    ("entrypoint", "Entrypoint"),
+    ("observable", "Observable"),
+    ("evidence", "Evidence"),
+]
 
 
-def _collect_field(line: str, found_fields: set[str]) -> None:
-    """Add the matching field (if any) from *line* to *found_fields*."""
-    field = _find_matching_field(line)
-    if field:
-        found_fields.add(field)
+def _task_errors(thread_num, task_num, task):
+    """Return error messages for missing fields or steps in *task*."""
+    task_id = f"Task {thread_num}.{task_num}"
+    errors = [
+        f"Missing {label} in {task_id}"
+        for attr, label in _REQUIRED_FIELDS
+        if not getattr(task, attr)
+    ]
+    if not task.steps:
+        errors.append(f"{task_id} must contain at least one step")
+    return errors
 
 
-def _missing_fields_errors(task_id: str, found_fields: set[str]) -> list[str]:
-    """Return error messages for each required field missing from *found_fields*."""
-    return [f"Missing {field} in {task_id}" for field in _REQUIRED_FIELDS if field not in found_fields]
-
-
-def _parse_task_blocks(plan_text: str) -> list[tuple[str, set[str]]]:
-    """Parse *plan_text* into a list of ``(task_id, found_fields)`` tuples."""
-    blocks: list[tuple[str, set[str]]] = []
-    current_task: str | None = None
-    found_fields: set[str] = set()
-
-    for line in plan_text.splitlines():
-        header_match = _TASK_HEADER_RE.match(line)
-        if header_match:
-            if current_task is not None:
-                blocks.append((current_task, found_fields))
-            current_task = f"Task {header_match.group(1)}"
-            found_fields = set()
-        elif current_task is not None:
-            _collect_field(line, found_fields)
-
-    if current_task is not None:
-        blocks.append((current_task, found_fields))
-
-    return blocks
+def _thread_errors(thread_num, thread):
+    """Return error messages for an empty thread or its tasks."""
+    if not thread.tasks:
+        return [f"Thread {thread_num} must contain at least one task"]
+    errors = []
+    for task_num, task in enumerate(thread.tasks, 1):
+        errors.extend(_task_errors(thread_num, task_num, task))
+    return errors
 
 
 def validate_plan(plan_text: str) -> tuple[bool, list[str]]:
@@ -64,7 +43,10 @@ def validate_plan(plan_text: str) -> tuple[bool, list[str]]:
     Returns ``(True, [])`` when valid, or ``(False, [error_messages])`` when
     one or more tasks are missing required fields.
     """
-    errors: list[str] = []
-    for task_id, found_fields in _parse_task_blocks(plan_text):
-        errors.extend(_missing_fields_errors(task_id, found_fields))
+    plan = parse(plan_text)
+    if not plan.threads:
+        return (False, ["Plan must contain at least one thread"])
+    errors = []
+    for thread_num, thread in enumerate(plan.threads, 1):
+        errors.extend(_thread_errors(thread_num, thread))
     return (len(errors) == 0, errors)

@@ -321,13 +321,10 @@ class Orchestrator:
         )
 
     def _check_plan_completion(self):
-        plan_path = self._project.plan_file
-        if not os.path.isfile(plan_path):
+        if not os.path.isfile(self._project.plan_file):
             return
-        with open(plan_path) as f:
-            content = f.read()
         output = self._deps.output
-        if "[ ]" in content:
+        if self._project.get_next_task() is not None:
             print("", file=output)
             print("================================================", file=output)
             print("  Plan has uncompleted tasks", file=output)

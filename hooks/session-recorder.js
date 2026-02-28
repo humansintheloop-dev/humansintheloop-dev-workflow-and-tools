@@ -181,6 +181,10 @@ function createSessionFile(sessionsDir, sessionId) {
   }
 }
 
+function hasActiveSession(sessionId) {
+  return currentSessionPath && fs.existsSync(currentSessionPath) && currentSessionPath.includes(sessionId);
+}
+
 /**
  * Gets the current session file path, creating a new session if needed
  * @param {string} workspaceDir - The workspace directory path
@@ -194,7 +198,7 @@ function getOrCreateSession(workspaceDir, sessionId) {
   }
 
   // Return existing session if we have one in memory for this session
-  if (currentSessionPath && fs.existsSync(currentSessionPath) && currentSessionPath.includes(sessionId)) {
+  if (hasActiveSession(sessionId)) {
     return currentSessionPath;
   }
 
@@ -301,6 +305,39 @@ function extractTextFromContent(content) {
   return null;
 }
 
+function isJsonlFormat(transcriptPath, content) {
+  return transcriptPath.endsWith('.jsonl') || content.trim().startsWith('{');
+}
+
+function findLastAssistantInJsonl(content) {
+  const lines = content.trim().split('\n').filter(line => line.trim());
+  for (let i = lines.length - 1; i >= 0; i--) {
+    try {
+      const entry = JSON.parse(lines[i]);
+      if (entry.type === 'assistant' && entry.message) {
+        return extractTextFromContent(entry.message.content);
+      }
+    } catch (lineError) {
+      continue;
+    }
+  }
+  return null;
+}
+
+function findLastAssistantInArray(content) {
+  const transcript = JSON.parse(content);
+  if (!Array.isArray(transcript)) {
+    console.error('[session-recorder] Transcript is not an array');
+    return null;
+  }
+  for (let i = transcript.length - 1; i >= 0; i--) {
+    if (transcript[i].role === 'assistant') {
+      return extractTextFromContent(transcript[i].content);
+    }
+  }
+  return null;
+}
+
 /**
  * Parses a transcript file to extract the last assistant message
  * Supports both JSON array format and JSONL (JSON Lines) format
@@ -310,45 +347,10 @@ function extractTextFromContent(content) {
 function parseTranscript(transcriptPath) {
   try {
     const content = fs.readFileSync(transcriptPath, 'utf8');
-
-    // Try JSONL format first (one JSON object per line)
-    if (transcriptPath.endsWith('.jsonl') || content.trim().startsWith('{')) {
-      const lines = content.trim().split('\n').filter(line => line.trim());
-
-      // Find the last assistant message (iterate backwards)
-      for (let i = lines.length - 1; i >= 0; i--) {
-        try {
-          const entry = JSON.parse(lines[i]);
-
-          // JSONL format: {type: "assistant", message: {role: "assistant", content: [...]}}
-          if (entry.type === 'assistant' && entry.message) {
-            return extractTextFromContent(entry.message.content);
-          }
-        } catch (lineError) {
-          // Skip malformed lines
-          continue;
-        }
-      }
-      return null;
+    if (isJsonlFormat(transcriptPath, content)) {
+      return findLastAssistantInJsonl(content);
     }
-
-    // Try JSON array format
-    const transcript = JSON.parse(content);
-
-    if (!Array.isArray(transcript)) {
-      console.error('[session-recorder] Transcript is not an array');
-      return null;
-    }
-
-    // Find the last assistant message
-    for (let i = transcript.length - 1; i >= 0; i--) {
-      const message = transcript[i];
-      if (message.role === 'assistant') {
-        return extractTextFromContent(message.content);
-      }
-    }
-
-    return null;
+    return findLastAssistantInArray(content);
   } catch (error) {
     console.error(`[session-recorder] Failed to parse transcript: ${error.message}`);
     return null;
@@ -361,36 +363,25 @@ function parseTranscript(transcriptPath) {
  * @param {Object} toolInput - The tool input parameters
  * @returns {string} Formatted tool call summary
  */
+const TOOL_FORMAT_RULES = {
+  Read:  { key: 'file_path', fmt: v => `Read ${v}` },
+  Write: { key: 'file_path', fmt: v => `Write ${v}` },
+  Edit:  { key: 'file_path', fmt: v => `Edit ${v}` },
+  Bash:  { key: 'command',   fmt: v => `Bash: ${v}` },
+  Grep:  { key: 'pattern',   fmt: v => `Grep '${v}'` },
+  Glob:  { key: 'pattern',   fmt: v => `Glob '${v}'` },
+  Task:  { key: 'description', fmt: v => `Task: ${v}` },
+};
+
 function formatToolCall(toolName, toolInput) {
   if (!toolInput) {
     return toolName;
   }
-
-  switch (toolName) {
-    case 'Read':
-      return toolInput.file_path ? `Read ${toolInput.file_path}` : 'Read';
-
-    case 'Write':
-      return toolInput.file_path ? `Write ${toolInput.file_path}` : 'Write';
-
-    case 'Edit':
-      return toolInput.file_path ? `Edit ${toolInput.file_path}` : 'Edit';
-
-    case 'Bash':
-      return toolInput.command ? `Bash: ${toolInput.command}` : 'Bash';
-
-    case 'Grep':
-      return toolInput.pattern ? `Grep '${toolInput.pattern}'` : 'Grep';
-
-    case 'Glob':
-      return toolInput.pattern ? `Glob '${toolInput.pattern}'` : 'Glob';
-
-    case 'Task':
-      return toolInput.description ? `Task: ${toolInput.description}` : 'Task';
-
-    default:
-      return toolName;
+  const rule = TOOL_FORMAT_RULES[toolName];
+  if (rule && toolInput[rule.key]) {
+    return rule.fmt(toolInput[rule.key]);
   }
+  return toolName;
 }
 
 /**
@@ -423,6 +414,14 @@ function captureCommitInfo(workspaceDir) {
   }
 }
 
+function needsSessionCreation(projectRoot, sessionId) {
+  return !currentSessionPath && projectRoot && sessionId;
+}
+
+function isGitCommitCommand(toolName, toolInput) {
+  return toolName === 'Bash' && toolInput?.command && /git\s+commit/.test(toolInput.command);
+}
+
 /**
  * Handles the PostToolUse hook event
  * @param {Object} hookInput - The hook input data
@@ -447,7 +446,7 @@ function handlePostToolUse(hookInput) {
   }
 
   // Ensure we have a session
-  if (!currentSessionPath && projectRoot && session_id) {
+  if (needsSessionCreation(projectRoot, session_id)) {
     getOrCreateSession(projectRoot, session_id);
   }
 
@@ -468,26 +467,30 @@ function handlePostToolUse(hookInput) {
   debugLog(projectRoot, 'Tool call appended successfully');
 
   // Track git commits
-  if (tool_name === 'Bash' && tool_input?.command && /git\s+commit/.test(tool_input.command)) {
-    // Bash tool_response has: stdout, stderr, interrupted (not a success field)
-    const bashSuccess = tool_response && !tool_response.interrupted && !tool_response.stderr;
-    const commitTimestamp = formatEntryTimestamp();
-    if (bashSuccess) {
-      const gitInfo = captureCommitInfo(projectRoot);
-      if (gitInfo) {
-        let commitFormatted = `**Git Commit:** [${commitTimestamp}]\n- SHA: ${gitInfo.sha}\n`;
-        if (gitInfo.remote) {
-          commitFormatted += `- Repository: ${gitInfo.remote}\n`;
-        }
-        commitFormatted += '\n';
-        appendToSession(commitFormatted);
-        debugLog(projectRoot, 'Git commit info appended successfully');
-      }
-    } else {
-      appendToSession(`**Git Commit Failed:** [${commitTimestamp}]\n\n`);
-      debugLog(projectRoot, 'Git commit failure recorded');
-    }
+  if (isGitCommitCommand(tool_name, tool_input)) {
+    recordGitCommit(projectRoot, tool_response);
   }
+}
+
+function recordGitCommit(projectRoot, tool_response) {
+  const bashSuccess = tool_response && !tool_response.interrupted && !tool_response.stderr;
+  const commitTimestamp = formatEntryTimestamp();
+  if (!bashSuccess) {
+    appendToSession(`**Git Commit Failed:** [${commitTimestamp}]\n\n`);
+    debugLog(projectRoot, 'Git commit failure recorded');
+    return;
+  }
+  const gitInfo = captureCommitInfo(projectRoot);
+  if (!gitInfo) {
+    return;
+  }
+  let commitFormatted = `**Git Commit:** [${commitTimestamp}]\n- SHA: ${gitInfo.sha}\n`;
+  if (gitInfo.remote) {
+    commitFormatted += `- Repository: ${gitInfo.remote}\n`;
+  }
+  commitFormatted += '\n';
+  appendToSession(commitFormatted);
+  debugLog(projectRoot, 'Git commit info appended successfully');
 }
 
 /**

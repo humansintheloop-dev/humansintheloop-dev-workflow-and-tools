@@ -51,143 +51,81 @@ Introduction.
 Done.
 """
 
+_REPLACE_DEFAULTS = dict(
+    thread="1", task="2", title="Replaced", task_type="INFRA",
+    entrypoint="echo", observable="obs", evidence="ev",
+    steps='["step"]', rationale="reason",
+)
+
+
+def _invoke_replace(plan_file, **overrides):
+    """Write plan, invoke replace-task with defaults + overrides, return (result, updated_text)."""
+    plan_file.write_text(PLAN_WITH_THREE_TASKS)
+    d = {**_REPLACE_DEFAULTS, **overrides}
+    args = [
+        str(plan_file), "--thread", d["thread"], "--task", d["task"],
+        "--title", d["title"], "--task-type", d["task_type"],
+        "--entrypoint", d["entrypoint"], "--observable", d["observable"],
+        "--evidence", d["evidence"], "--steps", d["steps"],
+        "--rationale", d["rationale"],
+    ]
+    result = CliRunner(catch_exceptions=False).invoke(replace_task_cmd, args)
+    return result, plan_file.read_text()
+
 
 class TestReplaceTaskCli:
     """CLI integration: replace-task replaces task content in file via domain model."""
 
     def test_replaces_task_content_and_writes_file(self, tmp_path):
-        plan_file = tmp_path / "plan.md"
-        plan_file.write_text(PLAN_WITH_THREE_TASKS)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(replace_task_cmd, [
-            str(plan_file), "--thread", "1", "--task", "2",
-            "--title", "Replaced task", "--task-type", "INFRA",
-            "--entrypoint", "echo replaced", "--observable", "Replaced done",
-            "--evidence", "echo replaced-done", "--steps", '["New step"]',
-            "--rationale", "Replacing second task",
-        ])
-
+        result, updated = _invoke_replace(
+            tmp_path / "plan.md",
+            title="Replaced task", entrypoint="echo replaced",
+            observable="Replaced done", evidence="echo replaced-done",
+            steps='["New step"]', rationale="Replacing second task",
+        )
         assert result.exit_code == 0
-        updated = plan_file.read_text()
         assert "Task 1.2: Replaced task" in updated
         assert "INFRA" in updated
         assert "echo replaced" in updated
         assert "New step" in updated
 
     def test_preserves_numbering(self, tmp_path):
-        plan_file = tmp_path / "plan.md"
-        plan_file.write_text(PLAN_WITH_THREE_TASKS)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(replace_task_cmd, [
-            str(plan_file), "--thread", "1", "--task", "2",
-            "--title", "Replaced", "--task-type", "INFRA",
-            "--entrypoint", "echo", "--observable", "obs",
-            "--evidence", "ev", "--steps", '["step"]',
-            "--rationale", "reason",
-        ])
-
+        result, updated = _invoke_replace(tmp_path / "plan.md")
         assert result.exit_code == 0
-        updated = plan_file.read_text()
         assert "Task 1.1: First task" in updated
         assert "Task 1.2: Replaced" in updated
         assert "Task 1.3: Third task" in updated
 
     def test_replaced_task_is_incomplete(self, tmp_path):
-        plan_file = tmp_path / "plan.md"
-        plan_file.write_text(PLAN_WITH_THREE_TASKS)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(replace_task_cmd, [
-            str(plan_file), "--thread", "1", "--task", "1",
-            "--title", "New first", "--task-type", "OUTCOME",
-            "--entrypoint", "echo", "--observable", "obs",
-            "--evidence", "ev", "--steps", '["step"]',
-            "--rationale", "reason",
-        ])
-
+        result, updated = _invoke_replace(
+            tmp_path / "plan.md", task="1", title="New first", task_type="OUTCOME",
+        )
         assert result.exit_code == 0
-        updated = plan_file.read_text()
         assert "- [ ] **Task 1.1: New first**" in updated
 
     def test_outputs_confirmation_message(self, tmp_path):
-        plan_file = tmp_path / "plan.md"
-        plan_file.write_text(PLAN_WITH_THREE_TASKS)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(replace_task_cmd, [
-            str(plan_file), "--thread", "1", "--task", "2",
-            "--title", "Replaced", "--task-type", "INFRA",
-            "--entrypoint", "echo", "--observable", "obs",
-            "--evidence", "ev", "--steps", '["step"]',
-            "--rationale", "reason",
-        ])
-
+        result, _ = _invoke_replace(tmp_path / "plan.md")
         assert "Replaced task 1.2" in result.output
 
     def test_appends_change_history(self, tmp_path):
-        plan_file = tmp_path / "plan.md"
-        plan_file.write_text(PLAN_WITH_THREE_TASKS)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(replace_task_cmd, [
-            str(plan_file), "--thread", "1", "--task", "2",
-            "--title", "Replaced", "--task-type", "INFRA",
-            "--entrypoint", "echo", "--observable", "obs",
-            "--evidence", "ev", "--steps", '["step"]',
-            "--rationale", "Rewritten for clarity",
-        ])
-
+        result, updated = _invoke_replace(
+            tmp_path / "plan.md", rationale="Rewritten for clarity",
+        )
         assert result.exit_code == 0
-        updated = plan_file.read_text()
         assert "replace-task" in updated
         assert "Rewritten for clarity" in updated
 
     def test_error_for_nonexistent_thread(self, tmp_path):
-        plan_file = tmp_path / "plan.md"
-        plan_file.write_text(PLAN_WITH_THREE_TASKS)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(replace_task_cmd, [
-            str(plan_file), "--thread", "99", "--task", "1",
-            "--title", "New", "--task-type", "INFRA",
-            "--entrypoint", "echo", "--observable", "obs",
-            "--evidence", "ev", "--steps", '["step"]',
-            "--rationale", "reason",
-        ])
-
+        result, _ = _invoke_replace(tmp_path / "plan.md", thread="99")
         assert result.exit_code == 1
         assert "thread 99 does not exist" in result.output
 
     def test_error_for_nonexistent_task(self, tmp_path):
-        plan_file = tmp_path / "plan.md"
-        plan_file.write_text(PLAN_WITH_THREE_TASKS)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(replace_task_cmd, [
-            str(plan_file), "--thread", "1", "--task", "99",
-            "--title", "New", "--task-type", "INFRA",
-            "--entrypoint", "echo", "--observable", "obs",
-            "--evidence", "ev", "--steps", '["step"]',
-            "--rationale", "reason",
-        ])
-
+        result, _ = _invoke_replace(tmp_path / "plan.md", task="99")
         assert result.exit_code == 1
         assert "does not exist" in result.output
 
     def test_error_for_invalid_json_steps(self, tmp_path):
-        plan_file = tmp_path / "plan.md"
-        plan_file.write_text(PLAN_WITH_THREE_TASKS)
-
-        runner = CliRunner(catch_exceptions=False)
-        result = runner.invoke(replace_task_cmd, [
-            str(plan_file), "--thread", "1", "--task", "1",
-            "--title", "New", "--task-type", "INFRA",
-            "--entrypoint", "echo", "--observable", "obs",
-            "--evidence", "ev", "--steps", "not-json",
-            "--rationale", "reason",
-        ])
-
+        result, _ = _invoke_replace(tmp_path / "plan.md", steps="not-json")
         assert result.exit_code == 1
         assert "not valid JSON" in result.output

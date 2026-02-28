@@ -3,6 +3,61 @@
 import os
 import pytest
 
+from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
+
+
+def _build_task_cmd(**overrides):
+    defaults = dict(idea_directory="docs/features/my-feature", task_description="Task 1.1: Create config file")
+    defaults.update(overrides)
+    return CommandBuilder().build_task_command(**defaults)
+
+
+def _build_scaffolding_cmd(**overrides):
+    defaults = dict(idea_directory="docs/features/my-feature", interactive=True)
+    defaults.update(overrides)
+    return CommandBuilder().build_scaffolding_command(**defaults)
+
+
+def _build_triage_cmd(**overrides):
+    defaults = dict(feedback_content="Please fix the typo", interactive=True)
+    defaults.update(overrides)
+    return CommandBuilder().build_triage_command(**defaults)
+
+
+def _build_fix_cmd(**overrides):
+    defaults = dict(
+        pr_url="https://github.com/owner/repo/pull/123",
+        feedback_content="Fix the typo",
+        fix_description="Fix typo in README",
+        interactive=True,
+    )
+    defaults.update(overrides)
+    return CommandBuilder().build_fix_command(**defaults)
+
+
+def _build_ci_fix_cmd(**overrides):
+    defaults = dict(run_id=12345, workflow_name="CI Build", failure_logs="Error: test failed", interactive=True)
+    defaults.update(overrides)
+    return CommandBuilder().build_ci_fix_command(**defaults)
+
+
+def _build_feedback_cmd(**overrides):
+    defaults = dict(
+        pr_url="https://github.com/owner/repo/pull/123",
+        feedback_type="review_comment",
+        feedback_content="Please fix the typo",
+    )
+    defaults.update(overrides)
+    return CommandBuilder().build_feedback_command(**defaults)
+
+
+FEEDBACK_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), '../../prompt-templates/wt-handle-feedback.md')
+
+
+def _read_feedback_template():
+    with open(FEEDBACK_TEMPLATE_PATH, 'r') as f:
+        return f.read()
+
 
 @pytest.mark.unit
 class TestCommandBuilderTaskCommand:
@@ -10,29 +65,14 @@ class TestCommandBuilderTaskCommand:
 
     def test_interactive_returns_claude_with_prompt(self):
         """Interactive command should be ['claude', prompt]."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_task_command(
-            idea_directory="docs/features/my-feature",
-            task_description="Task 1.1: Create config file",
-        )
-
+        cmd = _build_task_cmd()
         assert cmd[0] == "claude"
         assert len(cmd) == 2
         assert "-p" not in cmd
 
     def test_non_interactive_includes_p_flag(self):
         """Non-interactive command should include -p flag."""
-        from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
-
-        builder = CommandBuilder()
-        cmd = builder.build_task_command(
-            idea_directory="docs/features/my-feature",
-            task_description="Task 1.1: Create config file",
-            opts=TaskCommandOpts(interactive=False),
-        )
-
+        cmd = _build_task_cmd(opts=TaskCommandOpts(interactive=False))
         assert cmd[0] == "claude"
         assert "-p" in cmd
         assert "--verbose" in cmd
@@ -40,62 +80,31 @@ class TestCommandBuilderTaskCommand:
 
     def test_includes_idea_directory_in_prompt(self):
         """Prompt should reference the idea directory."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_task_command(
-            idea_directory="docs/features/my-feature",
-            task_description="Task 1.1: Create config file",
-        )
-
+        cmd = _build_task_cmd()
         assert "docs/features/my-feature" in cmd[1]
 
     def test_includes_task_description_in_prompt(self):
         """Prompt should include the task description."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_task_command(
-            idea_directory="docs/features/my-feature",
-            task_description="Task 1.1: Create config file",
-        )
-
+        cmd = _build_task_cmd()
         assert "Task 1.1" in cmd[1]
 
     def test_extra_cli_args_in_interactive(self):
         """Interactive command should include extra_cli_args."""
-        from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
-
-        builder = CommandBuilder()
-        cmd = builder.build_task_command(
-            idea_directory="docs/features/my-feature",
-            task_description="Task 1.1: Create config file",
-            opts=TaskCommandOpts(extra_cli_args=["--allowedTools", "Bash(git commit:*)"]),
-        )
-
+        cmd = _build_task_cmd(opts=TaskCommandOpts(extra_cli_args=["--allowedTools", "Bash(git commit:*)"]))
         assert "--allowedTools" in cmd
         assert cmd[0] == "claude"
 
     def test_extra_cli_args_in_non_interactive(self):
         """Non-interactive command should include extra_cli_args before -p."""
-        from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
-
-        builder = CommandBuilder()
-        cmd = builder.build_task_command(
-            idea_directory="docs/features/my-feature",
-            task_description="Task 1.1: Create config file",
-            opts=TaskCommandOpts(
-                interactive=False,
-                extra_cli_args=["--allowedTools", "Bash(git commit:*),Write(/repo/)"],
-            ),
-        )
-
+        cmd = _build_task_cmd(opts=TaskCommandOpts(
+            interactive=False,
+            extra_cli_args=["--allowedTools", "Bash(git commit:*),Write(/repo/)"],
+        ))
         assert "--allowedTools" in cmd
         assert "-p" in cmd
 
-    def test_claude_prompt_uses_worktree_idea_directory(self, mocker):
+    def test_claude_prompt_uses_worktree_idea_directory(self):
         """Claude command prompt should reference worktree idea dir, not main repo."""
-        from i2code.implement.command_builder import CommandBuilder
         from i2code.implement.idea_project import IdeaProject
 
         main_repo_root = "/home/user/my-repo"
@@ -104,18 +113,11 @@ class TestCommandBuilderTaskCommand:
         project = IdeaProject("/home/user/my-repo/kafka-security-poc")
         worktree_idea_dir = project.worktree_idea_project(worktree_path, main_repo_root).directory
 
-        # Build command with worktree idea dir
-        cmd = CommandBuilder().build_task_command(
-            idea_directory=worktree_idea_dir,
-            task_description="Task 1.1: Create project"
-        )
+        cmd = _build_task_cmd(idea_directory=worktree_idea_dir, task_description="Task 1.1: Create project")
 
-        # The prompt should reference the worktree path, not main repo
         prompt = cmd[1]
-        assert worktree_path in prompt, \
-            f"Prompt should use worktree path. Got: {prompt}"
-        assert main_repo_root not in prompt, \
-            f"Prompt should NOT use main repo path. Got: {prompt}"
+        assert worktree_path in prompt, f"Prompt should use worktree path. Got: {prompt}"
+        assert main_repo_root not in prompt, f"Prompt should NOT use main repo path. Got: {prompt}"
 
 
 @pytest.mark.unit
@@ -124,53 +126,24 @@ class TestCommandBuilderScaffoldingCommand:
 
     def test_interactive_returns_claude_with_prompt(self):
         """Interactive scaffolding should be ['claude', prompt]."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_scaffolding_command(
-            idea_directory="docs/features/my-feature",
-            interactive=True,
-        )
-
+        cmd = _build_scaffolding_cmd()
         assert cmd[0] == "claude"
         assert "-p" not in cmd
 
     def test_non_interactive_includes_allowed_tools(self):
         """Non-interactive scaffolding includes specific --allowed-tools."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_scaffolding_command(
-            idea_directory="docs/features/my-feature",
-            interactive=False,
-        )
-
+        cmd = _build_scaffolding_cmd(interactive=False)
         assert "--allowed-tools" in cmd
         assert "-p" in cmd
 
     def test_mock_claude_returns_mock_script_command(self):
         """Mock mode should return [mock_script, 'setup']."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_scaffolding_command(
-            idea_directory="docs/features/my-feature",
-            interactive=True,
-            mock_claude="/path/to/mock",
-        )
-
+        cmd = _build_scaffolding_cmd(mock_claude="/path/to/mock")
         assert cmd == ["/path/to/mock", "setup"]
 
     def test_includes_idea_directory_in_prompt(self):
         """Prompt should reference the idea directory."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_scaffolding_command(
-            idea_directory="docs/features/my-feature",
-            interactive=True,
-        )
-
+        cmd = _build_scaffolding_cmd()
         assert "docs/features/my-feature" in cmd[1]
 
 
@@ -180,51 +153,24 @@ class TestCommandBuilderTriageCommand:
 
     def test_interactive_returns_claude_with_prompt(self):
         """Interactive triage should be ['claude', prompt]."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_triage_command(
-            feedback_content="Please fix the typo",
-            interactive=True,
-        )
-
+        cmd = _build_triage_cmd()
         assert cmd[0] == "claude"
         assert "-p" not in cmd
 
     def test_non_interactive_includes_p_flag(self):
         """Non-interactive triage should include -p flag."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_triage_command(
-            feedback_content="Please fix the typo",
-            interactive=False,
-        )
-
+        cmd = _build_triage_cmd(interactive=False)
         assert "-p" in cmd
         assert "--verbose" in cmd
 
     def test_includes_feedback_content_in_prompt(self):
         """Prompt should include the feedback content."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_triage_command(
-            feedback_content="Please fix the typo",
-            interactive=True,
-        )
-
+        cmd = _build_triage_cmd()
         assert "Please fix the typo" in cmd[1]
 
     def test_requests_json_output(self):
         """Should request JSON output format."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        cmd = CommandBuilder().build_triage_command(
-            feedback_content="Some feedback",
-            interactive=True
-        )
-
+        cmd = _build_triage_cmd()
         prompt = cmd[1]
         assert "json" in prompt.lower()
         assert "comment_ids" in prompt
@@ -236,59 +182,24 @@ class TestCommandBuilderFixCommand:
 
     def test_interactive_returns_claude_with_prompt(self):
         """Interactive fix should be ['claude', prompt]."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_fix_command(
-            pr_url="https://github.com/owner/repo/pull/123",
-            feedback_content="Fix the typo",
-            fix_description="Fix typo in README",
-            interactive=True,
-        )
-
+        cmd = _build_fix_cmd()
         assert cmd[0] == "claude"
         assert "-p" not in cmd
 
     def test_non_interactive_includes_p_flag(self):
         """Non-interactive fix should include -p flag."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_fix_command(
-            pr_url="https://github.com/owner/repo/pull/123",
-            feedback_content="Fix the typo",
-            fix_description="Fix typo in README",
-            interactive=False,
-        )
-
+        cmd = _build_fix_cmd(interactive=False)
         assert "-p" in cmd
         assert "--verbose" in cmd
 
     def test_includes_pr_url_in_prompt(self):
         """Prompt should include the PR URL."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_fix_command(
-            pr_url="https://github.com/owner/repo/pull/123",
-            feedback_content="Fix the typo",
-            fix_description="Fix typo in README",
-            interactive=True,
-        )
-
+        cmd = _build_fix_cmd()
         assert "https://github.com/owner/repo/pull/123" in cmd[1]
 
     def test_includes_feedback_and_description_in_prompt(self):
         """Should include feedback content and fix description in prompt."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        cmd = CommandBuilder().build_fix_command(
-            pr_url="https://github.com/owner/repo/pull/123",
-            feedback_content="Please add tests",
-            fix_description="Add unit tests",
-            interactive=True
-        )
-
+        cmd = _build_fix_cmd(feedback_content="Please add tests", fix_description="Add unit tests")
         assert "Please add tests" in cmd[1]
         assert "Add unit tests" in cmd[1]
 
@@ -299,46 +210,19 @@ class TestCommandBuilderCiFixCommand:
 
     def test_interactive_returns_claude_with_prompt(self):
         """Interactive CI fix should be ['claude', prompt]."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_ci_fix_command(
-            run_id=12345,
-            workflow_name="CI Build",
-            failure_logs="Error: test failed",
-            interactive=True,
-        )
-
+        cmd = _build_ci_fix_cmd()
         assert cmd[0] == "claude"
         assert "-p" not in cmd
 
     def test_non_interactive_includes_p_flag(self):
         """Non-interactive CI fix should include -p flag."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_ci_fix_command(
-            run_id=12345,
-            workflow_name="CI Build",
-            failure_logs="Error: test failed",
-            interactive=False,
-        )
-
+        cmd = _build_ci_fix_cmd(interactive=False)
         assert "-p" in cmd
         assert "--verbose" in cmd
 
     def test_includes_workflow_info_in_prompt(self):
         """Prompt should include run_id and workflow_name."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_ci_fix_command(
-            run_id=12345,
-            workflow_name="CI Build",
-            failure_logs="Error: test failed",
-            interactive=True,
-        )
-
+        cmd = _build_ci_fix_cmd()
         prompt = cmd[1]
         assert "12345" in prompt
         assert "CI Build" in prompt
@@ -346,33 +230,13 @@ class TestCommandBuilderCiFixCommand:
 
     def test_truncates_long_logs(self):
         """Should truncate logs longer than 5000 chars."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        long_logs = "x" * 6000
-        cmd = builder.build_ci_fix_command(
-            run_id=1,
-            workflow_name="Build",
-            failure_logs=long_logs,
-            interactive=True,
-        )
-
-        prompt = cmd[1]
-        assert "truncated" in prompt.lower()
+        cmd = _build_ci_fix_cmd(failure_logs="x" * 6000)
+        assert "truncated" in cmd[1].lower()
 
     def test_renders_ci_fix_template(self, mocker):
         """Should render prompt from ci_fix.j2 template."""
-        from i2code.implement.command_builder import CommandBuilder
-
         mock_render = mocker.patch("i2code.implement.command_builder.render_template", return_value="rendered prompt")
-
-        CommandBuilder().build_ci_fix_command(
-            run_id=12345,
-            workflow_name="CI Build",
-            failure_logs="Error: test failed",
-            interactive=True,
-        )
-
+        _build_ci_fix_cmd()
         mock_render.assert_called_once_with(
             "ci_fix.j2",
             package="i2code.implement",
@@ -388,55 +252,22 @@ class TestCommandBuilderFeedbackCommand:
 
     def test_uses_print_flag(self):
         """Feedback command should use --print flag."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_feedback_command(
-            pr_url="https://github.com/owner/repo/pull/123",
-            feedback_type="review_comment",
-            feedback_content="Please fix the typo",
-        )
-
+        cmd = _build_feedback_cmd()
         assert "--print" in cmd or "-p" in cmd
 
     def test_includes_pr_url_in_prompt(self):
         """Command should include PR URL in prompt."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_feedback_command(
-            pr_url="https://github.com/owner/repo/pull/123",
-            feedback_type="review_comment",
-            feedback_content="Please fix the typo",
-        )
-
-        cmd_str = " ".join(cmd)
-        assert "https://github.com/owner/repo/pull/123" in cmd_str
+        cmd = _build_feedback_cmd()
+        assert "https://github.com/owner/repo/pull/123" in " ".join(cmd)
 
     def test_includes_feedback_content_in_prompt(self):
         """Command should include feedback content."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        builder = CommandBuilder()
-        cmd = builder.build_feedback_command(
-            pr_url="https://github.com/owner/repo/pull/123",
-            feedback_type="review_comment",
-            feedback_content="Please fix the typo",
-        )
-
-        cmd_str = " ".join(cmd)
-        assert "Please fix the typo" in cmd_str
+        cmd = _build_feedback_cmd()
+        assert "Please fix the typo" in " ".join(cmd)
 
     def test_uses_feedback_template(self):
         """Should use wt-handle-feedback.md template."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        cmd = CommandBuilder().build_feedback_command(
-            pr_url="https://github.com/owner/repo/pull/123",
-            feedback_type="review_comment",
-            feedback_content="Please fix the typo",
-        )
-
+        cmd = _build_feedback_cmd()
         assert "wt-handle-feedback.md" in " ".join(cmd)
 
 
@@ -446,42 +277,16 @@ class TestFeedbackTemplate:
 
     def test_feedback_template_exists(self):
         """Template file should exist in prompt-templates directory."""
-        template_path = os.path.join(
-            os.path.dirname(__file__),
-            '../../prompt-templates/wt-handle-feedback.md'
-        )
-        assert os.path.exists(template_path), \
-            f"Template not found at {template_path}"
+        assert os.path.exists(FEEDBACK_TEMPLATE_PATH), f"Template not found at {FEEDBACK_TEMPLATE_PATH}"
 
     def test_feedback_template_has_pr_url_placeholder(self):
         """Template should have placeholder for PR URL."""
-        template_path = os.path.join(
-            os.path.dirname(__file__),
-            '../../prompt-templates/wt-handle-feedback.md'
-        )
-        with open(template_path, 'r') as f:
-            content = f.read()
-        assert 'PR_URL' in content, \
-            "Template should have PR_URL placeholder"
+        assert 'PR_URL' in _read_feedback_template(), "Template should have PR_URL placeholder"
 
     def test_feedback_template_has_feedback_content_placeholder(self):
         """Template should have placeholder for feedback content."""
-        template_path = os.path.join(
-            os.path.dirname(__file__),
-            '../../prompt-templates/wt-handle-feedback.md'
-        )
-        with open(template_path, 'r') as f:
-            content = f.read()
-        assert 'FEEDBACK_CONTENT' in content, \
-            "Template should have FEEDBACK_CONTENT placeholder"
+        assert 'FEEDBACK_CONTENT' in _read_feedback_template(), "Template should have FEEDBACK_CONTENT placeholder"
 
     def test_feedback_template_has_feedback_type_placeholder(self):
         """Template should have placeholder for feedback type."""
-        template_path = os.path.join(
-            os.path.dirname(__file__),
-            '../../prompt-templates/wt-handle-feedback.md'
-        )
-        with open(template_path, 'r') as f:
-            content = f.read()
-        assert 'FEEDBACK_TYPE' in content, \
-            "Template should have FEEDBACK_TYPE placeholder"
+        assert 'FEEDBACK_TYPE' in _read_feedback_template(), "Template should have FEEDBACK_TYPE placeholder"

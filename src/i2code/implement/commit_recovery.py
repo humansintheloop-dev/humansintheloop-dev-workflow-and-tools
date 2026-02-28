@@ -2,7 +2,7 @@
 
 import sys
 
-from i2code.implement.claude_runner import check_claude_success
+from i2code.implement.claude_runner import check_claude_success, print_task_failure_diagnostics
 from i2code.implement.command_builder import CommandBuilder
 from i2code.plan_domain.parser import parse
 
@@ -58,6 +58,7 @@ class TaskCommitRecovery:
         head_after = self._git_repo.head_sha
 
         if not check_claude_success(claude_result.returncode, head_before, head_after):
+            print_task_failure_diagnostics(claude_result, head_before, head_after)
             return False
         return "<SUCCESS>" in claude_result.output.stdout
 

@@ -20,6 +20,21 @@ function restoreErrors() {
   console.error = originalStderr;
 }
 
+function runGracefully(fn) {
+  suppressErrors();
+  try {
+    fn();
+  } finally {
+    restoreErrors();
+  }
+}
+
+function writeTranscriptAndParse(messages) {
+  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
+  fs.writeFileSync(transcriptPath, JSON.stringify(messages));
+  return sessionRecorder.parseTranscript(transcriptPath);
+}
+
 function cleanup() {
   if (fs.existsSync(TEST_DIR)) {
     fs.rmSync(TEST_DIR, { recursive: true, force: true });
@@ -267,15 +282,11 @@ test('appendToSession preserves existing content', () => {
 
 test('appendToSession returns false when no active session', () => {
   sessionRecorder.resetSession();
-  suppressErrors();
-  try {
-    // Don't create a session, just try to append
+  runGracefully(() => {
     sessionRecorder.resetSession();
     const result = sessionRecorder.appendToSession('test');
     assert.strictEqual(result, false, 'Should return false when no session');
-  } finally {
-    restoreErrors();
-  }
+  });
 });
 
 // --- Tests for handleUserPromptSubmit ---
@@ -302,38 +313,24 @@ test('handleUserPromptSubmit records user prompt to session file', () => {
 
 test('handleUserPromptSubmit handles missing prompt gracefully', () => {
   sessionRecorder.resetSession();
-  suppressErrors();
-  try {
-    const hookInput = {
+  runGracefully(() => {
+    sessionRecorder.handleUserPromptSubmit({
       session_id: 'test-session-123',
       cwd: TEST_DIR,
       hook_event_name: 'UserPromptSubmit'
-      // prompt is missing
-    };
-
-    // Should not throw
-    sessionRecorder.handleUserPromptSubmit(hookInput);
-  } finally {
-    restoreErrors();
-  }
+    });
+  });
 });
 
 test('handleUserPromptSubmit handles missing cwd gracefully', () => {
   sessionRecorder.resetSession();
-  suppressErrors();
-  try {
-    const hookInput = {
+  runGracefully(() => {
+    sessionRecorder.handleUserPromptSubmit({
       session_id: 'test-session-123',
       hook_event_name: 'UserPromptSubmit',
       prompt: 'Test prompt'
-      // cwd is missing
-    };
-
-    // Should not throw
-    sessionRecorder.handleUserPromptSubmit(hookInput);
-  } finally {
-    restoreErrors();
-  }
+    });
+  });
 });
 
 // --- Tests for Claude response formatting ---
@@ -361,78 +358,50 @@ test('formatClaudeResponse handles empty response', () => {
 // --- Tests for transcript parsing ---
 
 test('parseTranscript extracts assistant message from JSON transcript', () => {
-  const transcript = JSON.stringify([
+  const result = writeTranscriptAndParse([
     { role: 'user', content: 'Hello' },
     { role: 'assistant', content: 'Hi there! How can I help?' }
   ]);
-
-  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
-  fs.writeFileSync(transcriptPath, transcript);
-
-  const result = sessionRecorder.parseTranscript(transcriptPath);
   assert.strictEqual(result, 'Hi there! How can I help?');
 });
 
 test('parseTranscript returns last assistant message', () => {
-  const transcript = JSON.stringify([
+  const result = writeTranscriptAndParse([
     { role: 'user', content: 'Hello' },
     { role: 'assistant', content: 'First response' },
     { role: 'user', content: 'Thanks' },
     { role: 'assistant', content: 'Second response' }
   ]);
-
-  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
-  fs.writeFileSync(transcriptPath, transcript);
-
-  const result = sessionRecorder.parseTranscript(transcriptPath);
   assert.strictEqual(result, 'Second response');
 });
 
 test('parseTranscript handles nested content array', () => {
-  const transcript = JSON.stringify([
+  const result = writeTranscriptAndParse([
     { role: 'user', content: 'Hello' },
     { role: 'assistant', content: [{ type: 'text', text: 'Response with nested content' }] }
   ]);
-
-  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
-  fs.writeFileSync(transcriptPath, transcript);
-
-  const result = sessionRecorder.parseTranscript(transcriptPath);
   assert.strictEqual(result, 'Response with nested content');
 });
 
 test('parseTranscript returns null for missing file', () => {
-  suppressErrors();
-  try {
+  runGracefully(() => {
     const result = sessionRecorder.parseTranscript('/nonexistent/transcript.json');
     assert.strictEqual(result, null);
-  } finally {
-    restoreErrors();
-  }
+  });
 });
 
 test('parseTranscript returns null for invalid JSON', () => {
   const transcriptPath = path.join(TEST_DIR, 'invalid.json');
   fs.writeFileSync(transcriptPath, 'not valid json');
 
-  suppressErrors();
-  try {
+  runGracefully(() => {
     const result = sessionRecorder.parseTranscript(transcriptPath);
     assert.strictEqual(result, null);
-  } finally {
-    restoreErrors();
-  }
+  });
 });
 
 test('parseTranscript returns null when no assistant message', () => {
-  const transcript = JSON.stringify([
-    { role: 'user', content: 'Hello' }
-  ]);
-
-  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
-  fs.writeFileSync(transcriptPath, transcript);
-
-  const result = sessionRecorder.parseTranscript(transcriptPath);
+  const result = writeTranscriptAndParse([{ role: 'user', content: 'Hello' }]);
   assert.strictEqual(result, null);
 });
 
@@ -477,20 +446,13 @@ test('handleStop handles missing transcript_path gracefully', () => {
   sessionRecorder.resetSession();
   sessionRecorder.getOrCreateSession(TEST_DIR, 'test-session-stop');
 
-  suppressErrors();
-  try {
-    const hookInput = {
+  runGracefully(() => {
+    sessionRecorder.handleStop({
       session_id: 'test-session-stop',
       cwd: TEST_DIR,
       hook_event_name: 'Stop'
-      // transcript_path is missing
-    };
-
-    // Should not throw
-    sessionRecorder.handleStop(hookInput);
-  } finally {
-    restoreErrors();
-  }
+    });
+  });
 });
 
 // --- Tests for tool call formatting ---
@@ -574,20 +536,13 @@ test('handlePostToolUse handles missing tool_name gracefully', () => {
   sessionRecorder.resetSession();
   sessionRecorder.getOrCreateSession(TEST_DIR, 'test-session-tool');
 
-  suppressErrors();
-  try {
-    const hookInput = {
+  runGracefully(() => {
+    sessionRecorder.handlePostToolUse({
       session_id: 'test-session-tool',
       cwd: TEST_DIR,
       hook_event_name: 'PostToolUse'
-      // tool_name is missing
-    };
-
-    // Should not throw
-    sessionRecorder.handlePostToolUse(hookInput);
-  } finally {
-    restoreErrors();
-  }
+    });
+  });
 });
 
 test('handlePostToolUse aggregates multiple tool calls', () => {
@@ -628,36 +583,26 @@ test('handlePostToolUse aggregates multiple tool calls', () => {
 // --- Tests for error handling ---
 
 test('createSessionsDirectory handles permission errors gracefully', () => {
-  suppressErrors();
-  try {
-    // Try to create in a non-existent root path (should fail gracefully)
+  runGracefully(() => {
     const result = sessionRecorder.createSessionsDirectory('/nonexistent/path/that/does/not/exist');
     assert.strictEqual(result, null, 'Should return null on error');
-  } finally {
-    restoreErrors();
-  }
+  });
 });
 
 test('getOrCreateSession returns null on directory creation failure', () => {
-  suppressErrors();
-  try {
-    sessionRecorder.resetSession();
+  sessionRecorder.resetSession();
+  runGracefully(() => {
     const result = sessionRecorder.getOrCreateSession('/nonexistent/path/that/does/not/exist', 'test-session-fail');
     assert.strictEqual(result, null, 'Should return null on error');
-  } finally {
-    restoreErrors();
-  }
+  });
 });
 
 test('getOrCreateSession returns null when sessionId is missing', () => {
-  suppressErrors();
-  try {
-    sessionRecorder.resetSession();
+  sessionRecorder.resetSession();
+  runGracefully(() => {
     const result = sessionRecorder.getOrCreateSession(TEST_DIR, null);
     assert.strictEqual(result, null, 'Should return null when sessionId is missing');
-  } finally {
-    restoreErrors();
-  }
+  });
 });
 
 // --- Tests for git commit tracking ---

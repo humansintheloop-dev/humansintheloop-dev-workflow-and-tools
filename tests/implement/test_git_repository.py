@@ -15,12 +15,24 @@ from i2code.implement.git_repository import GitRepository
 from fake_github_client import FakeGitHubClient
 
 
+def _make_git_repo(repo, gh_client=None):
+    """Create a GitRepository wrapping a gitpython Repo with a default FakeGitHubClient."""
+    return GitRepository(repo, gh_client=gh_client or FakeGitHubClient())
+
+
+def _mock_subprocess(mocker, returncode=0, stdout="", stderr=""):
+    """Patch subprocess.run and return the mock with a CompletedProcess result."""
+    mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
+    mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=returncode, stdout=stdout, stderr=stderr)
+    return mock_run
+
+
 @pytest.mark.unit
 class TestHeadSha:
 
     def test_returns_current_head_commit_sha(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         assert git_repo.head_sha == repo.head.commit.hexsha
 
@@ -30,14 +42,14 @@ class TestHeadAdvancedSince:
 
     def test_returns_false_when_head_unchanged(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         original = git_repo.head_sha
         assert git_repo.head_advanced_since(original) is False
 
     def test_returns_true_after_new_commit(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         original = git_repo.head_sha
 
@@ -69,7 +81,7 @@ class TestEnsureBranch:
 
     def test_creates_branch_from_head(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         result = git_repo.ensure_branch("feature/new-branch")
 
@@ -79,7 +91,7 @@ class TestEnsureBranch:
     def test_reuses_existing_branch(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
         repo.create_head("feature/existing")
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         result = git_repo.ensure_branch("feature/existing")
 
@@ -98,7 +110,7 @@ class TestEnsureBranch:
         repo.index.add(["extra.txt"])
         repo.index.commit("Integration commit")
 
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
         result = git_repo.ensure_branch("idea/test/01-setup", from_ref="idea/test/integration")
 
         assert result == "idea/test/01-setup"
@@ -113,7 +125,7 @@ class TestEnsureIdeaBranch:
 
     def test_creates_idea_branch_from_head(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         result = git_repo.ensure_idea_branch("my-feature")
 
@@ -123,7 +135,7 @@ class TestEnsureIdeaBranch:
     def test_reuses_existing_idea_branch(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
         repo.create_head("idea/my-feature")
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         result = git_repo.ensure_idea_branch("my-feature")
 
@@ -138,7 +150,7 @@ class TestCheckout:
     def test_checks_out_branch(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
         repo.create_head("feature/checkout-test")
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         git_repo.checkout("feature/checkout-test")
 
@@ -168,7 +180,7 @@ class TestEnsureWorktree:
     def test_creates_worktree(self):
         with tempfile.TemporaryDirectory() as parent:
             repo, parent_dir = _named_repo_with_branch(parent, "feature/wt-test")
-            git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+            git_repo = _make_git_repo(repo)
             wt_repo = git_repo.ensure_worktree("test-idea", "feature/wt-test")
 
             assert isinstance(wt_repo, GitRepository)
@@ -179,7 +191,7 @@ class TestEnsureWorktree:
     def test_reuses_existing_worktree(self):
         with tempfile.TemporaryDirectory() as parent:
             repo, _ = _named_repo_with_branch(parent, "feature/wt-reuse")
-            git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+            git_repo = _make_git_repo(repo)
             wt1 = git_repo.ensure_worktree("reuse-idea", "feature/wt-reuse")
             wt2 = git_repo.ensure_worktree("reuse-idea", "feature/wt-reuse")
 
@@ -191,7 +203,7 @@ class TestWorkingTreeDir:
 
     def test_returns_repo_working_tree_dir(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         assert git_repo.working_tree_dir == repo.working_tree_dir
 
@@ -201,13 +213,13 @@ class TestBranchState:
 
     def test_branch_is_none_by_default(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         assert git_repo.branch is None
 
     def test_branch_tracks_value_set(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         git_repo.branch = "idea/test/01-setup"
 
@@ -219,13 +231,13 @@ class TestPrNumberState:
 
     def test_pr_number_is_none_by_default(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         assert git_repo.pr_number is None
 
     def test_pr_number_tracks_value_set(self, test_git_repo_with_commit):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
         git_repo.pr_number = 42
 
@@ -237,11 +249,10 @@ class TestPush:
 
     def test_push_delegates_to_subprocess_with_tracked_branch(self, test_git_repo_with_commit, mocker):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
         git_repo.branch = "idea/test/01-setup"
 
-        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
-        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+        mock_run = _mock_subprocess(mocker)
 
         result = git_repo.push()
 
@@ -253,11 +264,10 @@ class TestPush:
 
     def test_push_returns_false_on_failure(self, test_git_repo_with_commit, mocker):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
         git_repo.branch = "idea/test/01-setup"
 
-        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
-        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="error")
+        _mock_subprocess(mocker, returncode=1, stderr="error")
 
         result = git_repo.push()
 
@@ -272,7 +282,7 @@ class TestEnsurePr:
         gh = FakeGitHubClient()
         gh.set_pr_list([{"number": 42, "headRefName": "idea/test", "isDraft": True}])
 
-        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo = _make_git_repo(repo, gh_client=gh)
         git_repo.branch = "idea/test"
 
         result = git_repo.ensure_pr(
@@ -288,7 +298,7 @@ class TestEnsurePr:
         gh = FakeGitHubClient()
         gh.set_next_pr_number(99)
 
-        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo = _make_git_repo(repo, gh_client=gh)
         git_repo.branch = "idea/test"
 
         result = git_repo.ensure_pr(
@@ -311,7 +321,7 @@ class TestEnsurePr:
         gh = FakeGitHubClient()
         gh.set_next_pr_number(99)
 
-        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo = _make_git_repo(repo, gh_client=gh)
         git_repo.branch = "idea/test-idea-name"
 
         git_repo.ensure_pr(
@@ -331,7 +341,7 @@ class TestEnsurePr:
         gh = FakeGitHubClient()
         gh.set_next_pr_number(99)
 
-        git_repo = GitRepository(repo, gh_client=gh)
+        git_repo = _make_git_repo(repo, gh_client=gh)
         git_repo.branch = "idea/test"
 
         git_repo.ensure_pr(
@@ -355,18 +365,14 @@ class TestDiffFileAgainstHead:
 
     def test_returns_diff_output(self, test_git_repo_with_commit, mocker):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
-        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0,
-            stdout="diff --git a/plan.md b/plan.md\n-old\n+new\n",
-            stderr="",
-        )
+        diff_text = "diff --git a/plan.md b/plan.md\n-old\n+new\n"
+        mock_run = _mock_subprocess(mocker, stdout=diff_text)
 
         result = git_repo.diff_file_against_head("/some/path/plan.md")
 
-        assert result == "diff --git a/plan.md b/plan.md\n-old\n+new\n"
+        assert result == diff_text
         mock_run.assert_called_once_with(
             ["git", "diff", "HEAD", "--", "/some/path/plan.md"],
             capture_output=True, text=True,
@@ -375,16 +381,11 @@ class TestDiffFileAgainstHead:
 
     def test_returns_empty_string_when_no_changes(self, test_git_repo_with_commit, mocker):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
 
-        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="", stderr="",
-        )
+        _mock_subprocess(mocker)
 
-        result = git_repo.diff_file_against_head("/some/path/plan.md")
-
-        assert result == ""
+        assert git_repo.diff_file_against_head("/some/path/plan.md") == ""
 
 
 @pytest.mark.unit
@@ -392,19 +393,15 @@ class TestShowFileAtHead:
 
     def test_returns_file_content(self, test_git_repo_with_commit, mocker):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
         file_path = os.path.join(tmpdir, "docs", "plan.md")
 
-        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0,
-            stdout="# Plan\n- [ ] Task 1\n",
-            stderr="",
-        )
+        file_content = "# Plan\n- [ ] Task 1\n"
+        mock_run = _mock_subprocess(mocker, stdout=file_content)
 
         result = git_repo.show_file_at_head(file_path)
 
-        assert result == "# Plan\n- [ ] Task 1\n"
+        assert result == file_content
         mock_run.assert_called_once_with(
             ["git", "show", "HEAD:docs/plan.md"],
             capture_output=True, text=True,
@@ -418,7 +415,7 @@ class TestFindClone:
     def test_returns_none_when_no_clone_exists(self):
         with tempfile.TemporaryDirectory() as parent:
             repo, _ = _named_repo_with_branch(parent, "idea/test")
-            git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+            git_repo = _make_git_repo(repo)
 
             result = git_repo.find_clone("test")
 
@@ -430,7 +427,7 @@ class TestFindClone:
             clone_path = os.path.join(parent_dir, "my-repo-cl-test")
             _init_git_repo(clone_path)
 
-            git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+            git_repo = _make_git_repo(repo)
             result = git_repo.find_clone("test")
 
             assert isinstance(result, GitRepository)
@@ -467,7 +464,7 @@ class TestClone:
 
     def _create_clone(self, parent):
         repo, parent_dir = _named_repo_with_branch(parent, "idea/feat")
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
         subprocess.run(
             ["git", "remote", "add", "origin", _GITHUB_URL],
             cwd=git_repo.working_tree_dir, check=True, capture_output=True,
@@ -521,7 +518,7 @@ class TestClone:
     def test_clone_named_relative_to_main_repo_dir(self):
         with tempfile.TemporaryDirectory() as parent:
             repo, parent_dir = _named_repo_with_branch(parent, "idea/feat")
-            main_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+            main_repo = _make_git_repo(repo)
             subprocess.run(
                 ["git", "remote", "add", "origin", _GITHUB_URL],
                 cwd=main_repo.working_tree_dir, check=True, capture_output=True,
@@ -548,26 +545,16 @@ class TestBranchHasBeenPushed:
 
     def test_returns_false_when_branch_not_on_remote(self, test_git_repo_with_commit, mocker):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
         git_repo.branch = "idea/test/01-setup"
-
-        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
-        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
-
+        _mock_subprocess(mocker)
         assert git_repo.branch_has_been_pushed() is False
 
     def test_returns_true_when_branch_on_remote(self, test_git_repo_with_commit, mocker):
         tmpdir, repo = test_git_repo_with_commit
-        git_repo = GitRepository(repo, gh_client=FakeGitHubClient())
+        git_repo = _make_git_repo(repo)
         git_repo.branch = "idea/test/01-setup"
-
-        mock_run = mocker.patch("i2code.implement.git_repository.subprocess.run")
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0,
-            stdout="abc123\trefs/heads/idea/test/01-setup",
-            stderr="",
-        )
-
+        _mock_subprocess(mocker, stdout="abc123\trefs/heads/idea/test/01-setup")
         assert git_repo.branch_has_been_pushed() is True
 
 

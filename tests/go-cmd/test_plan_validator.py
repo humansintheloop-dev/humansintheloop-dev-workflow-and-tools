@@ -47,6 +47,8 @@ class TestValidPlanPasses:
 class TestMissingTaskTypeFails:
 
     PLAN_MISSING_TASK_TYPE = """\
+## Steel Thread 1: Feature
+
 - [ ] **Task 1.1: Missing TaskType**
   - Entrypoint: `command`
   - Observable: Something
@@ -73,6 +75,8 @@ class TestMissingTaskTypeFails:
 class TestMissingEvidenceFails:
 
     PLAN_MISSING_EVIDENCE = """\
+## Steel Thread 2: Feature
+
 - [ ] **Task 2.1: Missing Evidence**
   - TaskType: OUTCOME
   - Entrypoint: `command`
@@ -94,6 +98,8 @@ class TestMissingEvidenceFails:
 class TestMultipleErrorsReportsAll:
 
     PLAN_MULTIPLE_MISSING = """\
+## Steel Thread 1: Feature
+
 - [ ] **Task 1.1: Missing two fields**
   - TaskType: OUTCOME
   - Observable: Something
@@ -109,9 +115,9 @@ class TestMultipleErrorsReportsAll:
     def test_reports_all_errors(self):
         is_valid, errors = validate_plan(self.PLAN_MULTIPLE_MISSING)
 
-        # Task 1.1 is missing Entrypoint and Evidence
-        # Task 1.2 is missing all four fields
-        assert len(errors) == 6
+        # Task 1.1 is missing Entrypoint, Evidence, and steps
+        # Task 1.2 is missing all four fields and steps
+        assert len(errors) == 8
 
     def test_reports_errors_for_both_tasks(self):
         is_valid, errors = validate_plan(self.PLAN_MULTIPLE_MISSING)
@@ -122,41 +128,111 @@ class TestMultipleErrorsReportsAll:
 
 
 @pytest.mark.unit
-class TestEmptyPlanPasses:
+class TestPlanWithNoThreadsFails:
 
-    def test_empty_string_is_valid(self):
+    def test_empty_string_is_invalid(self):
         is_valid, errors = validate_plan("")
 
-        assert is_valid is True
+        assert is_valid is False
 
-    def test_empty_string_has_no_errors(self):
+    def test_empty_string_reports_no_threads_error(self):
         is_valid, errors = validate_plan("")
 
-        assert errors == []
+        assert any("at least one thread" in e for e in errors)
 
-    def test_plan_with_no_tasks_is_valid(self):
-        plan = "# Plan\n\nSome text but no task blocks.\n"
+    def test_plan_with_no_threads_is_invalid(self):
+        plan = "# Plan\n\nSome text but no threads.\n"
 
         is_valid, errors = validate_plan(plan)
 
-        assert is_valid is True
+        assert is_valid is False
+
+
+@pytest.mark.unit
+class TestThreadWithNoTasksFails:
+
+    PLAN_EMPTY_THREAD = """\
+## Steel Thread 1: Feature
+
+## Steel Thread 2: Another Feature
+
+- [ ] **Task 2.1: Some task**
+  - TaskType: OUTCOME
+  - Entrypoint: `command`
+  - Observable: Something
+  - Evidence: Something
+  - Steps:
+    - [ ] Step one
+"""
+
+    def test_returns_false(self):
+        is_valid, errors = validate_plan(self.PLAN_EMPTY_THREAD)
+
+        assert is_valid is False
+
+    def test_error_mentions_thread_number(self):
+        is_valid, errors = validate_plan(self.PLAN_EMPTY_THREAD)
+
+        assert any("Thread 1" in e for e in errors)
+
+    def test_error_mentions_at_least_one_task(self):
+        is_valid, errors = validate_plan(self.PLAN_EMPTY_THREAD)
+
+        assert any("at least one task" in e for e in errors)
+
+
+@pytest.mark.unit
+class TestTaskWithNoStepsFails:
+
+    PLAN_NO_STEPS = """\
+## Steel Thread 1: Feature
+
+- [ ] **Task 1.1: Missing steps**
+  - TaskType: OUTCOME
+  - Entrypoint: `command`
+  - Observable: Something
+  - Evidence: Something
+"""
+
+    def test_returns_false(self):
+        is_valid, errors = validate_plan(self.PLAN_NO_STEPS)
+
+        assert is_valid is False
+
+    def test_error_mentions_task(self):
+        is_valid, errors = validate_plan(self.PLAN_NO_STEPS)
+
+        assert any("Task 1.1" in e for e in errors)
+
+    def test_error_mentions_at_least_one_step(self):
+        is_valid, errors = validate_plan(self.PLAN_NO_STEPS)
+
+        assert any("at least one step" in e for e in errors)
 
 
 @pytest.mark.unit
 class TestCompletedTasksStillValidated:
 
     PLAN_COMPLETED_MISSING_FIELDS = """\
+## Steel Thread 1: Feature
+
 - [x] **Task 1.1: Completed but missing fields**
   - TaskType: OUTCOME
   - Observable: Something
+  - Steps:
+    - [x] Step one
 """
 
     PLAN_COMPLETED_VALID = """\
+## Steel Thread 1: Feature
+
 - [x] **Task 1.1: Completed and valid**
   - TaskType: OUTCOME
   - Entrypoint: `command`
   - Observable: Something
   - Evidence: Tests pass
+  - Steps:
+    - [x] Step one
 """
 
     def test_completed_task_with_missing_fields_fails(self):
@@ -174,6 +250,8 @@ class TestCompletedTasksStillValidated:
 class TestMissingEntrypointFails:
 
     PLAN_MISSING_ENTRYPOINT = """\
+## Steel Thread 3: Feature
+
 - [ ] **Task 3.1: Missing Entrypoint**
   - TaskType: OUTCOME
   - Observable: Something
@@ -195,6 +273,8 @@ class TestMissingEntrypointFails:
 class TestMissingObservableFails:
 
     PLAN_MISSING_OBSERVABLE = """\
+## Steel Thread 3: Feature
+
 - [ ] **Task 3.2: Missing Observable**
   - TaskType: OUTCOME
   - Entrypoint: `command`

@@ -224,12 +224,12 @@ class TestPlanCompletion:
 
     @pytest.mark.parametrize("plan_content,choices,expect_complete", [
         (
-            "- [x] **Task 1.1: Done**\n- [x] **Task 1.2: Also done**\n",
+            "## Steel Thread 1: Feature\n\n- [x] **Task 1.1: Done**\n- [x] **Task 1.2: Also done**\n",
             ["2"],
             True,
         ),
         (
-            "- [x] **Task 1.1: Done**\n- [ ] **Task 1.2: Not done**\n",
+            "## Steel Thread 1: Feature\n\n- [x] **Task 1.1: Done**\n- [ ] **Task 1.2: Not done**\n",
             ["2", "4"],
             False,
         ),

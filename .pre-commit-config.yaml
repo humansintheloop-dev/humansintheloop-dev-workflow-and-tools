@@ -17,6 +17,11 @@ repos:
       - id: gitleaks
   - repo: local
     hooks:
+      - id: run-codescene
+        name: Run CodeScene
+        entry: codescene-precommit.sh
+        language: script
+        pass_filenames: false
       - id: plugin-javascript-tests
         name: Run plugin JavaScript tests
         entry: ./test-scripts/test-plugin-javascript.sh

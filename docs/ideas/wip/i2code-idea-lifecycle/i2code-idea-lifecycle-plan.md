@@ -193,19 +193,19 @@ Allows `i2code go` to accept an idea name instead of a directory path.
 
 The HAS_PLAN menu becomes dynamic based on the idea's lifecycle state, offering forward state transitions.
 
-- [ ] **Task 6.1: HAS_PLAN menu shows lifecycle move option based on idea state**
+- [x] **Task 6.1: HAS_PLAN menu shows lifecycle move option based on idea state**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go my-feature` (idea in `draft/` with plan file)
   - Observable: Menu shows "Move idea to ready" as option 2 and default when idea is in `draft/` (FR-5.1). Menu shows "Move idea to wip" as option 2 and default when idea is in `ready/` (FR-5.2). Menu shows no move option when idea is in `wip/`, `completed/`, or `abandoned/`, with "Implement" as default (FR-5.3). The "Commit changes" option continues to appear dynamically when uncommitted changes exist (FR-5.5).
   - Evidence: `pytest` passes — tests verify the menu structure returned by the orchestrator for each lifecycle state (draft, ready, wip)
   - Steps:
-    - [ ] Explore the HAS_PLAN menu construction in `src/i2code/go_cmd/orchestrator.py` to understand how menu options are built and how the default is set
-    - [ ] Determine idea lifecycle state from `IdeaProject` directory path using `state_from_path()` from the resolver module
-    - [ ] Modify HAS_PLAN menu construction:
+    - [x] Explore the HAS_PLAN menu construction in `src/i2code/go_cmd/orchestrator.py` to understand how menu options are built and how the default is set
+    - [x] Determine idea lifecycle state from `IdeaProject` directory path using `state_from_path()` from the resolver module
+    - [x] Modify HAS_PLAN menu construction:
       - When state is `draft`: insert "Move idea to ready" as option 2, make it default (FR-5.1)
       - When state is `ready`: insert "Move idea to wip" as option 2, make it default (FR-5.2)
       - When state is `wip`/`completed`/`abandoned`: no move option, "Implement" is default (FR-5.3)
-    - [ ] Write tests: menu for draft idea with plan has move-to-ready as default; menu for ready idea has move-to-wip as default; menu for wip idea has no move option and implement as default
+    - [x] Write tests: menu for draft idea with plan has move-to-ready as default; menu for ready idea has move-to-wip as default; menu for wip idea has no move option and implement as default
 
 - [ ] **Task 6.2: Selecting move option transitions idea and re-enters menu with updated state**
   - TaskType: OUTCOME

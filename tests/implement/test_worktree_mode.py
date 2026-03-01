@@ -18,6 +18,12 @@ from conftest import write_plan_file, mark_task_complete, advance_head, combined
 from fake_claude_runner import FakeClaudeRunner
 from fake_git_repository import FakeGitRepository
 from fake_github_client import FakeGitHubClient
+from fake_loop_collaborators import (
+    SequentialReviewProcessor,
+    SequentialBuildFixer,
+    NoOpBuildFixer,
+    NoOpCommitRecovery,
+)
 from fake_workflow_state import FakeWorkflowState
 
 
@@ -492,57 +498,7 @@ class TestWorktreeModeWithRecovery:
             assert "All tasks completed!" in captured.out
 
 
-# --- Review poll loop fakes and helpers ---
-
-
-class _SequentialReviewProcessor:
-    """Fake review processor that returns values from a pre-configured sequence."""
-
-    def __init__(self, results, call_log=None):
-        self._results = list(results)
-        self._index = 0
-        self.call_count = 0
-        self._call_log = call_log
-
-    def process_feedback(self):
-        self.call_count += 1
-        if self._call_log is not None:
-            self._call_log.append("process_feedback")
-        if self._index < len(self._results):
-            result = self._results[self._index]
-            self._index += 1
-            return result
-        return False
-
-
-class _SequentialBuildFixer:
-    """Fake build fixer that returns values from a pre-configured sequence."""
-
-    def __init__(self, results, call_log=None):
-        self._results = list(results)
-        self._index = 0
-        self.call_count = 0
-        self._call_log = call_log
-
-    def check_and_fix_ci(self):
-        self.call_count += 1
-        if self._call_log is not None:
-            self._call_log.append("check_and_fix_ci")
-        if self._index < len(self._results):
-            result = self._results[self._index]
-            self._index += 1
-            return result
-        return False
-
-
-class _NoOpBuildFixer:
-    def check_and_fix_ci(self):
-        return False
-
-
-class _NoOpCommitRecovery:
-    def commit_if_needed(self):
-        pass
+# --- Review poll loop helpers ---
 
 
 def _make_review_poll_mode(tmpdir, *, feedback_sequence, pr_state,
@@ -565,16 +521,16 @@ def _make_review_poll_mode(tmpdir, *, feedback_sequence, pr_state,
     fake_gh.set_pr_state(pr_number, pr_state)
     fake_repo._gh_client = fake_gh
 
-    review_processor = _SequentialReviewProcessor(feedback_sequence)
+    review_processor = SequentialReviewProcessor(feedback_sequence)
     sleep_calls = []
 
     loop_steps = LoopSteps(
         claude_runner=FakeClaudeRunner(),
         state=FakeWorkflowState(),
         ci_monitor=None,
-        build_fixer=_NoOpBuildFixer(),
+        build_fixer=NoOpBuildFixer(),
         review_processor=review_processor,
-        commit_recovery=_NoOpCommitRecovery(),
+        commit_recovery=NoOpCommitRecovery(),
         sleep=lambda secs: sleep_calls.append(secs),
     )
 
@@ -683,8 +639,8 @@ def _make_review_poll_mode_with_ci(tmpdir, *, ci_results, feedback_sequence,
     fake_repo._gh_client = fake_gh
 
     call_log = []
-    build_fixer = _SequentialBuildFixer(ci_results, call_log=call_log)
-    review_processor = _SequentialReviewProcessor(feedback_sequence, call_log=call_log)
+    build_fixer = SequentialBuildFixer(ci_results, call_log=call_log)
+    review_processor = SequentialReviewProcessor(feedback_sequence, call_log=call_log)
 
     loop_steps = LoopSteps(
         claude_runner=FakeClaudeRunner(),
@@ -692,7 +648,7 @@ def _make_review_poll_mode_with_ci(tmpdir, *, ci_results, feedback_sequence,
         ci_monitor=None,
         build_fixer=build_fixer,
         review_processor=review_processor,
-        commit_recovery=_NoOpCommitRecovery(),
+        commit_recovery=NoOpCommitRecovery(),
     )
 
     opts = ImplementOpts(

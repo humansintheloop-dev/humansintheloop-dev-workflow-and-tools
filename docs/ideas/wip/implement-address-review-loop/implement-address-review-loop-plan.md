@@ -139,16 +139,16 @@ Proves that CI failures caused by review-fix commits are caught and fixed automa
 
 Proves that when the flag is set but tasks still remain in the plan, they execute normally through the existing worktree loop before the review poll loop activates.
 
-- [ ] **Task 5.1: Remaining tasks execute normally before review loop activates**
+- [x] **Task 5.1: Remaining tasks execute normally before review loop activates**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement <idea-dir> --address-review-comments` (some tasks remain incomplete)
   - Observable: Incomplete tasks execute through the normal task loop (task → push → CI → feedback → next task); after the last task completes, `get_next_task()` returns `None` and the review poll loop activates instead of exiting
   - Evidence: pytest test using `FakeGitRepository`, `FakeClaudeRunner`, and `FakeWorkflowState`. Test configures: one remaining task in plan, `address_review_comments=True`. Asserts: task executes via `ClaudeRunner`, after task completes the review poll loop activates (verified by `process_feedback()` being called in poll mode), then PR merged → exit
   - Steps:
-    - [ ] No new production code expected — this behavior should emerge from the existing task loop combined with the poll loop from Task 3.1/4.1
-    - [ ] Write pytest test: one task remains → task executes normally → review loop activates → PR merged → clean exit
-    - [ ] Write pytest test: multiple tasks remain → all execute in order → review loop activates after last task
-    - [ ] If any production code adjustment is needed to support the transition from task execution to poll loop, make that adjustment here
+    - [x] No new production code expected — this behavior should emerge from the existing task loop combined with the poll loop from Task 3.1/4.1
+    - [x] Write pytest test: one task remains → task executes normally → review loop activates → PR merged → clean exit
+    - [x] Write pytest test: multiple tasks remain → all execute in order → review loop activates after last task
+    - [x] If any production code adjustment is needed to support the transition from task execution to poll loop, make that adjustment here
 
 ---
 
@@ -173,3 +173,18 @@ test_repeated_ci_failures_fixed_before_feedback verifies two consecutive CI fixe
 
 ### 2026-03-01 18:08 - mark-task-complete
 Review poll loop checks CI before feedback; tests verify ordering and skip behavior
+
+### 2026-03-01 18:20 - mark-step-complete
+Confirmed: behavior emerges from existing task loop + poll loop code — no production changes needed
+
+### 2026-03-01 18:20 - mark-step-complete
+Test: test_one_task_executes_then_review_loop_activates verifies single task → poll loop → merged
+
+### 2026-03-01 18:20 - mark-step-complete
+Test: test_multiple_tasks_execute_then_review_loop_activates verifies two tasks → poll loop → merged
+
+### 2026-03-01 18:20 - mark-step-complete
+No production code adjustments needed — transition works as designed
+
+### 2026-03-01 18:20 - mark-task-complete
+Both tests pass: tasks execute normally, then review poll loop activates after last task. Extracted shared fakes to fake_loop_collaborators.py.

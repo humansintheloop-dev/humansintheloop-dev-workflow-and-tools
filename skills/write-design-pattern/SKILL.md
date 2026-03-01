@@ -19,19 +19,24 @@ Create or update a pattern entry in `design-pattern-catalog/<category>/<pattern-
 ### `# Pattern Name`
 
 ### `## Problem`
-What motivated the pattern. 1-2 sentences.
+State the general principle, not a specific symptom. 1-2 sentences. Specific examples belong in later sections.
 
-### `## Structure`
+### `## Structure` or `## Example`
+Choose the appropriate section based on the pattern type:
+
+**Use `## Structure`** for patterns that define collaborating elements (e.g., Command + Assembler):
 A table of key elements, their files, and responsibilities. Lead each row with the key element, not the filename.
 
 | Key Element | File | Responsibility |
 |-------------|------|---------------|
 | ... | `...` | ... |
 
-### `## Reference implementation` (within Structure)
+#### `### Reference implementation` (within Structure)
 Bullet list of symbols and their files. Format: `SymbolName` in `path/to/file.py`. No line numbers — they're too unstable.
 
-### `## Testing Strategies`
+**Use `## Example`** for patterns about code organization or refactoring, with `### Before` and `### After` subsections showing the concrete change.
+
+### `## Testing Strategies` (when applicable)
 One subsection per strategy. Each starts with **What is tested:** naming the specific element under test. Include example references as `path/to/test_file.py` — `test_function_name`.
 
 ### `## When to Apply`

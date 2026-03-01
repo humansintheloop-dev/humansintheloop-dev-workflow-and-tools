@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Protocol, TextIO
 
+from pathlib import Path
+
 from i2code.go_cmd.create_plan import PlanServices, create_plan
 from i2code.go_cmd.implement_config import (
     build_implement_flags,
@@ -21,6 +23,7 @@ from i2code.go_cmd.plan_validator import validate_plan
 from i2code.go_cmd.plugin_skills import list_plugin_skills
 from i2code.go_cmd.revise_plan import revise_plan
 from i2code.idea_cmd.brainstorm import brainstorm_idea
+from i2code.idea_resolver import state_from_path
 from i2code.implement.claude_runner import ClaudeResult, ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
 from i2code.spec_cmd.create_spec import create_spec
@@ -50,9 +53,16 @@ REVISE_PLAN = "Revise the plan"
 IMPLEMENT_PLAN = "Implement the entire plan"
 CONFIGURE_IMPLEMENT = "Configure implement options"
 COMMIT_CHANGES = "Commit changes"
+MOVE_TO_READY = "Move idea to ready"
+MOVE_TO_WIP = "Move idea to wip"
 EXIT = "Exit"
 RETRY = "Retry"
 ABORT = "Abort workflow"
+
+_LIFECYCLE_MOVE_OPTIONS = {
+    "draft": MOVE_TO_READY,
+    "ready": MOVE_TO_WIP,
+}
 
 _MENU_OPTIONS = {
     WorkflowState.NO_IDEA: [CREATE_IDEA],
@@ -248,9 +258,19 @@ class Orchestrator:
             self._run_implement()
         return True
 
+    def _lifecycle_move_label(self):
+        try:
+            state = state_from_path(Path(self._project.directory))
+        except ValueError:
+            return None
+        return _LIFECYCLE_MOVE_OPTIONS.get(state)
+
     def _build_has_plan_options(self):
         config_path = self._project.implement_config_file
         options = [REVISE_PLAN]
+        move_label = self._lifecycle_move_label()
+        if move_label:
+            options.append(move_label)
         if self._has_uncommitted_changes():
             options.append(COMMIT_CHANGES)
         options.append(build_implement_label(config_path))

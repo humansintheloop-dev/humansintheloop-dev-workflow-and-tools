@@ -80,15 +80,15 @@ Proves the new resolver module works, CLI registration works, columnar output is
       - Resolver `resolve_idea`: single match returns correct IdeaInfo; no match raises error with idea name; multiple matches raises error listing conflicting states
       - CLI `idea list`: output has aligned columns; multiple ideas sorted alphabetically; empty output for no ideas (exit 0)
 
-- [ ] **Task 1.2: `idea list --state <state>` filters to a single lifecycle state**
+- [x] **Task 1.2: `idea list --state <state>` filters to a single lifecycle state**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea list --state wip`
   - Observable: Only ideas in the specified state are shown. Same columnar format. Exit code 0. Empty output (no error) when no ideas match the filter.
   - Evidence: `pytest` passes — tests invoke `i2code idea list --state <state>` via CliRunner and assert only matching ideas appear
   - Steps:
-    - [ ] Add `--state` option to list command using Click `Choice` type with the five lifecycle states — this provides shell completions for free (FR-2.3)
-    - [ ] Filter `list_ideas()` result by the specified state
-    - [ ] Write tests: filter to state with matches shows only those ideas; filter to state with no matches shows empty output (exit 0); invalid state value rejected by Click Choice
+    - [x] Add `--state` option to list command using Click `Choice` type with the five lifecycle states — this provides shell completions for free (FR-2.3)
+    - [x] Filter `list_ideas()` result by the specified state
+    - [x] Write tests: filter to state with matches shows only those ideas; filter to state with no matches shows empty output (exit 0); invalid state value rejected by Click Choice
 
 ---
 

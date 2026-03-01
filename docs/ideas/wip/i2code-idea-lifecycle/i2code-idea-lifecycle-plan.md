@@ -173,16 +173,16 @@ Adds transition validation rules that enforce forward-only progression and artif
 
 Allows `i2code go` to accept an idea name instead of a directory path.
 
-- [ ] **Task 5.1: `go` accepts idea name and resolves to directory path via resolver**
+- [x] **Task 5.1: `go` accepts idea name and resolves to directory path via resolver**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go my-feature`
   - Observable: When `my-feature` is not an existing directory, the resolver finds it in the correct state directory (e.g., `docs/ideas/ready/my-feature/`) and the orchestrator proceeds with the resolved path. Error if name not found or ambiguous.
   - Evidence: `pytest` passes — tests invoke `go` with an idea name (not a directory path), verify the orchestrator receives the correct resolved directory path and proceeds normally
   - Steps:
-    - [ ] Explore `src/i2code/go_cmd/` to understand how the directory argument is currently parsed and passed to the orchestrator
-    - [ ] Modify the `go` command's argument handling: if the argument is not an existing directory, attempt `resolve_idea()` from the resolver (FR-4.1, FR-4.2)
-    - [ ] Add shell completions for the argument that offer both filesystem paths and idea names (FR-4.3)
-    - [ ] Write tests:
+    - [x] Explore `src/i2code/go_cmd/` to understand how the directory argument is currently parsed and passed to the orchestrator
+    - [x] Modify the `go` command's argument handling: if the argument is not an existing directory, attempt `resolve_idea()` from the resolver (FR-4.1, FR-4.2)
+    - [x] Add shell completions for the argument that offer both filesystem paths and idea names (FR-4.3)
+    - [x] Write tests:
       - `go` with idea name resolves to correct directory and orchestrator proceeds
       - `go` with directory path still works unchanged (backward compatible)
       - `go` with unknown name shows resolver error
@@ -241,3 +241,18 @@ Wired validate_transition into state_cmd before git mv, prints violation and sug
 
 ### 2026-03-01 14:26 - mark-task-complete
 Transition rules engine implemented with tests for all scenarios
+
+### 2026-03-01 14:37 - mark-step-complete
+Explored go_cmd/cli.py structure
+
+### 2026-03-01 14:37 - mark-step-complete
+Added _resolve_directory with name resolution via resolve_idea
+
+### 2026-03-01 14:37 - mark-step-complete
+Added _complete_name_or_path and shell_complete on directory argument
+
+### 2026-03-01 14:37 - mark-step-complete
+Added tests for name resolution, error cases, and shell completion
+
+### 2026-03-01 14:38 - mark-task-complete
+go command accepts idea name, resolves via resolver, with shell completion and error handling

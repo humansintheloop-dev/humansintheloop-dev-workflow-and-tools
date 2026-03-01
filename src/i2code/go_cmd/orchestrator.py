@@ -23,6 +23,7 @@ from i2code.go_cmd.plan_validator import validate_plan
 from i2code.go_cmd.plugin_skills import list_plugin_skills
 from i2code.go_cmd.revise_plan import revise_plan
 from i2code.idea_cmd.brainstorm import brainstorm_idea
+from i2code.idea_cmd.state_cmd import execute_transition
 from i2code.idea_resolver import state_from_path
 from i2code.implement.claude_runner import ClaudeResult, ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
@@ -63,6 +64,21 @@ _LIFECYCLE_MOVE_OPTIONS = {
     "draft": MOVE_TO_READY,
     "ready": MOVE_TO_WIP,
 }
+
+_MOVE_TARGETS = {
+    MOVE_TO_READY: "ready",
+    MOVE_TO_WIP: "wip",
+}
+
+
+def _git_root_from_path(idea_dir):
+    """Derive the git repository root from an idea directory path."""
+    parts = Path(idea_dir).resolve().parts
+    for i in range(len(parts) - 1):
+        if parts[i] == "docs" and parts[i + 1] == "ideas":
+            return Path(*parts[:i]) if i > 0 else Path(parts[0])
+    msg = f"Cannot determine git root from path: {idea_dir}"
+    raise ValueError(msg)
 
 _MENU_OPTIONS = {
     WorkflowState.NO_IDEA: [CREATE_IDEA],
@@ -148,19 +164,40 @@ def _default_revise_plan(project):
     return revise_plan(project, ClaudeRunner(), render_template)
 
 
+_CALLABLE_DEFAULTS = {
+    "git_runner": _default_git_runner,
+    "implement_runner": _default_implement_runner,
+    "brainstorm_idea_fn": _default_brainstorm_idea,
+    "create_spec_fn": _default_create_spec,
+    "revise_spec_fn": _default_revise_spec,
+    "create_plan_fn": _default_create_plan,
+    "revise_plan_fn": _default_revise_plan,
+    "transition_fn": execute_transition,
+}
+
+
+
 @dataclass
 class OrchestratorDeps:
     """Injectable dependencies for the orchestrator."""
 
     menu_config: MenuConfig = field(default_factory=MenuConfig)
-    output: TextIO = field(default_factory=lambda: sys.stderr)
-    git_runner: Callable = _default_git_runner
-    implement_runner: Callable = _default_implement_runner
-    brainstorm_idea_fn: StepFn = _default_brainstorm_idea
-    create_spec_fn: StepFn = _default_create_spec
-    revise_spec_fn: StepFn = _default_revise_spec
-    create_plan_fn: StepFn = _default_create_plan
-    revise_plan_fn: StepFn = _default_revise_plan
+    output: TextIO = None
+    git_runner: Callable = None
+    implement_runner: Callable = None
+    brainstorm_idea_fn: Callable = None
+    create_spec_fn: Callable = None
+    revise_spec_fn: Callable = None
+    create_plan_fn: Callable = None
+    revise_plan_fn: Callable = None
+    transition_fn: Callable = None
+
+    def __post_init__(self):
+        if self.output is None:
+            self.output = sys.stderr
+        for attr, default in _CALLABLE_DEFAULTS.items():
+            if getattr(self, attr) is None:
+                setattr(self, attr, default)
 
 
 class Orchestrator:
@@ -248,7 +285,9 @@ class Orchestrator:
     def _handle_has_plan_choice(self, selected):
         if selected == EXIT:
             return False
-        if selected == COMMIT_CHANGES:
+        if selected in _MOVE_TARGETS:
+            self._execute_move(selected)
+        elif selected == COMMIT_CHANGES:
             self._commit_changes()
         elif selected == REVISE_PLAN:
             self._run_step_with_retry("Revising plan", "revise_plan")
@@ -257,6 +296,16 @@ class Orchestrator:
         elif selected.startswith(IMPLEMENT_PLAN):
             self._run_implement()
         return True
+
+    def _execute_move(self, selected):
+        new_state = _MOVE_TARGETS[selected]
+        name = self._project.name
+        old_path = Path(self._project.directory)
+        git_root = _git_root_from_path(old_path)
+        message = self._deps.transition_fn(name, old_path, new_state, git_root)
+        print(message, file=self._deps.output)
+        new_dir = git_root / "docs" / "ideas" / new_state / name
+        self._project = IdeaProject(str(new_dir))
 
     def _lifecycle_move_label(self):
         try:

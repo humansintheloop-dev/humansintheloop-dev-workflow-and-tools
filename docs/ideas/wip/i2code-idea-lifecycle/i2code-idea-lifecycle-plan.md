@@ -207,16 +207,16 @@ The HAS_PLAN menu becomes dynamic based on the idea's lifecycle state, offering 
       - When state is `wip`/`completed`/`abandoned`: no move option, "Implement" is default (FR-5.3)
     - [x] Write tests: menu for draft idea with plan has move-to-ready as default; menu for ready idea has move-to-wip as default; menu for wip idea has no move option and implement as default
 
-- [ ] **Task 6.2: Selecting move option transitions idea and re-enters menu with updated state**
+- [x] **Task 6.2: Selecting move option transitions idea and re-enters menu with updated state**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go my-feature` → select "Move idea to ready"
   - Observable: Idea moves from `draft/` to `ready/` via `git mv` + commit (same mechanism as `idea state`). IdeaProject instance is replaced with one pointing to the new directory (FR-6.1). All subsequent operations use the updated path (FR-6.2). Menu re-appears with updated options reflecting the new state (e.g., now shows "Move idea to wip" as default).
   - Evidence: `pytest` passes — tests simulate selecting the move menu option, verify the transition occurred (directory moved, commit created), verify the IdeaProject was rebuilt with the new path, and verify the menu re-enters with updated options
   - Steps:
-    - [ ] Implement the move menu handler: reuse the transition execution function from Steel Thread 3
-    - [ ] After transition, reconstruct `IdeaProject` with the new directory path (FR-6.1)
-    - [ ] Re-enter the HAS_PLAN menu loop so the user sees the updated menu (FR-6.2)
-    - [ ] Write tests:
+    - [x] Implement the move menu handler: reuse the transition execution function from Steel Thread 3
+    - [x] After transition, reconstruct `IdeaProject` with the new directory path (FR-6.1)
+    - [x] Re-enter the HAS_PLAN menu loop so the user sees the updated menu (FR-6.2)
+    - [x] Write tests:
       - Select move from draft: idea transitions to ready, IdeaProject path updated, menu re-enters showing "Move to wip" as default
       - Select move from ready: idea transitions to wip, IdeaProject path updated, menu re-enters with no move option and "Implement" as default
       - After move, orchestrator uses new path for subsequent operations (e.g., plan file path resolves from new directory)

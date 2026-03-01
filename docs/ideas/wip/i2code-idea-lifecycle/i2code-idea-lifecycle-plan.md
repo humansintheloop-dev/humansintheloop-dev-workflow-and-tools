@@ -96,17 +96,17 @@ Proves the new resolver module works, CLI registration works, columnar output is
 
 Adds the `idea state` query command that shows which lifecycle state an idea is in.
 
-- [ ] **Task 2.1: `idea state <name-or-path>` displays current lifecycle state**
+- [x] **Task 2.1: `idea state <name-or-path>` displays current lifecycle state**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea state my-feature`
   - Observable: Prints the single-word lifecycle state (e.g., `draft`). Exit code 0. Accepts both an idea name (resolved via resolver) and a directory path. Error with exit 1 if name not found.
   - Evidence: `pytest` passes — tests invoke `idea state` via CliRunner with both a name and a directory path, asserting the correct state word is printed
   - Steps:
-    - [ ] Create state command in `src/i2code/idea_cmd/` with a `<name-or-path>` argument
-    - [ ] Implement argument resolution: if argument is an existing directory, use it directly and extract state via `state_from_path()`; otherwise resolve via `resolve_idea()` (FR-3.2)
-    - [ ] Register `state` subcommand under the `idea` group in `src/i2code/cli.py`
-    - [ ] Add shell completion for `<name-or-path>` that offers both filesystem paths and idea names (FR-3.3)
-    - [ ] Write tests: query by name returns correct state; query by directory path returns correct state; unknown name returns error with exit 1
+    - [x] Create state command in `src/i2code/idea_cmd/` with a `<name-or-path>` argument
+    - [x] Implement argument resolution: if argument is an existing directory, use it directly and extract state via `state_from_path()`; otherwise resolve via `resolve_idea()` (FR-3.2)
+    - [x] Register `state` subcommand under the `idea` group in `src/i2code/cli.py`
+    - [x] Add shell completion for `<name-or-path>` that offers both filesystem paths and idea names (FR-3.3)
+    - [x] Write tests: query by name returns correct state; query by directory path returns correct state; unknown name returns error with exit 1
 
 ---
 

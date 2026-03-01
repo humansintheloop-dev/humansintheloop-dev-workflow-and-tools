@@ -41,6 +41,31 @@ def _ideas_in_state(state: str, state_dir: Path, git_root: Path) -> list[IdeaInf
     ]
 
 
+_IDEAS_PREFIX = ("docs", "ideas")
+
+
+def _find_state_in_parts(parts):
+    """Search path parts for a 'docs/ideas/{state}' sequence."""
+    triplets = zip(parts, parts[1:], parts[2:])
+    for first, second, third in triplets:
+        if (first, second) == _IDEAS_PREFIX and third in LIFECYCLE_STATES:
+            return third
+    return None
+
+
+def state_from_path(path: Path) -> str:
+    """Extract the lifecycle state from an idea directory path.
+
+    Expects a path containing a 'docs/ideas/{state}/{name}' segment.
+    Raises ValueError if no valid state is found.
+    """
+    result = _find_state_in_parts(path.resolve().parts)
+    if result is not None:
+        return result
+    msg = f"Cannot determine lifecycle state from path: {path}"
+    raise ValueError(msg)
+
+
 def list_ideas(git_root: Path) -> list[IdeaInfo]:
     """Scan all state directories and return ideas sorted alphabetically by name."""
     ideas_root = git_root / "docs" / "ideas"

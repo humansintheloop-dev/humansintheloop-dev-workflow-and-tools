@@ -5,6 +5,7 @@ import os
 
 import click
 
+from i2code.completion import completion
 from i2code.design_cmd.cli import design
 from i2code.go_cmd.cli import go_cmd
 from i2code.idea_cmd.cli import idea
@@ -44,3 +45,4 @@ main.add_command(scaffold_cmd)
 main.add_command(setup_group)
 main.add_command(tracking)
 main.add_command(go_cmd)
+main.add_command(completion)

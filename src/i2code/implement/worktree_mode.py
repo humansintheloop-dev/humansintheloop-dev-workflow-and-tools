@@ -88,6 +88,9 @@ class WorktreeMode:
     def _review_poll_loop(self):
         """Poll for review feedback until the PR is merged or closed."""
         while True:
+            if self._loop_steps.build_fixer.check_and_fix_ci():
+                continue
+
             if self._loop_steps.review_processor.process_feedback():
                 continue
 

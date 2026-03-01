@@ -64,18 +64,18 @@ All other existing behavior (worktree setup, PR creation, CI monitoring, review 
 
 Proves the new CLI flag exists and validates correctly against incompatible options. This is the foundation all subsequent threads build on.
 
-- [ ] **Task 1.1: `--address-review-comments` raises UsageError when combined with `--trunk`**
+- [x] **Task 1.1: `--address-review-comments` raises UsageError when combined with `--trunk`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement <idea-dir> --address-review-comments --trunk`
   - Observable: Command raises `click.UsageError` with message indicating `--trunk` cannot be combined with `--address-review-comments`
   - Evidence: pytest test creates `ImplementOpts` with both `trunk=True` and `address_review_comments=True`, calls `validate_trunk_options()`, and asserts `click.UsageError` is raised with the expected message
   - Steps:
-    - [ ] Locate the Click command definition for `implement` and add `--address-review-comments` as `is_flag=True, default=False`
-    - [ ] Add `address_review_comments: bool = False` field to `ImplementOpts` dataclass
-    - [ ] Thread the flag value from the Click command through to `ImplementOpts` construction
-    - [ ] Add `--address-review-comments` to the trunk incompatibility check in `ImplementOpts.validate_trunk_options()`, following the existing pattern for other incompatible flags
-    - [ ] Write pytest test: construct `ImplementOpts` with both flags set, assert `click.UsageError` is raised
-    - [ ] Write pytest test: construct `ImplementOpts` with only `--address-review-comments` (no `--trunk`), assert no error
+    - [x] Locate the Click command definition for `implement` and add `--address-review-comments` as `is_flag=True, default=False`
+    - [x] Add `address_review_comments: bool = False` field to `ImplementOpts` dataclass
+    - [x] Thread the flag value from the Click command through to `ImplementOpts` construction
+    - [x] Add `--address-review-comments` to the trunk incompatibility check in `ImplementOpts.validate_trunk_options()`, following the existing pattern for other incompatible flags
+    - [x] Write pytest test: construct `ImplementOpts` with both flags set, assert `click.UsageError` is raised
+    - [x] Write pytest test: construct `ImplementOpts` with only `--address-review-comments` (no `--trunk`), assert no error
 
 ---
 

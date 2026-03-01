@@ -24,6 +24,7 @@ class ImplementOpts:
     trunk: bool = False
     dry_run: bool = False
     ignore_uncommitted_idea_changes: bool = False
+    address_review_comments: bool = False
 
     _TRUNK_INCOMPATIBLE = [
         ("cleanup", "--cleanup"),
@@ -31,10 +32,13 @@ class ImplementOpts:
         ("isolate", "--isolate"),
         ("isolated", "--isolated"),
         ("skip_ci_wait", "--skip-ci-wait"),
+        ("address_review_comments", "--address-review-comments"),
     ]
 
     def validate_trunk_options(self):
         """Raise click.UsageError if --trunk is combined with incompatible options."""
+        if not self.trunk:
+            return
         incompatible = [flag for attr, flag in self._TRUNK_INCOMPATIBLE
                         if getattr(self, attr)]
         if self.ci_fix_retries != 3:

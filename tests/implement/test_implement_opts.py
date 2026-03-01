@@ -35,6 +35,21 @@ class TestValidateTrunkOptions:
         opts = ImplementOpts(idea_directory="/tmp", trunk=True)
         opts.validate_trunk_options()  # should not raise
 
+    def test_address_review_comments_raises_usage_error(self):
+        opts = ImplementOpts(
+            idea_directory="/tmp", trunk=True,
+            address_review_comments=True,
+        )
+        with pytest.raises(click.UsageError, match="cannot be combined"):
+            opts.validate_trunk_options()
+
+    def test_address_review_comments_without_trunk_passes(self):
+        opts = ImplementOpts(
+            idea_directory="/tmp",
+            address_review_comments=True,
+        )
+        opts.validate_trunk_options()  # should not raise
+
     def test_error_message_lists_all_incompatible_flags(self):
         opts = ImplementOpts(
             idea_directory="/tmp", trunk=True,

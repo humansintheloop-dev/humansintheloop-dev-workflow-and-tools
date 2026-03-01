@@ -4,7 +4,7 @@ from pathlib import Path
 
 import click
 
-from i2code.idea_resolver import list_ideas
+from i2code.idea_resolver import LIFECYCLE_STATES, list_ideas
 
 
 def _format_idea_table(ideas):
@@ -22,10 +22,18 @@ def _format_idea_table(ideas):
 
 
 @click.command("list")
-def idea_list():
+@click.option(
+    "--state",
+    type=click.Choice(LIFECYCLE_STATES, case_sensitive=False),
+    default=None,
+    help="Filter ideas by lifecycle state.",
+)
+def idea_list(state):
     """List all ideas with their lifecycle state."""
     git_root = Path.cwd()
     ideas = list_ideas(git_root)
+    if state:
+        ideas = [idea for idea in ideas if idea.state == state]
     output = _format_idea_table(ideas)
     if output:
         click.echo(output)

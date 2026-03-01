@@ -47,3 +47,19 @@ class TestCompletionUsageHelp:
         runner = CliRunner()
         result = runner.invoke(main, ["completion"])
         assert 'eval "$(i2code completion zsh)"' in result.output
+
+
+@pytest.mark.unit
+class TestCompletionInvalidShell:
+
+    def test_invalid_shell_exits_with_nonzero_code(self):
+        runner = CliRunner()
+        result = runner.invoke(main, ["completion", "powershell"])
+        assert result.exit_code != 0
+
+    def test_invalid_shell_lists_valid_choices(self):
+        runner = CliRunner()
+        result = runner.invoke(main, ["completion", "powershell"])
+        assert "bash" in result.output
+        assert "zsh" in result.output
+        assert "fish" in result.output

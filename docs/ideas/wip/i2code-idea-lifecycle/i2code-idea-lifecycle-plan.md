@@ -139,13 +139,13 @@ Adds the transition mode to `idea state` — moving an idea between lifecycle st
 
 Adds transition validation rules that enforce forward-only progression and artifact requirements, with `--force` to override.
 
-- [ ] **Task 4.1: Transition rules enforce forward progression and artifact requirements; `--force` overrides all rules**
+- [x] **Task 4.1: Transition rules enforce forward progression and artifact requirements; `--force` overrides all rules**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea state my-feature ready`
   - Observable: Blocked transitions print the violated rule and suggest `--force`. Exit 1. Specifically: `draft → ready` and `ready → wip` require a plan file to exist; backward moves (e.g., `wip → draft`) and state skips (e.g., `draft → wip`) are blocked. `any → abandoned` is always allowed. `wip → completed` is allowed unconditionally. With `--force`, all transitions proceed regardless of rules. Error messages clearly state what rule was violated (NFR-3).
   - Evidence: `pytest` passes — tests invoke `idea state` for each rule scenario (blocked and allowed) and assert correct exit codes and error/success messages
   - Steps:
-    - [ ] Define the transition rule engine (can be a function or small class) that validates:
+    - [x] Define the transition rule engine (can be a function or small class) that validates:
       - Linear forward progression: `draft → ready → wip → completed` (FR-3.6)
       - `draft → ready` requires plan file in idea directory (FR-3.7) — reuse existing plan file detection logic from `IdeaProject` or orchestrator
       - `ready → wip` requires plan file (FR-3.8)
@@ -153,9 +153,9 @@ Adds transition validation rules that enforce forward-only progression and artif
       - `any → abandoned` always allowed (FR-3.10)
       - Backward moves require `--force` (FR-3.11)
       - Skipping states requires `--force` (FR-3.12)
-    - [ ] Add `--force` flag to the state command that bypasses all rule validation (FR-3.13)
-    - [ ] Wire validation into the transition flow (before `git mv`): if validation fails, print violation and suggest `--force`, exit 1 (FR-3.15)
-    - [ ] Write tests:
+    - [x] Add `--force` flag to the state command that bypasses all rule validation (FR-3.13)
+    - [x] Wire validation into the transition flow (before `git mv`): if validation fails, print violation and suggest `--force`, exit 1 (FR-3.15)
+    - [x] Write tests:
       - `draft → ready` without plan file: blocked with message mentioning plan file requirement and `--force`
       - `draft → ready` with plan file: succeeds
       - `ready → wip` without plan file: blocked
@@ -226,3 +226,18 @@ The HAS_PLAN menu becomes dynamic based on the idea's lifecycle state, offering 
 ## Change History
 ### 2026-03-01 14:16 - mark-task-complete
 Implemented state transition with git mv, commit, no-op (FR-3.14), and error handling (FR-3.16). All 1165 tests pass.
+
+### 2026-03-01 14:26 - mark-step-complete
+Created transition_rules.py with validate_transition function
+
+### 2026-03-01 14:26 - mark-step-complete
+Added --force flag to idea state command
+
+### 2026-03-01 14:26 - mark-step-complete
+Wired validate_transition into state_cmd before git mv, prints violation and suggests --force, exit 1
+
+### 2026-03-01 14:26 - mark-step-complete
+12 new tests covering all rule scenarios: backward blocked, skip blocked, plan required, always allowed, force override
+
+### 2026-03-01 14:26 - mark-task-complete
+Transition rules engine implemented with tests for all scenarios

@@ -9,14 +9,15 @@ Before committing, first stage the files and then complete these steps in order:
 
 1. On the final task of a Steel Thread, check for dead code and review findings.
 2. If the project has a configured linter, run it with auto-fix. Resolve any unfixable errors.
-3. If any new or modified shell scripts will be committed, run `shellcheck` on them and fix any issues.
-4. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it.
+3. If committing Python code, run `uvx pyright --level error src/` and fix any type errors.
+4. If any new or modified shell scripts will be committed, run `shellcheck` on them and fix any issues.
+5. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it.
    * If it fails with "Not inside a supported VCS root" (common in git worktrees), use `code_health_review` on each modified source file (production AND tests) instead.
    * **STOP if quality gates fail.** Do NOT commit until resolved. Do NOT dismiss findings as "pre-existing".
    * If Code Health regresses, refactor the flagged function before committing (boy scout rule).
    * IMPORTANT A score of 10 for both new and modified files is mandatory
    * Do NOT think in terms of red/yellow/green color bands. The target is always 10.
-5. If adding or modifying production code and coverage tooling is available, verify test coverage and check that new/modified lines are covered.
+6. If adding or modifying production code and coverage tooling is available, verify test coverage and check that new/modified lines are covered.
 
 NOTES:
 - **Python dead code (step 1):** `uv run --with vulture vulture src`

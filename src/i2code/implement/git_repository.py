@@ -231,6 +231,7 @@ class GitRepository:
         Returns:
             True if the branch exists on origin, False otherwise.
         """
+        assert self._branch is not None
         result = subprocess.run(
             ["git", "ls-remote", "--heads", "origin", self._branch],
             capture_output=True,
@@ -244,6 +245,7 @@ class GitRepository:
         Returns:
             True if push succeeded, False otherwise.
         """
+        assert self._branch is not None
         result = subprocess.run(
             ["git", "push", "-u", "origin", self._branch],
             capture_output=True,

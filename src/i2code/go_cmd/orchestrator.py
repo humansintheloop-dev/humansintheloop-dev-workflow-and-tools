@@ -131,37 +131,19 @@ def _default_revise_plan(project):
     return revise_plan(project, ClaudeRunner(), render_template)
 
 
-_CALLABLE_DEFAULTS = {
-    "git_runner": _default_git_runner,
-    "implement_runner": _default_implement_runner,
-    "brainstorm_idea_fn": _default_brainstorm_idea,
-    "create_spec_fn": _default_create_spec,
-    "revise_spec_fn": _default_revise_spec,
-    "create_plan_fn": _default_create_plan,
-    "revise_plan_fn": _default_revise_plan,
-}
-
-
 @dataclass
 class OrchestratorDeps:
     """Injectable dependencies for the orchestrator."""
 
     menu_config: MenuConfig = field(default_factory=MenuConfig)
-    output: TextIO = None
-    git_runner: Callable = None
-    implement_runner: Callable = None
-    brainstorm_idea_fn: Callable = None
-    create_spec_fn: Callable = None
-    revise_spec_fn: Callable = None
-    create_plan_fn: Callable = None
-    revise_plan_fn: Callable = None
-
-    def __post_init__(self):
-        if self.output is None:
-            self.output = sys.stderr
-        for attr, default in _CALLABLE_DEFAULTS.items():
-            if getattr(self, attr) is None:
-                setattr(self, attr, default)
+    output: TextIO = field(default_factory=lambda: sys.stderr)
+    git_runner: Callable = _default_git_runner
+    implement_runner: Callable = _default_implement_runner
+    brainstorm_idea_fn: Callable = _default_brainstorm_idea
+    create_spec_fn: Callable = _default_create_spec
+    revise_spec_fn: Callable = _default_revise_spec
+    create_plan_fn: Callable = _default_create_plan
+    revise_plan_fn: Callable = _default_revise_plan
 
 
 class Orchestrator:
@@ -171,11 +153,14 @@ class Orchestrator:
         if deps is not None:
             self._deps = deps
         else:
+            dep_overrides = {
+                k: kwargs[k]
+                for k in ("output", "git_runner", "implement_runner")
+                if kwargs.get(k) is not None
+            }
             self._deps = OrchestratorDeps(
                 menu_config=kwargs.get("menu_config") or MenuConfig(),
-                output=kwargs.get("output"),
-                git_runner=kwargs.get("git_runner"),
-                implement_runner=kwargs.get("implement_runner"),
+                **dep_overrides,
             )
 
     def detect_state(self) -> WorkflowState:

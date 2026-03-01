@@ -7,6 +7,12 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+      - id: pyright
+        name: Run pyright --level error
+        entry: uvx pyright --level error src/
+        language: system
+        types: [python]
+        pass_filenames: false
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.10.0.1
     hooks:

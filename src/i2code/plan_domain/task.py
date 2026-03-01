@@ -82,13 +82,17 @@ class Task:
 
     def mark_step_complete(self, step_number: int) -> None:
         idx = self._validated_step_line_index(step_number)
-        if _STEP_RE.match(self._lines[idx]).group(1) == 'x':
+        match = _STEP_RE.match(self._lines[idx])
+        assert match is not None
+        if match.group(1) == 'x':
             raise ValueError(f"step {step_number} is already complete")
         self._lines[idx] = self._lines[idx].replace('[ ]', '[x]', 1)
 
     def mark_step_incomplete(self, step_number: int) -> None:
         idx = self._validated_step_line_index(step_number)
-        if _STEP_RE.match(self._lines[idx]).group(1) == ' ':
+        match = _STEP_RE.match(self._lines[idx])
+        assert match is not None
+        if match.group(1) == ' ':
             raise ValueError(f"step {step_number} is already incomplete")
         self._lines[idx] = self._lines[idx].replace('[x]', '[ ]', 1)
 

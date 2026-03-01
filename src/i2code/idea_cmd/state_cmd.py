@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 
+from i2code.idea_cmd.transition_rules import validate_transition
 from i2code.idea_resolver import LIFECYCLE_STATES, list_ideas, resolve_idea, state_from_path
 
 
@@ -68,20 +69,23 @@ def execute_transition(name, old_path, new_state, git_root):
     default=None,
     type=click.Choice(LIFECYCLE_STATES, case_sensitive=False),
 )
-def idea_state(name_or_path, new_state):
+@click.option("--force", is_flag=True, default=False, help="Bypass transition rules.")
+def idea_state(name_or_path, new_state, force):  # noqa: FBT002
     """Display or transition the lifecycle state of an idea."""
     try:
         if new_state is None:
             state = _resolve_state(name_or_path)
             click.echo(state)
         else:
-            idea = resolve_idea(name_or_path, Path.cwd())
-            message = execute_transition(
-                idea.name,
-                Path.cwd() / idea.directory,
-                new_state,
-                Path.cwd(),
-            )
+            git_root = Path.cwd()
+            idea = resolve_idea(name_or_path, git_root)
+            idea_dir = git_root / idea.directory
+            if not force:
+                violation = validate_transition(idea.state, new_state, idea_dir)
+                if violation:
+                    click.echo(f"{violation}. Use --force to override.", err=True)
+                    sys.exit(1)
+            message = execute_transition(idea.name, idea_dir, new_state, git_root)
             click.echo(message)
     except ValueError as exc:
         click.echo(str(exc), err=True)

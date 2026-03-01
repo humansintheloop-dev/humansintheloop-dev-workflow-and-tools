@@ -12,19 +12,21 @@ SHELL_MARKERS = [
 ]
 
 
+def run(*args):
+    return CliRunner().invoke(main, ["completion", *args])
+
+
 @pytest.mark.unit
 class TestCompletionScript:
 
     @pytest.mark.parametrize("shell,marker", SHELL_MARKERS)
     def test_completion_exits_with_code_0(self, shell, marker):
-        runner = CliRunner()
-        result = runner.invoke(main, ["completion", shell])
+        result = run(shell)
         assert result.exit_code == 0
 
     @pytest.mark.parametrize("shell,marker", SHELL_MARKERS)
     def test_completion_outputs_shell_specific_script(self, shell, marker):
-        runner = CliRunner()
-        result = runner.invoke(main, ["completion", shell])
+        result = run(shell)
         assert marker in result.output
 
 
@@ -32,20 +34,17 @@ class TestCompletionScript:
 class TestCompletionUsageHelp:
 
     def test_no_arguments_exits_with_code_0(self):
-        runner = CliRunner()
-        result = runner.invoke(main, ["completion"])
+        result = run()
         assert result.exit_code == 0
 
     def test_no_arguments_lists_supported_shells(self):
-        runner = CliRunner()
-        result = runner.invoke(main, ["completion"])
+        result = run()
         assert "bash" in result.output
         assert "zsh" in result.output
         assert "fish" in result.output
 
     def test_no_arguments_shows_installation_example(self):
-        runner = CliRunner()
-        result = runner.invoke(main, ["completion"])
+        result = run()
         assert 'eval "$(i2code completion zsh)"' in result.output
 
 
@@ -53,13 +52,11 @@ class TestCompletionUsageHelp:
 class TestCompletionInvalidShell:
 
     def test_invalid_shell_exits_with_nonzero_code(self):
-        runner = CliRunner()
-        result = runner.invoke(main, ["completion", "powershell"])
+        result = run("powershell")
         assert result.exit_code != 0
 
     def test_invalid_shell_lists_valid_choices(self):
-        runner = CliRunner()
-        result = runner.invoke(main, ["completion", "powershell"])
+        result = run("powershell")
         assert "bash" in result.output
         assert "zsh" in result.output
         assert "fish" in result.output

@@ -4,6 +4,7 @@ import sys
 from dataclasses import dataclass
 from typing import Callable
 
+from i2code.implement.claude_runner import ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 
 
@@ -31,7 +32,7 @@ def _build_repair_prompt(template_renderer, plan_text, errors):
 
 
 
-def create_plan(project: IdeaProject, claude_runner, services: PlanServices):
+def create_plan(project: IdeaProject, claude_runner, services: PlanServices) -> ClaudeResult:
     """Generate an implementation plan, validate it, and auto-repair if needed.
 
     Validates idea and spec exist, enumerates plugin skills, renders the
@@ -67,8 +68,8 @@ def create_plan(project: IdeaProject, claude_runner, services: PlanServices):
         _print_validation_errors(errors)
         print("Attempting one automatic repair pass...", file=sys.stderr)
         repair_prompt = _build_repair_prompt(services.template_renderer, plan_text, errors)
-        repair_result = _generate_plan(project, claude_runner, repair_prompt)
-        plan_text = repair_result.output.stdout
+        result = _generate_plan(project, claude_runner, repair_prompt)
+        plan_text = result.output.stdout
 
         is_valid, errors = services.validator_fn(plan_text)
         if not is_valid:
@@ -78,6 +79,7 @@ def create_plan(project: IdeaProject, claude_runner, services: PlanServices):
 
     _write_plan(project.plan_file, plan_text)
     print(f"plan written to {project.plan_file}", file=sys.stderr)
+    return result
 
 
 def _print_validation_errors(errors):

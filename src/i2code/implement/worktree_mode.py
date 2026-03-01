@@ -12,6 +12,9 @@ from i2code.implement.claude_runner import (
     print_task_failure_diagnostics,
 )
 from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
+from i2code.implement.pr_helpers import is_pr_complete
+
+REVIEW_POLL_INTERVAL_SECONDS = 30
 
 
 def _format_duration(seconds):
@@ -34,6 +37,7 @@ class LoopSteps:
     review_processor: object
     commit_recovery: object
     clock: object = None
+    sleep: object = None
 
 
 class WorktreeMode:
@@ -52,6 +56,7 @@ class WorktreeMode:
         self._work_project = work_project
         self._loop_steps = loop_steps
         self._clock = loop_steps.clock or time.monotonic
+        self._sleep = loop_steps.sleep or time.sleep
 
     def execute(self):
         """Run the worktree task loop until all tasks are complete."""
@@ -69,10 +74,29 @@ class WorktreeMode:
 
             next_task = self._work_project.get_next_task()
             if next_task is None:
-                self._print_completion()
+                self._handle_all_tasks_complete()
                 return
 
             self._execute_task(next_task)
+
+    def _handle_all_tasks_complete(self):
+        """Print completion, then optionally poll for review feedback."""
+        self._print_completion()
+        if self._opts.address_review_comments:
+            self._review_poll_loop()
+
+    def _review_poll_loop(self):
+        """Poll for review feedback until the PR is merged or closed."""
+        while True:
+            if self._loop_steps.review_processor.process_feedback():
+                continue
+
+            pr_state = self._git_repo.gh_client.get_pr_state(self._git_repo.pr_number)
+            if is_pr_complete(pr_state):
+                print(f"PR has been {pr_state.lower()}.")
+                return
+
+            self._sleep(REVIEW_POLL_INTERVAL_SECONDS)
 
     def _execute_task(self, next_task):
         """Execute a single task: run Claude, push, create PR, wait for CI."""

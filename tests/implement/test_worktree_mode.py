@@ -490,3 +490,146 @@ class TestWorktreeModeWithRecovery:
             captured = capsys.readouterr()
             assert "Detected uncommitted changes" not in captured.out
             assert "All tasks completed!" in captured.out
+
+
+# --- Review poll loop fakes and helpers ---
+
+
+class _SequentialReviewProcessor:
+    """Fake review processor that returns values from a pre-configured sequence."""
+
+    def __init__(self, results):
+        self._results = list(results)
+        self._index = 0
+        self.call_count = 0
+
+    def process_feedback(self):
+        self.call_count += 1
+        if self._index < len(self._results):
+            result = self._results[self._index]
+            self._index += 1
+            return result
+        return False
+
+
+class _NoOpBuildFixer:
+    def check_and_fix_ci(self):
+        return False
+
+
+class _NoOpCommitRecovery:
+    def commit_if_needed(self):
+        pass
+
+
+def _make_review_poll_mode(tmpdir, *, feedback_sequence, pr_state,
+                           pr_number=42):
+    """Create a WorktreeMode for review poll loop testing.
+
+    Args:
+        feedback_sequence: list of bool results for process_feedback() calls.
+            Includes the main-loop call (typically False) followed by poll-loop calls.
+        pr_state: PR state string returned by get_pr_state (e.g. "MERGED").
+        pr_number: PR number to configure.
+    """
+    plan_path, idea_dir = _setup_idea(tmpdir, [(1, 1, "Done", True)])
+    project = IdeaProject(idea_dir)
+
+    fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
+    fake_repo.set_pushed(True)
+    fake_repo.pr_number = pr_number
+    fake_gh = FakeGitHubClient()
+    fake_gh.set_pr_state(pr_number, pr_state)
+    fake_repo._gh_client = fake_gh
+
+    review_processor = _SequentialReviewProcessor(feedback_sequence)
+    sleep_calls = []
+
+    loop_steps = LoopSteps(
+        claude_runner=FakeClaudeRunner(),
+        state=FakeWorkflowState(),
+        ci_monitor=None,
+        build_fixer=_NoOpBuildFixer(),
+        review_processor=review_processor,
+        commit_recovery=_NoOpCommitRecovery(),
+        sleep=lambda secs: sleep_calls.append(secs),
+    )
+
+    opts = ImplementOpts(
+        idea_directory=idea_dir,
+        address_review_comments=True,
+    )
+
+    mode = WorktreeMode(
+        opts=opts,
+        git_repo=fake_repo,
+        work_project=project,
+        loop_steps=loop_steps,
+    )
+    return mode, review_processor, fake_gh, sleep_calls
+
+
+@pytest.mark.unit
+class TestReviewPollLoop:
+    """When address_review_comments is True and all tasks are complete,
+    WorktreeMode enters a review poll loop."""
+
+    def test_processes_feedback_then_exits_on_merge(self, capsys):
+        """Feedback on first poll call, PR merged on second → exits gracefully."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Main loop: process_feedback → False
+            # Poll iteration 1: process_feedback → True (feedback!), continue
+            # Poll iteration 2: process_feedback → False, get_pr_state → MERGED
+            mode, review_proc, fake_gh, _ = _make_review_poll_mode(
+                tmpdir,
+                feedback_sequence=[False, True, False],
+                pr_state="MERGED",
+            )
+
+            mode.execute()
+
+            assert review_proc.call_count == 3
+            get_state_calls = [c for c in fake_gh.calls if c[0] == "get_pr_state"]
+            assert len(get_state_calls) == 1
+            captured = capsys.readouterr()
+            assert "merged" in captured.out.lower()
+
+    def test_exits_gracefully_when_pr_closed(self, capsys):
+        """PR is CLOSED (not merged) → loop exits with appropriate message."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Main loop: process_feedback → False
+            # Poll: process_feedback → False, get_pr_state → CLOSED
+            mode, _, fake_gh, _ = _make_review_poll_mode(
+                tmpdir,
+                feedback_sequence=[False, False],
+                pr_state="CLOSED",
+            )
+
+            mode.execute()
+
+            captured = capsys.readouterr()
+            assert "closed" in captured.out.lower()
+
+    def test_sleeps_and_continues_when_no_feedback_and_pr_open(self, capsys):
+        """No feedback, PR still open → sleeps then polls again."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Main loop: process_feedback → False
+            # Poll 1: process_feedback → False, get_pr_state → OPEN → sleep
+            # (sleep callback changes state to MERGED)
+            # Poll 2: process_feedback → False, get_pr_state → MERGED → exit
+            mode, _, fake_gh, sleep_calls = _make_review_poll_mode(
+                tmpdir,
+                feedback_sequence=[False, False, False],
+                pr_state="OPEN",
+            )
+
+            def merge_on_sleep(secs):
+                sleep_calls.append(secs)
+                fake_gh.set_pr_state(42, "MERGED")
+
+            mode._sleep = merge_on_sleep
+            mode.execute()
+
+            assert sleep_calls == [30]
+            captured = capsys.readouterr()
+            assert "merged" in captured.out.lower()

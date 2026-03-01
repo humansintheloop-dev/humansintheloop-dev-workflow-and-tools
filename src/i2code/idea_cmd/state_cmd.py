@@ -1,11 +1,12 @@
-"""Click command for displaying idea lifecycle state."""
+"""Click command for displaying and transitioning idea lifecycle state."""
 
+import subprocess
 import sys
 from pathlib import Path
 
 import click
 
-from i2code.idea_resolver import list_ideas, resolve_idea, state_from_path
+from i2code.idea_resolver import LIFECYCLE_STATES, list_ideas, resolve_idea, state_from_path
 
 
 def _complete_name_or_path(ctx, _param, incomplete):
@@ -29,13 +30,62 @@ def _resolve_state(name_or_path):
     return resolve_idea(name_or_path, Path.cwd()).state
 
 
+def execute_transition(name, old_path, new_state, git_root):
+    """Move an idea directory to a new lifecycle state via git mv and commit.
+
+    Returns a message string on success.
+    Raises RuntimeError with the git error on failure.
+    """
+    old_state = state_from_path(Path(old_path))
+    if old_state == new_state:
+        return f"Idea {name} is already in state {new_state}"
+    new_parent = git_root / "docs" / "ideas" / new_state
+    new_parent.mkdir(parents=True, exist_ok=True)
+    new_path = new_parent / name
+    result = subprocess.run(
+        ["git", "mv", str(old_path), str(new_path)],
+        cwd=str(git_root), capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        msg = result.stderr.strip()
+        raise RuntimeError(msg)
+    commit_message = f"Move idea {name} from {old_state} to {new_state}"
+    result = subprocess.run(
+        ["git", "commit", "-m", commit_message],
+        cwd=str(git_root), capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        msg = result.stderr.strip()
+        raise RuntimeError(msg)
+    return commit_message
+
+
 @click.command("state")
 @click.argument("name_or_path", shell_complete=_complete_name_or_path)
-def idea_state(name_or_path):
-    """Display the lifecycle state of an idea."""
+@click.argument(
+    "new_state",
+    required=False,
+    default=None,
+    type=click.Choice(LIFECYCLE_STATES, case_sensitive=False),
+)
+def idea_state(name_or_path, new_state):
+    """Display or transition the lifecycle state of an idea."""
     try:
-        state = _resolve_state(name_or_path)
+        if new_state is None:
+            state = _resolve_state(name_or_path)
+            click.echo(state)
+        else:
+            idea = resolve_idea(name_or_path, Path.cwd())
+            message = execute_transition(
+                idea.name,
+                Path.cwd() / idea.directory,
+                new_state,
+                Path.cwd(),
+            )
+            click.echo(message)
     except ValueError as exc:
         click.echo(str(exc), err=True)
         sys.exit(1)
-    click.echo(state)
+    except RuntimeError as exc:
+        click.echo(str(exc), err=True)
+        sys.exit(1)

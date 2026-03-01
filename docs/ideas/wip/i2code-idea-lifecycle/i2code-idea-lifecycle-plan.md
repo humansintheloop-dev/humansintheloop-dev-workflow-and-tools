@@ -114,21 +114,21 @@ Adds the `idea state` query command that shows which lifecycle state an idea is 
 
 Adds the transition mode to `idea state` — moving an idea between lifecycle states via `git mv` + commit.
 
-- [ ] **Task 3.1: `idea state <name> <new-state>` moves idea directory via `git mv` and commits**
+- [x] **Task 3.1: `idea state <name> <new-state>` moves idea directory via `git mv` and commits**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea state my-feature completed`
   - Observable: Idea directory moves from `docs/ideas/wip/my-feature/` to `docs/ideas/completed/my-feature/`. Git commit created with message `Move idea my-feature from wip to completed`. Exit code 0. No-op with informational message when idea is already in the target state (FR-3.14). Exit 1 with git error message if `git mv` fails (FR-3.16).
   - Evidence: `pytest` passes — tests set up a temporary git repository with an idea directory, invoke `idea state <name> <new-state>` via CliRunner, then assert the directory moved, the old directory is gone, and a git commit exists with the expected message
   - Steps:
-    - [ ] Add optional `<new-state>` argument to the state command using Click `Choice` type with the five lifecycle states — provides shell completions (FR-3.5)
-    - [ ] When `<new-state>` is provided, implement transition logic:
+    - [x] Add optional `<new-state>` argument to the state command using Click `Choice` type with the five lifecycle states — provides shell completions (FR-3.5)
+    - [x] When `<new-state>` is provided, implement transition logic:
       - No-op with message when already in target state (FR-3.14)
       - Create target state directory if it doesn't exist (`docs/ideas/<new-state>/`)
       - Execute `git mv <old-path> <new-path>` (FR-3.4)
       - Execute `git commit -m "Move idea <name> from <old-state> to <new-state>"` (FR-3.4)
       - Report git errors and exit 1 if `git mv` fails (FR-3.16)
-    - [ ] Extract transition execution into a reusable function (e.g., `execute_transition(name, old_path, new_state, git_root)`) since the `go` orchestrator will reuse it in Steel Thread 6
-    - [ ] Write tests (using `tmp_path` with `git init` for temporary git repos):
+    - [x] Extract transition execution into a reusable function (e.g., `execute_transition(name, old_path, new_state, git_root)`) since the `go` orchestrator will reuse it in Steel Thread 6
+    - [x] Write tests (using `tmp_path` with `git init` for temporary git repos):
       - Successful transition: directory moves, commit created with correct message
       - No-op: idea already in target state prints message, exit 0, no new commit
       - Git failure: target directory already exists, reports error, exit 1
@@ -220,3 +220,9 @@ The HAS_PLAN menu becomes dynamic based on the idea's lifecycle state, offering 
       - Select move from draft: idea transitions to ready, IdeaProject path updated, menu re-enters showing "Move to wip" as default
       - Select move from ready: idea transitions to wip, IdeaProject path updated, menu re-enters with no move option and "Implement" as default
       - After move, orchestrator uses new path for subsequent operations (e.g., plan file path resolves from new directory)
+
+---
+
+## Change History
+### 2026-03-01 14:16 - mark-task-complete
+Implemented state transition with git mv, commit, no-op (FR-3.14), and error handling (FR-3.16). All 1165 tests pass.

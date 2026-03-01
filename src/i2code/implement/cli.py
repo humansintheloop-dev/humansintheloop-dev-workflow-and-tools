@@ -41,6 +41,8 @@ from i2code.implement.scaffold_opts import ScaffoldOpts
               help="Print what mode would be used and exit without executing")
 @click.option("--ignore-uncommitted-idea-changes", is_flag=True,
               help="Skip validation that idea files are committed")
+@click.option("--address-review-comments", is_flag=True,
+              help="Keep running after tasks complete, polling for and addressing PR review comments")
 @click.pass_context
 def implement_cmd(ctx, **kwargs):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""

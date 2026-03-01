@@ -6,7 +6,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, TextIO
+from typing import Callable, Protocol, TextIO
 
 from i2code.go_cmd.create_plan import PlanServices, create_plan
 from i2code.go_cmd.implement_config import (
@@ -21,10 +21,17 @@ from i2code.go_cmd.plan_validator import validate_plan
 from i2code.go_cmd.plugin_skills import list_plugin_skills
 from i2code.go_cmd.revise_plan import revise_plan
 from i2code.idea_cmd.brainstorm import brainstorm_idea
-from i2code.implement.claude_runner import ClaudeRunner
+from i2code.implement.claude_runner import ClaudeResult, ClaudeRunner
+from i2code.implement.idea_project import IdeaProject
 from i2code.spec_cmd.create_spec import create_spec
 from i2code.spec_cmd.revise_spec import revise_spec
 from i2code.template_renderer import render_template
+
+
+class StepFn(Protocol):
+    """Contract for orchestrator step functions."""
+
+    def __call__(self, project: IdeaProject) -> ClaudeResult: ...
 
 
 class WorkflowState(Enum):
@@ -139,11 +146,11 @@ class OrchestratorDeps:
     output: TextIO = field(default_factory=lambda: sys.stderr)
     git_runner: Callable = _default_git_runner
     implement_runner: Callable = _default_implement_runner
-    brainstorm_idea_fn: Callable = _default_brainstorm_idea
-    create_spec_fn: Callable = _default_create_spec
-    revise_spec_fn: Callable = _default_revise_spec
-    create_plan_fn: Callable = _default_create_plan
-    revise_plan_fn: Callable = _default_revise_plan
+    brainstorm_idea_fn: StepFn = _default_brainstorm_idea
+    create_spec_fn: StepFn = _default_create_spec
+    revise_spec_fn: StepFn = _default_revise_spec
+    create_plan_fn: StepFn = _default_create_plan
+    revise_plan_fn: StepFn = _default_revise_plan
 
 
 class Orchestrator:
@@ -349,7 +356,7 @@ class Orchestrator:
         print("", file=self._deps.output)
         return self._run_python_step(step_key)
 
-    def _run_python_step(self, step_key):
+    def _run_python_step(self, step_key: str) -> ClaudeResult:
         step_fns = {
             "brainstorm_idea": self._deps.brainstorm_idea_fn,
             "create_spec": self._deps.create_spec_fn,

@@ -498,13 +498,36 @@ class TestWorktreeModeWithRecovery:
 class _SequentialReviewProcessor:
     """Fake review processor that returns values from a pre-configured sequence."""
 
-    def __init__(self, results):
+    def __init__(self, results, call_log=None):
         self._results = list(results)
         self._index = 0
         self.call_count = 0
+        self._call_log = call_log
 
     def process_feedback(self):
         self.call_count += 1
+        if self._call_log is not None:
+            self._call_log.append("process_feedback")
+        if self._index < len(self._results):
+            result = self._results[self._index]
+            self._index += 1
+            return result
+        return False
+
+
+class _SequentialBuildFixer:
+    """Fake build fixer that returns values from a pre-configured sequence."""
+
+    def __init__(self, results, call_log=None):
+        self._results = list(results)
+        self._index = 0
+        self.call_count = 0
+        self._call_log = call_log
+
+    def check_and_fix_ci(self):
+        self.call_count += 1
+        if self._call_log is not None:
+            self._call_log.append("check_and_fix_ci")
         if self._index < len(self._results):
             result = self._results[self._index]
             self._index += 1
@@ -631,5 +654,130 @@ class TestReviewPollLoop:
             mode.execute()
 
             assert sleep_calls == [30]
+            captured = capsys.readouterr()
+            assert "merged" in captured.out.lower()
+
+
+def _make_review_poll_mode_with_ci(tmpdir, *, ci_results, feedback_sequence,
+                                    pr_state):
+    """Create a WorktreeMode for testing CI fix integration in the review poll loop.
+
+    Args:
+        ci_results: list of bool results for check_and_fix_ci() calls.
+            Includes the main-loop call (typically False) followed by poll-loop calls.
+        feedback_sequence: list of bool results for process_feedback() calls.
+        pr_state: PR state string returned by get_pr_state (e.g. "MERGED").
+
+    Returns:
+        (mode, build_fixer, review_processor, fake_gh, call_log)
+    """
+    plan_path, idea_dir = _setup_idea(tmpdir, [(1, 1, "Done", True)])
+    project = IdeaProject(idea_dir)
+
+    pr_number = 42
+    fake_repo = FakeGitRepository(working_tree_dir=tmpdir)
+    fake_repo.set_pushed(True)
+    fake_repo.pr_number = pr_number
+    fake_gh = FakeGitHubClient()
+    fake_gh.set_pr_state(pr_number, pr_state)
+    fake_repo._gh_client = fake_gh
+
+    call_log = []
+    build_fixer = _SequentialBuildFixer(ci_results, call_log=call_log)
+    review_processor = _SequentialReviewProcessor(feedback_sequence, call_log=call_log)
+
+    loop_steps = LoopSteps(
+        claude_runner=FakeClaudeRunner(),
+        state=FakeWorkflowState(),
+        ci_monitor=None,
+        build_fixer=build_fixer,
+        review_processor=review_processor,
+        commit_recovery=_NoOpCommitRecovery(),
+    )
+
+    opts = ImplementOpts(
+        idea_directory=idea_dir,
+        address_review_comments=True,
+    )
+
+    mode = WorktreeMode(
+        opts=opts,
+        git_repo=fake_repo,
+        work_project=project,
+        loop_steps=loop_steps,
+    )
+    return mode, build_fixer, review_processor, fake_gh, call_log
+
+
+@pytest.mark.unit
+class TestReviewPollLoopCiFix:
+    """Review poll loop calls build_fixer.check_and_fix_ci() before
+    processing feedback, and skips feedback when a CI fix is applied."""
+
+    def test_ci_fix_applied_then_feedback_processed_on_next_iteration(self, capsys):
+        """CI failure on first poll iteration -> fix applied -> next iteration
+        processes feedback normally -> PR merged -> exit."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Main loop: check_and_fix_ci → False, process_feedback → False
+            # Poll iter 1: check_and_fix_ci → True (fix applied) → continue
+            # Poll iter 2: check_and_fix_ci → False, process_feedback → False
+            #              → get_pr_state → MERGED → exit
+            mode, build_fixer, review_proc, fake_gh, call_log = (
+                _make_review_poll_mode_with_ci(
+                    tmpdir,
+                    ci_results=[False, True, False],
+                    feedback_sequence=[False, False],
+                    pr_state="MERGED",
+                )
+            )
+
+            mode.execute()
+
+            assert build_fixer.call_count == 3
+            assert review_proc.call_count == 2
+
+            # Verify ordering: in poll loop, check_and_fix_ci is always
+            # called before process_feedback
+            poll_log = call_log[2:]  # skip main-loop calls
+            assert poll_log == [
+                "check_and_fix_ci",   # poll iter 1: fix applied → skip feedback
+                "check_and_fix_ci",   # poll iter 2: no fix
+                "process_feedback",   # poll iter 2: feedback checked
+            ]
+
+            captured = capsys.readouterr()
+            assert "merged" in captured.out.lower()
+
+    def test_repeated_ci_failures_fixed_before_feedback(self, capsys):
+        """CI failure fixed but fix itself breaks CI -> second fix ->
+        eventually passes -> feedback processed -> PR merged."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Main loop: check_and_fix_ci → False, process_feedback → False
+            # Poll iter 1: check_and_fix_ci → True (fix applied) → continue
+            # Poll iter 2: check_and_fix_ci → True (fix again) → continue
+            # Poll iter 3: check_and_fix_ci → False, process_feedback → False
+            #              → get_pr_state → MERGED → exit
+            mode, build_fixer, review_proc, fake_gh, call_log = (
+                _make_review_poll_mode_with_ci(
+                    tmpdir,
+                    ci_results=[False, True, True, False],
+                    feedback_sequence=[False, False],
+                    pr_state="MERGED",
+                )
+            )
+
+            mode.execute()
+
+            assert build_fixer.call_count == 4
+            assert review_proc.call_count == 2
+
+            poll_log = call_log[2:]  # skip main-loop calls
+            assert poll_log == [
+                "check_and_fix_ci",   # poll iter 1: fix applied
+                "check_and_fix_ci",   # poll iter 2: fix applied again
+                "check_and_fix_ci",   # poll iter 3: no fix needed
+                "process_feedback",   # poll iter 3: feedback checked
+            ]
+
             captured = capsys.readouterr()
             assert "merged" in captured.out.lower()

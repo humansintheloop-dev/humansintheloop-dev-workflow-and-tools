@@ -122,16 +122,16 @@ Proves the primary end-to-end flow: after all tasks are complete, the command en
 
 Proves that CI failures caused by review-fix commits are caught and fixed automatically within the review poll loop, maintaining the same CI-fix priority as the main task loop.
 
-- [ ] **Task 4.1: Review loop detects and fixes CI failures from review-fix commits**
+- [x] **Task 4.1: Review loop detects and fixes CI failures from review-fix commits**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement <idea-dir> --address-review-comments` (in review poll loop, CI has failed)
   - Observable: Poll loop calls `build_fixer.check_and_fix_ci()` before processing feedback; when CI failure is detected, fix is applied and loop continues; on subsequent iteration with no failures, feedback is processed normally
   - Evidence: pytest test using `FakeGitRepository` and mock `clock`. Test configures: `check_and_fix_ci()` returns "fix applied" on first call and "no fix needed" on second call, then PR transitions to `MERGED`. Asserts: `check_and_fix_ci()` was called before `process_feedback()`, fix was applied, loop continued
   - Steps:
-    - [ ] In the review poll loop (from Task 3.1), add `build_fixer.check_and_fix_ci()` as the FIRST step in each iteration, before `process_feedback()`
-    - [ ] If `check_and_fix_ci()` indicates a fix was applied, continue to the next iteration (skip feedback processing for this cycle)
-    - [ ] Write pytest test: CI failure on first iteration → fix applied → next iteration processes feedback normally → PR merged → exit
-    - [ ] Write pytest test: CI failure is fixed, but the fix itself breaks CI again → second fix attempted → eventually passes
+    - [x] In the review poll loop (from Task 3.1), add `build_fixer.check_and_fix_ci()` as the FIRST step in each iteration, before `process_feedback()`
+    - [x] If `check_and_fix_ci()` indicates a fix was applied, continue to the next iteration (skip feedback processing for this cycle)
+    - [x] Write pytest test: CI failure on first iteration → fix applied → next iteration processes feedback normally → PR merged → exit
+    - [x] Write pytest test: CI failure is fixed, but the fix itself breaks CI again → second fix attempted → eventually passes
 
 ---
 
@@ -158,3 +158,18 @@ Implemented bypassing all-tasks-complete checks when address_review_comments is 
 
 ### 2026-03-01 17:59 - mark-task-complete
 Implemented review poll loop with 3 tests: feedback+merge, PR closed, sleep+continue
+
+### 2026-03-01 18:08 - mark-step-complete
+Added build_fixer.check_and_fix_ci() as first step in _review_poll_loop
+
+### 2026-03-01 18:08 - mark-step-complete
+check_and_fix_ci() returns True -> continue skips feedback processing
+
+### 2026-03-01 18:08 - mark-step-complete
+test_ci_fix_applied_then_feedback_processed_on_next_iteration verifies CI fix -> skip -> feedback -> merged
+
+### 2026-03-01 18:08 - mark-step-complete
+test_repeated_ci_failures_fixed_before_feedback verifies two consecutive CI fixes then feedback
+
+### 2026-03-01 18:08 - mark-task-complete
+Review poll loop checks CI before feedback; tests verify ordering and skip behavior

@@ -58,24 +58,24 @@ All tasks should be implemented using TDD (outside-in: write a failing test firs
 
 Proves the new resolver module works, CLI registration works, columnar output is correct, and CI validates the new tests.
 
-- [ ] **Task 1.1: `idea list` displays all ideas sorted alphabetically with state and directory**
+- [x] **Task 1.1: `idea list` displays all ideas sorted alphabetically with state and directory**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea list`
   - Observable: Alphabetically sorted columnar table with columns: name, state, relative directory path. Column alignment matches `git worktree list` style. Exit code 0. Empty output (no error) when no ideas exist.
   - Evidence: `pytest` passes — tests invoke `i2code idea list` via Click CliRunner and assert alphabetical sorting, column alignment, and correct name/state/directory values
   - Steps:
-    - [ ] Explore existing CLI registration in `src/i2code/cli.py`, existing `idea_cmd/` structure, `IdeaProject` class, and test organization to understand project conventions
-    - [ ] Verify `.github/workflows/ci.yml` runs `pytest` (or equivalent) and will pick up new test files; modify CI if needed
-    - [ ] Create `src/i2code/idea_resolver.py` with:
+    - [x] Explore existing CLI registration in `src/i2code/cli.py`, existing `idea_cmd/` structure, `IdeaProject` class, and test organization to understand project conventions
+    - [x] Verify `.github/workflows/ci.yml` runs `pytest` (or equivalent) and will pick up new test files; modify CI if needed
+    - [x] Create `src/i2code/idea_resolver.py` with:
       - `IdeaInfo` dataclass (or similar): name, state, directory path
       - `list_ideas(git_root: Path) -> list[IdeaInfo]` — scans `docs/ideas/{draft,ready,wip,completed,abandoned}/` with `os.listdir`, returns all ideas sorted alphabetically
       - `resolve_idea(name: str, git_root: Path) -> IdeaInfo` — finds a single idea by name; raises descriptive error on no match (FR-1.3) or multiple matches (FR-1.2)
       - `state_from_path(directory: Path) -> str` — extracts lifecycle state from a directory path by parsing the state component
       - Handle missing state directories gracefully — skip them, no error (NFR-6)
       - Module must NOT import from `idea_cmd` or `go_cmd` (FR-1.5)
-    - [ ] Create list command in `src/i2code/idea_cmd/` (follow existing subcommand patterns) that calls `list_ideas()` and formats columnar output with aligned columns (NFR-1)
-    - [ ] Register `list` subcommand under the `idea` group in `src/i2code/cli.py`
-    - [ ] Write tests:
+    - [x] Create list command in `src/i2code/idea_cmd/` (follow existing subcommand patterns) that calls `list_ideas()` and formats columnar output with aligned columns (NFR-1)
+    - [x] Register `list` subcommand under the `idea` group in `src/i2code/cli.py`
+    - [x] Write tests:
       - Resolver `list_ideas`: multiple ideas across multiple states returns sorted list; empty when no ideas; missing state directories handled gracefully
       - Resolver `resolve_idea`: single match returns correct IdeaInfo; no match raises error with idea name; multiple matches raises error listing conflicting states
       - CLI `idea list`: output has aligned columns; multiple ideas sorted alphabetically; empty output for no ideas (exit 0)

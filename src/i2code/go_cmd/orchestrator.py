@@ -24,7 +24,7 @@ from i2code.go_cmd.plugin_skills import list_plugin_skills
 from i2code.go_cmd.revise_plan import revise_plan
 from i2code.idea_cmd.brainstorm import brainstorm_idea
 from i2code.idea_cmd.state_cmd import execute_transition
-from i2code.idea_resolver import state_from_path
+from i2code.idea.resolver import state_from_path
 from i2code.implement.claude_runner import ClaudeResult, ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
 from i2code.spec_cmd.create_spec import create_spec

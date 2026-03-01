@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 
 from i2code.idea_cmd.transition_rules import validate_transition
-from i2code.idea_resolver import LIFECYCLE_STATES, list_ideas, resolve_idea, state_from_path
+from i2code.idea.resolver import LIFECYCLE_STATES, list_ideas, resolve_idea, state_from_path
 
 
 def _complete_name_or_path(ctx, _param, incomplete):

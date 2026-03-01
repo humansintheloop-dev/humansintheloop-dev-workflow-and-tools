@@ -4,7 +4,7 @@ from pathlib import Path
 
 import click
 
-from i2code.idea_resolver import LIFECYCLE_STATES, list_ideas
+from i2code.idea.resolver import LIFECYCLE_STATES, list_ideas
 
 
 def _format_idea_table(ideas):

@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 
 from i2code.go_cmd.orchestrator import Orchestrator, OrchestratorDeps
-from i2code.idea_resolver import list_ideas, resolve_idea
+from i2code.idea.resolver import list_ideas, resolve_idea
 from i2code.implement.idea_project import IdeaProject
 
 

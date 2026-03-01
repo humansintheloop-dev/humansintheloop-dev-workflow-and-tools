@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from i2code.idea_resolver import LIFECYCLE_STATES
+from i2code.idea.resolver import LIFECYCLE_STATES
 
 _ORDERED_STATES = [s for s in LIFECYCLE_STATES if s != "abandoned"]
 

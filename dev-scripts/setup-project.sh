@@ -1,5 +1,7 @@
 #! /bin/bash -e
 
+echo setting up project in "$PWD"
+
 pre-commit install
 
 if command -v setup-codescene-mcp.sh > /dev/null 2>&1; then

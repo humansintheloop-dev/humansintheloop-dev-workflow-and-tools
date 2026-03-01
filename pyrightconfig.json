@@ -1,0 +1,20 @@
+{
+  "typeCheckingMode": "basic",
+
+  "venvPath": ".",
+  "venv": ".venv",
+
+  "reportMissingImports": "none",
+  "reportMissingTypeStubs": "none",
+
+  "reportUnknownMemberType": "warning",
+  "reportUnknownVariableType": "warning",
+  "reportUnknownArgumentType": "warning",
+  "reportUnknownParameterType": "warning",
+  "reportUnknownLambdaType": "warning",
+
+  "reportOptionalMemberAccess": "error"
+
+  // Optional while bootstrapping:
+  // ,"include": ["src/i2code/go_cmd", "src/i2code/plan"]
+}

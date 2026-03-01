@@ -74,17 +74,17 @@ Implements **US-1 (Scenario 1, Scenario 4)**: User runs `i2code completion <shel
 
 Implements **US-2 (Scenario 2)**: User runs `i2code completion` with no arguments and sees usage help with supported shells and installation instructions.
 
-- [ ] **Task 2.1: `i2code completion` with no arguments shows usage help with installation instructions**
+- [x] **Task 2.1: `i2code completion` with no arguments shows usage help with installation instructions**
   - TaskType: OUTCOME
   - Entrypoint: `i2code completion` (no arguments)
   - Observable: Prints usage message containing supported shell list (`bash`, `zsh`, `fish`) and an installation example (e.g., `eval "$(i2code completion zsh)"`), exits with code 0
   - Evidence: Pytest test uses CliRunner to invoke `['completion']` with no shell argument and asserts exit code 0, output contains all three shell names, and output contains `eval` installation example
   - Steps:
-    - [ ] Write a failing pytest test that invokes `['completion']` via CliRunner with no arguments and asserts exit code 0, output contains `bash`, `zsh`, `fish`, and output contains the `eval "$(i2code completion zsh)"` installation example
-    - [ ] Make the `shell` argument optional (`required=False`) so Click does not error when no argument is provided
-    - [ ] Add a handler in the completion command: when `shell` is `None`, print the usage message per FR-2 (command syntax, supported shells, installation instructions) and return
-    - [ ] Run the test and verify it passes
-    - [ ] Run the full test suite to verify no regressions
+    - [x] Write a failing pytest test that invokes `['completion']` via CliRunner with no arguments and asserts exit code 0, output contains `bash`, `zsh`, `fish`, and output contains the `eval "$(i2code completion zsh)"` installation example
+    - [x] Make the `shell` argument optional (`required=False`) so Click does not error when no argument is provided
+    - [x] Add a handler in the completion command: when `shell` is `None`, print the usage message per FR-2 (command syntax, supported shells, installation instructions) and return
+    - [x] Run the test and verify it passes
+    - [x] Run the full test suite to verify no regressions
 
 ---
 
@@ -102,3 +102,24 @@ Implements **US-3 (Scenario 3)**: User runs `i2code completion powershell` and g
     - [ ] Verify that `click.Choice(['bash', 'zsh', 'fish'])` validation already produces the expected error behavior (this should require no additional implementation — Click handles invalid choices automatically)
     - [ ] Run the test and verify it passes
     - [ ] Run the full test suite to verify no regressions
+
+---
+
+## Change History
+### 2026-03-01 21:24 - mark-step-complete
+Wrote 3 failing tests in TestCompletionUsageHelp class
+
+### 2026-03-01 21:24 - mark-step-complete
+Made shell argument optional with required=False
+
+### 2026-03-01 21:24 - mark-step-complete
+Added early-return handler printing usage message when shell is None
+
+### 2026-03-01 21:24 - mark-step-complete
+All 9 completion tests pass
+
+### 2026-03-01 21:24 - mark-step-complete
+Full suite: 1214 passed, no regressions
+
+### 2026-03-01 21:24 - mark-task-complete
+Usage help shows supported shells and eval installation example; 1214 tests pass

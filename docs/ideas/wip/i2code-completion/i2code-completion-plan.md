@@ -54,19 +54,19 @@ This plan adds an `i2code completion` command to the existing Click-based Python
 
 Implements **US-1 (Scenario 1, Scenario 4)**: User runs `i2code completion <shell>` and gets a valid completion script on stdout for bash, zsh, or fish.
 
-- [ ] **Task 1.1: `i2code completion <shell>` outputs valid shell completion script**
+- [x] **Task 1.1: `i2code completion <shell>` outputs valid shell completion script**
   - TaskType: OUTCOME
   - Entrypoint: `i2code completion zsh`
   - Observable: Outputs valid zsh completion script to stdout, exits with code 0; similarly for `bash` and `fish` with their respective script formats
   - Evidence: Pytest test uses CliRunner to invoke `completion zsh`, asserts exit code 0 and output contains zsh-specific completion markers (e.g., `compdef`); parametrized across all three shells; existing CI runs pytest and passes
   - Steps:
-    - [ ] Explore the existing CLI structure: find the main Click group definition, how commands/subcommands are registered, and the CLI entry point name (confirm `_I2CODE_COMPLETE` convention)
-    - [ ] Write a failing pytest test in `tests/` that uses `CliRunner` to invoke `['completion', 'zsh']` on the main CLI group and asserts exit code 0 and output contains zsh completion script content
-    - [ ] Create `src/i2code/completion.py` with a Click command that accepts a `shell` argument typed as `click.Choice(['bash', 'zsh', 'fish'])` and uses `click.shell_completion` (e.g., `get_completion_class`) to generate and print the completion script to stdout
-    - [ ] Register the `completion` command in the main CLI group (follow the existing pattern for how other commands are added)
-    - [ ] Run the test and verify it passes
-    - [ ] Extend the test to parametrize across `bash`, `zsh`, and `fish`, asserting each produces shell-specific output markers (e.g., bash: `complete -o default`, zsh: `compdef`, fish: `complete -c i2code`)
-    - [ ] Run the full test suite to verify no regressions
+    - [x] Explore the existing CLI structure: find the main Click group definition, how commands/subcommands are registered, and the CLI entry point name (confirm `_I2CODE_COMPLETE` convention)
+    - [x] Write a failing pytest test in `tests/` that uses `CliRunner` to invoke `['completion', 'zsh']` on the main CLI group and asserts exit code 0 and output contains zsh completion script content
+    - [x] Create `src/i2code/completion.py` with a Click command that accepts a `shell` argument typed as `click.Choice(['bash', 'zsh', 'fish'])` and uses `click.shell_completion` (e.g., `get_completion_class`) to generate and print the completion script to stdout
+    - [x] Register the `completion` command in the main CLI group (follow the existing pattern for how other commands are added)
+    - [x] Run the test and verify it passes
+    - [x] Extend the test to parametrize across `bash`, `zsh`, and `fish`, asserting each produces shell-specific output markers (e.g., bash: `complete -o default`, zsh: `compdef`, fish: `complete -c i2code`)
+    - [x] Run the full test suite to verify no regressions
 
 ---
 

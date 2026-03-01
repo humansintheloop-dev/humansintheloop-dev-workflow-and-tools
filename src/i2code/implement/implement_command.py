@@ -26,7 +26,7 @@ class ImplementCommand:
 
         self._check_idea_files_committed()
 
-        if self._all_tasks_already_complete():
+        if not self.opts.address_review_comments and self._all_tasks_already_complete():
             return
 
         if self.opts.trunk:
@@ -58,7 +58,7 @@ class ImplementCommand:
 
     def _worktree_mode(self):
         """Execute tasks using worktree + PR + CI loop."""
-        if self._all_tasks_already_complete_in_worktree():
+        if not self.opts.address_review_comments and self._all_tasks_already_complete_in_worktree():
             return
 
         state = WorkflowState.load(self.project.state_file)
@@ -88,6 +88,13 @@ class ImplementCommand:
         if existing_pr:
             self.git_repo.pr_number = existing_pr
             print(f"Reusing existing PR #{existing_pr}")
+        elif self.opts.address_review_comments:
+            print(
+                f"Error: --address-review-comments requires an existing PR, "
+                f"but no PR was found for branch '{idea_branch}'.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
 
         worktree_mode = self.mode_factory.make_worktree_mode(
             git_repo=self.git_repo,

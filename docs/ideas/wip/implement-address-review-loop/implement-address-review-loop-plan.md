@@ -83,17 +83,17 @@ Proves the new CLI flag exists and validates correctly against incompatible opti
 
 Proves the command bypasses task-completion checks when the flag is set, and fails immediately if no PR exists for the idea branch.
 
-- [ ] **Task 2.1: Command fails with clear error when `--address-review-comments` is set but no PR exists**
+- [x] **Task 2.1: Command fails with clear error when `--address-review-comments` is set but no PR exists**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement <idea-dir> --address-review-comments` (all tasks complete, no PR exists)
   - Observable: Command exits with non-zero exit code and prints error message indicating no PR was found to monitor
   - Evidence: pytest test using `FakeGitRepository` configured with no PR, all tasks marked complete, and `address_review_comments=True`. Test invokes `WorktreeMode.execute()` (or the relevant entry point) and asserts non-zero exit and error message about missing PR
   - Steps:
-    - [ ] In `ImplementCommand.execute()`, modify the `_all_tasks_already_complete()` check (approx. line 29) to skip when `address_review_comments` is `True`
-    - [ ] In `ImplementCommand.execute()`, modify the `_all_tasks_already_complete_in_worktree()` check (approx. line 61) to skip when `address_review_comments` is `True`
-    - [ ] In `WorktreeMode.execute()`, after worktree setup, add a check: if `address_review_comments` is `True` and `find_pr()` returns `None`, print an error message and return a non-zero exit code
-    - [ ] Write pytest test: all tasks complete, no PR, flag set → asserts the task-completion checks are bypassed AND the command fails with the "no PR" error
-    - [ ] Write pytest test: verify that without the flag, the existing `_all_tasks_already_complete()` behavior is preserved (regression test)
+    - [x] In `ImplementCommand.execute()`, modify the `_all_tasks_already_complete()` check (approx. line 29) to skip when `address_review_comments` is `True`
+    - [x] In `ImplementCommand.execute()`, modify the `_all_tasks_already_complete_in_worktree()` check (approx. line 61) to skip when `address_review_comments` is `True`
+    - [x] In `WorktreeMode.execute()`, after worktree setup, add a check: if `address_review_comments` is `True` and `find_pr()` returns `None`, print an error message and return a non-zero exit code
+    - [x] Write pytest test: all tasks complete, no PR, flag set → asserts the task-completion checks are bypassed AND the command fails with the "no PR" error
+    - [x] Write pytest test: verify that without the flag, the existing `_all_tasks_already_complete()` behavior is preserved (regression test)
 
 ---
 
@@ -149,3 +149,9 @@ Proves that when the flag is set but tasks still remain in the plan, they execut
     - [ ] Write pytest test: one task remains → task executes normally → review loop activates → PR merged → clean exit
     - [ ] Write pytest test: multiple tasks remain → all execute in order → review loop activates after last task
     - [ ] If any production code adjustment is needed to support the transition from task execution to poll loop, make that adjustment here
+
+---
+
+## Change History
+### 2026-03-01 17:48 - mark-task-complete
+Implemented bypassing all-tasks-complete checks when address_review_comments is True and failing with clear error when no PR exists

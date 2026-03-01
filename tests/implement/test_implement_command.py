@@ -231,6 +231,56 @@ class TestIsolateModeReceivesIsolationType:
 
 
 @pytest.mark.unit
+class TestAddressReviewCommentsNoPR:
+    """--address-review-comments with all tasks complete and no PR fails with error."""
+
+    def test_bypasses_all_tasks_complete_and_fails_with_no_pr_error(self, capsys, monkeypatch):
+        """When address_review_comments=True and all tasks complete but no PR exists,
+        the command should bypass the early return and fail with a 'no PR' error."""
+        monkeypatch.setattr(
+            "i2code.implement.implement_command.WorkflowState.load",
+            lambda x: MagicMock(),
+        )
+        monkeypatch.setattr(
+            "i2code.implement.implement_command.ProjectSetup",
+            lambda: MagicMock(),
+        )
+
+        cmd, project, git_repo = _make_command(
+            address_review_comments=True,
+            ignore_uncommitted_idea_changes=True,
+        )
+        project.set_next_task(None)
+
+        git_repo.working_tree_dir = "/tmp/fake-repo"
+        git_repo.ensure_idea_branch.return_value = "idea/fake-idea"
+        mock_wt_git_repo = MagicMock()
+        mock_wt_git_repo.working_tree_dir = "/tmp/wt"
+        git_repo.ensure_worktree.return_value = mock_wt_git_repo
+        mock_wt_git_repo.gh_client.find_pr.return_value = None
+
+        with pytest.raises(SystemExit) as exc_info:
+            cmd.execute()
+
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "no pr" in captured.err.lower() or "no pr" in captured.out.lower()
+
+    def test_without_flag_all_tasks_complete_returns_normally(self, capsys):
+        """Without --address-review-comments, all tasks complete returns normally (regression)."""
+        cmd, project, git_repo = _make_command(
+            ignore_uncommitted_idea_changes=True,
+        )
+        project.set_next_task(None)
+
+        cmd.execute()
+
+        captured = capsys.readouterr()
+        assert "all tasks" in captured.out.lower()
+        git_repo.ensure_worktree.assert_not_called()
+
+
+@pytest.mark.unit
 class TestImplementCommandWorktreeMode:
     """_worktree_mode() uses a single idea branch (no integration or slice branch)."""
 

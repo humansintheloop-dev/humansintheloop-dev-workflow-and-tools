@@ -53,10 +53,12 @@ Skills are Claude Code slash commands. Source lives in `skills/`, each with a `S
 
 ## Feature Documentation
 
-Feature ideas, specs, and plans live in `docs/features/<feature-name>/` with files:
+Feature ideas, specs, and plans live in `docs/ideas/{state}/<feature-name>/` with files:
 - `*-idea.md` — the original idea
 - `*-spec.md` — specification
 - `*-plan.md` — implementation plan
+
+States: `completed/`, `wip/`, `draft/`, `abandoned/`
 
 ## Claude Code Plugin
 

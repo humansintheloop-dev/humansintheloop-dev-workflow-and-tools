@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from i2code.idea_resolver import IdeaInfo, list_ideas, resolve_idea
+from i2code.idea.resolver import IdeaInfo, list_ideas, resolve_idea
 
 
 def _create_idea(base, state, name):

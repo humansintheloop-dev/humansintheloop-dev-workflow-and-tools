@@ -7,7 +7,7 @@ import pytest
 from click.testing import CliRunner
 
 from i2code.cli import main
-from i2code.idea_resolver import IdeaInfo
+from i2code.idea.resolver import IdeaInfo
 
 
 @pytest.mark.unit

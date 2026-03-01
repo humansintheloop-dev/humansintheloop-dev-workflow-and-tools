@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Protocol, TextIO
 
+from pathlib import Path
+
 from i2code.go_cmd.create_plan import PlanServices, create_plan
 from i2code.go_cmd.implement_config import (
     build_implement_flags,
@@ -21,6 +23,8 @@ from i2code.go_cmd.plan_validator import validate_plan
 from i2code.go_cmd.plugin_skills import list_plugin_skills
 from i2code.go_cmd.revise_plan import revise_plan
 from i2code.idea_cmd.brainstorm import brainstorm_idea
+from i2code.idea_cmd.state_cmd import execute_transition
+from i2code.idea.resolver import state_from_path
 from i2code.implement.claude_runner import ClaudeResult, ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
 from i2code.spec_cmd.create_spec import create_spec
@@ -50,9 +54,31 @@ REVISE_PLAN = "Revise the plan"
 IMPLEMENT_PLAN = "Implement the entire plan"
 CONFIGURE_IMPLEMENT = "Configure implement options"
 COMMIT_CHANGES = "Commit changes"
+MOVE_TO_READY = "Move idea to ready"
+MOVE_TO_WIP = "Move idea to wip"
 EXIT = "Exit"
 RETRY = "Retry"
 ABORT = "Abort workflow"
+
+_LIFECYCLE_MOVE_OPTIONS = {
+    "draft": MOVE_TO_READY,
+    "ready": MOVE_TO_WIP,
+}
+
+_MOVE_TARGETS = {
+    MOVE_TO_READY: "ready",
+    MOVE_TO_WIP: "wip",
+}
+
+
+def _git_root_from_path(idea_dir):
+    """Derive the git repository root from an idea directory path."""
+    parts = Path(idea_dir).resolve().parts
+    for i in range(len(parts) - 1):
+        if parts[i] == "docs" and parts[i + 1] == "ideas":
+            return Path(*parts[:i]) if i > 0 else Path(parts[0])
+    msg = f"Cannot determine git root from path: {idea_dir}"
+    raise ValueError(msg)
 
 _MENU_OPTIONS = {
     WorkflowState.NO_IDEA: [CREATE_IDEA],
@@ -151,6 +177,7 @@ class OrchestratorDeps:
     revise_spec_fn: StepFn = _default_revise_spec
     create_plan_fn: StepFn = _default_create_plan
     revise_plan_fn: StepFn = _default_revise_plan
+    transition_fn: Callable = execute_transition
 
 
 class Orchestrator:
@@ -238,7 +265,9 @@ class Orchestrator:
     def _handle_has_plan_choice(self, selected):
         if selected == EXIT:
             return False
-        if selected == COMMIT_CHANGES:
+        if selected in _MOVE_TARGETS:
+            self._execute_move(selected)
+        elif selected == COMMIT_CHANGES:
             self._commit_changes()
         elif selected == REVISE_PLAN:
             self._run_step_with_retry("Revising plan", "revise_plan")
@@ -248,9 +277,29 @@ class Orchestrator:
             self._run_implement()
         return True
 
+    def _execute_move(self, selected):
+        new_state = _MOVE_TARGETS[selected]
+        name = self._project.name
+        old_path = Path(self._project.directory)
+        git_root = _git_root_from_path(old_path)
+        message = self._deps.transition_fn(name, old_path, new_state, git_root)
+        print(message, file=self._deps.output)
+        new_dir = git_root / "docs" / "ideas" / new_state / name
+        self._project = IdeaProject(str(new_dir))
+
+    def _lifecycle_move_label(self):
+        try:
+            state = state_from_path(Path(self._project.directory))
+        except ValueError:
+            return None
+        return _LIFECYCLE_MOVE_OPTIONS.get(state)
+
     def _build_has_plan_options(self):
         config_path = self._project.implement_config_file
         options = [REVISE_PLAN]
+        move_label = self._lifecycle_move_label()
+        if move_label:
+            options.append(move_label)
         if self._has_uncommitted_changes():
             options.append(COMMIT_CHANGES)
         options.append(build_implement_label(config_path))

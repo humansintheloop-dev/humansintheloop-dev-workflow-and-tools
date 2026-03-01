@@ -7,6 +7,7 @@ import pytest
 from click.testing import CliRunner
 
 from i2code.cli import main
+from i2code.idea.resolver import IdeaInfo
 
 
 @pytest.mark.unit
@@ -114,3 +115,75 @@ class TestGoCommandDirectoryCreation:
 
         assert "does not exist" in result.output.lower()
         assert "create" in result.output.lower()
+
+
+@pytest.mark.unit
+class TestGoCommandNameResolution:
+    @patch("i2code.go_cmd.cli.Orchestrator")
+    @patch("i2code.go_cmd.cli.resolve_idea")
+    def test_resolves_idea_name_to_directory(self, mock_resolve, mock_orch_cls):
+        mock_resolve.return_value = IdeaInfo(
+            name="my-feature", state="ready", directory="docs/ideas/ready/my-feature",
+        )
+        mock_orch = MagicMock()
+        mock_orch_cls.return_value = mock_orch
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["go", "my-feature"])
+
+        assert result.exit_code == 0
+        project = mock_orch_cls.call_args[0][0]
+        assert project.directory.endswith("docs/ideas/ready/my-feature")
+
+    @patch("i2code.go_cmd.cli.Orchestrator")
+    @patch("i2code.go_cmd.cli.resolve_idea")
+    def test_error_when_idea_name_not_found(self, mock_resolve, mock_orch_cls):
+        mock_resolve.side_effect = ValueError("Idea not found: no-such-idea")
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["go", "no-such-idea"])
+
+        assert result.exit_code == 1
+        assert "not found" in result.output.lower()
+        mock_orch_cls.assert_not_called()
+
+    @patch("i2code.go_cmd.cli.Orchestrator")
+    @patch("i2code.go_cmd.cli.resolve_idea")
+    def test_error_when_idea_name_ambiguous(self, mock_resolve, mock_orch_cls):
+        mock_resolve.side_effect = ValueError(
+            "Idea 'my-feature' found in multiple states: ready, wip"
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["go", "my-feature"])
+
+        assert result.exit_code == 1
+        assert "multiple states" in result.output.lower()
+        mock_orch_cls.assert_not_called()
+
+
+@pytest.mark.unit
+class TestGoCommandShellCompletion:
+    @patch("i2code.go_cmd.cli.list_ideas")
+    def test_completes_idea_names(self, mock_list):
+        mock_list.return_value = [
+            IdeaInfo(name="my-feature", state="ready", directory="docs/ideas/ready/my-feature"),
+            IdeaInfo(name="my-bugfix", state="wip", directory="docs/ideas/wip/my-bugfix"),
+        ]
+        from i2code.go_cmd.cli import _complete_name_or_path
+
+        completions = _complete_name_or_path(None, None, "my-")
+        assert "my-feature" in completions
+        assert "my-bugfix" in completions
+
+    @patch("i2code.go_cmd.cli.list_ideas")
+    def test_filters_completions_by_prefix(self, mock_list):
+        mock_list.return_value = [
+            IdeaInfo(name="my-feature", state="ready", directory="docs/ideas/ready/my-feature"),
+            IdeaInfo(name="other-idea", state="wip", directory="docs/ideas/wip/other-idea"),
+        ]
+        from i2code.go_cmd.cli import _complete_name_or_path
+
+        completions = _complete_name_or_path(None, None, "my-")
+        assert "my-feature" in completions
+        assert "other-idea" not in completions

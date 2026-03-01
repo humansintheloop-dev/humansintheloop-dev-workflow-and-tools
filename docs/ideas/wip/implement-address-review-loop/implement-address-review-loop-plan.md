@@ -101,20 +101,20 @@ Proves the command bypasses task-completion checks when the flag is set, and fai
 
 Proves the primary end-to-end flow: after all tasks are complete, the command enters a poll loop that processes review feedback and exits gracefully when the PR is merged.
 
-- [ ] **Task 3.1: Review poll loop processes feedback and exits when PR is merged**
+- [x] **Task 3.1: Review poll loop processes feedback and exits when PR is merged**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement <idea-dir> --address-review-comments` (all tasks complete, PR exists and is open)
   - Observable: Command enters review poll loop; processes feedback via `PullRequestReviewProcessor`; on next iteration detects PR state is `MERGED` and exits with code 0 and informational message
   - Evidence: pytest test using `FakeGitRepository` and mock `clock` (to avoid real sleep). Test configures: all tasks complete, PR exists, `process_feedback()` returns feedback on first call, `get_pr_state()` returns `MERGED` on second iteration. Asserts: feedback was processed, exit code is 0, merge message is printed
   - Steps:
-    - [ ] Define a named constant `REVIEW_POLL_INTERVAL_SECONDS = 30` in the appropriate module
-    - [ ] In `WorktreeMode.execute()`, when `get_next_task()` returns `None` and `address_review_comments` is `True`: instead of calling `_print_completion()` and returning, enter a `while True` loop
-    - [ ] Poll loop body: call `review_processor.process_feedback()` — if feedback was processed, continue to next iteration
-    - [ ] Poll loop body: call `get_pr_state()` — if `MERGED` or `CLOSED`, print informational message and return exit code 0
-    - [ ] Poll loop body: sleep `REVIEW_POLL_INTERVAL_SECONDS` using the existing `clock` parameter from `LoopSteps`
-    - [ ] Write pytest test: feedback detected and processed, then PR merged → loop exits gracefully
-    - [ ] Write pytest test: PR is `CLOSED` (not merged) → loop exits gracefully with appropriate message
-    - [ ] Write pytest test: no feedback, PR still open → loop sleeps and continues polling
+    - [x] Define a named constant `REVIEW_POLL_INTERVAL_SECONDS = 30` in the appropriate module
+    - [x] In `WorktreeMode.execute()`, when `get_next_task()` returns `None` and `address_review_comments` is `True`: instead of calling `_print_completion()` and returning, enter a `while True` loop
+    - [x] Poll loop body: call `review_processor.process_feedback()` — if feedback was processed, continue to next iteration
+    - [x] Poll loop body: call `get_pr_state()` — if `MERGED` or `CLOSED`, print informational message and return exit code 0
+    - [x] Poll loop body: sleep `REVIEW_POLL_INTERVAL_SECONDS` using the existing `clock` parameter from `LoopSteps`
+    - [x] Write pytest test: feedback detected and processed, then PR merged → loop exits gracefully
+    - [x] Write pytest test: PR is `CLOSED` (not merged) → loop exits gracefully with appropriate message
+    - [x] Write pytest test: no feedback, PR still open → loop sleeps and continues polling
 
 ---
 
@@ -155,3 +155,6 @@ Proves that when the flag is set but tasks still remain in the plan, they execut
 ## Change History
 ### 2026-03-01 17:48 - mark-task-complete
 Implemented bypassing all-tasks-complete checks when address_review_comments is True and failing with clear error when no PR exists
+
+### 2026-03-01 17:59 - mark-task-complete
+Implemented review poll loop with 3 tests: feedback+merge, PR closed, sleep+continue

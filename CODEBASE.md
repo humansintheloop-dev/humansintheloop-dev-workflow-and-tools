@@ -58,7 +58,13 @@ Feature ideas, specs, and plans live in `docs/ideas/{state}/<feature-name>/` wit
 - `*-spec.md` — specification
 - `*-plan.md` — implementation plan
 
-States: `completed/`, `wip/`, `draft/`, `abandoned/`
+| State | Meaning |
+|-------|---------|
+| `draft/` | Initial state — idea just captured |
+| `ready/` | Has a plan and is ready for implementation |
+| `wip/` | Implementation in progress |
+| `completed/` | Work is considered done |
+| `abandoned/` | Decided to be a bad idea |
 
 ## Claude Code Plugin
 

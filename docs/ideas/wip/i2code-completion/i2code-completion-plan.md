@@ -92,16 +92,16 @@ Implements **US-2 (Scenario 2)**: User runs `i2code completion` with no argument
 
 Implements **US-3 (Scenario 3)**: User runs `i2code completion powershell` and gets a clear error listing valid shell choices.
 
-- [ ] **Task 3.1: `i2code completion powershell` shows error listing valid shells**
+- [x] **Task 3.1: `i2code completion powershell` shows error listing valid shells**
   - TaskType: OUTCOME
   - Entrypoint: `i2code completion powershell`
   - Observable: Prints error message indicating `powershell` is not a valid choice and lists valid choices (`bash`, `zsh`, `fish`), exits with non-zero status code
   - Evidence: Pytest test uses CliRunner to invoke `['completion', 'powershell']` and asserts non-zero exit code and output contains the valid shell names
   - Steps:
-    - [ ] Write a failing pytest test that invokes `['completion', 'powershell']` via CliRunner and asserts non-zero exit code and output contains `bash`, `zsh`, and `fish` as valid choices
-    - [ ] Verify that `click.Choice(['bash', 'zsh', 'fish'])` validation already produces the expected error behavior (this should require no additional implementation — Click handles invalid choices automatically)
-    - [ ] Run the test and verify it passes
-    - [ ] Run the full test suite to verify no regressions
+    - [x] Write a failing pytest test that invokes `['completion', 'powershell']` via CliRunner and asserts non-zero exit code and output contains `bash`, `zsh`, and `fish` as valid choices
+    - [x] Verify that `click.Choice(['bash', 'zsh', 'fish'])` validation already produces the expected error behavior (this should require no additional implementation — Click handles invalid choices automatically)
+    - [x] Run the test and verify it passes
+    - [x] Run the full test suite to verify no regressions
 
 ---
 
@@ -123,3 +123,18 @@ Full suite: 1214 passed, no regressions
 
 ### 2026-03-01 21:24 - mark-task-complete
 Usage help shows supported shells and eval installation example; 1214 tests pass
+
+### 2026-03-01 21:31 - mark-step-complete
+Wrote 2 tests in TestCompletionInvalidShell: nonzero exit code and valid choices listed
+
+### 2026-03-01 21:31 - mark-step-complete
+Click.Choice validation confirmed: tests pass with no new production code
+
+### 2026-03-01 21:31 - mark-step-complete
+Both tests pass: 2 passed in 0.09s
+
+### 2026-03-01 21:31 - mark-step-complete
+Full suite: 1216 passed, no regressions
+
+### 2026-03-01 21:31 - mark-task-complete
+Invalid shell argument shows error with valid choices; Click.Choice handles it natively; 1216 tests pass

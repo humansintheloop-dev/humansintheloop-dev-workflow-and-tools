@@ -164,40 +164,20 @@ def _default_revise_plan(project):
     return revise_plan(project, ClaudeRunner(), render_template)
 
 
-_CALLABLE_DEFAULTS = {
-    "git_runner": _default_git_runner,
-    "implement_runner": _default_implement_runner,
-    "brainstorm_idea_fn": _default_brainstorm_idea,
-    "create_spec_fn": _default_create_spec,
-    "revise_spec_fn": _default_revise_spec,
-    "create_plan_fn": _default_create_plan,
-    "revise_plan_fn": _default_revise_plan,
-    "transition_fn": execute_transition,
-}
-
-
-
 @dataclass
 class OrchestratorDeps:
     """Injectable dependencies for the orchestrator."""
 
     menu_config: MenuConfig = field(default_factory=MenuConfig)
-    output: TextIO = None
-    git_runner: Callable = None
-    implement_runner: Callable = None
-    brainstorm_idea_fn: Callable = None
-    create_spec_fn: Callable = None
-    revise_spec_fn: Callable = None
-    create_plan_fn: Callable = None
-    revise_plan_fn: Callable = None
-    transition_fn: Callable = None
-
-    def __post_init__(self):
-        if self.output is None:
-            self.output = sys.stderr
-        for attr, default in _CALLABLE_DEFAULTS.items():
-            if getattr(self, attr) is None:
-                setattr(self, attr, default)
+    output: TextIO = field(default_factory=lambda: sys.stderr)
+    git_runner: Callable = _default_git_runner
+    implement_runner: Callable = _default_implement_runner
+    brainstorm_idea_fn: StepFn = _default_brainstorm_idea
+    create_spec_fn: StepFn = _default_create_spec
+    revise_spec_fn: StepFn = _default_revise_spec
+    create_plan_fn: StepFn = _default_create_plan
+    revise_plan_fn: StepFn = _default_revise_plan
+    transition_fn: Callable = execute_transition
 
 
 class Orchestrator:

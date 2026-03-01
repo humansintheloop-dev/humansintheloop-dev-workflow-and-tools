@@ -26,3 +26,24 @@ class TestCompletionScript:
         runner = CliRunner()
         result = runner.invoke(main, ["completion", shell])
         assert marker in result.output
+
+
+@pytest.mark.unit
+class TestCompletionUsageHelp:
+
+    def test_no_arguments_exits_with_code_0(self):
+        runner = CliRunner()
+        result = runner.invoke(main, ["completion"])
+        assert result.exit_code == 0
+
+    def test_no_arguments_lists_supported_shells(self):
+        runner = CliRunner()
+        result = runner.invoke(main, ["completion"])
+        assert "bash" in result.output
+        assert "zsh" in result.output
+        assert "fish" in result.output
+
+    def test_no_arguments_shows_installation_example(self):
+        runner = CliRunner()
+        result = runner.invoke(main, ["completion"])
+        assert 'eval "$(i2code completion zsh)"' in result.output

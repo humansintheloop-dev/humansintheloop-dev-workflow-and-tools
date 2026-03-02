@@ -24,6 +24,18 @@ const GIT_DASH_C_MESSAGE =
   'Avoid complex commands that may fail due to permission issues. ' +
   'Do not use `git -C directory` - cd to the top-level directory and run git commands from there';
 
+/**
+ * Checks whether a Bash command uses `cd <dir> && git ...`.
+ * @param {string} command - The shell command to inspect
+ * @returns {boolean} True if the command contains `cd <dir> && git`
+ */
+function isCdAndGit(command) {
+  return /\bcd\s+\S+\s*&&\s*git\b/.test(command);
+}
+
+const CD_AND_GIT_MESSAGE =
+  'Do not use `cd <directory> && git ...` - run git commands from the project root directory';
+
 function isPythonMPytest(command) {
   return /^python3?\s+-m\s+pytest\b/.test(command);
 }
@@ -61,6 +73,10 @@ function handlePreToolUse(hookInput) {
     return { blocked: true, message: GIT_DASH_C_MESSAGE };
   }
 
+  if (isCdAndGit(command)) {
+    return { blocked: true, message: CD_AND_GIT_MESSAGE };
+  }
+
   if (isPythonMPytest(command)) {
     return { blocked: true, message: PYTHON_M_PYTEST_MESSAGE };
   }
@@ -75,10 +91,12 @@ function handlePreToolUse(hookInput) {
 // Export for testing
 module.exports = {
   isGitDashC,
+  isCdAndGit,
   isPythonMPytest,
   isBarePytest,
   handlePreToolUse,
   GIT_DASH_C_MESSAGE,
+  CD_AND_GIT_MESSAGE,
   PYTHON_M_PYTEST_MESSAGE,
   BARE_PYTEST_MESSAGE
 };

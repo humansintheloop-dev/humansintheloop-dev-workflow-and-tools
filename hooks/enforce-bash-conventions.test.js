@@ -5,7 +5,7 @@
 
 const assert = require('assert');
 
-const { isGitDashC, isPythonMPytest, isBarePytest, handlePreToolUse, GIT_DASH_C_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE } = require('./enforce-bash-conventions.js');
+const { isGitDashC, isCdAndGit, isPythonMPytest, isBarePytest, handlePreToolUse, GIT_DASH_C_MESSAGE, CD_AND_GIT_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE } = require('./enforce-bash-conventions.js');
 
 // Test suite
 const tests = [];
@@ -74,6 +74,41 @@ test('allows non-git commands', () => {
 
 test('allows empty command', () => {
   assert.strictEqual(isGitDashC(''), false);
+});
+
+// --- Tests for isCdAndGit ---
+
+test('detects cd && git with absolute path', () => {
+  assert.strictEqual(isCdAndGit('cd /tmp/some-repo && git status'), true);
+});
+
+test('detects cd && git with relative path', () => {
+  assert.strictEqual(isCdAndGit('cd ../other-repo && git log'), true);
+});
+
+test('detects cd && git without spaces around &&', () => {
+  assert.strictEqual(isCdAndGit('cd /some/dir&&git status'), true);
+});
+
+test('allows cd without git', () => {
+  assert.strictEqual(isCdAndGit('cd /some/dir && npm test'), false);
+});
+
+test('allows plain git commands without cd', () => {
+  assert.strictEqual(isCdAndGit('git status'), false);
+});
+
+test('allows cd alone', () => {
+  assert.strictEqual(isCdAndGit('cd /some/dir'), false);
+});
+
+test('blocks Bash tool with cd && git command', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'cd /tmp/eventuate-examples && git status' }
+  });
+  assert.strictEqual(result.blocked, true);
+  assert.strictEqual(result.message, CD_AND_GIT_MESSAGE);
 });
 
 // --- Tests for handlePreToolUse ---

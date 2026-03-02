@@ -117,8 +117,8 @@ test('detects git commit with cat heredoc', () => {
   assert.strictEqual(isGitCommitHeredoc('git commit -m "$(cat <<\'EOF\'\nmessage\nEOF\n)"'), true);
 });
 
-test('detects git commit with cat heredoc unquoted', () => {
-  assert.strictEqual(isGitCommitHeredoc('git commit -m "$(cat <<EOF\nmessage\nEOF\n)"'), true);
+test('detects git commit -F- heredoc', () => {
+  assert.strictEqual(isGitCommitHeredoc('git commit -F- <<EOF\nmessage\nEOF'), true);
 });
 
 test('detects git commit with cat heredoc after other flags', () => {
@@ -129,12 +129,17 @@ test('allows simple git commit -m', () => {
   assert.strictEqual(isGitCommitHeredoc('git commit -m "simple message"'), false);
 });
 
-test('allows git commit -F- heredoc', () => {
-  assert.strictEqual(isGitCommitHeredoc('git commit -F- <<EOF\nmessage\nEOF'), false);
-});
-
 test('allows non-commit git commands', () => {
   assert.strictEqual(isGitCommitHeredoc('git status'), false);
+});
+
+test('blocks Bash tool with git commit -F- heredoc', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'git commit -F- <<EOF\nFix bug\n\nCo-authored by Claude Code\nEOF' }
+  });
+  assert.strictEqual(result.blocked, true);
+  assert.strictEqual(result.message, GIT_COMMIT_HEREDOC_MESSAGE);
 });
 
 test('blocks Bash tool with git commit cat heredoc', () => {
@@ -144,14 +149,6 @@ test('blocks Bash tool with git commit cat heredoc', () => {
   });
   assert.strictEqual(result.blocked, true);
   assert.strictEqual(result.message, GIT_COMMIT_HEREDOC_MESSAGE);
-});
-
-test('allows Bash tool with git commit -F- heredoc', () => {
-  const result = handlePreToolUse({
-    tool_name: 'Bash',
-    tool_input: { command: 'git commit -F- <<EOF\nFix bug\n\nCo-authored by Claude Code\nEOF' }
-  });
-  assert.strictEqual(result.blocked, false);
 });
 
 // --- Tests for handlePreToolUse ---

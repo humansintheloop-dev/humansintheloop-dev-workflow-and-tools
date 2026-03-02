@@ -3,7 +3,7 @@
  * PreToolUse hook that blocks certain Bash command patterns:
  * - `git -C <directory>` — use cd + git instead
  * - `cd <dir> && git ...` — run git from the project root
- * - `git commit -m "$(cat <<'EOF'...` — use simple `git commit -m "..."`
+ * - `git commit` with heredoc — use simple `git commit -m "..."`
  * - `python -m pytest` — use `uv run python -m pytest` instead
  * - bare `pytest` — use `uv run python -m pytest` instead
  *
@@ -39,16 +39,16 @@ const CD_AND_GIT_MESSAGE =
   'Do not use `cd <directory> && git ...` - run git commands from the project root directory';
 
 /**
- * Checks whether a Bash command uses a HEREDOC for git commit messages.
+ * Checks whether a Bash command uses a heredoc for git commit messages.
  * @param {string} command - The shell command to inspect
- * @returns {boolean} True if the command contains `git commit -m "$(cat <<`
+ * @returns {boolean} True if the command contains `git commit` with `<<`
  */
 function isGitCommitHeredoc(command) {
-  return /\bgit\s+commit\b.*\$\(cat\s*<</.test(command);
+  return /\bgit\s+commit\b.*<</.test(command);
 }
 
 const GIT_COMMIT_HEREDOC_MESSAGE =
-  'Do not use `git commit -m "$(cat <<EOF ..."` - use `git commit -F- <<EOF` instead';
+  'Do not use heredoc with git commit - use `git commit -m "message"` instead';
 
 function isPythonMPytest(command) {
   return /^python3?\s+-m\s+pytest\b/.test(command);

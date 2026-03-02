@@ -2,6 +2,8 @@
 /**
  * PreToolUse hook that blocks certain Bash command patterns:
  * - `git -C <directory>` — use cd + git instead
+ * - `cd <dir> && git ...` — run git from the project root
+ * - `git commit -m "$(cat <<'EOF'...` — use simple `git commit -m "..."`
  * - `python -m pytest` — use `uv run python -m pytest` instead
  * - bare `pytest` — use `uv run python -m pytest` instead
  *
@@ -36,6 +38,18 @@ function isCdAndGit(command) {
 const CD_AND_GIT_MESSAGE =
   'Do not use `cd <directory> && git ...` - run git commands from the project root directory';
 
+/**
+ * Checks whether a Bash command uses a HEREDOC for git commit messages.
+ * @param {string} command - The shell command to inspect
+ * @returns {boolean} True if the command contains `git commit -m "$(cat <<`
+ */
+function isGitCommitHeredoc(command) {
+  return /\bgit\s+commit\b.*\$\(cat\s*<</.test(command);
+}
+
+const GIT_COMMIT_HEREDOC_MESSAGE =
+  'Do not use `git commit -m "$(cat <<EOF ..."` - use `git commit -F- <<EOF` instead';
+
 function isPythonMPytest(command) {
   return /^python3?\s+-m\s+pytest\b/.test(command);
 }
@@ -55,6 +69,14 @@ function isBarePytest(command) {
 const BARE_PYTEST_MESSAGE =
   'Do not run `pytest` directly - use `uv run python -m pytest` instead';
 
+const BASH_RULES = [
+  { test: isGitDashC, message: GIT_DASH_C_MESSAGE },
+  { test: isCdAndGit, message: CD_AND_GIT_MESSAGE },
+  { test: isGitCommitHeredoc, message: GIT_COMMIT_HEREDOC_MESSAGE },
+  { test: isPythonMPytest, message: PYTHON_M_PYTEST_MESSAGE },
+  { test: isBarePytest, message: BARE_PYTEST_MESSAGE },
+];
+
 /**
  * Handles a PreToolUse hook event for the Bash tool.
  * @param {Object} hookInput - The hook input data
@@ -68,21 +90,10 @@ function handlePreToolUse(hookInput) {
   }
 
   const command = tool_input?.command || '';
+  const violated = BASH_RULES.find(rule => rule.test(command));
 
-  if (isGitDashC(command)) {
-    return { blocked: true, message: GIT_DASH_C_MESSAGE };
-  }
-
-  if (isCdAndGit(command)) {
-    return { blocked: true, message: CD_AND_GIT_MESSAGE };
-  }
-
-  if (isPythonMPytest(command)) {
-    return { blocked: true, message: PYTHON_M_PYTEST_MESSAGE };
-  }
-
-  if (isBarePytest(command)) {
-    return { blocked: true, message: BARE_PYTEST_MESSAGE };
+  if (violated) {
+    return { blocked: true, message: violated.message };
   }
 
   return { blocked: false };
@@ -92,11 +103,13 @@ function handlePreToolUse(hookInput) {
 module.exports = {
   isGitDashC,
   isCdAndGit,
+  isGitCommitHeredoc,
   isPythonMPytest,
   isBarePytest,
   handlePreToolUse,
   GIT_DASH_C_MESSAGE,
   CD_AND_GIT_MESSAGE,
+  GIT_COMMIT_HEREDOC_MESSAGE,
   PYTHON_M_PYTEST_MESSAGE,
   BARE_PYTEST_MESSAGE
 };

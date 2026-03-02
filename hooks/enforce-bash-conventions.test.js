@@ -5,7 +5,7 @@
 
 const assert = require('assert');
 
-const { isGitDashC, isCdAndGit, isPythonMPytest, isBarePytest, handlePreToolUse, GIT_DASH_C_MESSAGE, CD_AND_GIT_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE } = require('./enforce-bash-conventions.js');
+const { isGitDashC, isCdAndGit, isGitCommitHeredoc, isPythonMPytest, isBarePytest, handlePreToolUse, GIT_DASH_C_MESSAGE, CD_AND_GIT_MESSAGE, GIT_COMMIT_HEREDOC_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE } = require('./enforce-bash-conventions.js');
 
 // Test suite
 const tests = [];
@@ -109,6 +109,49 @@ test('blocks Bash tool with cd && git command', () => {
   });
   assert.strictEqual(result.blocked, true);
   assert.strictEqual(result.message, CD_AND_GIT_MESSAGE);
+});
+
+// --- Tests for isGitCommitHeredoc ---
+
+test('detects git commit with cat heredoc', () => {
+  assert.strictEqual(isGitCommitHeredoc('git commit -m "$(cat <<\'EOF\'\nmessage\nEOF\n)"'), true);
+});
+
+test('detects git commit with cat heredoc unquoted', () => {
+  assert.strictEqual(isGitCommitHeredoc('git commit -m "$(cat <<EOF\nmessage\nEOF\n)"'), true);
+});
+
+test('detects git commit with cat heredoc after other flags', () => {
+  assert.strictEqual(isGitCommitHeredoc('git commit --allow-empty -m "$(cat <<\'EOF\'\nmessage\nEOF\n)"'), true);
+});
+
+test('allows simple git commit -m', () => {
+  assert.strictEqual(isGitCommitHeredoc('git commit -m "simple message"'), false);
+});
+
+test('allows git commit -F- heredoc', () => {
+  assert.strictEqual(isGitCommitHeredoc('git commit -F- <<EOF\nmessage\nEOF'), false);
+});
+
+test('allows non-commit git commands', () => {
+  assert.strictEqual(isGitCommitHeredoc('git status'), false);
+});
+
+test('blocks Bash tool with git commit cat heredoc', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'git commit -m "$(cat <<\'EOF\'\nFix bug\n\nCo-authored by Claude Code\nEOF\n)"' }
+  });
+  assert.strictEqual(result.blocked, true);
+  assert.strictEqual(result.message, GIT_COMMIT_HEREDOC_MESSAGE);
+});
+
+test('allows Bash tool with git commit -F- heredoc', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'git commit -F- <<EOF\nFix bug\n\nCo-authored by Claude Code\nEOF' }
+  });
+  assert.strictEqual(result.blocked, false);
 });
 
 // --- Tests for handlePreToolUse ---

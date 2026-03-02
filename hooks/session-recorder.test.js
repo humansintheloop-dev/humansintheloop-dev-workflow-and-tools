@@ -35,6 +35,32 @@ function writeTranscriptAndParse(messages) {
   return sessionRecorder.parseTranscript(transcriptPath);
 }
 
+function startSession(sessionId, prompt) {
+  sessionRecorder.resetSession();
+  sessionRecorder.handleUserPromptSubmit({
+    session_id: sessionId,
+    cwd: TEST_DIR,
+    hook_event_name: 'UserPromptSubmit',
+    prompt
+  });
+}
+
+function readSessionContent() {
+  return fs.readFileSync(sessionRecorder.getCurrentSessionPath(), 'utf8');
+}
+
+function hookInput(eventName, sessionId, extra) {
+  return { session_id: sessionId, cwd: TEST_DIR, hook_event_name: eventName, ...extra };
+}
+
+function assertHandlesGracefully(handler, eventName, sessionId, extra) {
+  sessionRecorder.resetSession();
+  if (handler !== sessionRecorder.handleUserPromptSubmit) {
+    sessionRecorder.getOrCreateSession(TEST_DIR, sessionId);
+  }
+  runGracefully(() => handler(hookInput(eventName, sessionId, extra)));
+}
+
 function cleanup() {
   if (fs.existsSync(TEST_DIR)) {
     fs.rmSync(TEST_DIR, { recursive: true, force: true });
@@ -292,34 +318,17 @@ test('appendToSession returns false when no active session', () => {
 // --- Tests for handleUserPromptSubmit ---
 
 test('handleUserPromptSubmit records user prompt to session file', () => {
-  sessionRecorder.resetSession();
+  startSession('test-session-123', 'Help me write a function');
 
-  const hookInput = {
-    session_id: 'test-session-123',
-    cwd: TEST_DIR,
-    hook_event_name: 'UserPromptSubmit',
-    prompt: 'Help me write a function'
-  };
+  assert.ok(sessionRecorder.getCurrentSessionPath(), 'Session should be created');
 
-  sessionRecorder.handleUserPromptSubmit(hookInput);
-
-  const sessionPath = sessionRecorder.getCurrentSessionPath();
-  assert.ok(sessionPath, 'Session should be created');
-
-  const content = fs.readFileSync(sessionPath, 'utf8');
+  const content = readSessionContent();
   assert.ok(content.includes('**User:**'), 'Should contain User label');
   assert.ok(content.includes('Help me write a function'), 'Should contain prompt text');
 });
 
 test('handleUserPromptSubmit handles missing prompt gracefully', () => {
-  sessionRecorder.resetSession();
-  runGracefully(() => {
-    sessionRecorder.handleUserPromptSubmit({
-      session_id: 'test-session-123',
-      cwd: TEST_DIR,
-      hook_event_name: 'UserPromptSubmit'
-    });
-  });
+  assertHandlesGracefully(sessionRecorder.handleUserPromptSubmit, 'UserPromptSubmit', 'test-session-123', {});
 });
 
 test('handleUserPromptSubmit handles missing cwd gracefully', () => {
@@ -408,51 +417,26 @@ test('parseTranscript returns null when no assistant message', () => {
 // --- Tests for handleStop ---
 
 test('handleStop records Claude response to session file', () => {
-  sessionRecorder.resetSession();
-
-  // First create a session via user prompt
-  const userHookInput = {
-    session_id: 'test-session-123',
-    cwd: TEST_DIR,
-    hook_event_name: 'UserPromptSubmit',
-    prompt: 'Hello'
-  };
-  sessionRecorder.handleUserPromptSubmit(userHookInput);
+  startSession('test-session-123', 'Hello');
 
   // Create a transcript file
-  const transcript = JSON.stringify([
+  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
+  fs.writeFileSync(transcriptPath, JSON.stringify([
     { role: 'user', content: 'Hello' },
     { role: 'assistant', content: 'Hi! How can I help you today?' }
-  ]);
-  const transcriptPath = path.join(TEST_DIR, 'transcript.json');
-  fs.writeFileSync(transcriptPath, transcript);
+  ]));
 
-  // Handle Stop event
-  const stopHookInput = {
-    session_id: 'test-session-123',
-    cwd: TEST_DIR,
-    hook_event_name: 'Stop',
+  sessionRecorder.handleStop(hookInput('Stop', 'test-session-123', {
     transcript_path: transcriptPath
-  };
-  sessionRecorder.handleStop(stopHookInput);
+  }));
 
-  const sessionPath = sessionRecorder.getCurrentSessionPath();
-  const content = fs.readFileSync(sessionPath, 'utf8');
+  const content = readSessionContent();
   assert.ok(content.includes('**Claude:**'), 'Should contain Claude label');
   assert.ok(content.includes('Hi! How can I help you today?'), 'Should contain response text');
 });
 
 test('handleStop handles missing transcript_path gracefully', () => {
-  sessionRecorder.resetSession();
-  sessionRecorder.getOrCreateSession(TEST_DIR, 'test-session-stop');
-
-  runGracefully(() => {
-    sessionRecorder.handleStop({
-      session_id: 'test-session-stop',
-      cwd: TEST_DIR,
-      hook_event_name: 'Stop'
-    });
-  });
+  assertHandlesGracefully(sessionRecorder.handleStop, 'Stop', 'test-session-stop', {});
 });
 
 // --- Tests for tool call formatting ---
@@ -505,77 +489,36 @@ test('formatToolCall handles missing tool_input', () => {
 // --- Tests for handlePostToolUse ---
 
 test('handlePostToolUse records tool call to session file', () => {
-  sessionRecorder.resetSession();
+  startSession('test-session-123', 'Read a file');
 
-  // First create a session via user prompt
-  const userHookInput = {
-    session_id: 'test-session-123',
-    cwd: TEST_DIR,
-    hook_event_name: 'UserPromptSubmit',
-    prompt: 'Read a file'
-  };
-  sessionRecorder.handleUserPromptSubmit(userHookInput);
-
-  // Handle PostToolUse event
-  const toolHookInput = {
-    session_id: 'test-session-123',
-    cwd: TEST_DIR,
-    hook_event_name: 'PostToolUse',
+  sessionRecorder.handlePostToolUse(hookInput('PostToolUse', 'test-session-123', {
     tool_name: 'Read',
     tool_input: { file_path: '/src/test.js' }
-  };
-  sessionRecorder.handlePostToolUse(toolHookInput);
+  }));
 
-  const sessionPath = sessionRecorder.getCurrentSessionPath();
-  const content = fs.readFileSync(sessionPath, 'utf8');
+  const content = readSessionContent();
   assert.ok(content.includes('**Tools Used:**'), 'Should contain Tools Used label');
   assert.ok(content.includes('Read /src/test.js'), 'Should contain tool call');
 });
 
 test('handlePostToolUse handles missing tool_name gracefully', () => {
-  sessionRecorder.resetSession();
-  sessionRecorder.getOrCreateSession(TEST_DIR, 'test-session-tool');
-
-  runGracefully(() => {
-    sessionRecorder.handlePostToolUse({
-      session_id: 'test-session-tool',
-      cwd: TEST_DIR,
-      hook_event_name: 'PostToolUse'
-    });
-  });
+  assertHandlesGracefully(sessionRecorder.handlePostToolUse, 'PostToolUse', 'test-session-tool', {});
 });
 
 test('handlePostToolUse aggregates multiple tool calls', () => {
-  sessionRecorder.resetSession();
+  startSession('test-session-123', 'Do some work');
 
-  // Create session
-  const userHookInput = {
-    session_id: 'test-session-123',
-    cwd: TEST_DIR,
-    hook_event_name: 'UserPromptSubmit',
-    prompt: 'Do some work'
-  };
-  sessionRecorder.handleUserPromptSubmit(userHookInput);
-
-  // Multiple tool calls
-  sessionRecorder.handlePostToolUse({
-    session_id: 'test-session-123',
-    cwd: TEST_DIR,
-    hook_event_name: 'PostToolUse',
+  sessionRecorder.handlePostToolUse(hookInput('PostToolUse', 'test-session-123', {
     tool_name: 'Read',
     tool_input: { file_path: '/file1.js' }
-  });
+  }));
 
-  sessionRecorder.handlePostToolUse({
-    session_id: 'test-session-123',
-    cwd: TEST_DIR,
-    hook_event_name: 'PostToolUse',
+  sessionRecorder.handlePostToolUse(hookInput('PostToolUse', 'test-session-123', {
     tool_name: 'Edit',
     tool_input: { file_path: '/file2.js' }
-  });
+  }));
 
-  const sessionPath = sessionRecorder.getCurrentSessionPath();
-  const content = fs.readFileSync(sessionPath, 'utf8');
+  const content = readSessionContent();
   assert.ok(content.includes('Read /file1.js'), 'Should contain first tool call');
   assert.ok(content.includes('Edit /file2.js'), 'Should contain second tool call');
 });
@@ -630,18 +573,8 @@ test('captureCommitInfo returns null for non-git directory', () => {
 });
 
 test('handlePostToolUse records git commit SHA on successful commit', () => {
-  sessionRecorder.resetSession();
+  startSession('test-git-commit-success', 'Commit the changes');
 
-  // Create session
-  sessionRecorder.handleUserPromptSubmit({
-    session_id: 'test-git-commit-success',
-    cwd: TEST_DIR,
-    hook_event_name: 'UserPromptSubmit',
-    prompt: 'Commit the changes'
-  });
-
-  // Simulate successful git commit (Bash tool_response has stdout/stderr/interrupted)
-  // Use the actual project root so captureCommitInfo works
   const projectRoot = path.join(__dirname, '..');
   sessionRecorder.handlePostToolUse({
     session_id: 'test-git-commit-success',
@@ -652,8 +585,7 @@ test('handlePostToolUse records git commit SHA on successful commit', () => {
     tool_response: { stdout: '[master abc123] Test commit', stderr: '', interrupted: false }
   });
 
-  const sessionPath = sessionRecorder.getCurrentSessionPath();
-  const content = fs.readFileSync(sessionPath, 'utf8');
+  const content = readSessionContent();
 
   assert.ok(content.match(/\*\*Git Commit:\*\* \[\d{2}:\d{2}:\d{2}\]/), 'Should contain Git Commit label with timestamp');
   assert.ok(content.includes('- SHA:'), 'Should contain SHA');
@@ -661,17 +593,8 @@ test('handlePostToolUse records git commit SHA on successful commit', () => {
 });
 
 test('handlePostToolUse records git commit failure', () => {
-  sessionRecorder.resetSession();
+  startSession('test-git-commit-failure', 'Commit the changes');
 
-  // Create session
-  sessionRecorder.handleUserPromptSubmit({
-    session_id: 'test-git-commit-failure',
-    cwd: TEST_DIR,
-    hook_event_name: 'UserPromptSubmit',
-    prompt: 'Commit the changes'
-  });
-
-  // Simulate failed git commit (stderr has error message)
   sessionRecorder.handlePostToolUse({
     session_id: 'test-git-commit-failure',
     cwd: TEST_DIR,
@@ -681,38 +604,58 @@ test('handlePostToolUse records git commit failure', () => {
     tool_response: { stdout: '', stderr: 'nothing to commit, working tree clean', interrupted: false }
   });
 
-  const sessionPath = sessionRecorder.getCurrentSessionPath();
-  const content = fs.readFileSync(sessionPath, 'utf8');
+  const content = readSessionContent();
 
   assert.ok(content.match(/\*\*Git Commit Failed:\*\* \[\d{2}:\d{2}:\d{2}\]/), 'Should contain Git Commit Failed label with timestamp');
 });
 
 test('handlePostToolUse does not record git info for non-commit commands', () => {
-  sessionRecorder.resetSession();
+  startSession('test-non-commit', 'Run git status');
 
-  // Create session
-  sessionRecorder.handleUserPromptSubmit({
-    session_id: 'test-non-commit',
-    cwd: TEST_DIR,
-    hook_event_name: 'UserPromptSubmit',
-    prompt: 'Run git status'
-  });
-
-  // git status is not a commit
-  sessionRecorder.handlePostToolUse({
-    session_id: 'test-non-commit',
-    cwd: TEST_DIR,
-    hook_event_name: 'PostToolUse',
+  sessionRecorder.handlePostToolUse(hookInput('PostToolUse', 'test-non-commit', {
     tool_name: 'Bash',
     tool_input: { command: 'git status' },
     tool_response: { stdout: 'On branch master', stderr: '', interrupted: false }
-  });
+  }));
 
-  const sessionPath = sessionRecorder.getCurrentSessionPath();
-  const content = fs.readFileSync(sessionPath, 'utf8');
+  const content = readSessionContent();
 
   assert.ok(!content.includes('**Git Commit:**'), 'Should not contain Git Commit label');
   assert.ok(!content.includes('**Git Commit Failed:**'), 'Should not contain Git Commit Failed');
+});
+
+// --- Tests for handlePermissionRequest ---
+
+test('handlePermissionRequest records permission request to session file', () => {
+  startSession('test-session-perm', 'Delete old files');
+
+  sessionRecorder.handlePermissionRequest(hookInput('PermissionRequest', 'test-session-perm', {
+    tool_name: 'Bash',
+    tool_input: { command: 'rm -rf node_modules' }
+  }));
+
+  const content = readSessionContent();
+  assert.ok(content.includes('**Permission Requested:**'), 'Should contain Permission Requested label');
+  assert.ok(content.includes('Bash: rm -rf node_modules'), 'Should contain tool call summary');
+});
+
+test('handleHookEvent routes PermissionRequest to handlePermissionRequest', () => {
+  startSession('test-session-route', 'Do something');
+
+  sessionRecorder.handleHookEvent(hookInput('PermissionRequest', 'test-session-route', {
+    tool_name: 'Write',
+    tool_input: { file_path: '/src/secret.js' }
+  }));
+
+  const content = readSessionContent();
+  assert.ok(content.includes('**Permission Requested:**'), 'Should contain Permission Requested label');
+  assert.ok(content.includes('Write /src/secret.js'), 'Should contain tool call summary');
+});
+
+test('handlePermissionRequest handles missing tool_name gracefully', () => {
+  assertHandlesGracefully(sessionRecorder.handlePermissionRequest, 'PermissionRequest', 'test-session-perm-no-tool', {});
+  const content = readSessionContent();
+  assert.ok(!content.includes('**Permission Requested:**'), 'Should not record when tool_name is missing');
 });
 
 // Run all tests

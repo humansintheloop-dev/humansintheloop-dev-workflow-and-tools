@@ -423,6 +423,39 @@ function isGitCommitCommand(toolName, toolInput) {
 }
 
 /**
+ * Handles the PermissionRequest hook event
+ * Logs the permission request to the session file without making a decision,
+ * so the user still sees the normal permission dialog.
+ * @param {Object} hookInput - The hook input data
+ * @param {string} hookInput.session_id - The Claude session ID
+ * @param {string} hookInput.tool_name - The name of the tool requesting permission
+ * @param {Object} hookInput.tool_input - The tool input parameters
+ * @param {string} hookInput.cwd - The current working directory
+ */
+function handlePermissionRequest(hookInput) {
+  const { session_id, tool_name, tool_input, cwd } = hookInput;
+
+  const projectRoot = findProjectRoot(cwd);
+
+  if (!tool_name) {
+    return;
+  }
+
+  if (needsSessionCreation(projectRoot, session_id)) {
+    getOrCreateSession(projectRoot, session_id);
+  }
+
+  if (!currentSessionPath) {
+    return;
+  }
+
+  const toolSummary = formatToolCall(tool_name, tool_input);
+  const timestamp = formatEntryTimestamp();
+  const formatted = `**Permission Requested:** [${timestamp}]\n- ${toolSummary}\n\n`;
+  appendToSession(formatted);
+}
+
+/**
  * Handles the PostToolUse hook event
  * @param {Object} hookInput - The hook input data
  * @param {string} hookInput.session_id - The Claude session ID
@@ -600,6 +633,9 @@ function handleHookEvent(hookInput) {
     case 'UserPromptSubmit':
       handleUserPromptSubmit(hookInput);
       break;
+    case 'PermissionRequest':
+      handlePermissionRequest(hookInput);
+      break;
     case 'PostToolUse':
       handlePostToolUse(hookInput);
       break;
@@ -629,6 +665,7 @@ module.exports = {
   captureCommitInfo,
   parseTranscript,
   handleUserPromptSubmit,
+  handlePermissionRequest,
   handlePostToolUse,
   handleStop,
   handleHookEvent

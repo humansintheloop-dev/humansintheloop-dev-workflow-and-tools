@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+const fs = require('fs');
+
 /**
  * PreToolUse hook that blocks certain Bash command patterns:
  * - `git -C <directory>` — use cd + git instead
@@ -6,6 +8,7 @@
  * - `git commit` with heredoc — use simple `git commit -m "..."`
  * - `python -m pytest` — use `uv run python -m pytest` instead
  * - bare `pytest` — use `uv run python -m pytest` instead
+ * - `bash script.sh` / `sh script.sh` — run directly when script is executable with shebang
  *
  * Exit codes:
  *   0 - allow the command
@@ -36,7 +39,7 @@ function isCdAndGit(command) {
 }
 
 const CD_AND_GIT_MESSAGE =
-  'Do not use `cd <directory> && git ...` - run git commands from the project root directory';
+  'Do not use `cd <directory> && git ...` - cd to the top-level directory and run git commands from there';
 
 /**
  * Checks whether a Bash command uses a heredoc for git commit messages.
@@ -69,12 +72,48 @@ function isBarePytest(command) {
 const BARE_PYTEST_MESSAGE =
   'Do not run `pytest` directly - use `uv run python -m pytest` instead';
 
+/**
+ * Checks whether a Bash command unnecessarily prefixes an executable shebang
+ * script with `bash` or `sh`. Blocks when the script file exists, is
+ * executable, and has a shebang line. If filesystem access is denied
+ * (e.g., sandbox EPERM), allows the command through.
+ * @param {string} command - The shell command to inspect
+ * @param {Object} [fsModule] - Optional fs module for dependency injection in tests
+ * @returns {boolean} True if bash/sh prefix is redundant
+ */
+function isBashPrefixedScript(command, fsModule) {
+  const match = command.match(/^(?:ba)?sh\s+(\S+)/);
+  if (!match) return false;
+
+  const _fs = fsModule || fs;
+  const scriptPath = match[1];
+  try {
+    _fs.accessSync(scriptPath, _fs.constants.X_OK);
+  } catch {
+    return false;
+  }
+
+  try {
+    const fd = _fs.openSync(scriptPath, 'r');
+    const buf = Buffer.alloc(2);
+    _fs.readSync(fd, buf, 0, 2, 0);
+    _fs.closeSync(fd);
+    return buf.toString() === '#!';
+  } catch {
+    return false;
+  }
+}
+
+const BASH_PREFIXED_SCRIPT_MESSAGE =
+  'Do not prefix scripts with `bash` or `sh` - run them directly: `./script.sh`';
+
 const BASH_RULES = [
   { test: isGitDashC, message: GIT_DASH_C_MESSAGE },
   { test: isCdAndGit, message: CD_AND_GIT_MESSAGE },
   { test: isGitCommitHeredoc, message: GIT_COMMIT_HEREDOC_MESSAGE },
   { test: isPythonMPytest, message: PYTHON_M_PYTEST_MESSAGE },
   { test: isBarePytest, message: BARE_PYTEST_MESSAGE },
+  { test: isBashPrefixedScript, message: BASH_PREFIXED_SCRIPT_MESSAGE },
 ];
 
 /**
@@ -106,12 +145,14 @@ module.exports = {
   isGitCommitHeredoc,
   isPythonMPytest,
   isBarePytest,
+  isBashPrefixedScript,
   handlePreToolUse,
   GIT_DASH_C_MESSAGE,
   CD_AND_GIT_MESSAGE,
   GIT_COMMIT_HEREDOC_MESSAGE,
   PYTHON_M_PYTEST_MESSAGE,
-  BARE_PYTEST_MESSAGE
+  BARE_PYTEST_MESSAGE,
+  BASH_PREFIXED_SCRIPT_MESSAGE
 };
 
 // Main entry point when run as a script

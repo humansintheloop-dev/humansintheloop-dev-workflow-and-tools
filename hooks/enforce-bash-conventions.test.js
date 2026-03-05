@@ -5,7 +5,11 @@
 
 const assert = require('assert');
 
-const { isGitDashC, isCdAndGit, isGitCommitHeredoc, isPythonMPytest, isBarePytest, handlePreToolUse, GIT_DASH_C_MESSAGE, CD_AND_GIT_MESSAGE, GIT_COMMIT_HEREDOC_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE } = require('./enforce-bash-conventions.js');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const { isGitDashC, isCdAndGit, isGitCommitHeredoc, isPythonMPytest, isBarePytest, isBashPrefixedScript, handlePreToolUse, GIT_DASH_C_MESSAGE, CD_AND_GIT_MESSAGE, GIT_COMMIT_HEREDOC_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE, BASH_PREFIXED_SCRIPT_MESSAGE } = require('./enforce-bash-conventions.js');
 
 // Test suite
 const tests = [];
@@ -278,6 +282,130 @@ test('blocks Bash tool with bare pytest and flags', () => {
   });
   assert.strictEqual(result.blocked, true);
   assert.strictEqual(result.message, BARE_PYTEST_MESSAGE);
+});
+
+// --- Tests for isBashPrefixedScript ---
+
+// Helper to create temp scripts for filesystem-based tests
+function createTempScript({ shebang = true, executable = true } = {}) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bash-conv-test-'));
+  const scriptPath = path.join(dir, 'test-script.sh');
+  const content = shebang ? '#!/bin/bash\necho hello\n' : 'echo hello\n';
+  fs.writeFileSync(scriptPath, content, { mode: executable ? 0o755 : 0o644 });
+  return { dir, scriptPath };
+}
+
+function cleanupTemp(dir) {
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+
+test('blocks bash prefix on executable script with shebang', () => {
+  const { dir, scriptPath } = createTempScript({ shebang: true, executable: true });
+  try {
+    assert.strictEqual(isBashPrefixedScript(`bash ${scriptPath}`), true);
+  } finally {
+    cleanupTemp(dir);
+  }
+});
+
+test('blocks sh prefix on executable script with shebang', () => {
+  const { dir, scriptPath } = createTempScript({ shebang: true, executable: true });
+  try {
+    assert.strictEqual(isBashPrefixedScript(`sh ${scriptPath}`), true);
+  } finally {
+    cleanupTemp(dir);
+  }
+});
+
+test('allows bash prefix on script without shebang', () => {
+  const { dir, scriptPath } = createTempScript({ shebang: false, executable: true });
+  try {
+    assert.strictEqual(isBashPrefixedScript(`bash ${scriptPath}`), false);
+  } finally {
+    cleanupTemp(dir);
+  }
+});
+
+test('allows bash prefix on non-executable script', () => {
+  const { dir, scriptPath } = createTempScript({ shebang: true, executable: false });
+  try {
+    assert.strictEqual(isBashPrefixedScript(`bash ${scriptPath}`), false);
+  } finally {
+    cleanupTemp(dir);
+  }
+});
+
+test('allows bash prefix on nonexistent file', () => {
+  assert.strictEqual(isBashPrefixedScript('bash /nonexistent/script.sh'), false);
+});
+
+test('allows bash prefix with arguments after script', () => {
+  const { dir, scriptPath } = createTempScript({ shebang: true, executable: true });
+  try {
+    assert.strictEqual(isBashPrefixedScript(`bash ${scriptPath} --flag arg`), true);
+  } finally {
+    cleanupTemp(dir);
+  }
+});
+
+test('allows non-bash commands', () => {
+  assert.strictEqual(isBashPrefixedScript('node script.js'), false);
+});
+
+test('allows commands that just start with bash word', () => {
+  assert.strictEqual(isBashPrefixedScript('bashful-app run'), false);
+});
+
+function assertBashToolResult(command, scriptOpts, expectedBlocked, expectedMessage) {
+  const { dir, scriptPath } = createTempScript(scriptOpts);
+  try {
+    const result = handlePreToolUse({
+      tool_name: 'Bash',
+      tool_input: { command: command.replace('SCRIPT', scriptPath) }
+    });
+    assert.strictEqual(result.blocked, expectedBlocked);
+    if (expectedMessage) assert.strictEqual(result.message, expectedMessage);
+  } finally {
+    cleanupTemp(dir);
+  }
+}
+
+test('blocks handlePreToolUse with bash-prefixed executable shebang script', () => {
+  assertBashToolResult('bash SCRIPT 2>&1', { shebang: true, executable: true }, true, BASH_PREFIXED_SCRIPT_MESSAGE);
+});
+
+test('allows handlePreToolUse with bash-prefixed non-executable script', () => {
+  assertBashToolResult('bash SCRIPT', { shebang: true, executable: false }, false);
+});
+
+// --- Tests for EPERM (sandbox) handling ---
+
+function createFsStub(overrides) {
+  return { constants: { X_OK: fs.constants.X_OK }, ...overrides };
+}
+
+function throwFsError(code, message) {
+  const err = new Error(message);
+  err.code = code;
+  throw err;
+}
+
+test('allows bash prefix when accessSync throws EPERM', () => {
+  const stubFs = createFsStub({ accessSync() { throwFsError('EPERM', 'operation not permitted'); } });
+  assert.strictEqual(isBashPrefixedScript('bash test-scripts/some-script.sh', stubFs), false);
+});
+
+test('allows bash prefix when accessSync throws ENOENT', () => {
+  const stubFs = createFsStub({ accessSync() { throwFsError('ENOENT', 'no such file or directory'); } });
+  assert.strictEqual(isBashPrefixedScript('bash /nonexistent/script.sh', stubFs), false);
+});
+
+test('allows bash prefix when openSync throws EPERM after accessSync succeeds', () => {
+  const stubFs = createFsStub({
+    accessSync() { /* succeeds */ },
+    openSync() { throwFsError('EPERM', 'operation not permitted'); }
+  });
+  assert.strictEqual(isBashPrefixedScript('bash test-scripts/some-script.sh', stubFs), false);
 });
 
 // Run all tests

@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
+const path = require('path');
+const { findProjectRoot, findSessionFile, formatEntryTimestamp } = require('./session-recorder');
 
 /**
  * PreToolUse hook that blocks certain Bash command patterns:
@@ -108,13 +110,40 @@ const BASH_PREFIXED_SCRIPT_MESSAGE =
   'Do not prefix scripts with `bash` or `sh` - run them directly: `./script.sh`';
 
 const BASH_RULES = [
+  { test: isGitCommitHeredoc, message: GIT_COMMIT_HEREDOC_MESSAGE },
   { test: isGitDashC, message: GIT_DASH_C_MESSAGE },
   { test: isCdAndGit, message: CD_AND_GIT_MESSAGE },
-  { test: isGitCommitHeredoc, message: GIT_COMMIT_HEREDOC_MESSAGE },
   { test: isPythonMPytest, message: PYTHON_M_PYTEST_MESSAGE },
   { test: isBarePytest, message: BARE_PYTEST_MESSAGE },
   { test: isBashPrefixedScript, message: BASH_PREFIXED_SCRIPT_MESSAGE },
 ];
+
+/**
+ * Records a blocked command attempt to the session file if one exists.
+ * @param {string} command - The blocked command
+ * @param {string} message - The reason it was blocked
+ * @param {string} sessionId - The Claude session ID
+ * @param {string} cwd - The current working directory
+ */
+function recordBlockedAttempt(command, message, sessionId, cwd) {
+  if (!sessionId || !cwd) return;
+
+  try {
+    const projectRoot = findProjectRoot(cwd);
+    if (!projectRoot) return;
+
+    const sessionsDir = path.join(projectRoot, '.hitl', 'sessions');
+    const sessionFile = findSessionFile(sessionsDir, sessionId);
+    if (!sessionFile) return;
+
+    const timestamp = formatEntryTimestamp();
+
+    const entry = `**Blocked:** [${timestamp}]\n- Command: ${command}\n- Reason: ${message}\n\n`;
+    fs.appendFileSync(sessionFile, entry, { encoding: 'utf8' });
+  } catch {
+    // Silently ignore recording errors — blocking is the priority
+  }
+}
 
 /**
  * Handles a PreToolUse hook event for the Bash tool.
@@ -122,7 +151,7 @@ const BASH_RULES = [
  * @returns {{ blocked: boolean, message?: string }}
  */
 function handlePreToolUse(hookInput) {
-  const { tool_name, tool_input } = hookInput;
+  const { tool_name, tool_input, session_id, cwd } = hookInput;
 
   if (tool_name !== 'Bash') {
     return { blocked: false };
@@ -132,6 +161,7 @@ function handlePreToolUse(hookInput) {
   const violated = BASH_RULES.find(rule => rule.test(command));
 
   if (violated) {
+    recordBlockedAttempt(command, violated.message, session_id, cwd);
     return { blocked: true, message: violated.message };
   }
 

@@ -408,5 +408,113 @@ test('allows bash prefix when openSync throws EPERM after accessSync succeeds', 
   assert.strictEqual(isBashPrefixedScript('bash test-scripts/some-script.sh', stubFs), false);
 });
 
+// --- Tests for session recording of blocked attempts ---
+
+test('records blocked attempt to session file when session exists', () => {
+  // Set up a temp session directory with a session file
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bash-conv-rec-'));
+  const sessionsDir = path.join(dir, '.hitl', 'sessions');
+  fs.mkdirSync(sessionsDir, { recursive: true });
+  const sessionId = 'test-session-123';
+  const sessionFile = path.join(sessionsDir, `session-2026-03-06-120000-${sessionId}.md`);
+  fs.writeFileSync(sessionFile, '# Session: 2026-03-06 12:00:00\n\n');
+
+  try {
+    const result = handlePreToolUse({
+      tool_name: 'Bash',
+      tool_input: { command: 'git -C /some/dir status' },
+      session_id: sessionId,
+      cwd: dir
+    });
+
+    assert.strictEqual(result.blocked, true);
+
+    // Verify the blocked attempt was recorded in the session file
+    const content = fs.readFileSync(sessionFile, 'utf8');
+    assert.ok(content.includes('**Blocked:**'), 'Session file should contain Blocked entry');
+    assert.ok(content.includes('git -C /some/dir status'), 'Session file should contain the blocked command');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('records heredoc message (not git-dash-C) for git commit heredoc', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bash-conv-rec-'));
+  const sessionsDir = path.join(dir, '.hitl', 'sessions');
+  fs.mkdirSync(sessionsDir, { recursive: true });
+  const sessionId = 'test-session-heredoc';
+  const sessionFile = path.join(sessionsDir, `session-2026-03-06-120000-${sessionId}.md`);
+  fs.writeFileSync(sessionFile, '# Session: 2026-03-06 12:00:00\n\n');
+
+  try {
+    const result = handlePreToolUse({
+      tool_name: 'Bash',
+      tool_input: { command: 'git commit -m "$(cat <<\'EOF\'\nUpdate config files\nEOF\n)"' },
+      session_id: sessionId,
+      cwd: dir
+    });
+
+    assert.strictEqual(result.blocked, true);
+    assert.strictEqual(result.message, GIT_COMMIT_HEREDOC_MESSAGE);
+
+    const content = fs.readFileSync(sessionFile, 'utf8');
+    assert.ok(content.includes(GIT_COMMIT_HEREDOC_MESSAGE),
+      `Session file should contain heredoc message, got: ${content}`);
+    assert.ok(!content.includes('git -C'),
+      'Session file should NOT contain git-dash-C message');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('heredoc commit mentioning git -C in message body gets heredoc reason, not git-dash-C', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'git commit -m "$(cat <<\'EOF\'\nAdd guidelines (no git -C)\nEOF\n)"' }
+  });
+
+  assert.strictEqual(result.blocked, true);
+  assert.strictEqual(result.message, GIT_COMMIT_HEREDOC_MESSAGE,
+    'Should match heredoc rule, not git-dash-C rule');
+});
+
+test('does not crash when no session file exists for blocked attempt', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'git -C /some/dir status' },
+    session_id: 'nonexistent-session',
+    cwd: '/tmp/nonexistent-dir'
+  });
+
+  assert.strictEqual(result.blocked, true);
+  assert.strictEqual(result.message, GIT_DASH_C_MESSAGE);
+});
+
+test('does not record when command is allowed', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bash-conv-rec-'));
+  const sessionsDir = path.join(dir, '.hitl', 'sessions');
+  fs.mkdirSync(sessionsDir, { recursive: true });
+  const sessionId = 'test-session-456';
+  const sessionFile = path.join(sessionsDir, `session-2026-03-06-120000-${sessionId}.md`);
+  fs.writeFileSync(sessionFile, '# Session: 2026-03-06 12:00:00\n\n');
+
+  try {
+    const result = handlePreToolUse({
+      tool_name: 'Bash',
+      tool_input: { command: 'git status' },
+      session_id: sessionId,
+      cwd: dir
+    });
+
+    assert.strictEqual(result.blocked, false);
+
+    // Session file should not have any Blocked entry
+    const content = fs.readFileSync(sessionFile, 'utf8');
+    assert.ok(!content.includes('**Blocked:**'), 'Session file should not contain Blocked entry for allowed commands');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // Run all tests
 runTests();

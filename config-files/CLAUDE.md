@@ -1,8 +1,15 @@
 # Project Guidelines
 
+IMPORTANT: Before exploring the codebase, read [CODEBASE.md](CODEBASE.md) first. Use it as the navigation guide to locate packages, tests, skills, and feature docs.
+
 ## Executing bash commands
 
 IMPORTANT: Use simple commands that you have permission to execute. Avoid complex commands that may fail due to permission issues.
+
+When running scripts:
+- Run scripts directly: `./script.sh` (NOT `bash ./script.sh`)
+- Do not append `2>&1` to redirect stderr
+- Do not use `git -C directory` - cd to the top-level directory and run git commands from there
 
 When copying or moving files:
 - Avoid compound commands with `&&` - run commands separately
@@ -18,7 +25,24 @@ IMPORTANT: Always invoke the relevant skill before performing these actions:
 - **When working from a plan file**: Use the `idea-to-code:plan-tracking` skill
 - **When creating Dockerfiles**: Use the `idea-to-code:dockerfile-guidelines` skill
 - **When moving/renaming files**: Use the `idea-to-code:file-organization` skill
+- **When renumbering or editing plan file structure**: Use the `idea-to-code:plan-file-management` skill
+- **When implementing or refactoring code**: Use the `idea-to-code:apply-design-patterns` skill
+- **When investigating CI build failures**: Use the `idea-to-code:debugging-ci-failures` skill
+- **When creating or updating GitHub Actions CI workflows**: Use the `idea-to-code:github-workflow-gradle-template` skill
+- **When running tests in Java/Gradle projects**: Use the `idea-to-code:test-runner-java-gradle` skill
+- **When writing test scripts involving infrastructure**: Use the `idea-to-code:testing-scripts-and-infrastructure` skill
+- **When resolving merge or rebase conflicts**: Use the `idea-to-code:git-conflict-resolution` skill
 - **When writing multiple similar files**: Use the `idea-to-code:incremental-development` skill
+
+## Code Health
+
+Before committing code changes, read and follow [CODE_SCENE.md](CODE_SCENE.md) for Code Health safeguard and refactoring instructions.
+
+## Referencing Code Locations
+
+- Use `path/to/file:line_number` when referencing a specific line (e.g., `src/i2code/plan/manager.py:42`).
+- Use `path/to/file` when referencing a file without a specific line.
+- Both formats enable click-to-navigate in the terminal.
 
 ## Code Style
 

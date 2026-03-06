@@ -52,19 +52,19 @@ Since this is a Python project with pytest, there is no CI workflow to create â€
 
 This single steel thread implements the primary scenario: set up a temp repo, run scaffolding, run the first task, and assert the conflict.
 
-- [ ] **Task 1.1: Test setup creates a temp git repo with hello-world idea fixtures**
+- [x] **Task 1.1: Test setup creates a temp git repo with hello-world idea fixtures**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/implement/test_scaffolding_task_conflict.py::test_scaffolding_task_conflict_creates_duplicate_ci_files -m manual -v`
   - Observable: A pytest test function exists, is tagged `@pytest.mark.manual`, creates a temp git repo containing the hello-world fixtures under `docs/features/hello-world/`, and the repo has an initial commit
   - Evidence: The test runs (may fail at later assertions), but the temp repo setup succeeds â€” verified by asserting the fixtures directory exists and `git log` shows a commit in the temp repo
   - Steps:
-    - [ ] Create `tests/implement/test_scaffolding_task_conflict.py` with a test function `test_scaffolding_task_conflict_creates_duplicate_ci_files`
-    - [ ] Add `@pytest.mark.manual` decorator
-    - [ ] Use `tmp_path` fixture to create a temporary directory
-    - [ ] Implement helper logic to: `git init` the temp dir, copy fixtures from `tests/implement/fixtures/hello-world/` into `docs/features/hello-world/` within the temp repo, `git add .`, `git commit`
-    - [ ] Assert that `docs/features/hello-world/hello-world-idea.txt` exists in the temp repo
-    - [ ] Assert that `docs/features/hello-world/hello-world-plan.md` exists in the temp repo
-    - [ ] Run the test to verify setup works (test should pass at this point since only setup assertions exist)
+    - [x] Create `tests/implement/test_scaffolding_task_conflict.py` with a test function `test_scaffolding_task_conflict_creates_duplicate_ci_files`
+    - [x] Add `@pytest.mark.manual` decorator
+    - [x] Use `tmp_path` fixture to create a temporary directory
+    - [x] Implement helper logic to: `git init` the temp dir, copy fixtures from `tests/implement/fixtures/hello-world/` into `docs/features/hello-world/` within the temp repo, `git add .`, `git commit`
+    - [x] Assert that `docs/features/hello-world/hello-world-idea.txt` exists in the temp repo
+    - [x] Assert that `docs/features/hello-world/hello-world-plan.md` exists in the temp repo
+    - [x] Run the test to verify setup works (test should pass at this point since only setup assertions exist)
 
 - [ ] **Task 1.2: Scaffolding phase creates ci.yaml in the temp repo**
   - TaskType: OUTCOME

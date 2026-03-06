@@ -1,0 +1,3 @@
+Build a simple "Hello World" REST API using Java and Spring Boot.
+
+The API should have a single GET /hello endpoint that returns "Hello, World!" as plain text.

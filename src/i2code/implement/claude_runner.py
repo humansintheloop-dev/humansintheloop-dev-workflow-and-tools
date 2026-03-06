@@ -263,11 +263,11 @@ class ClaudeRunner:
             return self.run_interactive(cmd, cwd=cwd)
         return self.run_batch(cmd, cwd=cwd)
 
-    def run_task(self, cmd: List[str], cwd: str, head_sha_fn) -> TaskExecutionResult:
+    def run_task(self, cmd: List[str], repo) -> TaskExecutionResult:
         """Run a task command, capturing head SHA before and after."""
-        head_before = head_sha_fn()
-        claude_result = self.run(cmd, cwd=cwd)
-        head_after = head_sha_fn()
+        head_before = repo.head_sha
+        claude_result = self.run(cmd, cwd=repo.working_tree_dir)
+        head_after = repo.head_sha
         result = TaskExecutionResult(claude_result, head_before, head_after)
         if not result.succeeded:
             print_task_failure_diagnostics(claude_result, head_before, head_after)

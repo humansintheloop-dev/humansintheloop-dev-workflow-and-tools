@@ -120,9 +120,7 @@ class WorktreeMode:
             print(f"Running Claude (attempt {attempt}/{max_attempts})...")
 
             result = self._loop_steps.claude_runner.run_task(
-                claude_cmd,
-                cwd=self._git_repo.working_tree_dir,
-                head_sha_fn=lambda: self._git_repo.head_sha,
+                claude_cmd, self._git_repo,
             )
 
             if not result.succeeded:

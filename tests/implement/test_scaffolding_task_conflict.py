@@ -19,6 +19,7 @@ from git import Repo
 from i2code.implement.claude_permissions import ensure_claude_permissions
 from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 from i2code.implement.claude_runner import ClaudeRunner
+from i2code.implement.git_repository import GitRepository
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.project_scaffolding import ScaffoldingCreator
 
@@ -28,11 +29,18 @@ CONFIG_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "config-files")
 
 @dataclass
 class ProjectFixture:
-    tmp_path: Path
-    repo: Repo
+    git_repo: GitRepository
     idea_dir: Path
     command_builder: CommandBuilder
     claude_runner: ClaudeRunner
+
+    @property
+    def tmp_path(self) -> Path:
+        return Path(self.git_repo.working_tree_dir)
+
+    @property
+    def repo(self) -> Repo:
+        return self.git_repo._repo
 
     @property
     def workflows_dir(self) -> Path:
@@ -60,8 +68,10 @@ def test_scaffolding_task_conflict_creates_duplicate_ci_files(tmp_path):
     assert scaffolding_used_yaml or scaffolding_used_yml, (
         f"Expected ci.yaml or ci.yml in {project.workflows_dir}"
     )
+    _print_ci_file(project, "after scaffolding")
 
     _run_first_task(project)
+    _print_ci_file(project, "after task")
 
     if scaffolding_used_yaml:
         assert not project.ci_yml.exists(), (
@@ -94,8 +104,7 @@ def _create_test_project(tmp_path: Path) -> ProjectFixture:
     ensure_claude_permissions(str(tmp_path))
 
     return ProjectFixture(
-        tmp_path=tmp_path,
-        repo=repo,
+        git_repo=GitRepository(repo, gh_client=None),
         idea_dir=idea_dir,
         command_builder=CommandBuilder(),
         claude_runner=ClaudeRunner(interactive=False),
@@ -120,13 +129,18 @@ def _run_first_task(project: ProjectFixture):
             extra_cli_args=["--allowed-tools", "Bash(rm:*)"],
         ),
     )
-    project.claude_runner.run_task(
-        task_cmd,
-        cwd=str(project.tmp_path),
-        head_sha_fn=lambda: project.repo.head.commit.hexsha,
-    )
+    project.claude_runner.run_task(task_cmd, project.git_repo)
     _print_recent_commits(project.repo)
     _print_last_commit_diff(project.repo)
+
+
+def _print_ci_file(project: ProjectFixture, label: str):
+    ci_file = project.ci_yaml if project.ci_yaml.exists() else project.ci_yml
+    if ci_file.exists():
+        print(f"\n--- {ci_file.name} {label} ---")
+        print(ci_file.read_text())
+    else:
+        print(f"\n--- no CI file found {label} ---")
 
 
 def _print_recent_commits(repo: Repo):

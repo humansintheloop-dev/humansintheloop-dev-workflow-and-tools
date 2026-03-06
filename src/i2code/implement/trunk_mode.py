@@ -38,9 +38,7 @@ class TrunkMode:
             print(f"Executing task (attempt {attempt}/{max_attempts}): {task_description}")
 
             result = self._claude_runner.run_task(
-                claude_cmd,
-                cwd=self._workspace.git_repo.working_tree_dir,
-                head_sha_fn=lambda: self._workspace.git_repo.head_sha,
+                claude_cmd, self._workspace.git_repo,
             )
 
             if not result.succeeded:

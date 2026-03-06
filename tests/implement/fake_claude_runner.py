@@ -60,10 +60,10 @@ class FakeClaudeRunner:
         self.calls.append(("run_batch", cmd, cwd))
         return self._next_result()
 
-    def run_task(self, cmd, cwd, head_sha_fn):
-        head_before = head_sha_fn()
-        claude_result = self.run(cmd, cwd=cwd)
-        head_after = head_sha_fn()
+    def run_task(self, cmd, repo):
+        head_before = repo.head_sha
+        claude_result = self.run(cmd, cwd=repo.working_tree_dir)
+        head_after = repo.head_sha
         result = TaskExecutionResult(claude_result, head_before, head_after)
         if not result.succeeded:
             print_task_failure_diagnostics(claude_result, head_before, head_after)

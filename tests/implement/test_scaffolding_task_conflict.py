@@ -18,7 +18,7 @@ from git import Repo
 
 from i2code.implement.claude_permissions import ensure_claude_permissions
 from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
-from i2code.implement.claude_runner import ClaudeRunner, print_task_failure_diagnostics
+from i2code.implement.claude_runner import ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.project_scaffolding import ScaffoldingCreator
 
@@ -27,7 +27,7 @@ CONFIG_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "config-files")
 
 
 @dataclass
-class TestProject:
+class ProjectFixture:
     tmp_path: Path
     repo: Repo
     idea_dir: Path
@@ -73,7 +73,7 @@ def test_scaffolding_task_conflict_creates_duplicate_ci_files(tmp_path):
         )
 
 
-def _create_test_project(tmp_path: Path) -> TestProject:
+def _create_test_project(tmp_path: Path) -> ProjectFixture:
     repo = Repo.init(tmp_path)
     repo.config_writer().set_value("user", "email", "test@test.com").release()
     repo.config_writer().set_value("user", "name", "Test").release()
@@ -93,7 +93,7 @@ def _create_test_project(tmp_path: Path) -> TestProject:
     shutil.copy2(os.path.join(CONFIG_DIR, "settings.local.json"), claude_dir)
     ensure_claude_permissions(str(tmp_path))
 
-    return TestProject(
+    return ProjectFixture(
         tmp_path=tmp_path,
         repo=repo,
         idea_dir=idea_dir,
@@ -102,14 +102,14 @@ def _create_test_project(tmp_path: Path) -> TestProject:
     )
 
 
-def _run_scaffolding(project: TestProject):
+def _run_scaffolding(project: ProjectFixture):
     scaffolding_creator = ScaffoldingCreator(project.command_builder, project.claude_runner)
     scaffolding_creator.run_scaffolding(
         str(project.idea_dir), cwd=str(project.tmp_path), interactive=False,
     )
 
 
-def _run_first_task(project: TestProject):
+def _run_first_task(project: ProjectFixture):
     idea_project = IdeaProject(str(project.idea_dir))
     task = idea_project.get_next_task()
     assert task is not None, "Expected at least one uncompleted task in the plan"
@@ -120,11 +120,13 @@ def _run_first_task(project: TestProject):
             extra_cli_args=["--allowed-tools", "Bash(rm:*)"],
         ),
     )
-    head_before = project.repo.head.commit.hexsha
-    task_result = project.claude_runner.run(task_cmd, cwd=str(project.tmp_path))
-    head_after = project.repo.head.commit.hexsha
-    print_task_failure_diagnostics(task_result, head_before, head_after)
+    project.claude_runner.run_task(
+        task_cmd,
+        cwd=str(project.tmp_path),
+        head_sha_fn=lambda: project.repo.head.commit.hexsha,
+    )
     _print_recent_commits(project.repo)
+    _print_last_commit_diff(project.repo)
 
 
 def _print_recent_commits(repo: Repo):
@@ -134,6 +136,11 @@ def _print_recent_commits(repo: Repo):
         diffs = parent.diff(commit) if parent else commit.diff(None)
         for diff in diffs:
             print(f"  {_diff_status(diff)}\t{diff.b_path or diff.a_path}")
+
+
+def _print_last_commit_diff(repo: Repo):
+    print("\ngit diff HEAD~1:")
+    print(repo.git.diff("HEAD~1"))
 
 
 def _diff_status(diff) -> str:

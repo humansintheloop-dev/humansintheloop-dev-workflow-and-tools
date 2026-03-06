@@ -237,6 +237,20 @@ def print_task_failure_diagnostics(
             _format_message(msg)
 
 
+@dataclass
+class TaskExecutionResult:
+    """Result of running a task: Claude result plus git state."""
+    claude_result: ClaudeResult
+    head_before: str
+    head_after: str
+
+    @property
+    def succeeded(self) -> bool:
+        return check_claude_success(
+            self.claude_result.returncode, self.head_before, self.head_after,
+        )
+
+
 class ClaudeRunner:
     """Delegates to the module-level run functions."""
 
@@ -248,6 +262,16 @@ class ClaudeRunner:
         if self._interactive:
             return self.run_interactive(cmd, cwd=cwd)
         return self.run_batch(cmd, cwd=cwd)
+
+    def run_task(self, cmd: List[str], cwd: str, head_sha_fn) -> TaskExecutionResult:
+        """Run a task command, capturing head SHA before and after."""
+        head_before = head_sha_fn()
+        claude_result = self.run(cmd, cwd=cwd)
+        head_after = head_sha_fn()
+        result = TaskExecutionResult(claude_result, head_before, head_after)
+        if not result.succeeded:
+            print_task_failure_diagnostics(claude_result, head_before, head_after)
+        return result
 
     def run_interactive(self, cmd: List[str], cwd: str) -> ClaudeResult:
         return run_claude_interactive(cmd, cwd=cwd)

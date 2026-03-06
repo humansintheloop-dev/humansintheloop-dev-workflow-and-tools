@@ -3,10 +3,7 @@
 import sys
 
 from i2code.implement.claude_permissions import calculate_claude_permissions
-from i2code.implement.claude_runner import (
-    check_claude_success,
-    print_task_failure_diagnostics,
-)
+from i2code.implement.claude_runner import print_task_failure_diagnostics
 from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 
 
@@ -36,20 +33,21 @@ class TrunkMode:
         task_description = task.print()
 
         claude_cmd = self._build_command(task_description)
-        head_before = self._workspace.git_repo.head_sha
 
         for attempt in range(1, max_attempts + 1):
             print(f"Executing task (attempt {attempt}/{max_attempts}): {task_description}")
 
-            claude_result = self._run_claude(claude_cmd)
-            head_after = self._workspace.git_repo.head_sha
+            result = self._claude_runner.run_task(
+                claude_cmd,
+                cwd=self._workspace.git_repo.working_tree_dir,
+                head_sha_fn=lambda: self._workspace.git_repo.head_sha,
+            )
 
-            if not check_claude_success(claude_result.returncode, head_before, head_after):
-                print_task_failure_diagnostics(claude_result, head_before, head_after)
+            if not result.succeeded:
                 continue
 
-            if self._opts.non_interactive and "<SUCCESS>" not in claude_result.output.stdout:
-                print_task_failure_diagnostics(claude_result, head_before, head_after)
+            if self._opts.non_interactive and "<SUCCESS>" not in result.claude_result.output.stdout:
+                print_task_failure_diagnostics(result.claude_result, result.head_before, result.head_after)
                 sys.exit(1)
 
             if not self._workspace.project.is_task_completed(task.number.thread, task.number.task):
@@ -79,5 +77,3 @@ class TrunkMode:
             ),
         )
 
-    def _run_claude(self, claude_cmd):
-        return self._claude_runner.run(claude_cmd, cwd=self._workspace.git_repo.working_tree_dir)

@@ -3,13 +3,17 @@
 import sys
 import time
 from dataclasses import dataclass
+from typing import Callable, Optional
 
-from i2code.implement.git_setup import (
-    has_ci_workflow_files,
-)
-from i2code.implement.claude_runner import print_task_failure_diagnostics
-from i2code.implement.command_builder import TaskCommandOpts
+from i2code.implement.claude_runner import ClaudeRunner, print_task_failure_diagnostics
+from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
+from i2code.implement.commit_recovery import TaskCommitRecovery
+from i2code.implement.git_setup import has_ci_workflow_files
+from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
+from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.pr_helpers import is_pr_complete
+from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
+from i2code.implement.workflow_state import WorkflowState
 
 REVIEW_POLL_INTERVAL_SECONDS = 30
 
@@ -27,15 +31,15 @@ def _format_duration(seconds):
 @dataclass
 class LoopSteps:
     """Pipeline collaborators used during the worktree task loop."""
-    claude_runner: object
-    command_builder: object
-    state: object
-    ci_monitor: object
-    build_fixer: object
-    review_processor: object
-    commit_recovery: object
-    clock: object = None
-    sleep: object = None
+    claude_runner: ClaudeRunner
+    command_builder: CommandBuilder
+    state: WorkflowState
+    ci_monitor: GithubActionsMonitor
+    build_fixer: GithubActionsBuildFixer
+    review_processor: PullRequestReviewProcessor
+    commit_recovery: TaskCommitRecovery
+    clock: Optional[Callable[[], float]] = None
+    sleep: Optional[Callable[[float], None]] = None
 
 
 class WorktreeMode:

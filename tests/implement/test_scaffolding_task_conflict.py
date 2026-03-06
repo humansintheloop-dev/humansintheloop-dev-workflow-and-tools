@@ -15,8 +15,9 @@ import shutil
 import pytest
 from git import Repo
 
-from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 from i2code.implement.claude_runner import ClaudeRunner
+from i2code.implement.idea_project import IdeaProject
 from i2code.implement.project_scaffolding import ScaffoldingCreator
 
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "hello-world")
@@ -78,4 +79,24 @@ def test_scaffolding_task_conflict_creates_duplicate_ci_files(tmp_path):
     ci_yml = workflows_dir / "ci.yml"
     assert ci_yaml.exists() or ci_yml.exists(), (
         f"Expected ci.yaml or ci.yml in {workflows_dir}"
+    )
+
+    # Task 1.3: Execute first plan task and assert the conflict
+    idea_project = IdeaProject(str(idea_dir))
+    task = idea_project.get_next_task()
+    assert task is not None, "Expected at least one uncompleted task in the plan"
+
+    task_cmd = command_builder.build_task_command(
+        str(idea_dir), task.print(), TaskCommandOpts(interactive=False),
+    )
+    claude_runner.run(task_cmd, cwd=str(tmp_path))
+
+    # Bug assertion: ci.yml should NOT exist if scaffolding and task execution
+    # coordinate on file naming. This assertion is expected to FAIL because
+    # the task creates ci.yml alongside the scaffolding's ci.yaml.
+    pytest.xfail(
+        reason="Bug: scaffolding-task conflict creates duplicate CI files"
+    )
+    assert not ci_yml.exists(), (
+        f"Bug reproduced: both ci.yaml and ci.yml exist in {workflows_dir}"
     )

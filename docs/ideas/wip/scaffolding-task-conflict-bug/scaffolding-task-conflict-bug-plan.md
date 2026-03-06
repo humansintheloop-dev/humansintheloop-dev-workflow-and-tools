@@ -77,16 +77,16 @@ This single steel thread implements the primary scenario: set up a temp repo, ru
     - [x] Call `scaffolding_creator.run_scaffolding(idea_directory, cwd=temp_repo, interactive=False)` where `idea_directory` is the `docs/features/hello-world/` path within the temp repo
     - [x] Assert that `temp_repo / ".github" / "workflows" / "ci.yaml"` exists
 
-- [ ] **Task 1.3: First task execution creates conflicting ci.yml, reproducing the bug**
+- [x] **Task 1.3: First task execution creates conflicting ci.yml, reproducing the bug**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/implement/test_scaffolding_task_conflict.py::test_scaffolding_task_conflict_creates_duplicate_ci_files -m manual -v`
   - Observable: After executing the first plan task via `CommandBuilder.build_task_command()` + `ClaudeRunner.run()`, `.github/workflows/ci.yml` does NOT exist (this assertion is expected to FAIL, reproducing the bug). The test is tagged `@pytest.mark.manual` and uses `pytest.xfail(reason="Bug: scaffolding-task conflict creates duplicate CI files", strict=True)` or equivalent to document that failure is expected
   - Evidence: The test extracts the first task via `IdeaProject(idea_directory).get_next_task()`, builds and runs the task command with `TaskCommandOpts(interactive=False)`, then asserts `ci.yml` does NOT exist — this assertion fails, confirming the bug
   - Steps:
-    - [ ] Import `IdeaProject` and `TaskCommandOpts` from the appropriate `i2code` modules
-    - [ ] After scaffolding, create `IdeaProject(idea_directory)` and call `get_next_task()` to get the first task
-    - [ ] Build the task command via `CommandBuilder().build_task_command(idea_directory, task.print())` with `TaskCommandOpts(interactive=False)`
-    - [ ] Run the command via `ClaudeRunner(interactive=False).run(cmd, cwd=temp_repo)`
-    - [ ] Assert that `temp_repo / ".github" / "workflows" / "ci.yml"` does NOT exist
-    - [ ] Mark the final assertion with `pytest.xfail` or add a comment explaining the assertion is expected to fail, reproducing the bug
-    - [ ] Verify the test runs end-to-end and the final assertion fails as expected (confirming the bug)
+    - [x] Import `IdeaProject` and `TaskCommandOpts` from the appropriate `i2code` modules
+    - [x] After scaffolding, create `IdeaProject(idea_directory)` and call `get_next_task()` to get the first task
+    - [x] Build the task command via `CommandBuilder().build_task_command(idea_directory, task.print())` with `TaskCommandOpts(interactive=False)`
+    - [x] Run the command via `ClaudeRunner(interactive=False).run(cmd, cwd=temp_repo)`
+    - [x] Assert that `temp_repo / ".github" / "workflows" / "ci.yml"` does NOT exist
+    - [x] Mark the final assertion with `pytest.xfail` or add a comment explaining the assertion is expected to fail, reproducing the bug
+    - [x] Verify the test runs end-to-end and the final assertion fails as expected (confirming the bug)

@@ -8,15 +8,15 @@ Usage:
     uv run pytest tests/implement/test_scaffolding_task_conflict.py -m manual -v
 """
 
-import json
 import os
 import shutil
 
 import pytest
 from git import Repo
 
+from i2code.implement.claude_permissions import ensure_claude_permissions
 from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
-from i2code.implement.claude_runner import ClaudeRunner
+from i2code.implement.claude_runner import ClaudeRunner, print_task_failure_diagnostics
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.project_scaffolding import ScaffoldingCreator
 
@@ -24,8 +24,13 @@ FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "hello-world"
 
 
 @pytest.mark.manual
+@pytest.mark.xfail(
+    strict=True,
+    reason="Bug: scaffolding creates ci.yaml but task creates ci.yml",
+)
 def test_scaffolding_task_conflict_creates_duplicate_ci_files(tmp_path):
     """Reproduce bug: scaffolding and task execution create conflicting CI files."""
+    print(f"\ntmp_path: {tmp_path}")
     # Set up temp git repo with hello-world idea fixtures
     repo = Repo.init(tmp_path)
     repo.config_writer().set_value("user", "email", "test@test.com").release()
@@ -46,25 +51,12 @@ def test_scaffolding_task_conflict_creates_duplicate_ci_files(tmp_path):
     # Unset CLAUDECODE to allow launching a nested Claude session from tests
     os.environ.pop("CLAUDECODE", None)
 
-    # Grant the nested Claude session permissions to write files and run git
-    claude_settings_dir = tmp_path / ".claude"
-    claude_settings_dir.mkdir()
-    settings = {
-        "permissions": {
-            "allow": [
-                "Bash(chmod:*)",
-                "Bash(git add:*)",
-                "Bash(git commit:*)",
-                "Bash(git status:*)",
-                "Bash(gradle wrapper:*)",
-                "Bash(gradle --version)",
-                "Bash(mkdir:*)",
-                "Bash(mkdir -p:*)",
-            ],
-            "deny": [],
-        }
-    }
-    (claude_settings_dir / "settings.local.json").write_text(json.dumps(settings))
+    config_dir = os.path.join(os.path.dirname(__file__), "..", "..", "config-files")
+    shutil.copy2(os.path.join(config_dir, "CLAUDE.md"), tmp_path)
+    claude_dir = tmp_path / ".claude"
+    claude_dir.mkdir(exist_ok=True)
+    shutil.copy2(os.path.join(config_dir, "settings.local.json"), claude_dir)
+    ensure_claude_permissions(str(tmp_path))
 
     command_builder = CommandBuilder()
     claude_runner = ClaudeRunner(interactive=False)
@@ -87,16 +79,18 @@ def test_scaffolding_task_conflict_creates_duplicate_ci_files(tmp_path):
     assert task is not None, "Expected at least one uncompleted task in the plan"
 
     task_cmd = command_builder.build_task_command(
-        str(idea_dir), task.print(), TaskCommandOpts(interactive=False),
+        str(idea_dir), task.print(), TaskCommandOpts(
+            interactive=False,
+            extra_cli_args=["--allowed-tools", "Bash(rm:*)"],
+        ),
     )
-    claude_runner.run(task_cmd, cwd=str(tmp_path))
+    head_before = repo.head.commit.hexsha
+    task_result = claude_runner.run(task_cmd, cwd=str(tmp_path))
+    head_after = repo.head.commit.hexsha
+    print_task_failure_diagnostics(task_result, head_before, head_after)
 
-    # Bug assertion: ci.yml should NOT exist if scaffolding and task execution
-    # coordinate on file naming. This assertion is expected to FAIL because
-    # the task creates ci.yml alongside the scaffolding's ci.yaml.
-    pytest.xfail(
-        reason="Bug: scaffolding-task conflict creates duplicate CI files"
-    )
+    # Bug: ci.yml should NOT exist if scaffolding and task coordinate on naming.
+    # The task creates ci.yml alongside scaffolding's ci.yaml.
     assert not ci_yml.exists(), (
         f"Bug reproduced: both ci.yaml and ci.yml exist in {workflows_dir}"
     )

@@ -33,6 +33,11 @@ IMPORTANT: Always invoke the relevant skill before performing these actions:
 - **When running tests in Java/Gradle projects**: Use the `idea-to-code:test-runner-java-gradle` skill
 - **When writing test scripts involving infrastructure**: Use the `idea-to-code:testing-scripts-and-infrastructure` skill
 - **When resolving merge or rebase conflicts**: Use the `idea-to-code:git-conflict-resolution` skill
+- **When stuck on a problem**: Use the `idea-to-code:ask-a-friend` skill
+- **When finding where code is defined or used**: Use the `idea-to-code:find-usage` skill
+- **When running commands with verbose output**: Use the `idea-to-code:test-output-to-logfile` skill
+- **When documenting a design pattern**: Use the `idea-to-code:write-design-pattern` skill
+- **When capturing an idea from a discussion**: Use the `idea-to-code:write-idea` skill
 
 ## Code Health
 

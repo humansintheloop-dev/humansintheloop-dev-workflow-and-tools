@@ -66,16 +66,16 @@ This single steel thread implements the primary scenario: set up a temp repo, ru
     - [x] Assert that `docs/features/hello-world/hello-world-plan.md` exists in the temp repo
     - [x] Run the test to verify setup works (test should pass at this point since only setup assertions exist)
 
-- [ ] **Task 1.2: Scaffolding phase creates ci.yaml in the temp repo**
+- [x] **Task 1.2: Scaffolding phase creates ci.yaml in the temp repo**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/implement/test_scaffolding_task_conflict.py::test_scaffolding_task_conflict_creates_duplicate_ci_files -m manual -v`
   - Observable: After running `ScaffoldingCreator.run_scaffolding()` in non-interactive mode, `.github/workflows/ci.yaml` exists in the temp repo
   - Evidence: The test invokes scaffolding via the lower-level API (`CommandBuilder`, `ClaudeRunner(interactive=False)`, `ScaffoldingCreator`) against the temp repo, then asserts `.github/workflows/ci.yaml` exists
   - Steps:
-    - [ ] Import `ScaffoldingCreator`, `CommandBuilder`, and `ClaudeRunner` from the appropriate `i2code.implement` modules
-    - [ ] In the test, after repo setup, create `CommandBuilder()`, `ClaudeRunner(interactive=False)`, and `ScaffoldingCreator(command_builder, claude_runner)`
-    - [ ] Call `scaffolding_creator.run_scaffolding(idea_directory, cwd=temp_repo, interactive=False)` where `idea_directory` is the `docs/features/hello-world/` path within the temp repo
-    - [ ] Assert that `temp_repo / ".github" / "workflows" / "ci.yaml"` exists
+    - [x] Import `ScaffoldingCreator`, `CommandBuilder`, and `ClaudeRunner` from the appropriate `i2code.implement` modules
+    - [x] In the test, after repo setup, create `CommandBuilder()`, `ClaudeRunner(interactive=False)`, and `ScaffoldingCreator(command_builder, claude_runner)`
+    - [x] Call `scaffolding_creator.run_scaffolding(idea_directory, cwd=temp_repo, interactive=False)` where `idea_directory` is the `docs/features/hello-world/` path within the temp repo
+    - [x] Assert that `temp_repo / ".github" / "workflows" / "ci.yaml"` exists
 
 - [ ] **Task 1.3: First task execution creates conflicting ci.yml, reproducing the bug**
   - TaskType: OUTCOME

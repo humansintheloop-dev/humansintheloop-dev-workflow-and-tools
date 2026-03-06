@@ -4,16 +4,16 @@ import sys
 
 from i2code.implement.claude_permissions import calculate_claude_permissions
 from i2code.implement.claude_runner import print_task_failure_diagnostics
-from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
+from i2code.implement.command_builder import TaskCommandOpts
 
 
 class TrunkMode:
     """Execution mode that runs tasks on the current branch (no worktree/PR/CI)."""
 
-    def __init__(self, opts, workspace, claude_runner, commit_recovery):
+    def __init__(self, opts, workspace, claude_services, commit_recovery):
         self._opts = opts
         self._workspace = workspace
-        self._claude_runner = claude_runner
+        self._claude_services = claude_services
         self._commit_recovery = commit_recovery
 
     def execute(self):
@@ -37,7 +37,7 @@ class TrunkMode:
         for attempt in range(1, max_attempts + 1):
             print(f"Executing task (attempt {attempt}/{max_attempts}): {task_description}")
 
-            result = self._claude_runner.run_task(
+            result = self._claude_services.claude_runner.run_task(
                 claude_cmd, self._workspace.git_repo,
             )
 
@@ -58,20 +58,18 @@ class TrunkMode:
         sys.exit(1)
 
     def _build_command(self, task_description):
-        if self._opts.mock_claude:
-            return [self._opts.mock_claude, task_description]
-
         extra_cli_args = None
-        if self._opts.non_interactive:
+        if not self._opts.mock_claude and self._opts.non_interactive:
             permissions = calculate_claude_permissions(self._workspace.git_repo.working_tree_dir)
             extra_cli_args = ["--allowedTools", ",".join(permissions)]
-        return CommandBuilder().build_task_command(
+        return self._claude_services.command_builder.build_task_command(
             self._workspace.project.directory,
             task_description,
             TaskCommandOpts(
                 interactive=not self._opts.non_interactive,
                 extra_prompt=self._opts.extra_prompt,
                 extra_cli_args=extra_cli_args,
+                mock_claude=self._opts.mock_claude,
             ),
         )
 

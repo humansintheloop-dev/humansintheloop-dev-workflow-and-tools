@@ -7,6 +7,8 @@ from contextlib import contextmanager
 import pytest
 
 from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.claude_services import ClaudeServices
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
@@ -26,7 +28,7 @@ def _opts(**kwargs):
 
 def _noop_commit_recovery(project, fake_runner):
     """Create a TaskCommitRecovery that finds nothing to recover."""
-    return TaskCommitRecovery(git_repo=FakeGitRepository(), project=project, claude_runner=fake_runner)
+    return TaskCommitRecovery(git_repo=FakeGitRepository(), project=project, claude_runner=fake_runner, command_builder=CommandBuilder())
 
 
 def _make_trunk_mode(task_specs, opts_overrides=None):
@@ -47,7 +49,7 @@ def _make_trunk_mode(task_specs, opts_overrides=None):
     mode = TrunkMode(
         opts=_opts(**(opts_overrides or {})),
         workspace=Workspace(fake_repo, project),
-        claude_runner=fake_runner,
+        claude_services=ClaudeServices(fake_runner, CommandBuilder()),
         commit_recovery=_noop_commit_recovery(project, fake_runner),
     )
     return mode, project, fake_repo, fake_runner, plan_path
@@ -72,7 +74,7 @@ def _build_trunk_mode(project, fake_repo, fake_runner, **opts_kwargs):
     return TrunkMode(
         opts=_opts(**opts_kwargs),
         workspace=Workspace(fake_repo, project),
-        claude_runner=fake_runner,
+        claude_services=ClaudeServices(fake_runner, CommandBuilder()),
         commit_recovery=_noop_commit_recovery(project, fake_runner),
     )
 
@@ -206,12 +208,12 @@ def _make_trunk_mode_with_recovery(task_specs, diff_output="", file_at_head=None
     if file_at_head is not None:
         fake_repo.set_file_at_head(project.plan_file, file_at_head)
 
-    commit_recovery = TaskCommitRecovery(git_repo=fake_repo, project=project, claude_runner=fake_runner)
+    commit_recovery = TaskCommitRecovery(git_repo=fake_repo, project=project, claude_runner=fake_runner, command_builder=CommandBuilder())
 
     mode = TrunkMode(
         opts=_opts(),
         workspace=Workspace(fake_repo, project),
-        claude_runner=fake_runner,
+        claude_services=ClaudeServices(fake_runner, CommandBuilder()),
         commit_recovery=commit_recovery,
     )
     return mode, project, fake_repo, fake_runner, plan_path

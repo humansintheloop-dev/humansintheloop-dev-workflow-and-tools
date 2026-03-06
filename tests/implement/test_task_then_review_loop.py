@@ -9,6 +9,7 @@ import tempfile
 
 import pytest
 
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
@@ -69,6 +70,7 @@ def _make_mode(tmpdir, *, tasks, feedback_count):
 
     loop_steps = LoopSteps(
         claude_runner=fake_runner,
+        command_builder=CommandBuilder(),
         state=FakeWorkflowState(),
         ci_monitor=ci_monitor,
         build_fixer=NoOpBuildFixer(),

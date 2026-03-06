@@ -3,6 +3,7 @@
 import pytest
 
 from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from conftest import advance_head
 from fake_claude_runner import FakeClaudeRunner
@@ -80,6 +81,7 @@ def make_recovery(tmp_path):
         runner = FakeClaudeRunner()
         recovery = TaskCommitRecovery(
             git_repo=git_repo, project=project, claude_runner=runner,
+            command_builder=CommandBuilder(),
         )
         return recovery, git_repo, runner
     return _make

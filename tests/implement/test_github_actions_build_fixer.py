@@ -2,6 +2,7 @@
 
 import pytest
 
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.implement_opts import ImplementOpts
 
@@ -33,7 +34,7 @@ def _make_fixer(pushed=True, failing_run=None, opts_overrides=None):
 
     fixer = GithubActionsBuildFixer(
         opts=ImplementOpts(**defaults), git_repo=fake_repo,
-        claude_runner=fake_runner,
+        claude_runner=fake_runner, command_builder=CommandBuilder(),
     )
     return fixer, fake_repo, fake_gh, fake_runner
 

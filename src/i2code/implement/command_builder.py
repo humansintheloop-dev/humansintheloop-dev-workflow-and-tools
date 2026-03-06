@@ -17,6 +17,7 @@ class TaskCommandOpts:
     interactive: bool = True
     extra_prompt: Optional[str] = None
     extra_cli_args: Optional[List[str]] = None
+    mock_claude: Optional[str] = None
 
 
 class CommandBuilder:
@@ -94,6 +95,9 @@ class CommandBuilder:
             Command list suitable for subprocess.
         """
         opts = opts or TaskCommandOpts()
+        if opts.mock_claude:
+            return [opts.mock_claude, task_description]
+
         prompt = render_template(
             "task_execution.j2",
             package="i2code.implement",

@@ -3,7 +3,6 @@
 import sys
 
 from i2code.implement.claude_runner import check_claude_success, print_task_failure_diagnostics
-from i2code.implement.command_builder import CommandBuilder
 from i2code.plan_domain.parser import parse
 
 
@@ -16,10 +15,11 @@ class TaskCommitRecovery:
         claude_runner: ClaudeRunner for re-running commit attempts.
     """
 
-    def __init__(self, git_repo, project, claude_runner):
+    def __init__(self, git_repo, project, claude_runner, command_builder):
         self._git_repo = git_repo
         self._project = project
         self._claude_runner = claude_runner
+        self._command_builder = command_builder
 
     def has_uncommitted_completed_task(self):
         plan_file = self._project.plan_file
@@ -45,7 +45,7 @@ class TaskCommitRecovery:
         print("Detected uncommitted changes from a previous run, attempting to commit...")
 
         diff_summary = self._git_repo.diff_file_against_head(self._project.plan_file)
-        cmd = CommandBuilder().build_recovery_command(
+        cmd = self._command_builder.build_recovery_command(
             plan_file=self._project.plan_file,
             diff_summary=diff_summary,
             interactive=False,

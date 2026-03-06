@@ -6,6 +6,8 @@ import tempfile
 import pytest
 
 from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.claude_services import ClaudeServices
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
@@ -89,17 +91,20 @@ def _make_worktree_mode(plan_path, idea_dir, work_dir, **kwargs):
         ci_timeout=opts.ci_timeout,
     )
 
+    command_builder = CommandBuilder()
     build_fixer = GithubActionsBuildFixer(
         opts=opts,
         git_repo=fake_repo,
         claude_runner=fake_runner,
+        command_builder=command_builder,
     )
 
+    claude_services = ClaudeServices(fake_runner, command_builder)
     review_processor = PullRequestReviewProcessor(
         opts=opts,
         git_repo=fake_repo,
         state=fake_state,
-        claude_runner=fake_runner,
+        claude_services=claude_services,
     )
 
     commit_recovery = kwargs.get('commit_recovery')
@@ -107,9 +112,11 @@ def _make_worktree_mode(plan_path, idea_dir, work_dir, **kwargs):
         noop_repo = FakeGitRepository()
         commit_recovery = TaskCommitRecovery(
             git_repo=noop_repo, project=project, claude_runner=fake_runner,
+            command_builder=command_builder,
         )
     loop_steps = LoopSteps(
         claude_runner=fake_runner,
+        command_builder=command_builder,
         state=fake_state,
         ci_monitor=ci_monitor,
         build_fixer=build_fixer,
@@ -432,6 +439,7 @@ class TestWorktreeModeWithRecovery:
 
             commit_recovery = TaskCommitRecovery(
                 git_repo=fake_repo, project=project, claude_runner=fake_runner,
+                command_builder=CommandBuilder(),
             )
 
             # Two Claude calls: (1) recovery commit (non-interactive), (2) execute task 1.2
@@ -478,6 +486,7 @@ class TestWorktreeModeWithRecovery:
 
             commit_recovery = TaskCommitRecovery(
                 git_repo=fake_repo, project=project, claude_runner=fake_runner,
+                command_builder=CommandBuilder(),
             )
 
             mode, _, _, _, _ = _make_worktree_mode(
@@ -526,6 +535,7 @@ def _make_review_poll_mode(tmpdir, *, feedback_sequence, pr_state,
 
     loop_steps = LoopSteps(
         claude_runner=FakeClaudeRunner(),
+        command_builder=CommandBuilder(),
         state=FakeWorkflowState(),
         ci_monitor=None,
         build_fixer=NoOpBuildFixer(),
@@ -644,6 +654,7 @@ def _make_review_poll_mode_with_ci(tmpdir, *, ci_results, feedback_sequence,
 
     loop_steps = LoopSteps(
         claude_runner=FakeClaudeRunner(),
+        command_builder=CommandBuilder(),
         state=FakeWorkflowState(),
         ci_monitor=None,
         build_fixer=build_fixer,

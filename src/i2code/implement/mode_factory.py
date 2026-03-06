@@ -1,6 +1,6 @@
 """ModeFactory creates execution mode instances with their dependencies."""
 
-from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.claude_services import ClaudeServices
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
 from i2code.implement.isolate_mode import IsolateMode, SubprocessRunner, WorktreeSetupDeps
@@ -16,28 +16,31 @@ from i2code.implement.worktree_setup import ProjectSetup
 class ModeFactory:
     """Creates execution mode instances, wiring up their dependencies."""
 
-    def __init__(self, opts, claude_runner, build_fixer_factory):
+    def __init__(self, opts, claude_runner, build_fixer_factory, command_builder):
         self._opts = opts
         self._claude_runner = claude_runner
         self._build_fixer_factory = build_fixer_factory
+        self._command_builder = command_builder
 
     def make_trunk_mode(self, git_repo, project):
         workspace = Workspace(git_repo=git_repo, project=project)
+        claude_services = ClaudeServices(self._claude_runner, self._command_builder)
         commit_recovery = TaskCommitRecovery(
             git_repo=git_repo,
             project=project,
             claude_runner=self._claude_runner,
+            command_builder=self._command_builder,
         )
         return TrunkMode(
             opts=self._opts,
             workspace=workspace,
-            claude_runner=self._claude_runner,
+            claude_services=claude_services,
             commit_recovery=commit_recovery,
         )
 
     def make_isolate_mode(self, git_repo, project, opts):
         scaffolding_creator = ScaffoldingCreator(
-            command_builder=CommandBuilder(),
+            command_builder=self._command_builder,
             claude_runner=self._claude_runner,
         )
 
@@ -72,19 +75,22 @@ class ModeFactory:
             ci_timeout=self._opts.ci_timeout,
         )
         build_fixer = self._build_fixer_factory.create(git_repo)
+        claude_services = ClaudeServices(self._claude_runner, self._command_builder)
         review_processor = PullRequestReviewProcessor(
             opts=self._opts,
             git_repo=git_repo,
             state=state,
-            claude_runner=self._claude_runner,
+            claude_services=claude_services,
         )
         commit_recovery = TaskCommitRecovery(
             git_repo=git_repo,
             project=work_project,
             claude_runner=self._claude_runner,
+            command_builder=self._command_builder,
         )
         loop_steps = LoopSteps(
             claude_runner=self._claude_runner,
+            command_builder=self._command_builder,
             state=state,
             ci_monitor=ci_monitor,
             build_fixer=build_fixer,

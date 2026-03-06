@@ -8,7 +8,7 @@ from i2code.implement.git_setup import (
     has_ci_workflow_files,
 )
 from i2code.implement.claude_runner import print_task_failure_diagnostics
-from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
+from i2code.implement.command_builder import TaskCommandOpts
 from i2code.implement.pr_helpers import is_pr_complete
 
 REVIEW_POLL_INTERVAL_SECONDS = 30
@@ -28,6 +28,7 @@ def _format_duration(seconds):
 class LoopSteps:
     """Pipeline collaborators used during the worktree task loop."""
     claude_runner: object
+    command_builder: object
     state: object
     ci_monitor: object
     build_fixer: object
@@ -169,15 +170,13 @@ class WorktreeMode:
                 print(f"PR: {pr_url}")
 
     def _build_command(self, task_description):
-        if self._opts.mock_claude:
-            return [self._opts.mock_claude, task_description]
-
-        return CommandBuilder().build_task_command(
+        return self._loop_steps.command_builder.build_task_command(
             self._work_project.directory,
             task_description,
             TaskCommandOpts(
                 interactive=not self._opts.non_interactive,
                 extra_prompt=self._opts.extra_prompt,
+                mock_claude=self._opts.mock_claude,
             ),
         )
 

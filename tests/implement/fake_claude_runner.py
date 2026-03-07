@@ -59,3 +59,4 @@ class FakeClaudeRunner:
     def run_batch(self, cmd, cwd):
         self.calls.append(("run_batch", cmd, cwd))
         return self._next_result()
+

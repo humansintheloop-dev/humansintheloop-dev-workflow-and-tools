@@ -21,14 +21,17 @@ def assemble_implement(opts):
     gh_client = GitHubClient()
     git_repo = GitRepository(repo, gh_client=gh_client)
     claude_runner = ClaudeRunner(interactive=not opts.non_interactive)
+    command_builder = CommandBuilder()
     build_fixer_factory = GithubActionsBuildFixerFactory(
         opts=opts,
         claude_runner=claude_runner,
+        command_builder=command_builder,
     )
     mode_factory = ModeFactory(
         opts=opts,
         claude_runner=claude_runner,
         build_fixer_factory=build_fixer_factory,
+        command_builder=command_builder,
     )
     return ImplementCommand(opts, project, git_repo, mode_factory)
 

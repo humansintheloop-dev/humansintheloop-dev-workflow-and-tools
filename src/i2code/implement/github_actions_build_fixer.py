@@ -3,21 +3,20 @@
 import sys
 from typing import Any, Dict, Optional
 
-from i2code.implement.command_builder import CommandBuilder
-
-
 class GithubActionsBuildFixerFactory:
     """Creates GithubActionsBuildFixer instances with a specific git_repo."""
 
-    def __init__(self, opts, claude_runner):
+    def __init__(self, opts, claude_runner, command_builder):
         self._opts = opts
         self._claude_runner = claude_runner
+        self._command_builder = command_builder
 
     def create(self, git_repo):
         return GithubActionsBuildFixer(
             opts=self._opts,
             git_repo=git_repo,
             claude_runner=self._claude_runner,
+            command_builder=self._command_builder,
         )
 
 
@@ -28,12 +27,14 @@ class GithubActionsBuildFixer:
         opts: ImplementOpts with execution parameters.
         git_repo: GitRepository (or FakeGitRepository) for branch/push/CI operations.
         claude_runner: ClaudeRunner (or FakeClaudeRunner) for invoking Claude.
+        command_builder: CommandBuilder for building Claude commands.
     """
 
-    def __init__(self, opts, git_repo, claude_runner):
+    def __init__(self, opts, git_repo, claude_runner, command_builder):
         self._opts = opts
         self._git_repo = git_repo
         self._claude_runner = claude_runner
+        self._command_builder = command_builder
 
     def _get_failing_workflow_run(
         self, branch: str, sha: str,
@@ -138,7 +139,7 @@ class GithubActionsBuildFixer:
         if self._opts.mock_claude:
             claude_cmd = [self._opts.mock_claude, f"fix-ci-{run_id}"]
         else:
-            claude_cmd = CommandBuilder().build_ci_fix_command(
+            claude_cmd = self._command_builder.build_ci_fix_command(
                 run_id, workflow_name, failure_logs, interactive=interactive,
             )
 

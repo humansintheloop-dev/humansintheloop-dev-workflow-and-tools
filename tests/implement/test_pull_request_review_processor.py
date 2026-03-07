@@ -7,6 +7,8 @@ import pytest
 
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
 from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.claude_services import ClaudeServices
+from i2code.implement.command_builder import CommandBuilder
 
 from fake_git_repository import FakeGitRepository
 from fake_github_client import FakeGitHubClient
@@ -61,7 +63,8 @@ def _make_processor(**overrides):
     )
 
     processor = PullRequestReviewProcessor(
-        opts=opts, git_repo=fake_repo, state=fake_state, claude_runner=fake_claude,
+        opts=opts, git_repo=fake_repo, state=fake_state,
+        claude_services=ClaudeServices(fake_claude, CommandBuilder()),
     )
 
     return processor, fake_gh, fake_repo, fake_state, fake_claude
@@ -78,7 +81,7 @@ def _make_skip_processor(pr_number=None, pushed=False):
         opts=ImplementOpts(idea_directory="/tmp/idea"),
         git_repo=fake_repo,
         state=FakeWorkflowState(),
-        claude_runner=FakeClaudeRunner(),
+        claude_services=ClaudeServices(FakeClaudeRunner(), CommandBuilder()),
     )
     return processor, fake_gh
 
@@ -378,7 +381,8 @@ class TestTriageFeedbackLogging:
 
         processor = PullRequestReviewProcessor(
             opts=ImplementOpts(idea_directory="/tmp/idea", non_interactive=True, skip_ci_wait=True),
-            git_repo=fake_repo, state=FakeWorkflowState(), claude_runner=fake_claude,
+            git_repo=fake_repo, state=FakeWorkflowState(),
+            claude_services=ClaudeServices(fake_claude, CommandBuilder()),
         )
 
         return processor, worktree_name

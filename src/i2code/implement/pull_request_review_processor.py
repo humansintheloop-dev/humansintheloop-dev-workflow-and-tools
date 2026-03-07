@@ -8,9 +8,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from i2code.implement.command_builder import CommandBuilder
-
-
 class PullRequestReviewProcessor:
     """Processes PR review feedback for a worktree-based workflow.
 
@@ -18,14 +15,14 @@ class PullRequestReviewProcessor:
         opts: ImplementOpts with execution parameters.
         git_repo: GitRepository (or FakeGitRepository) for branch/push/PR/CI operations.
         state: WorkflowState (or FakeWorkflowState) for tracking processed feedback.
-        claude_runner: ClaudeRunner (or FakeClaudeRunner) for invoking Claude.
+        claude_services: ClaudeServices bundling claude_runner and command_builder.
     """
 
-    def __init__(self, opts, git_repo, state, claude_runner):
+    def __init__(self, opts, git_repo, state, claude_services):
         self._opts = opts
         self._git_repo = git_repo
         self._state = state
-        self._claude_runner = claude_runner
+        self._claude_services = claude_services
 
     def process_feedback(self):
         """Process PR feedback if any exists.
@@ -171,9 +168,9 @@ class PullRequestReviewProcessor:
         if self._opts.mock_claude:
             triage_cmd = [self._opts.mock_claude, f"triage-{pr_number}"]
         else:
-            triage_cmd = CommandBuilder().build_triage_command(feedback_content, interactive=False)
+            triage_cmd = self._claude_services.command_builder.build_triage_command(feedback_content, interactive=False)
 
-        result = self._claude_runner.run_batch(triage_cmd, cwd=self._git_repo.working_tree_dir)
+        result = self._claude_services.claude_runner.run_batch(triage_cmd, cwd=self._git_repo.working_tree_dir)
         return triage_cmd, result
 
     def _reply_with_clarifications(self, needs_clarification, pr_number, new_review_comments, new_conversation):
@@ -260,10 +257,10 @@ class PullRequestReviewProcessor:
         if self._opts.mock_claude:
             fix_cmd = [self._opts.mock_claude, f"fix-{pr_number}-{comment_ids[0]}"]
         else:
-            fix_cmd = CommandBuilder().build_fix_command(pr_url, group_content, description, interactive=interactive)
+            fix_cmd = self._claude_services.command_builder.build_fix_command(pr_url, group_content, description, interactive=interactive)
 
         print("  Invoking Claude to fix...")
-        self._claude_runner.run(fix_cmd, cwd=self._git_repo.working_tree_dir)
+        self._claude_services.claude_runner.run(fix_cmd, cwd=self._git_repo.working_tree_dir)
 
         head_after = self._git_repo.head_sha
         if head_before == head_after:

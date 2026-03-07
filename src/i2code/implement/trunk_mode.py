@@ -32,13 +32,14 @@ class TrunkMode:
         max_attempts = 3
         task_description = task.print()
 
-        claude_cmd = self._build_command(task_description)
-
         for attempt in range(1, max_attempts + 1):
             print(f"Executing task (attempt {attempt}/{max_attempts}): {task_description}")
 
-            result = self._claude_services.claude_runner.run_task(
-                claude_cmd, self._workspace.git_repo,
+            result = self._claude_services.run_task(
+                self._workspace.project.directory,
+                task_description,
+                self._task_opts(),
+                self._workspace.git_repo,
             )
 
             if not result.succeeded:
@@ -57,19 +58,15 @@ class TrunkMode:
         print(f"Error: Task failed after {max_attempts} attempts.", file=sys.stderr)
         sys.exit(1)
 
-    def _build_command(self, task_description):
+    def _task_opts(self):
         extra_cli_args = None
         if not self._opts.mock_claude and self._opts.non_interactive:
             permissions = calculate_claude_permissions(self._workspace.git_repo.working_tree_dir)
             extra_cli_args = ["--allowedTools", ",".join(permissions)]
-        return self._claude_services.command_builder.build_task_command(
-            self._workspace.project.directory,
-            task_description,
-            TaskCommandOpts(
-                interactive=not self._opts.non_interactive,
-                extra_prompt=self._opts.extra_prompt,
-                extra_cli_args=extra_cli_args,
-                mock_claude=self._opts.mock_claude,
-            ),
+        return TaskCommandOpts(
+            interactive=not self._opts.non_interactive,
+            extra_prompt=self._opts.extra_prompt,
+            extra_cli_args=extra_cli_args,
+            mock_claude=self._opts.mock_claude,
         )
 

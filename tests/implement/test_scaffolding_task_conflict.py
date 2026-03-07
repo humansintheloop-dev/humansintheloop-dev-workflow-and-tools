@@ -19,6 +19,7 @@ from git import Repo
 from i2code.implement.claude_permissions import ensure_claude_permissions
 from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 from i2code.implement.claude_runner import ClaudeRunner
+from i2code.implement.claude_services import ClaudeServices
 from i2code.implement.git_repository import GitRepository
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.project_scaffolding import ScaffoldingCreator
@@ -31,8 +32,7 @@ CONFIG_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "config-files")
 class ProjectFixture:
     git_repo: GitRepository
     idea_dir: Path
-    command_builder: CommandBuilder
-    claude_runner: ClaudeRunner
+    claude_services: ClaudeServices
 
     @property
     def tmp_path(self) -> Path:
@@ -73,14 +73,10 @@ def test_scaffolding_task_conflict_creates_duplicate_ci_files(tmp_path):
     _run_first_task(project)
     _print_ci_file(project, "after task")
 
-    if scaffolding_used_yaml:
-        assert not project.ci_yml.exists(), (
-            f"Task created ci.yml but scaffolding created ci.yaml in {project.workflows_dir}"
-        )
-    else:
-        assert not project.ci_yaml.exists(), (
-            f"Task created ci.yaml but scaffolding created ci.yml in {project.workflows_dir}"
-        )
+    workflow_changes = _workflow_files_in_last_commit(project.repo)
+    assert not workflow_changes, (
+        f"Task should not modify .github/workflows/ but changed: {workflow_changes}"
+    )
 
 
 def _create_test_project(tmp_path: Path) -> ProjectFixture:
@@ -106,13 +102,15 @@ def _create_test_project(tmp_path: Path) -> ProjectFixture:
     return ProjectFixture(
         git_repo=GitRepository(repo, gh_client=None),
         idea_dir=idea_dir,
-        command_builder=CommandBuilder(),
-        claude_runner=ClaudeRunner(interactive=False),
+        claude_services=ClaudeServices(
+            ClaudeRunner(interactive=False), CommandBuilder(),
+        ),
     )
 
 
 def _run_scaffolding(project: ProjectFixture):
-    scaffolding_creator = ScaffoldingCreator(project.command_builder, project.claude_runner)
+    cs = project.claude_services
+    scaffolding_creator = ScaffoldingCreator(cs.command_builder, cs.claude_runner)
     scaffolding_creator.run_scaffolding(
         str(project.idea_dir), cwd=str(project.tmp_path), interactive=False,
     )
@@ -123,15 +121,20 @@ def _run_first_task(project: ProjectFixture):
     task = idea_project.get_next_task()
     assert task is not None, "Expected at least one uncompleted task in the plan"
 
-    task_cmd = project.command_builder.build_task_command(
+    project.claude_services.run_task(
         str(project.idea_dir), task.print(), TaskCommandOpts(
             interactive=False,
             extra_cli_args=["--allowed-tools", "Bash(rm:*)"],
         ),
+        project.git_repo,
     )
-    project.claude_runner.run_task(task_cmd, project.git_repo)
     _print_recent_commits(project.repo)
     _print_last_commit_diff(project.repo)
+
+
+def _workflow_files_in_last_commit(repo: Repo) -> list:
+    return [line for line in repo.git.diff("HEAD~1", "--name-only").splitlines()
+            if line.startswith(".github/workflows/")]
 
 
 def _print_ci_file(project: ProjectFixture, label: str):

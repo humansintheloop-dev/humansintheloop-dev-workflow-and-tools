@@ -4,7 +4,7 @@ Separated into its own module so tests can import it unambiguously
 regardless of pytest's conftest resolution order.
 """
 
-from i2code.implement.claude_runner import ClaudeResult, TaskExecutionResult, print_task_failure_diagnostics
+from i2code.implement.claude_runner import ClaudeResult
 
 
 class FakeClaudeRunner:
@@ -60,11 +60,3 @@ class FakeClaudeRunner:
         self.calls.append(("run_batch", cmd, cwd))
         return self._next_result()
 
-    def run_task(self, cmd, repo):
-        head_before = repo.head_sha
-        claude_result = self.run(cmd, cwd=repo.working_tree_dir)
-        head_after = repo.head_sha
-        result = TaskExecutionResult(claude_result, head_before, head_after)
-        if not result.succeeded:
-            print_task_failure_diagnostics(claude_result, head_before, head_after)
-        return result

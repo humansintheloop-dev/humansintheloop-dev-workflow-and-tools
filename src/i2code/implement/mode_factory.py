@@ -89,8 +89,7 @@ class ModeFactory:
             command_builder=self._command_builder,
         )
         loop_steps = LoopSteps(
-            claude_runner=self._claude_runner,
-            command_builder=self._command_builder,
+            claude_services=claude_services,
             state=state,
             ci_monitor=ci_monitor,
             build_fixer=build_fixer,

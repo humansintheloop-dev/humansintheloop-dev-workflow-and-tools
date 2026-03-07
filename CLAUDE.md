@@ -33,6 +33,7 @@ IMPORTANT: Always invoke the relevant skill before performing these actions:
 - **When running tests in Java/Gradle projects**: Use the `idea-to-code:test-runner-java-gradle` skill
 - **When writing test scripts involving infrastructure**: Use the `idea-to-code:testing-scripts-and-infrastructure` skill
 - **When resolving merge or rebase conflicts**: Use the `idea-to-code:git-conflict-resolution` skill
+- **Before running manual or integration tests**: Use the `idea-to-code:test-output-to-logfile` skill
 
 ## Code Health
 

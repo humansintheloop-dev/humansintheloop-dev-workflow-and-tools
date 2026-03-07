@@ -115,8 +115,7 @@ def _make_worktree_mode(plan_path, idea_dir, work_dir, **kwargs):
             command_builder=command_builder,
         )
     loop_steps = LoopSteps(
-        claude_runner=fake_runner,
-        command_builder=command_builder,
+        claude_services=claude_services,
         state=fake_state,
         ci_monitor=ci_monitor,
         build_fixer=build_fixer,
@@ -534,8 +533,7 @@ def _make_review_poll_mode(tmpdir, *, feedback_sequence, pr_state,
     sleep_calls = []
 
     loop_steps = LoopSteps(
-        claude_runner=FakeClaudeRunner(),
-        command_builder=CommandBuilder(),
+        claude_services=ClaudeServices(FakeClaudeRunner(), CommandBuilder()),
         state=FakeWorkflowState(),
         ci_monitor=None,
         build_fixer=NoOpBuildFixer(),
@@ -653,8 +651,7 @@ def _make_review_poll_mode_with_ci(tmpdir, *, ci_results, feedback_sequence,
     review_processor = SequentialReviewProcessor(feedback_sequence, call_log=call_log)
 
     loop_steps = LoopSteps(
-        claude_runner=FakeClaudeRunner(),
-        command_builder=CommandBuilder(),
+        claude_services=ClaudeServices(FakeClaudeRunner(), CommandBuilder()),
         state=FakeWorkflowState(),
         ci_monitor=None,
         build_fixer=build_fixer,

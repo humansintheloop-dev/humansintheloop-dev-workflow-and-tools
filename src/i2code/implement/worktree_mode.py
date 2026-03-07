@@ -5,8 +5,10 @@ import time
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from i2code.implement.claude_runner import ClaudeRunner, print_task_failure_diagnostics
-from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
+from i2code.implement.claude_permissions import calculate_claude_permissions
+from i2code.implement.claude_runner import print_task_failure_diagnostics
+from i2code.implement.claude_services import ClaudeServices
+from i2code.implement.command_builder import TaskCommandOpts
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.git_setup import has_ci_workflow_files
 from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
@@ -31,8 +33,7 @@ def _format_duration(seconds):
 @dataclass
 class LoopSteps:
     """Pipeline collaborators used during the worktree task loop."""
-    claude_runner: ClaudeRunner
-    command_builder: CommandBuilder
+    claude_services: ClaudeServices
     state: WorkflowState
     ci_monitor: GithubActionsMonitor
     build_fixer: GithubActionsBuildFixer
@@ -119,13 +120,15 @@ class WorktreeMode:
     def _run_claude_and_validate(self, next_task, task_description):
         """Run Claude on the task and validate the result, retrying up to 3 times."""
         max_attempts = 3
-        claude_cmd = self._build_command(task_description)
 
         for attempt in range(1, max_attempts + 1):
             print(f"Running Claude (attempt {attempt}/{max_attempts})...")
 
-            result = self._loop_steps.claude_runner.run_task(
-                claude_cmd, self._git_repo,
+            result = self._loop_steps.claude_services.run_task(
+                self._work_project.directory,
+                task_description,
+                self._task_opts(),
+                self._git_repo,
             )
 
             if not result.succeeded:
@@ -173,15 +176,14 @@ class WorktreeMode:
             if pr_url:
                 print(f"PR: {pr_url}")
 
-    def _build_command(self, task_description):
-        return self._loop_steps.command_builder.build_task_command(
-            self._work_project.directory,
-            task_description,
-            TaskCommandOpts(
-                interactive=not self._opts.non_interactive,
-                extra_prompt=self._opts.extra_prompt,
-                mock_claude=self._opts.mock_claude,
-            ),
+    def _task_opts(self):
+        extra_cli_args = None
+        if not self._opts.mock_claude and self._opts.non_interactive:
+            permissions = calculate_claude_permissions(self._git_repo.working_tree_dir)
+            extra_cli_args = ["--allowedTools", ",".join(permissions)]
+        return TaskCommandOpts(
+            interactive=not self._opts.non_interactive,
+            extra_prompt=self._opts.extra_prompt,
+            extra_cli_args=extra_cli_args,
+            mock_claude=self._opts.mock_claude,
         )
-
-

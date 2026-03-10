@@ -4,6 +4,7 @@ import sys
 from dataclasses import dataclass
 from typing import Callable
 
+from i2code.claude_cmd import build_allowed_tools_flag
 from i2code.implement.claude_runner import ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 
@@ -16,10 +17,15 @@ class PlanServices:
     plugin_skills_fn: Callable
     validator_fn: Callable
 
-def _generate_plan(project, claude_runner, rendered_prompt):
+def _generate_plan(project, claude_runner, rendered_prompt, *, repo_root=None):
     """Invoke Claude in batch mode to generate the plan."""
-    cmd = ["claude", "-p", rendered_prompt]
-    return claude_runner.run_batch(cmd, cwd=project.directory)
+    cmd = ["claude"]
+    if repo_root is not None:
+        allowed_tools = build_allowed_tools_flag(repo_root, project.directory)
+        cmd += ["--allowedTools", allowed_tools]
+    cmd += ["-p", rendered_prompt]
+    cwd = repo_root if repo_root is not None else project.directory
+    return claude_runner.run_batch(cmd, cwd=cwd)
 
 
 def _build_repair_prompt(template_renderer, plan_text, errors):
@@ -32,7 +38,7 @@ def _build_repair_prompt(template_renderer, plan_text, errors):
 
 
 
-def create_plan(project: IdeaProject, claude_runner, services: PlanServices) -> ClaudeResult:
+def create_plan(project: IdeaProject, claude_runner, services: PlanServices, *, repo_root: str | None = None) -> ClaudeResult:
     """Generate an implementation plan, validate it, and auto-repair if needed.
 
     Validates idea and spec exist, enumerates plugin skills, renders the
@@ -60,7 +66,7 @@ def create_plan(project: IdeaProject, claude_runner, services: PlanServices) -> 
     })
 
     print("Generate plan", file=sys.stderr)
-    result = _generate_plan(project, claude_runner, rendered_prompt)
+    result = _generate_plan(project, claude_runner, rendered_prompt, repo_root=repo_root)
     plan_text = result.output.stdout
 
     is_valid, errors = services.validator_fn(plan_text)
@@ -68,7 +74,7 @@ def create_plan(project: IdeaProject, claude_runner, services: PlanServices) -> 
         _print_validation_errors(errors)
         print("Attempting one automatic repair pass...", file=sys.stderr)
         repair_prompt = _build_repair_prompt(services.template_renderer, plan_text, errors)
-        result = _generate_plan(project, claude_runner, repair_prompt)
+        result = _generate_plan(project, claude_runner, repair_prompt, repo_root=repo_root)
         plan_text = result.output.stdout
 
         is_valid, errors = services.validator_fn(plan_text)

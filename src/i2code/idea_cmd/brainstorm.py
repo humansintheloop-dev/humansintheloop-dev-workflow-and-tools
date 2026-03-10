@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 
+from i2code.claude_cmd import build_allowed_tools_flag
 from i2code.implement.claude_runner import ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 from i2code.session_manager import get_or_create_session_args
@@ -82,11 +83,7 @@ def brainstorm_idea(
     cmd = ["claude"]
 
     if repo_root is not None:
-        allowed_tools = (
-            f"Read({repo_root}/),"
-            f"Write({project.directory}/),"
-            f"Edit({project.directory}/)"
-        )
+        allowed_tools = build_allowed_tools_flag(repo_root, project.directory)
         cmd += ["--allowedTools", allowed_tools]
 
     cmd += session_args + [prompt]

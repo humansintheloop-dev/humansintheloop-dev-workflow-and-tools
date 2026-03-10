@@ -100,17 +100,17 @@ This thread proves the core mechanism works end-to-end on a single subcommand (`
 
 ## Steel Thread 3: Plan subcommands grant permissions
 
-- [ ] **Task 3.1: create_plan builds claude command with --allowedTools and cwd=repo_root**
+- [x] **Task 3.1: create_plan builds claude command with --allowedTools and cwd=repo_root**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/go-cmd/test_create_plan.py -k allowed_tools`
   - Observable: The claude command built by `_generate_plan()` / `create_plan()` includes `--allowedTools` with correct permissions and uses repo root as `cwd`
   - Evidence: pytest test mocks the subprocess invocation and asserts the command contains `--allowedTools` with the expected value and `cwd` equals the repo root
   - Steps:
-    - [ ] Read `src/i2code/go_cmd/create_plan.py` to understand the current command construction (note: uses `-p` batch mode)
-    - [ ] Read existing tests in `tests/go-cmd/` for test patterns
-    - [ ] Write a failing test asserting `--allowedTools` and `cwd=repo_root`
-    - [ ] Modify `_generate_plan()` / `create_plan()` to use the shared helper and pass `cwd=repo_root`
-    - [ ] Verify the test passes and no regressions
+    - [x] Read `src/i2code/go_cmd/create_plan.py` to understand the current command construction (note: uses `-p` batch mode)
+    - [x] Read existing tests in `tests/go-cmd/` for test patterns
+    - [x] Write a failing test asserting `--allowedTools` and `cwd=repo_root`
+    - [x] Modify `_generate_plan()` / `create_plan()` to use the shared helper and pass `cwd=repo_root`
+    - [x] Verify the test passes and no regressions
 
 - [ ] **Task 3.2: revise_plan builds claude command with --allowedTools and cwd=repo_root**
   - TaskType: OUTCOME

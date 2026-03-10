@@ -7,6 +7,7 @@ import pytest
 
 from conftest import TempIdeaProject
 from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.idea_project import IdeaProject
 from i2code.go_cmd.create_plan import PlanServices, create_plan
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "implement"))
@@ -203,6 +204,31 @@ class TestCreatePlanRepairOnValidationFailure:
             create_plan(project, runner, _counting_validator_services())
             with open(project.plan_file) as f:
                 assert f.read() == VALID_PLAN
+
+
+@pytest.mark.unit
+class TestCreatePlanAllowedTools:
+
+    def test_allowed_tools_included_when_repo_root_provided(self, tmp_path):
+        repo_root = str(tmp_path / "repo")
+        os.makedirs(repo_root)
+        idea_dir = str(tmp_path / "repo" / "docs" / "ideas" / "my-idea")
+        os.makedirs(idea_dir)
+        project = IdeaProject(idea_dir)
+        _create_idea_and_spec(project)
+        runner = FakeClaudeRunner()
+        runner.set_result(_valid_result())
+
+        create_plan(project, runner, _pass_services(), repo_root=repo_root)
+
+        _, cmd, cwd = runner.calls[0]
+        assert "--allowedTools" in cmd
+        allowed_tools_idx = cmd.index("--allowedTools")
+        allowed_tools_value = cmd[allowed_tools_idx + 1]
+        assert f"Read({repo_root}/)" in allowed_tools_value
+        assert f"Write({idea_dir}/)" in allowed_tools_value
+        assert f"Edit({idea_dir}/)" in allowed_tools_value
+        assert cwd == repo_root
 
 
 @pytest.mark.unit

@@ -82,14 +82,14 @@ This steel thread establishes the core infrastructure: metadata YAML read/write,
     - [x] Remove or deprecate `state_from_path()` function
     - [x] Keep `LIFECYCLE_STATES` and `IdeaInfo` unchanged
 
-- [ ] **Task 1.3: IdeaProject gains metadata_file property**
+- [x] **Task 1.3: IdeaProject gains metadata_file property**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/idea-cmd/test_idea_project_metadata.py`
   - Observable: `IdeaProject.metadata_file` returns the path `<directory>/<name>-metadata.yaml`
   - Evidence: `pytest tests/idea-cmd/test_idea_project_metadata.py` passes
   - Steps:
-    - [ ] Create test in `tests/idea-cmd/test_idea_project_metadata.py` asserting `metadata_file` returns correct path
-    - [ ] Add `metadata_file` property to `src/i2code/implement/idea_project.py` returning `os.path.join(self.directory, f"{self.name}-metadata.yaml")`
+    - [x] Create test in `tests/idea-cmd/test_idea_project_metadata.py` asserting `metadata_file` returns correct path
+    - [x] Add `metadata_file` property to `src/i2code/implement/idea_project.py` returning `os.path.join(self.directory, f"{self.name}-metadata.yaml")`
 
 ---
 

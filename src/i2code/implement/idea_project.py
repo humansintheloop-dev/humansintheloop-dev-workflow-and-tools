@@ -67,6 +67,10 @@ class IdeaProject:
         return os.path.join(self._directory, f"{self._name}-implement-config.yaml")
 
     @property
+    def metadata_file(self) -> str:
+        return os.path.join(self._directory, f"{self._name}-metadata.yaml")
+
+    @property
     def state_file(self) -> str:
         return os.path.join(self._directory, f"{self._name}-wt-state.json")
 

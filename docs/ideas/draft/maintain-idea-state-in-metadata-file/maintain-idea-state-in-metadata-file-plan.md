@@ -107,15 +107,15 @@ Implements Scenario 1 (primary) and Scenario 6 (forced backward transition). Sta
     - [x] Create `TestIdeaStateQuery` test class (replacing `TestIdeaStateByName` and `TestIdeaStateByPath`) that verifies state is read from metadata file
     - [x] Update `src/i2code/idea_cmd/state_cmd.py` to use the refactored resolver (which reads metadata files) for state queries
 
-- [ ] **Task 2.2: State transitions edit metadata file instead of moving directories**
+- [x] **Task 2.2: State transitions edit metadata file instead of moving directories**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/idea-cmd/test_idea_state_cli.py::TestStateTransition`
   - Observable: `i2code idea state my-feature ready` writes `state: ready` to the metadata file, commits, and the idea directory does NOT move; `git log --name-only` shows only the metadata file changed
   - Evidence: `pytest tests/idea-cmd/test_idea_state_cli.py::TestStateTransition` passes, asserting metadata file content changed and directory path is unchanged
   - Steps:
-    - [ ] Create `TestStateTransition` test class verifying: metadata file updated to new state, directory not moved, git commit message is correct, git log shows only metadata file changed
-    - [ ] Rewrite `execute_transition()` in `src/i2code/idea_cmd/state_cmd.py` to: read metadata, write new state to metadata file, `git add` metadata file, `git commit`
-    - [ ] Remove directory-moving logic (`git mv`) from `execute_transition()`
+    - [x] Create `TestStateTransition` test class verifying: metadata file updated to new state, directory not moved, git commit message is correct, git log shows only metadata file changed
+    - [x] Rewrite `execute_transition()` in `src/i2code/idea_cmd/state_cmd.py` to: read metadata, write new state to metadata file, `git add` metadata file, `git commit`
+    - [x] Remove directory-moving logic (`git mv`) from `execute_transition()`
 
 - [ ] **Task 2.3: --no-commit flag for state transitions**
   - TaskType: OUTCOME
@@ -262,3 +262,18 @@ Implements Scenario 4. New ideas are created in `active/` with a metadata file.
     - [ ] Remove any remaining `git mv` directory-moving logic from `src/i2code/idea_cmd/state_cmd.py`
     - [ ] Run full test suite and fix any remaining failures
     - [ ] Run `uvx pyright --level error src/` and fix type errors
+
+---
+
+## Change History
+### 2026-03-11 08:58 - mark-step-complete
+TestStateTransition test class created with 4 tests verifying metadata file update, no directory move, commit message, and only metadata file changed
+
+### 2026-03-11 08:58 - mark-step-complete
+Rewrote execute_transition() to read/write metadata file and git add instead of git mv
+
+### 2026-03-11 08:58 - mark-step-complete
+git mv directory-moving logic replaced with metadata file write + git add
+
+### 2026-03-11 08:58 - mark-task-complete
+State transitions now edit metadata file instead of moving directories

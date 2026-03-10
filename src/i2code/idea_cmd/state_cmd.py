@@ -6,8 +6,9 @@ from pathlib import Path
 
 import click
 
+from i2code.idea.metadata import read_metadata, write_metadata
 from i2code.idea_cmd.transition_rules import validate_transition
-from i2code.idea.resolver import LIFECYCLE_STATES, IdeaInfo, list_ideas, resolve_idea, state_from_path
+from i2code.idea.resolver import LIFECYCLE_STATES, list_ideas, resolve_idea
 
 
 def _complete_name_or_path(ctx, _param, incomplete):
@@ -23,56 +24,30 @@ def _complete_name_or_path(ctx, _param, incomplete):
     return completions
 
 
-def _extract_invalid_state(name_or_path):
-    """If name_or_path looks like docs/ideas/{invalid_state}/..., return the invalid state."""
-    parts = Path(name_or_path).parts
-    for i, (first, second) in enumerate(zip(parts, parts[1:])):
-        if (first, second) == ("docs", "ideas") and i + 2 < len(parts):
-            candidate = parts[i + 2]
-            if candidate not in LIFECYCLE_STATES:
-                return candidate
-    return None
-
-
 def _resolve_state(name_or_path):
     """Resolve lifecycle state from a name or directory path."""
-    return _resolve_idea_from_name_or_path(name_or_path, Path.cwd()).state
-
-
-def _resolve_idea_from_name_or_path(name_or_path, git_root):
-    """Resolve an IdeaInfo from either a name or a directory path."""
     path = Path(name_or_path)
     if path.is_dir():
-        state = state_from_path(path)
-        name = path.resolve().name
-        directory = str(path.resolve().relative_to(git_root.resolve()))
-        return IdeaInfo(name=name, state=state, directory=directory)
-    invalid = _extract_invalid_state(name_or_path)
-    if invalid is not None:
-        valid = ", ".join(LIFECYCLE_STATES)
-        msg = f"'{invalid}' is not a valid state. Valid states: {valid}"
-        raise ValueError(msg)
-    return resolve_idea(name_or_path, git_root)
+        name = path.name
+        return resolve_idea(name, Path.cwd()).state
+    return resolve_idea(name_or_path, Path.cwd()).state
 
 
 def execute_transition(name, old_path, new_state, git_root):
-    """Move an idea directory to a new lifecycle state via git mv and commit.
+    """Update an idea's state in its metadata file and commit.
 
     Returns a message string on success.
     Raises RuntimeError with the git error on failure.
     """
-    old_state = state_from_path(Path(old_path))
+    old_state = resolve_idea(name, git_root).state
     if old_state == new_state:
         return f"Idea {name} is already in state {new_state}"
-    new_parent = git_root / "docs" / "ideas" / new_state
-    new_parent.mkdir(parents=True, exist_ok=True)
-    new_path = new_parent / name
-    subprocess.run(
-        ["git", "add", str(old_path)],
-        cwd=str(git_root), capture_output=True, text=True,
-    )
+    metadata_path = Path(old_path) / f"{name}-metadata.yaml"
+    metadata = read_metadata(metadata_path)
+    metadata["state"] = new_state
+    write_metadata(metadata_path, metadata)
     result = subprocess.run(
-        ["git", "mv", str(old_path), str(new_path)],
+        ["git", "add", str(metadata_path)],
         cwd=str(git_root), capture_output=True, text=True,
     )
     if result.returncode != 0:
@@ -106,7 +81,7 @@ def idea_state(name_or_path, new_state, force):  # noqa: FBT002
             click.echo(state)
         else:
             git_root = Path.cwd()
-            idea = _resolve_idea_from_name_or_path(name_or_path, git_root)
+            idea = resolve_idea(name_or_path, git_root)
             idea_dir = git_root / idea.directory
             if not force:
                 violation = validate_transition(idea.state, new_state, idea_dir)

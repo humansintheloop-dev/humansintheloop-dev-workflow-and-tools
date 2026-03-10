@@ -1,10 +1,16 @@
 """Revise specification via Claude."""
 
+from i2code.claude_cmd import build_allowed_tools_flag
 from i2code.implement.claude_runner import ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 
 
-def revise_spec(project: IdeaProject, claude_runner) -> ClaudeResult:
+def revise_spec(
+    project: IdeaProject,
+    claude_runner,
+    *,
+    repo_root: str | None = None,
+) -> ClaudeResult:
     """Revise an existing specification interactively via Claude.
 
     Validates that both idea and spec files exist, constructs an inline
@@ -14,6 +20,8 @@ def revise_spec(project: IdeaProject, claude_runner) -> ClaudeResult:
     Args:
         project: The idea project containing file paths
         claude_runner: ClaudeRunner instance for invoking Claude
+        repo_root: Repository root path. When provided, grants file
+            permissions via --allowedTools and uses repo root as cwd.
 
     Returns:
         ClaudeResult from the Claude invocation
@@ -36,6 +44,13 @@ def revise_spec(project: IdeaProject, claude_runner) -> ClaudeResult:
         "I will ask you to make changes to the specification\n"
     )
 
-    cmd = ["claude", prompt]
+    cmd = ["claude"]
 
-    return claude_runner.run_interactive(cmd, cwd=project.directory)
+    if repo_root is not None:
+        allowed_tools = build_allowed_tools_flag(repo_root, project.directory)
+        cmd += ["--allowedTools", allowed_tools]
+
+    cmd.append(prompt)
+
+    cwd = repo_root if repo_root is not None else project.directory
+    return claude_runner.run_interactive(cmd, cwd=cwd)

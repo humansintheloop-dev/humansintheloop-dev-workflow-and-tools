@@ -87,16 +87,16 @@ This thread proves the core mechanism works end-to-end on a single subcommand (`
     - [x] Modify `create_spec()` to use the shared helper from Task 1.2 and pass `cwd=repo_root`
     - [x] Verify the test passes and no regressions
 
-- [ ] **Task 2.2: revise_spec builds claude command with --allowedTools and cwd=repo_root**
+- [x] **Task 2.2: revise_spec builds claude command with --allowedTools and cwd=repo_root**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/spec-cmd/test_revise_spec.py -k allowed_tools`
   - Observable: The claude command built by `revise_spec()` includes `--allowedTools` with correct permissions and uses repo root as `cwd`
   - Evidence: pytest test mocks the subprocess invocation and asserts the command contains `--allowedTools` with the expected value and `cwd` equals the repo root
   - Steps:
-    - [ ] Read `src/i2code/spec_cmd/revise_spec.py` to understand the current command construction
-    - [ ] Write a failing test asserting `--allowedTools` and `cwd=repo_root`
-    - [ ] Modify `revise_spec()` to use the shared helper and pass `cwd=repo_root`
-    - [ ] Verify the test passes and no regressions
+    - [x] Read `src/i2code/spec_cmd/revise_spec.py` to understand the current command construction
+    - [x] Write a failing test asserting `--allowedTools` and `cwd=repo_root`
+    - [x] Modify `revise_spec()` to use the shared helper and pass `cwd=repo_root`
+    - [x] Verify the test passes and no regressions
 
 ## Steel Thread 3: Plan subcommands grant permissions
 

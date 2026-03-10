@@ -103,9 +103,9 @@ Implements Scenario 1 (primary) and Scenario 6 (forced backward transition). Sta
   - Observable: `i2code idea state my-feature` returns the state read from `my-feature-metadata.yaml`, not from the directory path
   - Evidence: `pytest tests/idea-cmd/test_idea_state_cli.py::TestIdeaStateQuery` passes with ideas in `active/` directory structure
   - Steps:
-    - [ ] Update test fixtures in `tests/idea-cmd/test_idea_state_cli.py` to create ideas in `docs/ideas/active/<name>/` with `<name>-metadata.yaml` instead of `docs/ideas/<state>/<name>/`
-    - [ ] Create `TestIdeaStateQuery` test class (replacing `TestIdeaStateByName` and `TestIdeaStateByPath`) that verifies state is read from metadata file
-    - [ ] Update `src/i2code/idea_cmd/state_cmd.py` to use the refactored resolver (which reads metadata files) for state queries
+    - [x] Update test fixtures in `tests/idea-cmd/test_idea_state_cli.py` to create ideas in `docs/ideas/active/<name>/` with `<name>-metadata.yaml` instead of `docs/ideas/<state>/<name>/`
+    - [x] Create `TestIdeaStateQuery` test class (replacing `TestIdeaStateByName` and `TestIdeaStateByPath`) that verifies state is read from metadata file
+    - [x] Update `src/i2code/idea_cmd/state_cmd.py` to use the refactored resolver (which reads metadata files) for state queries
 
 - [ ] **Task 2.2: State transitions edit metadata file instead of moving directories**
   - TaskType: OUTCOME

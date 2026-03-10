@@ -4,6 +4,7 @@ import os
 import subprocess
 
 import pytest
+import yaml
 from click.testing import CliRunner
 
 from i2code.cli import main
@@ -19,9 +20,30 @@ def _create_idea(base, state, name):
     return idea_dir
 
 
+def _create_active_idea(base, name, state="draft"):
+    """Create an idea in docs/ideas/active/<name>/ with a metadata file."""
+    idea_dir = os.path.join(base, "docs", "ideas", "active", name)
+    os.makedirs(idea_dir, exist_ok=True)
+    metadata_path = os.path.join(idea_dir, f"{name}-metadata.yaml")
+    with open(metadata_path, "w") as f:
+        yaml.safe_dump({"state": state}, f)
+    placeholder = os.path.join(idea_dir, f"{name}-idea.md")
+    with open(placeholder, "w") as f:
+        f.write(f"# {name}\n")
+    return idea_dir
+
+
 def _create_plan_file(base, state, name):
     """Create a plan file inside an idea directory."""
     plan_path = os.path.join(base, "docs", "ideas", state, name, f"{name}-plan.md")
+    with open(plan_path, "w") as f:
+        f.write(f"# {name} plan\n")
+    return plan_path
+
+
+def _create_active_plan_file(base, name):
+    """Create a plan file inside an active idea directory."""
+    plan_path = os.path.join(base, "docs", "ideas", "active", name, f"{name}-plan.md")
     with open(plan_path, "w") as f:
         f.write(f"# {name} plan\n")
     return plan_path
@@ -92,6 +114,51 @@ def _committed_idea(git_repo, state, name, with_plan=False):
         _create_plan_file(git_repo, state, name)
     _git_add_and_commit(git_repo, "Initial commit")
     return git_repo
+
+
+def _committed_active_idea(git_repo, name, state="draft", with_plan=False):
+    """Create an active idea in a git repo and commit it. Returns the repo path."""
+    _create_active_idea(git_repo, name, state)
+    if with_plan:
+        _create_active_plan_file(git_repo, name)
+    _git_add_and_commit(git_repo, "Initial commit")
+    return git_repo
+
+
+@pytest.mark.unit
+class TestIdeaStateQuery:
+
+    def test_returns_state_from_metadata_file(self, tmp_path, cli):
+        _create_active_idea(tmp_path, "my-feature", state="draft")
+
+        result = _invoke_idea_state(cli, "my-feature")
+
+        assert result.exit_code == 0
+        assert result.output.strip() == "draft"
+
+    def test_returns_wip_state_from_metadata(self, tmp_path, cli):
+        _create_active_idea(tmp_path, "active-project", state="wip")
+
+        result = _invoke_idea_state(cli, "active-project")
+
+        assert result.exit_code == 0
+        assert result.output.strip() == "wip"
+
+    def test_returns_completed_state_from_metadata(self, tmp_path, cli):
+        _create_active_idea(tmp_path, "done-idea", state="completed")
+
+        result = _invoke_idea_state(cli, "done-idea")
+
+        assert result.exit_code == 0
+        assert result.output.strip() == "completed"
+
+    def test_returns_state_when_queried_by_path(self, tmp_path, cli):
+        _create_active_idea(tmp_path, "path-idea", state="ready")
+
+        result = _invoke_idea_state(cli, "docs/ideas/active/path-idea")
+
+        assert result.exit_code == 0
+        assert result.output.strip() == "ready"
 
 
 @pytest.mark.unit

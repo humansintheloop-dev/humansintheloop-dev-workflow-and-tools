@@ -159,3 +159,35 @@ class TestClaudeInvocation:
         runner.set_result(ClaudeResult(returncode=0))
         _, _, _, result = run_brainstorm(tmp_path, runner=runner)
         assert result.returncode == 0
+
+
+@pytest.mark.unit
+class TestAllowedTools:
+
+    def test_allowed_tools_included_when_repo_root_provided(self, tmp_path):
+        repo_root = str(tmp_path / "repo")
+        os.makedirs(repo_root)
+        idea_dir = str(tmp_path / "repo" / "docs" / "ideas" / "my-idea")
+        project = IdeaProject(idea_dir)
+        runner = FakeClaudeRunner()
+
+        brainstorm_idea(
+            project, runner,
+            repo_root=repo_root,
+            run_editor=lambda cmd: None,
+        )
+
+        _, cmd, cwd = runner.calls[0]
+        assert "--allowedTools" in cmd
+        allowed_tools_idx = cmd.index("--allowedTools")
+        allowed_tools_value = cmd[allowed_tools_idx + 1]
+        assert f"Read({repo_root}/)" in allowed_tools_value
+        assert f"Write({idea_dir}/)" in allowed_tools_value
+        assert f"Edit({idea_dir}/)" in allowed_tools_value
+        assert cwd == repo_root
+
+    def test_no_allowed_tools_when_repo_root_not_provided(self, tmp_path):
+        project, runner, _, _ = run_brainstorm(tmp_path)
+        _, cmd, cwd = runner.calls[0]
+        assert "--allowedTools" not in cmd
+        assert cwd == project.directory

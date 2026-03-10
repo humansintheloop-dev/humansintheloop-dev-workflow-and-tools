@@ -70,17 +70,17 @@ This steel thread establishes the core infrastructure: metadata YAML read/write,
     - [x] Create test file `tests/idea-cmd/test_metadata.py` with tests for: reading a valid metadata file returns `{"state": "draft"}`; writing then reading round-trips correctly; unknown keys in YAML are preserved on write; reading a missing file raises `FileNotFoundError`
     - [x] Create `src/i2code/idea/metadata.py` with `read_metadata(path: Path) -> dict` and `write_metadata(path: Path, data: dict) -> None` using `yaml.safe_load()` and `yaml.safe_dump()`
 
-- [ ] **Task 1.2: Resolver scans active/ and archived/ directories and reads state from metadata files**
+- [x] **Task 1.2: Resolver scans active/ and archived/ directories and reads state from metadata files**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/idea-cmd/test_resolver.py`
   - Observable: `resolve_idea(name, git_root)` finds an idea in `docs/ideas/active/` or `docs/ideas/archived/` and returns `IdeaInfo` with `state` read from the metadata file; `list_ideas(git_root)` scans `active/` (and optionally `archived/`) and returns `IdeaInfo` list with states from metadata files; `state_from_path()` is removed
   - Evidence: `pytest tests/idea-cmd/test_resolver.py` passes with tests covering: resolve from active, resolve from archived, list active only, list with archived, idea not found error, missing metadata file warning
   - Steps:
-    - [ ] Create `tests/idea-cmd/test_resolver.py` with tests for the new resolver behavior: resolving an idea in `active/`, resolving in `archived/`, listing active ideas only, listing all ideas, handling missing metadata files
-    - [ ] Update `src/i2code/idea/resolver.py`: change `resolve_idea()` to scan `docs/ideas/active/` and `docs/ideas/archived/` instead of 5 state directories; read state from `<name>-metadata.yaml` instead of using `state_from_path()`
-    - [ ] Update `list_ideas()` to accept an optional `include_archived: bool = False` parameter; scan `active/` by default, add `archived/` when `include_archived=True`
-    - [ ] Remove or deprecate `state_from_path()` function
-    - [ ] Keep `LIFECYCLE_STATES` and `IdeaInfo` unchanged
+    - [x] Create `tests/idea-cmd/test_resolver.py` with tests for the new resolver behavior: resolving an idea in `active/`, resolving in `archived/`, listing active ideas only, listing all ideas, handling missing metadata files
+    - [x] Update `src/i2code/idea/resolver.py`: change `resolve_idea()` to scan `docs/ideas/active/` and `docs/ideas/archived/` instead of 5 state directories; read state from `<name>-metadata.yaml` instead of using `state_from_path()`
+    - [x] Update `list_ideas()` to accept an optional `include_archived: bool = False` parameter; scan `active/` by default, add `archived/` when `include_archived=True`
+    - [x] Remove or deprecate `state_from_path()` function
+    - [x] Keep `LIFECYCLE_STATES` and `IdeaInfo` unchanged
 
 - [ ] **Task 1.3: IdeaProject gains metadata_file property**
   - TaskType: OUTCOME

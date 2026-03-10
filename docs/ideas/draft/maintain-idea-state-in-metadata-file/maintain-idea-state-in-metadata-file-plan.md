@@ -60,15 +60,15 @@ Use these skills by invoking them before the relevant action:
 
 This steel thread establishes the core infrastructure: metadata YAML read/write, the new `active/`/`archived/` directory scanning, and the updated resolver. All subsequent threads depend on this foundation.
 
-- [ ] **Task 1.1: Metadata file read/write module**
+- [x] **Task 1.1: Metadata file read/write module**
   - TaskType: INFRA
   - Entrypoint: `pytest tests/idea-cmd/test_metadata.py`
   - Observable: A `read_metadata(path)` function reads a YAML metadata file and returns a dict with at least `state`; a `write_metadata(path, data)` function writes/updates YAML preserving unknown keys; reading a non-existent file raises a clear error
   - Evidence: `pytest tests/idea-cmd/test_metadata.py` passes with tests covering read, write, round-trip with unknown keys, and missing-file error
   - Steps:
-    - [ ] Add `PyYAML` to `dependencies` in `pyproject.toml`
-    - [ ] Create test file `tests/idea-cmd/test_metadata.py` with tests for: reading a valid metadata file returns `{"state": "draft"}`; writing then reading round-trips correctly; unknown keys in YAML are preserved on write; reading a missing file raises `FileNotFoundError`
-    - [ ] Create `src/i2code/idea/metadata.py` with `read_metadata(path: Path) -> dict` and `write_metadata(path: Path, data: dict) -> None` using `yaml.safe_load()` and `yaml.safe_dump()`
+    - [x] Add `PyYAML` to `dependencies` in `pyproject.toml`
+    - [x] Create test file `tests/idea-cmd/test_metadata.py` with tests for: reading a valid metadata file returns `{"state": "draft"}`; writing then reading round-trips correctly; unknown keys in YAML are preserved on write; reading a missing file raises `FileNotFoundError`
+    - [x] Create `src/i2code/idea/metadata.py` with `read_metadata(path: Path) -> dict` and `write_metadata(path: Path, data: dict) -> None` using `yaml.safe_load()` and `yaml.safe_dump()`
 
 - [ ] **Task 1.2: Resolver scans active/ and archived/ directories and reads state from metadata files**
   - TaskType: OUTCOME

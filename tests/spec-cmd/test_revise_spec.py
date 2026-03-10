@@ -7,6 +7,7 @@ import pytest
 
 from conftest import TempIdeaProject
 from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.idea_project import IdeaProject
 from i2code.spec_cmd.revise_spec import revise_spec
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "implement"))
@@ -108,3 +109,28 @@ class TestReviseSpecClaudeInvocation:
         with TempIdeaProject("my-feature") as project:
             _, _, _, _, cwd = _run_revise_spec(project)
             assert cwd == project.directory
+
+
+@pytest.mark.unit
+class TestReviseSpecAllowedTools:
+
+    def test_allowed_tools_included_when_repo_root_provided(self, tmp_path):
+        repo_root = str(tmp_path / "repo")
+        os.makedirs(repo_root)
+        idea_dir = str(tmp_path / "repo" / "docs" / "ideas" / "my-idea")
+        os.makedirs(idea_dir)
+        project = IdeaProject(idea_dir)
+        _create_idea_file(project)
+        _create_spec_file(project)
+        runner = FakeClaudeRunner()
+
+        revise_spec(project, runner, repo_root=repo_root)
+
+        _, cmd, cwd = runner.calls[0]
+        assert "--allowedTools" in cmd
+        allowed_tools_idx = cmd.index("--allowedTools")
+        allowed_tools_value = cmd[allowed_tools_idx + 1]
+        assert f"Read({repo_root}/)" in allowed_tools_value
+        assert f"Write({idea_dir}/)" in allowed_tools_value
+        assert f"Edit({idea_dir}/)" in allowed_tools_value
+        assert cwd == repo_root

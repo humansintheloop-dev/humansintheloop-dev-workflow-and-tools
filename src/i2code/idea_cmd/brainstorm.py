@@ -36,6 +36,7 @@ def brainstorm_idea(
     project: IdeaProject,
     claude_runner,
     *,
+    repo_root: str | None = None,
     run_editor=None,
 ) -> ClaudeResult:
     """Brainstorm an idea: create file, launch editor, invoke Claude.
@@ -78,6 +79,17 @@ def brainstorm_idea(
     })
 
     session_args = get_or_create_session_args(project.session_id_file)
-    cmd = ["claude"] + session_args + [prompt]
+    cmd = ["claude"]
 
-    return claude_runner.run_interactive(cmd, cwd=project.directory)
+    if repo_root is not None:
+        allowed_tools = (
+            f"Read({repo_root}/),"
+            f"Write({project.directory}/),"
+            f"Edit({project.directory}/)"
+        )
+        cmd += ["--allowedTools", allowed_tools]
+
+    cmd += session_args + [prompt]
+
+    cwd = repo_root if repo_root is not None else project.directory
+    return claude_runner.run_interactive(cmd, cwd=cwd)

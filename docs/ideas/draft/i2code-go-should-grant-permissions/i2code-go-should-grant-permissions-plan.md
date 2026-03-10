@@ -44,22 +44,22 @@ Use these skills by invoking them before the relevant action:
 
 This thread proves the core mechanism works end-to-end on a single subcommand (`brainstorm_idea`). Once this works, the remaining subcommands apply the same pattern.
 
-- [ ] **Task 1.1: brainstorm_idea builds claude command with --allowedTools and cwd=repo_root**
+- [x] **Task 1.1: brainstorm_idea builds claude command with --allowedTools and cwd=repo_root**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/idea-cmd/test_brainstorm.py -k allowed_tools`
   - Observable: The claude command built by `brainstorm_idea()` includes `--allowedTools "Read(/<repo_root>/),Write(/<idea_dir>/),Edit(/<idea_dir>/)"` and uses the repo root as `cwd` instead of `project.directory`
   - Evidence: pytest test constructs a project with known repo_root and idea_dir, calls `brainstorm_idea()` with a mock/spy on the subprocess invocation, and asserts the command list contains the correct `--allowedTools` value and `cwd` equals the repo root
   - Steps:
-    - [ ] Read `src/i2code/idea_cmd/brainstorm.py` to understand how the claude command is currently built and how `cwd` is passed
-    - [ ] Read existing tests in `tests/idea-cmd/` to understand the test patterns used (mocking, fixtures, etc.)
-    - [ ] Write a failing test in `tests/idea-cmd/test_brainstorm.py` that asserts `--allowedTools` is present in the claude command and `cwd` is set to the repo root
-    - [ ] Determine how `brainstorm_idea()` accesses `project.directory` and the repo root — if there is no `repo_root` concept yet, identify where to source it (e.g., `os.getcwd()` at startup, or a project attribute)
-    - [ ] Modify `brainstorm_idea()` in `src/i2code/idea_cmd/brainstorm.py` to:
+    - [x] Read `src/i2code/idea_cmd/brainstorm.py` to understand how the claude command is currently built and how `cwd` is passed
+    - [x] Read existing tests in `tests/idea-cmd/` to understand the test patterns used (mocking, fixtures, etc.)
+    - [x] Write a failing test in `tests/idea-cmd/test_brainstorm.py` that asserts `--allowedTools` is present in the claude command and `cwd` is set to the repo root
+    - [x] Determine how `brainstorm_idea()` accesses `project.directory` and the repo root — if there is no `repo_root` concept yet, identify where to source it (e.g., `os.getcwd()` at startup, or a project attribute)
+    - [x] Modify `brainstorm_idea()` in `src/i2code/idea_cmd/brainstorm.py` to:
       - Accept or derive the repo root path
       - Build the `--allowedTools` flag with `Read(<repo_root>/), Write(<idea_dir>/), Edit(<idea_dir>/)`
       - Pass `cwd=<repo_root>` instead of `cwd=project.directory`
-    - [ ] Verify the test passes
-    - [ ] Run the full test suite to ensure no regressions
+    - [x] Verify the test passes
+    - [x] Run the full test suite to ensure no regressions
 
 - [ ] **Task 1.2: Extract shared helper for building permission flags**
   - TaskType: REFACTOR

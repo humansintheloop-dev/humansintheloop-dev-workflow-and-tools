@@ -75,17 +75,17 @@ This thread proves the core mechanism works end-to-end on a single subcommand (`
 
 ## Steel Thread 2: Spec subcommands grant permissions
 
-- [ ] **Task 2.1: create_spec builds claude command with --allowedTools and cwd=repo_root**
+- [x] **Task 2.1: create_spec builds claude command with --allowedTools and cwd=repo_root**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/spec-cmd/test_create_spec.py -k allowed_tools`
   - Observable: The claude command built by `create_spec()` includes `--allowedTools` with correct Read/Write/Edit permissions and uses repo root as `cwd`
   - Evidence: pytest test mocks the subprocess invocation and asserts the command contains `--allowedTools` with the expected value and `cwd` equals the repo root
   - Steps:
-    - [ ] Read `src/i2code/spec_cmd/create_spec.py` to understand the current command construction
-    - [ ] Read existing tests in `tests/spec-cmd/` for test patterns
-    - [ ] Write a failing test asserting `--allowedTools` and `cwd=repo_root`
-    - [ ] Modify `create_spec()` to use the shared helper from Task 1.2 and pass `cwd=repo_root`
-    - [ ] Verify the test passes and no regressions
+    - [x] Read `src/i2code/spec_cmd/create_spec.py` to understand the current command construction
+    - [x] Read existing tests in `tests/spec-cmd/` for test patterns
+    - [x] Write a failing test asserting `--allowedTools` and `cwd=repo_root`
+    - [x] Modify `create_spec()` to use the shared helper from Task 1.2 and pass `cwd=repo_root`
+    - [x] Verify the test passes and no regressions
 
 - [ ] **Task 2.2: revise_spec builds claude command with --allowedTools and cwd=repo_root**
   - TaskType: OUTCOME

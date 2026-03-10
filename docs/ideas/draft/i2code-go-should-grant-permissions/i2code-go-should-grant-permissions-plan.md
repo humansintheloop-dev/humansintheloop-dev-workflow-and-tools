@@ -61,17 +61,17 @@ This thread proves the core mechanism works end-to-end on a single subcommand (`
     - [x] Verify the test passes
     - [x] Run the full test suite to ensure no regressions
 
-- [ ] **Task 1.2: Extract shared helper for building permission flags**
+- [x] **Task 1.2: Extract shared helper for building permission flags**
   - TaskType: REFACTOR
   - Entrypoint: `pytest tests/idea-cmd/test_brainstorm.py -k allowed_tools`
   - Observable: No behavior change — brainstorm still builds the correct command with permissions
   - Evidence: Existing tests from Task 1.1 continue to pass after extracting the helper
   - Steps:
-    - [ ] Identify the permission-building logic added in Task 1.1
-    - [ ] Extract a shared function (e.g., `build_allowed_tools_flag(repo_root, idea_dir)`) into a common module (e.g., `src/i2code/claude_cmd.py` or wherever claude command utilities live)
-    - [ ] Update `brainstorm_idea()` to use the shared helper
-    - [ ] Write a unit test for the helper function that verifies the flag format: `Read(/<repo_root>/),Write(/<idea_dir>/),Edit(/<idea_dir>/)`
-    - [ ] Verify all tests pass
+    - [x] Identify the permission-building logic added in Task 1.1
+    - [x] Extract a shared function (e.g., `build_allowed_tools_flag(repo_root, idea_dir)`) into a common module (e.g., `src/i2code/claude_cmd.py` or wherever claude command utilities live)
+    - [x] Update `brainstorm_idea()` to use the shared helper
+    - [x] Write a unit test for the helper function that verifies the flag format: `Read(/<repo_root>/),Write(/<idea_dir>/),Edit(/<idea_dir>/)`
+    - [x] Verify all tests pass
 
 ## Steel Thread 2: Spec subcommands grant permissions
 

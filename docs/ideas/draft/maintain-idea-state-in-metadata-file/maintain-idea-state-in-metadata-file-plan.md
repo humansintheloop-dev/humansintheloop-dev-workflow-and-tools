@@ -97,7 +97,7 @@ This steel thread establishes the core infrastructure: metadata YAML read/write,
 
 Implements Scenario 1 (primary) and Scenario 6 (forced backward transition). State transitions now edit the metadata file instead of using `git mv`.
 
-- [ ] **Task 2.1: State query reads from metadata file**
+- [x] **Task 2.1: State query reads from metadata file**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/idea-cmd/test_idea_state_cli.py::TestIdeaStateQuery`
   - Observable: `i2code idea state my-feature` returns the state read from `my-feature-metadata.yaml`, not from the directory path

@@ -221,14 +221,14 @@ Implements Scenario 5. Adds `--archived` and `--all` flags to the list command.
 
 Implements Scenario 4. New ideas are created in `active/` with a metadata file.
 
-- [ ] **Task 6.1: Brainstorm creates ideas in active/ with metadata file**
+- [x] **Task 6.1: Brainstorm creates ideas in active/ with metadata file**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea brainstorm docs/ideas/active/new-idea`
   - Observable: Idea directory created at `docs/ideas/active/new-idea/` with `new-idea-metadata.yaml` containing `state: draft` and `new-idea-idea.md` with template text
   - Evidence: `pytest tests/idea-cmd/test_brainstorm.py` passes verifying directory location, metadata file exists with `state: draft`
   - Steps:
-    - [ ] Create or update `tests/idea-cmd/test_brainstorm.py` with test verifying brainstorm creates idea in `active/` with metadata file
-    - [ ] Update `src/i2code/idea_cmd/brainstorm.py` to create idea directory under `docs/ideas/active/` and write `<name>-metadata.yaml` with `state: draft`
+    - [x] Create or update `tests/idea-cmd/test_brainstorm.py` with test verifying brainstorm creates idea in `active/` with metadata file
+    - [x] Update `src/i2code/idea_cmd/brainstorm.py` to create idea directory under `docs/ideas/active/` and write `<name>-metadata.yaml` with `state: draft`
 
 - [ ] **Task 6.2: Update write-idea skill to use active/ directory with metadata**
   - TaskType: OUTCOME

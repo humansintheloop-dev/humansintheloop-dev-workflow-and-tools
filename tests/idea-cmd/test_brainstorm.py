@@ -4,6 +4,7 @@ import os
 import sys
 
 import pytest
+import yaml
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "implement"))
 
@@ -198,3 +199,33 @@ class TestAllowedTools:
         _, cmd, cwd = runner.calls[0]
         assert "--allowedTools" not in cmd
         assert cwd == project.directory
+
+
+@pytest.mark.unit
+class TestMetadataFileCreation:
+
+    def test_creates_metadata_file_with_draft_state(self, tmp_path):
+        project, _, _, _ = run_brainstorm(tmp_path, idea_name="new-idea")
+        metadata_path = os.path.join(project.directory, "new-idea-metadata.yaml")
+        assert os.path.isfile(metadata_path)
+        with open(metadata_path) as f:
+            metadata = yaml.safe_load(f)
+        assert metadata["state"] == "draft"
+
+    def test_does_not_overwrite_existing_metadata_file(self, tmp_path):
+        idea_dir = tmp_path / "existing-idea"
+        os.makedirs(idea_dir)
+        metadata_path = idea_dir / "existing-idea-metadata.yaml"
+        with open(metadata_path, "w") as f:
+            yaml.safe_dump({"state": "wip"}, f)
+        idea_file = idea_dir / "existing-idea-idea.md"
+        with open(idea_file, "w") as f:
+            f.write("Existing idea")
+
+        project = IdeaProject(str(idea_dir))
+        runner = FakeClaudeRunner()
+        brainstorm_idea(project, runner, run_editor=lambda cmd: None)
+
+        with open(metadata_path) as f:
+            metadata = yaml.safe_load(f)
+        assert metadata["state"] == "wip"

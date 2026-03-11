@@ -67,6 +67,11 @@ Output:
 - Use the naming convention:
   - For the idea file '<idea-name>-idea.md', call the specification file '<idea-name>-spec.md'.
 
+## Specification Quality Guidelines
+
+- **Be decisive** — A spec must not say "do X or Y". Every decision point needs a single answer. If something is undecided, resolve it during discussion before it enters the spec.
+- **Be concrete** — Don't use vague placeholders or internal jargon without explanation. Reference actual values, formats, and names from the existing codebase. For example, specify the exact payload format a template produces, not "add a payload description".
+
 ## Specification Update Guidelines
 
 When modifying a specification after initial creation:

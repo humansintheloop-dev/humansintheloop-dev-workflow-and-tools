@@ -47,30 +47,57 @@ All modules that invoke `run_batch()` on `ClaudeRunner`:
 
 **Behavior:**
 
-- The standard block is a Jinja2 template (consistent with existing templates in `src/i2code/implement/templates/`).
+- The outcome tag instructions are rendered from a Jinja2 template (e.g., `outcome_tags.j2`), parameterized by the template's front-matter.
 - Before appending, `run_batch()` checks if the prompt already contains `<SUCCESS>`, `<FAILURE>`, or `<NOTHING-TO-DO>` strings. If present, injection is skipped (the template owns the tags).
+- If injection proceeds, `run_batch()` parses optional YAML front-matter from the prompt (see below), strips the front-matter from the prompt, and renders the outcome tag template using the extracted parameters.
 - The injected instructions tell Claude:
-  - Wrap final output in `<SUCCESS>...</SUCCESS>` on success.
+  - Wrap final output in `<SUCCESS>...</SUCCESS>` on success. The payload description comes from front-matter if present, otherwise uses the generic default "describe what you did".
   - Wrap final output in `<FAILURE>...</FAILURE>` on failure, with an explanation.
-  - Wrap final output in `<NOTHING-TO-DO>...</NOTHING-TO-DO>` if no action was needed.
+  - Wrap final output in `<NOTHING-TO-DO>...</NOTHING-TO-DO>` if no action was needed — **only if `nothing_to_do` is declared in front-matter**.
   - Emit `<INFO>...</INFO>` messages periodically during work to indicate progress. Claude decides granularity.
+
+**YAML front-matter:**
+
+Templates can include optional YAML front-matter (Jekyll-style) to parameterize the outcome tag instructions:
+
+```yaml
+---
+outcome:
+  success: "the commit SHA in format: task implemented: COMMIT_SHA"
+  nothing_to_do: "explanation of why no changes were needed"
+---
+```
+
+Front-matter fields:
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `outcome.success` | No | Generic "describe what you did" | Payload description for `<SUCCESS>` tag |
+| `outcome.failure` | No | "explain what went wrong" | Payload description for `<FAILURE>` tag |
+| `outcome.nothing_to_do` | No | *omitted* | If present, `<NOTHING-TO-DO>` tag is included in instructions with this description. If absent, no `<NOTHING-TO-DO>` instruction is injected. |
+
+**Three-tier resolution:**
+
+1. **Tags already in prompt** → skip injection entirely (template owns the tags).
+2. **Front-matter present** → parse parameters, strip front-matter from prompt, render outcome template with parameters.
+3. **No front-matter, no tags** → render outcome template with generic defaults (SUCCESS + FAILURE only, no NOTHING-TO-DO).
 
 **Separation of concerns:**
 
-- **Templates** define the *payload* — what goes inside the tags (e.g., "output the commit SHA", "output JSON with will_fix and needs_clarification").
-- **Platform** (`run_batch()`) defines the *envelope* — the tags themselves.
-- **Two-layer approach:** Templates with special needs (e.g., custom payload format) can include their own tag instructions using `{% if not interactive %}`. `run_batch()` detects existing tags and skips injection.
+- **Templates** declare *what the payload should contain* via front-matter — e.g., "output the commit SHA", "output JSON with will_fix and needs_clarification".
+- **Platform** (`run_batch()`) defines the *envelope* — the tags themselves and the standard instructions around them.
+- Templates that need full control over tag instructions can include them directly in the template body (skipping injection via tier 1).
 
 **Template changes required:**
 
 | Template | Current State | Action |
 |----------|--------------|--------|
-| `task_execution.j2` | SUCCESS/FAILURE tags (unconditional) | Remove tag instructions |
-| `commit_recovery.j2` | SUCCESS/FAILURE tags (unconditional) | Remove tag instructions |
-| `scaffolding.j2` | SUCCESS/FAILURE/NOTHING-TO-DO tags | Remove tag instructions |
-| `triage_feedback.j2` | No tags (JSON-based) | No change — auto-injection adds tags |
-| `fix_feedback.j2` | No tags | No change — auto-injection adds tags |
-| `ci_fix.j2` | No tags | No change — auto-injection adds tags |
+| `task_execution.j2` | SUCCESS/FAILURE tags (unconditional) | Remove tag instructions, add front-matter with `success: "task implemented: COMMIT_SHA"` |
+| `commit_recovery.j2` | SUCCESS/FAILURE tags (unconditional) | Remove tag instructions, add front-matter with `success: "recovery commit: COMMIT_SHA"` |
+| `scaffolding.j2` | SUCCESS/FAILURE/NOTHING-TO-DO tags | Remove tag instructions, add front-matter with `success: "Scaffold created: COMMIT_SHA"` and `nothing_to_do: "No changes needed"` |
+| `triage_feedback.j2` | No tags (JSON-based) | Add front-matter with `success: "the triage JSON"` |
+| `fix_feedback.j2` | No tags | Add front-matter with `success: "fix applied: COMMIT_SHA"` |
+| `ci_fix.j2` | No tags | Add front-matter with `success: "CI fix applied: COMMIT_SHA"` |
 
 ### Capability 2: Centralized Result Parsing with Exceptions
 
@@ -117,7 +144,7 @@ ClaudeFailure                 ← catch to fail fast
 | trunk_mode / worktree_mode | `check_claude_success()` + string search + `continue`/`sys.exit(1)` | `try/except ClaudeRetryableError: continue` + `except ClaudeFailure: sys.exit(1)` |
 | commit_recovery | `check_claude_success()` + string search + `return False` | `try/except ClaudeRetryableError: return False` |
 | scaffolding | String search for tags | Check `result.outcome` enum |
-| PR triage | JSON parsing of stdout | Unchanged (parses payload or stdout) |
+| PR triage | JSON parsing of stdout | Parse JSON from `result.payload` |
 | PR fix | HEAD check | `try/except` + caller HEAD check |
 | create_plan, summary_reports, analyze_sessions | Use stdout directly | `try/except` for error handling; access stdout as before |
 
@@ -129,7 +156,7 @@ The streaming line processor detects `<INFO>` tags during execution and displays
 
 - INFO tags are detected in the streaming line processor (same place dots are printed).
 - Each stream-json line is a complete JSON object. INFO tags will not span line boundaries.
-- Detection approach (raw string scan or JSON parsing) is an implementation detail.
+- Detection uses raw string scan on each stream-json line.
 
 **Display format:**
 
@@ -157,7 +184,7 @@ The streaming line processor detects `<INFO>` tags during execution and displays
 
 **`check_claude_success()` disposition:**
 
-- Remove from `claude_runner.py` or move to a caller utility module.
+- Remove from `claude_runner.py`. Callers that need HEAD checking implement it themselves.
 - HEAD advancement is a caller concern — not all callers expect a commit (e.g., PR triage, plan generation, summary reports).
 - Callers that care about commits check HEAD themselves.
 
@@ -170,7 +197,12 @@ The streaming line processor detects `<INFO>` tags during execution and displays
 **Contract:**
 
 - **Input:** CLI command list and working directory.
-- **Pre-processing:** If the prompt (last element of cmd after `-p`) does not contain `<SUCCESS>`, `<FAILURE>`, or `<NOTHING-TO-DO>`, append the standard outcome tag instructions.
+- **Pre-processing:**
+  1. Extract the prompt (last element of cmd after `-p`).
+  2. If the prompt contains `<SUCCESS>`, `<FAILURE>`, or `<NOTHING-TO-DO>` → skip injection.
+  3. Otherwise, parse optional YAML front-matter from the prompt. Strip front-matter from the prompt.
+  4. Render outcome tag instructions from `outcome_tags.j2` using front-matter parameters (or generic defaults).
+  5. Append the rendered instructions to the prompt.
 - **Execution:** Run subprocess, stream dots + INFO messages.
 - **Post-processing:** Parse outcome tags from full stdout.
 - **Returns:** `ClaudeResult` with `outcome` and `payload` on success.
@@ -214,7 +246,14 @@ class ClaudeMissingOutcomeTag(ClaudeFailure): ...
 
 ### Auto-injection template (new)
 
-A Jinja2 template (e.g., `outcome_tags.j2`) containing the standard instructions for outcome tags and INFO messages. Rendered and appended by `run_batch()` when not already present in the prompt.
+A Jinja2 template (e.g., `outcome_tags.j2`) containing the standard instructions for outcome tags and INFO messages. Rendered by `run_batch()` and appended to the prompt when tags are not already present.
+
+**Template variables:**
+
+- `success_payload`: string — description of what to put inside `<SUCCESS>` (default: "describe what you did")
+- `failure_payload`: string — description of what to put inside `<FAILURE>` (default: "explain what went wrong")
+- `include_nothing_to_do`: bool — whether to include `<NOTHING-TO-DO>` instructions
+- `nothing_to_do_payload`: string — description of what to put inside `<NOTHING-TO-DO>` (only used when `include_nothing_to_do` is true)
 
 ---
 
@@ -274,13 +313,21 @@ During a long task execution, Claude emits `<INFO>Reading source files</INFO>`, 
 
 User presses CTRL-C during execution. The process returns exit code 130. `run_batch()` raises `ClaudeInterrupted`. The caller can distinguish this from a crash and handle accordingly.
 
-### Scenario 8: Template with Custom Tags (Two-Layer Override)
+### Scenario 8: Template with Front-Matter Payload Description
 
-A template includes its own `<SUCCESS>` tag instructions (e.g., a custom payload format via `{% if not interactive %}`). `run_batch()` detects existing tags in the prompt and skips auto-injection. Outcome parsing works the same regardless of injection source.
+A template (e.g., `task_execution.j2`) includes YAML front-matter declaring `outcome.success: "the commit SHA in format: task implemented: COMMIT_SHA"`. `run_batch()` parses the front-matter, strips it from the prompt, and renders the outcome tag template with the custom success payload description. The injected instructions tell Claude specifically what to put inside the `<SUCCESS>` tag.
 
-### Scenario 9: Callers Without Tag Expectations
+### Scenario 9: Template with Front-Matter Including NOTHING-TO-DO
 
-Callers like create_plan and summary_reports currently use stdout directly without checking tags. With auto-injection, Claude wraps output in `<SUCCESS>` tags. These callers access `result.payload` (the content inside the tag) instead of raw stdout, or continue using `result.output.stdout` if they prefer the full output.
+A template (e.g., `scaffolding.j2`) includes front-matter with both `outcome.success` and `outcome.nothing_to_do`. The injected instructions include all three outcome tags. A template without `outcome.nothing_to_do` in its front-matter only gets SUCCESS and FAILURE instructions.
+
+### Scenario 10: Template with Inline Tags (Override)
+
+A template includes its own `<SUCCESS>` tag instructions directly in the template body (e.g., a complex payload format via `{% if not interactive %}`). `run_batch()` detects existing tags in the prompt and skips auto-injection entirely. Outcome parsing works the same regardless of injection source.
+
+### Scenario 11: Callers Without Tag Expectations
+
+Callers like create_plan and summary_reports currently use stdout directly without checking tags. With auto-injection, Claude wraps output in `<SUCCESS>` tags. These callers access `result.payload` (the content inside the tag) instead of raw stdout.
 
 ---
 
@@ -292,26 +339,34 @@ Callers like create_plan and summary_reports currently use stdout directly witho
 4. **INFO is advisory only.** Claude decides what to report and when. The platform does not validate or act on INFO content.
 5. **No change to interactive mode.** All changes are scoped to `run_batch()` and non-interactive execution paths.
 6. **Templates have access to `interactive` variable.** This is already the case — templates use `{% if not interactive %}` conditionally.
+7. **YAML front-matter is optional.** Templates without front-matter work fine — `run_batch()` uses generic defaults. Front-matter follows Jekyll conventions: delimited by `---` lines at the start of the prompt.
+8. **Front-matter is stripped before execution.** The YAML block is consumed by `run_batch()` and not passed to Claude as part of the prompt.
 
 ---
 
 ## Acceptance Criteria
 
-1. **Auto-injection works:** `run_batch()` appends outcome tag instructions when the prompt does not already contain them. Verified by inspecting the prompt passed to the subprocess.
+1. **Auto-injection works with generic defaults:** `run_batch()` appends outcome tag instructions when the prompt has no tags and no front-matter. Injected instructions include SUCCESS and FAILURE only (no NOTHING-TO-DO).
 2. **Auto-injection skips when tags present:** If the prompt already contains `<SUCCESS>`, `<FAILURE>`, or `<NOTHING-TO-DO>`, no injection occurs. Verified with a template that includes its own tags.
-3. **Outcome parsing returns correct result:** On `<SUCCESS>` or `<NOTHING-TO-DO>`, `ClaudeResult` contains the correct `outcome` enum and `payload` string.
-4. **Failure raises correct exception:** On `<FAILURE>`, `ClaudeFailure` is raised with the payload. On non-zero exit code, `ClaudeProcessError` or `ClaudeInterrupted` is raised. On missing tag, `ClaudeMissingOutcomeTag` is raised.
-5. **Exceptions carry diagnostics:** All exceptions include the full `ClaudeResult` with exit code, output, and diagnostics.
-6. **Platform diagnostics printed before raise:** Exit code, permission denials, error messages, and last messages are printed to stderr before the exception propagates.
-7. **HEAD logic removed from platform:** `print_task_failure_diagnostics()` no longer accepts or prints `head_before`/`head_after`. `check_claude_success()` is removed from `claude_runner.py` or moved to a caller utility.
-8. **INFO messages display correctly:** During streaming, `<INFO>` tags produce indented messages between progress dot lines.
-9. **Tag instructions removed from templates:** `task_execution.j2`, `commit_recovery.j2`, and `scaffolding.j2` no longer contain SUCCESS/FAILURE/NOTHING-TO-DO tag instructions.
-10. **All existing callers migrated:** trunk_mode, worktree_mode, commit_recovery, project_scaffolding, PR triage, PR fix, create_plan, summary_reports, and analyze_sessions use the new exception-based error handling.
-11. **Backward compatibility preserved:** Existing `ClaudeResult` fields (`returncode`, `output`, `diagnostics`) remain unchanged and accessible.
+3. **Front-matter parameterizes injection:** A template with YAML front-matter declaring `outcome.success` produces injected instructions with the custom payload description. Front-matter is stripped from the prompt before execution.
+4. **Front-matter controls NOTHING-TO-DO inclusion:** A template with `outcome.nothing_to_do` in front-matter gets NOTHING-TO-DO instructions injected. A template without it does not.
+5. **Outcome parsing returns correct result:** On `<SUCCESS>` or `<NOTHING-TO-DO>`, `ClaudeResult` contains the correct `outcome` enum and `payload` string.
+6. **Failure raises correct exception:** On `<FAILURE>`, `ClaudeFailure` is raised with the payload. On non-zero exit code, `ClaudeProcessError` or `ClaudeInterrupted` is raised. On missing tag, `ClaudeMissingOutcomeTag` is raised.
+7. **Exceptions carry diagnostics:** All exceptions include the full `ClaudeResult` with exit code, output, and diagnostics.
+8. **Platform diagnostics printed before raise:** Exit code, permission denials, error messages, and last messages are printed to stderr before the exception propagates.
+9. **HEAD logic removed from platform:** `print_task_failure_diagnostics()` no longer accepts or prints `head_before`/`head_after`. `check_claude_success()` is removed from `claude_runner.py`.
+10. **INFO messages display correctly:** During streaming, `<INFO>` tags produce indented messages between progress dot lines.
+11. **Tag instructions removed from templates:** `task_execution.j2`, `commit_recovery.j2`, and `scaffolding.j2` no longer contain inline SUCCESS/FAILURE/NOTHING-TO-DO tag instructions. Instead, they declare payload descriptions via YAML front-matter.
+12. **All existing callers migrated:** trunk_mode, worktree_mode, commit_recovery, project_scaffolding, PR triage, PR fix, create_plan, summary_reports, and analyze_sessions use the new exception-based error handling.
+13. **Backward compatibility preserved:** Existing `ClaudeResult` fields (`returncode`, `output`, `diagnostics`) remain unchanged and accessible.
 
 ---
 
 ## Change History
+
+### 2026-03-06: Add YAML front-matter for outcome tag parameterization
+
+Templates can now declare optional YAML front-matter (Jekyll-style) to parameterize the auto-injected outcome tag instructions. Front-matter defines custom payload descriptions for SUCCESS and optionally enables NOTHING-TO-DO. Three-tier resolution: inline tags → front-matter → generic defaults.
 
 ### 2026-03-03: Initial specification
 

@@ -55,12 +55,15 @@ class ProjectScaffolder:
         Returns True if setup succeeded (CI passes), False otherwise.
         """
         if self._guard_file_exists():
+            print("Scaffolding: guard file exists, skipping scaffolding")
             return True
 
+        print(f"Scaffolding: checking out branch '{branch}'")
         self._git_repo.checkout(branch)
 
         head_before = self._git_repo.head_sha
 
+        print(f"Scaffolding: running scaffolding from '{idea_directory}'")
         self._scaffolding_creator.run_scaffolding(
             idea_directory,
             cwd=self._git_repo.working_tree_dir,
@@ -70,24 +73,31 @@ class ProjectScaffolder:
 
         head_advanced = self._git_repo.head_advanced_since(head_before)
 
+        print("Scaffolding: writing guard file")
         self._write_guard_file()
 
+        print(f"Scaffolding: pushing branch '{branch}'")
         self._steps.push_fn(branch)
 
         if not head_advanced:
+            print("Scaffolding: no new commits, skipping CI wait")
             return True
 
         if opts.skip_ci_wait:
+            print("Scaffolding: skip_ci_wait is set, skipping CI wait")
             return True
 
+        print("Scaffolding: waiting for CI completion")
         ci_success, failing_run = self._git_repo.gh_client.wait_for_workflow_completion(
             branch, self._git_repo.head_sha, timeout_seconds=opts.ci_timeout,
         )
 
         if not ci_success and failing_run:
+            print("Scaffolding: CI failed, attempting to fix")
             self._git_repo.branch = branch
             return self._steps.build_fixer.fix_ci_failure()
 
+        print(f"Scaffolding: CI {'passed' if ci_success else 'failed'}")
         return ci_success
 
     def _guard_file_path(self):

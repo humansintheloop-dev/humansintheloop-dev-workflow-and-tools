@@ -299,6 +299,61 @@ class TestTransitionForceOverride:
 
 
 @pytest.mark.unit
+class TestIdeaStatePathWithInvalidState:
+
+    def test_path_with_misspelled_state_reports_invalid_state(self, tmp_path, cli):
+        _create_idea(tmp_path, "draft", "simple-banking")
+
+        result = _invoke_idea_state(cli, "docs/ideas/drafts/simple-banking")
+
+        assert result.exit_code == 1
+        assert "drafts" in result.output
+        assert "draft" in result.output
+        assert "valid" in result.output.lower() or "Valid" in result.output
+
+
+@pytest.mark.unit
+class TestIdeaStateTransitionByPath:
+
+    def test_transitions_idea_when_given_path(self, git_repo, cli):
+        _committed_idea(git_repo, "wip", "my-feature")
+        idea_path = os.path.join(str(git_repo), "docs", "ideas", "wip", "my-feature")
+
+        result = _invoke_transition(cli, idea_path, "completed")
+
+        assert result.exit_code == 0
+        assert (git_repo / "docs" / "ideas" / "completed" / "my-feature").is_dir()
+        assert not (git_repo / "docs" / "ideas" / "wip" / "my-feature").exists()
+
+    def test_transitions_idea_when_given_relative_path(self, git_repo, cli):
+        _committed_idea(git_repo, "draft", "my-feature", with_plan=True)
+
+        result = _invoke_transition(cli, "docs/ideas/draft/my-feature", "ready")
+
+        assert result.exit_code == 0
+        assert (git_repo / "docs" / "ideas" / "ready" / "my-feature").is_dir()
+
+
+@pytest.mark.unit
+class TestIdeaStateTransitionUntracked:
+
+    def test_moves_untracked_idea_directory(self, git_repo, cli):
+        # Make an initial commit so the repo isn't empty
+        readme = git_repo / "README.md"
+        readme.write_text("# test\n")
+        _git_add_and_commit(git_repo, "Initial commit")
+        # Create idea files but do NOT stage or commit them
+        _create_idea(git_repo, "draft", "new-feature")
+        _create_plan_file(git_repo, "draft", "new-feature")
+
+        result = _invoke_transition(cli, "docs/ideas/draft/new-feature", "ready")
+
+        assert result.exit_code == 0
+        assert (git_repo / "docs" / "ideas" / "ready" / "new-feature").is_dir()
+        assert not (git_repo / "docs" / "ideas" / "draft" / "new-feature").exists()
+
+
+@pytest.mark.unit
 class TestIdeaStateTransitionGitError:
 
     def test_reports_git_error_when_target_exists(self, git_repo, cli):

@@ -129,20 +129,6 @@ class TestMigrateCommand:
         assert commits_after == commits_before + 1
         assert _last_commit_message(git_repo) == "Migrate ideas from directory-based state to metadata files"
 
-    def test_no_commit_flag_stages_without_committing(self, git_repo, cli, monkeypatch):
-        monkeypatch.chdir(git_repo)
-        _create_idea(git_repo, "draft", "idea-alpha")
-        _git_add_and_commit(git_repo, "initial ideas")
-        commits_before = _commit_count(git_repo)
-
-        result = _invoke_migrate(cli, no_commit=True)
-
-        assert result.exit_code == 0
-        commits_after = _commit_count(git_repo)
-        assert commits_after == commits_before
-        # But files should be in active/
-        assert (git_repo / "docs" / "ideas" / "active" / "idea-alpha").is_dir()
-
     def test_idempotent_when_no_old_style_ideas(self, git_repo, cli, monkeypatch):
         monkeypatch.chdir(git_repo)
         # Create an initial commit so HEAD exists
@@ -153,3 +139,62 @@ class TestMigrateCommand:
 
         assert result.exit_code == 0
         assert "nothing to migrate" in result.output.lower() or "no ideas" in result.output.lower()
+
+
+@pytest.mark.unit
+class TestMigrateIdempotent:
+
+    def test_second_run_prints_nothing_to_migrate(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _create_idea(git_repo, "draft", "idea-alpha")
+        _git_add_and_commit(git_repo, "initial ideas")
+
+        first_result = _invoke_migrate(cli)
+        assert first_result.exit_code == 0
+
+        second_result = _invoke_migrate(cli)
+        assert second_result.exit_code == 0
+        assert "nothing to migrate" in second_result.output.lower() or "no ideas" in second_result.output.lower()
+
+    def test_second_run_creates_no_extra_commit(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _create_idea(git_repo, "draft", "idea-alpha")
+        _git_add_and_commit(git_repo, "initial ideas")
+
+        _invoke_migrate(cli)
+        commits_after_first = _commit_count(git_repo)
+
+        _invoke_migrate(cli)
+        commits_after_second = _commit_count(git_repo)
+
+        assert commits_after_second == commits_after_first
+
+
+@pytest.mark.unit
+class TestMigrateNoCommit:
+
+    def test_stages_files_without_committing(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _create_idea(git_repo, "draft", "idea-alpha")
+        _git_add_and_commit(git_repo, "initial ideas")
+        commits_before = _commit_count(git_repo)
+
+        result = _invoke_migrate(cli, no_commit=True)
+
+        assert result.exit_code == 0
+        commits_after = _commit_count(git_repo)
+        assert commits_after == commits_before
+        assert (git_repo / "docs" / "ideas" / "active" / "idea-alpha").is_dir()
+
+    def test_staged_files_include_metadata(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _create_idea(git_repo, "draft", "idea-alpha")
+        _git_add_and_commit(git_repo, "initial ideas")
+
+        _invoke_migrate(cli, no_commit=True)
+
+        staged = subprocess.run(
+            ["git", "diff", "--cached", "--name-only"],
+            cwd=git_repo, check=True, capture_output=True, text=True,
+        ).stdout
+        assert "idea-alpha-metadata.yaml" in staged

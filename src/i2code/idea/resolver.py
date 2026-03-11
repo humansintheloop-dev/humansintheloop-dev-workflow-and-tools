@@ -61,29 +61,6 @@ def _ideas_in_location(location_dir: Path, git_root: Path) -> list[IdeaInfo]:
     return results
 
 
-_IDEAS_PREFIX = ("docs", "ideas")
-
-
-def _find_state_in_parts(parts):
-    """Search path parts for a 'docs/ideas/{state}' sequence."""
-    triplets = zip(parts, parts[1:], parts[2:])
-    for first, second, third in triplets:
-        if (first, second) == _IDEAS_PREFIX and third in LIFECYCLE_STATES:
-            return third
-    return None
-
-
-def state_from_path(path: Path) -> str:
-    """Extract the lifecycle state from an idea directory path.
-
-    Deprecated: Use metadata files instead. Will be removed in a future version.
-    """
-    result = _find_state_in_parts(path.resolve().parts)
-    if result is not None:
-        return result
-    msg = f"Cannot determine lifecycle state from path: {path}"
-    raise ValueError(msg)
-
 
 def _ideas_in_legacy_state_dir(state: str, state_dir: Path, git_root: Path) -> list[IdeaInfo]:
     """Return ideas from a legacy state directory (docs/ideas/{state}/)."""

@@ -168,16 +168,16 @@ Implements Scenario 2. Provides a permanent `migrate` command for moving from th
 
 Implements Scenario 3. Archive moves an idea from `active/` to `archived/` via `git mv`; unarchive reverses it.
 
-- [ ] **Task 4.1: Archive command moves idea from active/ to archived/**
+- [x] **Task 4.1: Archive command moves idea from active/ to archived/**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea archive old-feature`
   - Observable: Idea directory moves from `docs/ideas/active/old-feature/` to `docs/ideas/archived/old-feature/`; git commit with message "Archive idea old-feature"; lifecycle state in metadata file is unchanged; error if idea already archived
   - Evidence: `pytest tests/idea-cmd/test_archive.py::TestArchive` passes
   - Steps:
-    - [ ] Create `tests/idea-cmd/test_archive.py` with `TestArchive` class: archive moves directory, commit message correct, metadata state preserved, error on already-archived idea
-    - [ ] Create `src/i2code/idea_cmd/archive_cmd.py` with `archive` command
-    - [ ] Register `archive` subcommand in `src/i2code/idea_cmd/cli.py`
-    - [ ] Support `--no-commit` flag
+    - [x] Create `tests/idea-cmd/test_archive.py` with `TestArchive` class: archive moves directory, commit message correct, metadata state preserved, error on already-archived idea
+    - [x] Create `src/i2code/idea_cmd/archive_cmd.py` with `archive` command
+    - [x] Register `archive` subcommand in `src/i2code/idea_cmd/cli.py`
+    - [x] Support `--no-commit` flag
 
 - [ ] **Task 4.2: Unarchive command moves idea from archived/ to active/**
   - TaskType: OUTCOME

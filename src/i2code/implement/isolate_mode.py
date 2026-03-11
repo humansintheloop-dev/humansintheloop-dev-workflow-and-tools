@@ -124,11 +124,13 @@ class IsolateMode:
 
     def _launch(self, cwd):
         cmd = self._build_isolarium_command(clone_dir=cwd)
-        print(f"Running (cwd={cwd}): {' '.join(cmd)}")
+        print(f"Running (cwd= {cwd} ): {' '.join(cmd)}")
         return self._subprocess_runner.run(cmd, cwd=cwd)
 
     def _build_isolarium_command(self, clone_dir):
         outer = self._build_outer_args()
+        if self._options.shell:
+            return outer
         inner = self._build_inner_args(clone_dir)
         return outer + ["--"] + inner
 
@@ -139,6 +141,9 @@ class IsolateMode:
         env_file = self._find_env_file()
         if env_file:
             args.extend(["--env-file", env_file])
+        if self._options.shell:
+            args.append("shell")
+            return args
         args.append("run")
         src_dir = _find_i2code_src_dir()
         if src_dir:

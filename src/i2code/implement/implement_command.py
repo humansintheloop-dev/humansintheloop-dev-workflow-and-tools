@@ -108,6 +108,8 @@ class ImplementCommand:
         self.project.validate_files()
         if self.opts.isolation_type:
             self.opts.isolate = True
+        if self.opts.shell:
+            self.opts.isolate = True
 
     def _check_idea_files_committed(self):
         if not self.opts.isolated and not self.opts.ignore_uncommitted_idea_changes:

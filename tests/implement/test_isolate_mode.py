@@ -519,6 +519,55 @@ class TestFindI2codeSrcDir:
 
 
 @pytest.mark.unit
+class TestIsolateModeShell:
+    """IsolateMode uses 'isolarium shell' instead of 'isolarium run' when shell=True."""
+
+    def test_uses_shell_subcommand(self):
+        cmd = _execute_and_get_cmd(_opts(shell=True))
+
+        assert "shell" in cmd
+        assert "run" not in cmd
+
+    def test_no_inner_args_after_separator(self):
+        cmd = _execute_and_get_cmd(_opts(shell=True))
+
+        assert "--" not in cmd
+
+    def test_omits_read_flag(self):
+        cmd = _execute_and_get_cmd(_opts(shell=True))
+
+        assert "--read" not in cmd
+
+    def test_omits_interactive_flag(self):
+        cmd = _execute_and_get_cmd(_opts(shell=True, non_interactive=False))
+
+        assert "--interactive" not in cmd
+
+    def test_preserves_name_and_env_file(self, tmp_path):
+        main_repo = tmp_path / "main-repo"
+        main_repo.mkdir()
+        (main_repo / ".env.local").write_text("SECRET=value\n")
+        git_repo = FakeGitRepository(
+            working_tree_dir=str(main_repo), main_repo_dir=str(main_repo),
+        )
+        project = FakeIdeaProject(
+            directory=os.path.join(str(main_repo), "docs/features/test-feature"),
+        )
+
+        cmd = _execute_and_get_cmd(_opts(shell=True), git_repo=git_repo, project=project)
+
+        assert "--name" in cmd
+        assert "i2code-test-feature" in cmd
+        assert "--env-file" in cmd
+
+    def test_default_is_run_not_shell(self):
+        cmd = _execute_and_get_cmd(_opts())
+
+        assert "run" in cmd
+        assert "shell" not in cmd
+
+
+@pytest.mark.unit
 class TestIsolateModeReadFlag:
     """IsolateMode adds --read <src_dir> to isolarium outer args for editable installs."""
 

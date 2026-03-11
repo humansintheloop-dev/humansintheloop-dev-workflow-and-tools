@@ -21,6 +21,7 @@ class ImplementOpts:
     isolate: bool = False
     isolation_type: str | None = None
     isolated: bool = False
+    shell: bool = False
     trunk: bool = False
     dry_run: bool = False
     ignore_uncommitted_idea_changes: bool = False

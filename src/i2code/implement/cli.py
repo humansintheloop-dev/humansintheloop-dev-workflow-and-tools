@@ -35,6 +35,8 @@ from i2code.implement.scaffold_opts import ScaffoldOpts
               help="Isolation environment type (passed as --type to isolarium)")
 @click.option("--isolated", is_flag=True, hidden=True,
               help="Running inside isolarium VM (internal flag)")
+@click.option("--shell", is_flag=True,
+              help="Drop into an isolarium shell instead of running tasks (requires --isolate)")
 @click.option("--trunk", is_flag=True,
               help="Execute tasks locally on the current branch (no worktree, PR, or CI)")
 @click.option("--dry-run", is_flag=True,

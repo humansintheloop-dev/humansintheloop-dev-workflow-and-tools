@@ -190,13 +190,13 @@ Implements Scenario 3. Archive moves an idea from `active/` to `archived/` via `
     - [x] Register `unarchive` subcommand in `src/i2code/idea_cmd/cli.py`
     - [x] Support `--no-commit` flag
 
-- [ ] **Task 4.3: Archive/unarchive round-trip preserves state**
+- [x] **Task 4.3: Archive/unarchive round-trip preserves state**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea archive my-idea && i2code idea unarchive my-idea`
   - Observable: After archive then unarchive, the idea is back in `active/` with its lifecycle state unchanged
   - Evidence: `pytest tests/idea-cmd/test_archive.py::TestArchiveRoundTrip` passes
   - Steps:
-    - [ ] Add `TestArchiveRoundTrip` test: create idea with `state: wip`, archive, unarchive, assert directory is in `active/` and metadata state is still `wip`
+    - [x] Add `TestArchiveRoundTrip` test: create idea with `state: wip`, archive, unarchive, assert directory is in `active/` and metadata state is still `wip`
 
 ---
 

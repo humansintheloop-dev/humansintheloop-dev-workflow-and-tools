@@ -53,18 +53,51 @@ Skills are Claude Code slash commands. Source lives in `skills/`, each with a `S
 
 ## Feature Documentation
 
-Feature ideas, specs, and plans live in `docs/ideas/{state}/<feature-name>/` with files:
+Feature ideas, specs, and plans live in `docs/ideas/{location}/<feature-name>/` with files:
 - `*-idea.md` — the original idea
 - `*-spec.md` — specification
 - `*-plan.md` — implementation plan
+- `*-metadata.yaml` — lifecycle state and metadata
 
-| State | Meaning |
-|-------|---------|
-| `draft/` | Initial state — idea just captured |
-| `ready/` | Has a plan and is ready for implementation |
-| `wip/` | Implementation in progress |
-| `completed/` | Work is considered done |
-| `abandoned/` | Decided to be a bad idea |
+### Directory Layout
+
+```
+docs/ideas/
+├── active/<name>/    # Ideas the user is actively managing
+│   ├── <name>-metadata.yaml
+│   ├── <name>-idea.md
+│   ├── <name>-spec.md
+│   └── <name>-plan.md
+└── archived/<name>/  # Ideas moved out of the working set
+    ├── <name>-metadata.yaml
+    └── ...
+```
+
+| Location | Meaning |
+|----------|---------|
+| `active/` | All ideas being actively managed (any lifecycle state) |
+| `archived/` | Ideas explicitly moved out of the working set |
+
+### Metadata File
+
+Each idea directory contains a `<name>-metadata.yaml` file that tracks lifecycle state:
+
+```yaml
+state: draft
+```
+
+Valid states: `draft`, `ready`, `wip`, `completed`, `abandoned`. Archival is orthogonal to lifecycle state — an archived idea retains its state.
+
+### Idea CLI Commands
+
+| Command | Purpose |
+|---------|---------|
+| `i2code idea brainstorm <dir>` | Create a new idea in `active/` with metadata |
+| `i2code idea list [--state S] [--archived] [--all]` | List ideas, filtered by state or location |
+| `i2code idea state <name> [<new-state>] [--force] [--no-commit]` | Query or transition lifecycle state via metadata file |
+| `i2code idea archive <name> [--no-commit]` | Move idea from `active/` to `archived/` |
+| `i2code idea unarchive <name> [--no-commit]` | Move idea from `archived/` to `active/` |
+| `i2code idea migrate [--no-commit]` | Migrate from old 5-directory layout to metadata-based structure |
 
 ## Claude Code Plugin
 

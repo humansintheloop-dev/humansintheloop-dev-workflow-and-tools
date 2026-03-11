@@ -230,6 +230,17 @@ class TestCreatePlanAllowedTools:
         assert f"Edit({idea_dir}/)" in allowed_tools_value
         assert cwd == repo_root
 
+    def test_standalone_no_allowed_tools(self):
+        """Standalone create_plan (no repo_root) omits --allowedTools and uses project.directory as cwd."""
+        with TempIdeaProject("my-feature") as project:
+            _create_idea_and_spec(project)
+            runner = FakeClaudeRunner()
+            runner.set_result(_valid_result())
+            create_plan(project, runner, _pass_services())
+            _, cmd, cwd = runner.calls[0]
+            assert "--allowedTools" not in cmd
+            assert cwd == project.directory
+
 
 @pytest.mark.unit
 class TestCreatePlanRepairFails:

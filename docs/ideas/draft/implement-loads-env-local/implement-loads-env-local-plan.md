@@ -75,13 +75,13 @@ This steel thread implements the core capability: `ImplementCommand.execute()` l
 
 ## Steel Thread 3: Existing Environment Variables Are Not Overridden
 
-- [ ] **Task 3.1: Shell env vars take precedence over `.env.local` values**
+- [x] **Task 3.1: Shell env vars take precedence over `.env.local` values**
   - TaskType: OUTCOME
   - Entrypoint: `python -m pytest`
   - Observable: When `GITHUB_TOKEN=shell-value` is already in `os.environ` and `.env.local` contains `GITHUB_TOKEN=file-value`, after loading, `os.environ["GITHUB_TOKEN"]` remains `"shell-value"`
   - Evidence: pytest test pre-sets an env var, creates `.env.local` with the same key but different value, calls `load_dotenv(".env.local")`, and asserts the original value is preserved
   - Steps:
-    - [ ] Write a test in `tests/implement/test_load_env_local.py` that:
+    - [x] Write a test in `tests/implement/test_load_env_local.py` that:
       - Sets `os.environ["TEST_EXISTING_VAR"] = "shell-value"`
       - Creates a temp `.env.local` with `TEST_EXISTING_VAR=file-value`
       - Calls `load_dotenv(".env.local")` (which uses `override=False` by default)

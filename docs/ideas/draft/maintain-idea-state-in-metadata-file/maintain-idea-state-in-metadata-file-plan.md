@@ -117,15 +117,15 @@ Implements Scenario 1 (primary) and Scenario 6 (forced backward transition). Sta
     - [x] Rewrite `execute_transition()` in `src/i2code/idea_cmd/state_cmd.py` to: read metadata, write new state to metadata file, `git add` metadata file, `git commit`
     - [x] Remove directory-moving logic (`git mv`) from `execute_transition()`
 
-- [ ] **Task 2.3: --no-commit flag for state transitions**
+- [x] **Task 2.3: --no-commit flag for state transitions**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/idea-cmd/test_idea_state_cli.py::TestStateTransitionNoCommit`
   - Observable: `i2code idea state my-feature ready --no-commit` updates the metadata file and stages it but does not create a git commit
   - Evidence: `pytest tests/idea-cmd/test_idea_state_cli.py::TestStateTransitionNoCommit` passes, asserting metadata file is staged but no new commit exists
   - Steps:
-    - [ ] Add `--no-commit` option to state command in `src/i2code/idea_cmd/state_cmd.py`
-    - [ ] Create `TestStateTransitionNoCommit` test verifying file is staged but not committed
-    - [ ] Update `execute_transition()` to skip commit when `--no-commit` is passed
+    - [x] Add `--no-commit` option to state command in `src/i2code/idea_cmd/state_cmd.py`
+    - [x] Create `TestStateTransitionNoCommit` test verifying file is staged but not committed
+    - [x] Update `execute_transition()` to skip commit when `--no-commit` is passed
 
 - [ ] **Task 2.4: Existing transition rules work with metadata-based state**
   - TaskType: OUTCOME

@@ -54,11 +54,13 @@ def _invoke_idea_state(runner, name_or_path):
     return runner.invoke(main, ["idea", "state", name_or_path])
 
 
-def _invoke_transition(runner, name, new_state, force=False):
+def _invoke_transition(runner, name, new_state, **flags):
     """Invoke `i2code idea state <name> <new-state>` and return the result."""
     args = ["idea", "state", name, new_state]
-    if force:
+    if flags.get("force"):
         args.append("--force")
+    if flags.get("no_commit"):
+        args.append("--no-commit")
     return runner.invoke(main, args)
 
 
@@ -420,3 +422,29 @@ class TestTransitionForceOverride:
         with open(metadata_path) as f:
             data = yaml.safe_load(f)
         assert data["state"] == "ready"
+
+
+@pytest.mark.unit
+class TestStateTransitionNoCommit:
+
+    def test_metadata_file_is_staged_but_not_committed(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _committed_active_idea(git_repo, "my-feature", state="wip")
+        commit_before = _last_commit_message(git_repo)
+
+        result = _invoke_transition(cli, "my-feature", "completed", no_commit=True)
+
+        assert result.exit_code == 0
+        # Metadata file should be updated
+        metadata_path = git_repo / "docs" / "ideas" / "active" / "my-feature" / "my-feature-metadata.yaml"
+        with open(metadata_path) as f:
+            data = yaml.safe_load(f)
+        assert data["state"] == "completed"
+        # No new commit should exist
+        assert _last_commit_message(git_repo) == commit_before
+        # File should be staged (in the index)
+        staged = subprocess.run(
+            ["git", "diff", "--cached", "--name-only"],
+            cwd=str(git_repo), check=True, capture_output=True, text=True,
+        )
+        assert "my-feature-metadata.yaml" in staged.stdout

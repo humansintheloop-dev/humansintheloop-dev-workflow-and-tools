@@ -142,15 +142,15 @@ Implements Scenario 1 (primary) and Scenario 6 (forced backward transition). Sta
 
 Implements Scenario 2. Provides a permanent `migrate` command for moving from the old 5-directory structure to the new metadata-based structure.
 
-- [ ] **Task 3.1: Migrate command moves ideas to active/ with metadata files**
+- [x] **Task 3.1: Migrate command moves ideas to active/ with metadata files**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea migrate`
   - Observable: All ideas from `docs/ideas/{draft,ready,wip,completed,abandoned}/` are moved to `docs/ideas/active/` with correct `<name>-metadata.yaml` files; old state directories are removed; a single git commit is created with message "Migrate ideas from directory-based state to metadata files"
   - Evidence: `pytest tests/idea-cmd/test_migrate.py` passes with tests verifying: ideas moved to `active/`, metadata files contain correct state, old directories removed, single commit created
   - Steps:
-    - [ ] Create `tests/idea-cmd/test_migrate.py` with tests: migrate 2+ ideas from different state dirs, verify metadata files, verify old dirs removed, verify single commit
-    - [ ] Create `src/i2code/idea_cmd/migrate_cmd.py` with migrate command implementation
-    - [ ] Register `migrate` subcommand in `src/i2code/idea_cmd/cli.py`
+    - [x] Create `tests/idea-cmd/test_migrate.py` with tests: migrate 2+ ideas from different state dirs, verify metadata files, verify old dirs removed, verify single commit
+    - [x] Create `src/i2code/idea_cmd/migrate_cmd.py` with migrate command implementation
+    - [x] Register `migrate` subcommand in `src/i2code/idea_cmd/cli.py`
 
 - [ ] **Task 3.2: Migration is idempotent and supports --no-commit**
   - TaskType: OUTCOME

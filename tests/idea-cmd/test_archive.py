@@ -206,3 +206,27 @@ class TestUnarchive:
         active_dir = git_repo / "docs" / "ideas" / "active" / "old-feature"
         assert active_dir.is_dir()
         assert _last_commit_message(git_repo) == commit_before
+
+
+@pytest.mark.unit
+class TestArchiveRoundTrip:
+
+    def test_archive_then_unarchive_preserves_state(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _committed_idea(git_repo, "my-idea", "active", "wip")
+
+        archive_result = _invoke_archive(cli, "my-idea")
+        assert archive_result.exit_code == 0
+
+        unarchive_result = _invoke_unarchive(cli, "my-idea")
+        assert unarchive_result.exit_code == 0
+
+        active_dir = git_repo / "docs" / "ideas" / "active" / "my-idea"
+        archived_dir = git_repo / "docs" / "ideas" / "archived" / "my-idea"
+        assert active_dir.is_dir()
+        assert not archived_dir.exists()
+
+        metadata_path = active_dir / "my-idea-metadata.yaml"
+        with open(metadata_path) as f:
+            data = yaml.safe_load(f)
+        assert data["state"] == "wip"

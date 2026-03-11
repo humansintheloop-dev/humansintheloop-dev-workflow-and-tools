@@ -61,13 +61,13 @@ This steel thread implements the core capability: `ImplementCommand.execute()` l
 
 ## Steel Thread 2: Missing `.env.local` Is Silently Ignored
 
-- [ ] **Task 2.1: No error when `.env.local` does not exist in CWD**
+- [x] **Task 2.1: No error when `.env.local` does not exist in CWD**
   - TaskType: OUTCOME
   - Entrypoint: `python -m pytest`
   - Observable: When `.env.local` does not exist in CWD, `ImplementCommand.execute()` proceeds without error, warning, or log message
   - Evidence: pytest test sets CWD to a temp directory with no `.env.local`, invokes the load path, and asserts no exception is raised and execution continues normally
   - Steps:
-    - [ ] Write a test in `tests/implement/test_load_env_local.py` that:
+    - [x] Write a test in `tests/implement/test_load_env_local.py` that:
       - Sets CWD to a temp directory with no `.env.local`
       - Calls `load_dotenv(".env.local")`
       - Asserts no exception is raised (the call returns `False`)

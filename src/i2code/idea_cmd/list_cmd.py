@@ -21,6 +21,28 @@ def _format_idea_table(ideas):
     return "\n".join(lines)
 
 
+class _MutuallyExclusiveOption(click.Option):
+    """Click option that is mutually exclusive with another option."""
+
+    def __init__(self, *args, mutually_exclusive=None, **kwargs):
+        self._mutually_exclusive = mutually_exclusive or []
+        super().__init__(*args, **kwargs)
+
+    def _is_set(self, opts):
+        return self.name is not None and opts.get(self.name)
+
+    def _find_conflict(self, opts):
+        return next((o for o in self._mutually_exclusive if opts.get(o)), None)
+
+    def handle_parse_result(self, ctx, opts, args):
+        conflict = self._find_conflict(opts) if self._is_set(opts) else None
+        if conflict:
+            raise click.UsageError(
+                f"--{self.name} and --{conflict} are mutually exclusive."
+            )
+        return super().handle_parse_result(ctx, opts, args)
+
+
 @click.command("list")
 @click.option(
     "--state",
@@ -28,10 +50,33 @@ def _format_idea_table(ideas):
     default=None,
     help="Filter ideas by lifecycle state.",
 )
-def idea_list(state):
+@click.option(
+    "--archived",
+    is_flag=True,
+    default=False,
+    cls=_MutuallyExclusiveOption,
+    mutually_exclusive=["all"],
+    help="Show only archived ideas.",
+)
+@click.option(
+    "--all",
+    "show_all",
+    is_flag=True,
+    default=False,
+    cls=_MutuallyExclusiveOption,
+    mutually_exclusive=["archived"],
+    help="Show both active and archived ideas.",
+)
+def idea_list(state, archived, show_all):
     """List all ideas with their lifecycle state."""
     git_root = Path.cwd()
-    ideas = list_ideas(git_root)
+    if archived:
+        all_ideas = list_ideas(git_root, include_archived=True)
+        ideas = [i for i in all_ideas if i.directory.startswith("docs/ideas/archived/")]
+    elif show_all:
+        ideas = list_ideas(git_root, include_archived=True)
+    else:
+        ideas = list_ideas(git_root)
     if state:
         ideas = [idea for idea in ideas if idea.state == state]
     output = _format_idea_table(ideas)

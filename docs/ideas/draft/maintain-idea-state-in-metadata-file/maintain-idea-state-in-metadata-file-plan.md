@@ -204,16 +204,16 @@ Implements Scenario 3. Archive moves an idea from `active/` to `archived/` via `
 
 Implements Scenario 5. Adds `--archived` and `--all` flags to the list command.
 
-- [ ] **Task 5.1: List command shows active ideas by default and supports --archived and --all flags**
+- [x] **Task 5.1: List command shows active ideas by default and supports --archived and --all flags**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea list`
   - Observable: `i2code idea list` shows only active ideas; `--archived` shows only archived ideas; `--all` shows both; `--state` filter works with all three modes; `--archived` and `--all` are mutually exclusive
   - Evidence: `pytest tests/idea-cmd/test_list_cmd.py` passes with tests for each flag combination
   - Steps:
-    - [ ] Create `tests/idea-cmd/test_list_cmd.py` with tests: list defaults to active only; `--state wip` filters active by state; `--archived` shows archived only; `--all` shows both; `--archived --state completed` filters archived by state; `--archived` and `--all` are mutually exclusive (error)
-    - [ ] Update `src/i2code/idea_cmd/list_cmd.py` to add `--archived` and `--all` click options
-    - [ ] Pass appropriate `include_archived` parameter to `list_ideas()` based on flags
-    - [ ] Filter results by `--state` when provided
+    - [x] Create `tests/idea-cmd/test_list_cmd.py` with tests: list defaults to active only; `--state wip` filters active by state; `--archived` shows archived only; `--all` shows both; `--archived --state completed` filters archived by state; `--archived` and `--all` are mutually exclusive (error)
+    - [x] Update `src/i2code/idea_cmd/list_cmd.py` to add `--archived` and `--all` click options
+    - [x] Pass appropriate `include_archived` parameter to `list_ideas()` based on flags
+    - [x] Filter results by `--state` when provided
 
 ---
 

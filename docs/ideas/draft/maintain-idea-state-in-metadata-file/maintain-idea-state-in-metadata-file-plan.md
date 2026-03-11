@@ -179,16 +179,16 @@ Implements Scenario 3. Archive moves an idea from `active/` to `archived/` via `
     - [x] Register `archive` subcommand in `src/i2code/idea_cmd/cli.py`
     - [x] Support `--no-commit` flag
 
-- [ ] **Task 4.2: Unarchive command moves idea from archived/ to active/**
+- [x] **Task 4.2: Unarchive command moves idea from archived/ to active/**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea unarchive old-feature`
   - Observable: Idea directory moves from `docs/ideas/archived/old-feature/` to `docs/ideas/active/old-feature/`; git commit with message "Unarchive idea old-feature"; lifecycle state unchanged; error if idea already in active
   - Evidence: `pytest tests/idea-cmd/test_archive.py::TestUnarchive` passes
   - Steps:
-    - [ ] Add `TestUnarchive` class to `tests/idea-cmd/test_archive.py`: unarchive moves directory, commit message correct, metadata state preserved, error on already-active idea
-    - [ ] Add `unarchive` command to `src/i2code/idea_cmd/archive_cmd.py`
-    - [ ] Register `unarchive` subcommand in `src/i2code/idea_cmd/cli.py`
-    - [ ] Support `--no-commit` flag
+    - [x] Add `TestUnarchive` class to `tests/idea-cmd/test_archive.py`: unarchive moves directory, commit message correct, metadata state preserved, error on already-active idea
+    - [x] Add `unarchive` command to `src/i2code/idea_cmd/archive_cmd.py`
+    - [x] Register `unarchive` subcommand in `src/i2code/idea_cmd/cli.py`
+    - [x] Support `--no-commit` flag
 
 - [ ] **Task 4.3: Archive/unarchive round-trip preserves state**
   - TaskType: OUTCOME
@@ -289,3 +289,18 @@ All 12 transition rule and force tests pass with metadata-based state
 
 ### 2026-03-11 09:30 - mark-task-complete
 Added TestMigrateIdempotent and TestMigrateNoCommit test classes; implementation already existed from task 3.1
+
+### 2026-03-11 09:43 - mark-step-complete
+Added TestUnarchive class with 5 tests: moves directory, commit message, preserves metadata, error on already-active, no-commit flag
+
+### 2026-03-11 09:43 - mark-step-complete
+Added idea_unarchive command to archive_cmd.py
+
+### 2026-03-11 09:43 - mark-step-complete
+Registered idea_unarchive in cli.py
+
+### 2026-03-11 09:43 - mark-step-complete
+Unarchive command supports --no-commit flag
+
+### 2026-03-11 09:43 - mark-task-complete
+Unarchive command implemented with all 5 tests passing

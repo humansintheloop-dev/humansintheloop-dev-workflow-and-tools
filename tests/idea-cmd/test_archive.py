@@ -140,3 +140,69 @@ class TestArchive:
         archived_dir = git_repo / "docs" / "ideas" / "archived" / "old-feature"
         assert archived_dir.is_dir()
         assert _last_commit_message(git_repo) == commit_before
+
+
+def _invoke_unarchive(runner, name, **flags):
+    """Invoke `i2code idea unarchive <name>` and return the result."""
+    args = ["idea", "unarchive", name]
+    if flags.get("no_commit"):
+        args.append("--no-commit")
+    return runner.invoke(main, args)
+
+
+@pytest.mark.unit
+class TestUnarchive:
+
+    def test_unarchive_moves_directory(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _committed_idea(git_repo, "old-feature", "archived", "completed")
+
+        result = _invoke_unarchive(cli, "old-feature")
+
+        assert result.exit_code == 0
+        archived_dir = git_repo / "docs" / "ideas" / "archived" / "old-feature"
+        active_dir = git_repo / "docs" / "ideas" / "active" / "old-feature"
+        assert not archived_dir.exists()
+        assert active_dir.is_dir()
+
+    def test_unarchive_commit_message(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _committed_idea(git_repo, "old-feature", "archived", "completed")
+
+        result = _invoke_unarchive(cli, "old-feature")
+
+        assert result.exit_code == 0
+        assert _last_commit_message(git_repo) == "Unarchive idea old-feature"
+
+    def test_unarchive_preserves_metadata_state(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _committed_idea(git_repo, "old-feature", "archived", "completed")
+
+        result = _invoke_unarchive(cli, "old-feature")
+
+        assert result.exit_code == 0
+        metadata_path = git_repo / "docs" / "ideas" / "active" / "old-feature" / "old-feature-metadata.yaml"
+        with open(metadata_path) as f:
+            data = yaml.safe_load(f)
+        assert data["state"] == "completed"
+
+    def test_unarchive_errors_if_already_active(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _committed_idea(git_repo, "old-feature", "active", "completed")
+
+        result = _invoke_unarchive(cli, "old-feature")
+
+        assert result.exit_code == 1
+        assert "already" in result.output.lower() and "active" in result.output.lower()
+
+    def test_unarchive_no_commit_flag(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _committed_idea(git_repo, "old-feature", "archived", "completed")
+        commit_before = _last_commit_message(git_repo)
+
+        result = _invoke_unarchive(cli, "old-feature", no_commit=True)
+
+        assert result.exit_code == 0
+        active_dir = git_repo / "docs" / "ideas" / "active" / "old-feature"
+        assert active_dir.is_dir()
+        assert _last_commit_message(git_repo) == commit_before

@@ -242,15 +242,15 @@ Implements Scenario 4. New ideas are created in `active/` with a metadata file.
 
 ## Steel Thread 7: Documentation and Cleanup
 
-- [ ] **Task 7.1: Update CODEBASE.md to reflect new directory structure**
+- [x] **Task 7.1: Update CODEBASE.md to reflect new directory structure**
   - TaskType: INFRA
   - Entrypoint: `cat CODEBASE.md`
   - Observable: `CODEBASE.md` documents the new `docs/ideas/active/` and `docs/ideas/archived/` directory structure, the metadata file convention, and the new CLI commands (`archive`, `unarchive`, `migrate`)
   - Evidence: `CODEBASE.md` contains sections describing the new structure; `grep -c "active/" CODEBASE.md` returns matches
   - Steps:
-    - [ ] Update `CODEBASE.md` to replace references to 5-directory layout with 2-directory layout (`active/`, `archived/`)
-    - [ ] Document the `<name>-metadata.yaml` file convention
-    - [ ] Add `archive`, `unarchive`, `migrate` to CLI command reference
+    - [x] Update `CODEBASE.md` to replace references to 5-directory layout with 2-directory layout (`active/`, `archived/`)
+    - [x] Document the `<name>-metadata.yaml` file convention
+    - [x] Add `archive`, `unarchive`, `migrate` to CLI command reference
 
 - [ ] **Task 7.2: Remove dead code and ensure all tests pass**
   - TaskType: REFACTOR

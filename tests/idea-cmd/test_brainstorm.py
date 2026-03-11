@@ -191,3 +191,10 @@ class TestAllowedTools:
         _, cmd, cwd = runner.calls[0]
         assert "--allowedTools" not in cmd
         assert cwd == project.directory
+
+    def test_standalone_no_allowed_tools(self, tmp_path):
+        """Standalone brainstorm (no repo_root) omits --allowedTools and uses project.directory as cwd."""
+        project, runner, _, _ = run_brainstorm(tmp_path)
+        _, cmd, cwd = runner.calls[0]
+        assert "--allowedTools" not in cmd
+        assert cwd == project.directory

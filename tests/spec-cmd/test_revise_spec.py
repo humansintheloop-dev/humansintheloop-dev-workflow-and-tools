@@ -134,3 +134,10 @@ class TestReviseSpecAllowedTools:
         assert f"Write({idea_dir}/)" in allowed_tools_value
         assert f"Edit({idea_dir}/)" in allowed_tools_value
         assert cwd == repo_root
+
+    def test_standalone_no_allowed_tools(self):
+        """Standalone revise_spec (no repo_root) omits --allowedTools and uses project.directory as cwd."""
+        with TempIdeaProject("my-feature") as project:
+            _, _, _, cmd, cwd = _run_revise_spec(project)
+            assert "--allowedTools" not in cmd
+            assert cwd == project.directory

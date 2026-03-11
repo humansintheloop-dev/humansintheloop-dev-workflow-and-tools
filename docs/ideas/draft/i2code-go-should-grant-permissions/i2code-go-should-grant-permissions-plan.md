@@ -125,17 +125,17 @@ This thread proves the core mechanism works end-to-end on a single subcommand (`
 
 ## Steel Thread 4: Standalone commands are unaffected
 
-- [ ] **Task 4.1: Standalone brainstorm, spec, and plan commands do NOT include --allowedTools**
+- [x] **Task 4.1: Standalone brainstorm, spec, and plan commands do NOT include --allowedTools**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/ -k standalone_no_allowed_tools`
   - Observable: When brainstorm, create_spec, revise_spec, create_plan, or revise_plan are invoked outside of `i2code go` (i.e., as standalone commands), the claude command does NOT include `--allowedTools` and CWD remains `project.directory`
   - Evidence: pytest tests invoke each function in "standalone" mode (without repo_root context) and assert `--allowedTools` is absent from the command and `cwd` equals `project.directory`
   - Steps:
-    - [ ] Determine how to distinguish `i2code go` invocations from standalone invocations — likely by whether `repo_root` is passed as a parameter (None = standalone, set = go mode)
-    - [ ] Write failing tests for each subcommand verifying that when `repo_root` is None/not provided, the command omits `--allowedTools` and uses `project.directory` as `cwd`
-    - [ ] Ensure the implementation from previous tasks already handles this (the shared helper should be conditional on `repo_root` being provided)
-    - [ ] If needed, adjust the implementation to make the permission granting conditional
-    - [ ] Verify all tests pass
+    - [x] Determine how to distinguish `i2code go` invocations from standalone invocations — likely by whether `repo_root` is passed as a parameter (None = standalone, set = go mode)
+    - [x] Write failing tests for each subcommand verifying that when `repo_root` is None/not provided, the command omits `--allowedTools` and uses `project.directory` as `cwd`
+    - [x] Ensure the implementation from previous tasks already handles this (the shared helper should be conditional on `repo_root` being provided)
+    - [x] If needed, adjust the implementation to make the permission granting conditional
+    - [x] Verify all tests pass
 
 ## Notes for the coding agent
 

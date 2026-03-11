@@ -252,16 +252,16 @@ Implements Scenario 4. New ideas are created in `active/` with a metadata file.
     - [x] Document the `<name>-metadata.yaml` file convention
     - [x] Add `archive`, `unarchive`, `migrate` to CLI command reference
 
-- [ ] **Task 7.2: Remove dead code and ensure all tests pass**
+- [x] **Task 7.2: Remove dead code and ensure all tests pass**
   - TaskType: REFACTOR
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: No behavior change; all dead code from directory-based state management is removed; all tests pass
   - Evidence: `./test-scripts/test-end-to-end.sh` exits 0
   - Steps:
-    - [ ] Remove `state_from_path()` from `src/i2code/idea/resolver.py` if not already removed
-    - [ ] Remove any remaining `git mv` directory-moving logic from `src/i2code/idea_cmd/state_cmd.py`
-    - [ ] Run full test suite and fix any remaining failures
-    - [ ] Run `uvx pyright --level error src/` and fix type errors
+    - [x] Remove `state_from_path()` from `src/i2code/idea/resolver.py` if not already removed
+    - [x] Remove any remaining `git mv` directory-moving logic from `src/i2code/idea_cmd/state_cmd.py`
+    - [x] Run full test suite and fix any remaining failures
+    - [x] Run `uvx pyright --level error src/` and fix type errors
 
 ---
 

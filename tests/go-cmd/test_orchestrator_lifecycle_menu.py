@@ -20,10 +20,13 @@ MOVE_TO_WIP = "Move idea to wip"
 
 @contextmanager
 def _lifecycle_project(name, state):
-    """Create a TempIdeaProject whose path contains docs/ideas/{state}/{name}."""
+    """Create a TempIdeaProject with a metadata file containing the state."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        idea_dir = os.path.join(tmpdir, "docs", "ideas", state, name)
+        idea_dir = os.path.join(tmpdir, "docs", "ideas", "active", name)
         os.makedirs(idea_dir)
+        metadata_path = os.path.join(idea_dir, f"{name}-metadata.yaml")
+        with open(metadata_path, "w") as f:
+            f.write(f"state: {state}\n")
         yield IdeaProject(idea_dir)
 
 

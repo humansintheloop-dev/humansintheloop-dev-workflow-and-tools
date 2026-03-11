@@ -24,7 +24,7 @@ from i2code.go_cmd.plugin_skills import list_plugin_skills
 from i2code.go_cmd.revise_plan import revise_plan
 from i2code.idea_cmd.brainstorm import brainstorm_idea
 from i2code.idea_cmd.state_cmd import execute_transition
-from i2code.idea.resolver import state_from_path
+from i2code.idea.metadata import read_metadata
 from i2code.implement.claude_runner import ClaudeResult, ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
 from i2code.spec_cmd.create_spec import create_spec
@@ -294,13 +294,17 @@ class Orchestrator:
         git_root = _git_root_from_path(old_path)
         message = self._deps.transition_fn(name, old_path, new_state, git_root)
         print(message, file=self._deps.output)
-        new_dir = git_root / "docs" / "ideas" / new_state / name
-        self._project = IdeaProject(str(new_dir))
 
     def _lifecycle_move_label(self):
+        metadata_path = Path(self._project.metadata_file)
+        if not metadata_path.is_file():
+            return None
         try:
-            state = state_from_path(Path(self._project.directory))
-        except ValueError:
+            metadata = read_metadata(metadata_path)
+        except (OSError, ValueError):
+            return None
+        state = metadata.get("state")
+        if state is None:
             return None
         return _LIFECYCLE_MOVE_OPTIONS.get(state)
 

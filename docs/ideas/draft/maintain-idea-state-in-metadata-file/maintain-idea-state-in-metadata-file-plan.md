@@ -127,14 +127,14 @@ Implements Scenario 1 (primary) and Scenario 6 (forced backward transition). Sta
     - [x] Create `TestStateTransitionNoCommit` test verifying file is staged but not committed
     - [x] Update `execute_transition()` to skip commit when `--no-commit` is passed
 
-- [ ] **Task 2.4: Existing transition rules work with metadata-based state**
+- [x] **Task 2.4: Existing transition rules work with metadata-based state**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/idea-cmd/test_idea_state_cli.py -k "transition_rule or force"`
   - Observable: Forward-only progression, plan-file requirements, always-allowed abandoned transitions, skip-blocking, and `--force` override all work identically to the current behavior but reading/writing state via metadata files
   - Evidence: `pytest tests/idea-cmd/test_idea_state_cli.py -k "transition_rule or force"` passes
   - Steps:
-    - [ ] Update `TestTransitionRuleForwardOnly`, `TestTransitionRulePlanRequired`, `TestTransitionRuleAlwaysAllowed`, `TestTransitionRuleSkipBlocked`, and `TestTransitionForceOverride` test classes to use `active/` directory structure with metadata files
-    - [ ] Verify `src/i2code/idea_cmd/transition_rules.py` `validate_transition()` still works correctly — it should be state-based and unchanged; confirm that plan-file checks still reference the correct directory
+    - [x] Update `TestTransitionRuleForwardOnly`, `TestTransitionRulePlanRequired`, `TestTransitionRuleAlwaysAllowed`, `TestTransitionRuleSkipBlocked`, and `TestTransitionForceOverride` test classes to use `active/` directory structure with metadata files
+    - [x] Verify `src/i2code/idea_cmd/transition_rules.py` `validate_transition()` still works correctly — it should be state-based and unchanged; confirm that plan-file checks still reference the correct directory
 
 ---
 
@@ -277,3 +277,12 @@ git mv directory-moving logic replaced with metadata file write + git add
 
 ### 2026-03-11 08:58 - mark-task-complete
 State transitions now edit metadata file instead of moving directories
+
+### 2026-03-11 09:10 - mark-step-complete
+Tests already use _committed_active_idea with metadata files from prior task updates
+
+### 2026-03-11 09:10 - mark-step-complete
+validate_transition() is state-based, _has_plan uses idea_dir.glob which works with active/ directory
+
+### 2026-03-11 09:10 - mark-task-complete
+All 12 transition rule and force tests pass with metadata-based state

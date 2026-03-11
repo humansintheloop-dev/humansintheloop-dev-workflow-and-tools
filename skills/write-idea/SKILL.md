@@ -6,7 +6,7 @@ user-invokable: true
 
 # Write Idea File
 
-Summarize the current discussion into an idea file at `docs/ideas/draft/<name>/<name>-idea.md`.
+Summarize the current discussion into an idea file at `docs/ideas/active/<name>/<name>-idea.md`.
 
 ## Steps
 
@@ -14,7 +14,12 @@ Summarize the current discussion into an idea file at `docs/ideas/draft/<name>/<
    "What name should I use for the idea directory? (e.g., `claude-runner-run`)"
    Suggest a kebab-case name based on the discussion topic.
 
-2. **Write the idea file** — `docs/ideas/draft/<name>/<name>-idea.md` with these sections:
+2. **Create the metadata file** — `docs/ideas/active/<name>/<name>-metadata.yaml` with:
+   ```yaml
+   state: draft
+   ```
+
+3. **Write the idea file** — `docs/ideas/active/<name>/<name>-idea.md` with these sections:
 
 ### Problem
 What's wrong, duplicated, or missing. Include a short code example if the discussion involved one.

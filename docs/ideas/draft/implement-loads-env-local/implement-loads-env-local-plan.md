@@ -42,22 +42,22 @@ Use these skills by invoking them before the relevant action:
 
 This steel thread implements the core capability: `ImplementCommand.execute()` loads `.env.local` from CWD before mode selection, using `python-dotenv` with `override=False`.
 
-- [ ] **Task 1.1: Add `python-dotenv` dependency and load `.env.local` in `ImplementCommand.execute()`**
+- [x] **Task 1.1: Add `python-dotenv` dependency and load `.env.local` in `ImplementCommand.execute()`**
   - TaskType: INFRA
   - Entrypoint: `uvx pyright --level error src/ && python -m pytest`
   - Observable: `python-dotenv` is listed in `pyproject.toml` dependencies; when `.env.local` exists in CWD with `FOO=bar`, after `ImplementCommand.execute()` begins, `os.environ["FOO"]` equals `"bar"`
   - Evidence: pytest test creates a `.env.local` in a tmp directory, sets CWD to that directory, calls the load path, and asserts `os.environ` contains the expected variable. CI (existing `.github/workflows/ci.yml`) runs tests and passes.
   - Steps:
-    - [ ] Add `python-dotenv` to `pyproject.toml` under `[project] dependencies`
-    - [ ] Write a test (e.g., `tests/implement/test_load_env_local.py`) that:
+    - [x] Add `python-dotenv` to `pyproject.toml` under `[project] dependencies`
+    - [x] Write a test (e.g., `tests/implement/test_load_env_local.py`) that:
       - Creates a temporary directory with a `.env.local` file containing `TEST_ENV_VAR=test_value`
       - Ensures `TEST_ENV_VAR` is not already in `os.environ`
       - Changes CWD to the temp directory (or patches accordingly)
       - Calls `load_dotenv(".env.local")` (or the wrapper if one is introduced)
       - Asserts `os.environ["TEST_ENV_VAR"] == "test_value"`
       - Cleans up the env var after the test
-    - [ ] Add `from dotenv import load_dotenv` to `ImplementCommand` module
-    - [ ] Add `load_dotenv(".env.local")` as the first line of `ImplementCommand.execute()`, before `self._validate_and_apply_defaults()`
+    - [x] Add `from dotenv import load_dotenv` to `ImplementCommand` module
+    - [x] Add `load_dotenv(".env.local")` as the first line of `ImplementCommand.execute()`, before `self._validate_and_apply_defaults()`
 
 ## Steel Thread 2: Missing `.env.local` Is Silently Ignored
 

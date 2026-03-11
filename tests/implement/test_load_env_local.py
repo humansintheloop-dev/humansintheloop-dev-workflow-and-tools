@@ -36,6 +36,17 @@ class TestLoadEnvLocal:
 
         assert os.environ["TEST_ENV_LOCAL_VAR"] == "loaded_value"
 
+    def test_shell_env_vars_take_precedence_over_env_local(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("TEST_EXISTING_VAR", "shell-value")
+        env_file = tmp_path / ".env.local"
+        env_file.write_text("TEST_EXISTING_VAR=file-value\n")
+        monkeypatch.chdir(tmp_path)
+
+        cmd = _make_command()
+        cmd.execute()
+
+        assert os.environ["TEST_EXISTING_VAR"] == "shell-value"
+
     def test_execute_succeeds_without_env_local(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         env_before = dict(os.environ)

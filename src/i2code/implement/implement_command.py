@@ -2,6 +2,8 @@
 
 import sys
 
+from dotenv import load_dotenv
+
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import validate_idea_files_committed
 from i2code.implement.worktree_setup import ProjectSetup
@@ -18,6 +20,7 @@ class ImplementCommand:
 
     def execute(self):
         """Implement a development plan using Git worktrees and GitHub Draft PRs."""
+        load_dotenv(".env.local")
         self._validate_and_apply_defaults()
 
         if self.opts.dry_run:

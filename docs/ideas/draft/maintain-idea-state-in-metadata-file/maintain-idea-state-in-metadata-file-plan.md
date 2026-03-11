@@ -152,15 +152,15 @@ Implements Scenario 2. Provides a permanent `migrate` command for moving from th
     - [x] Create `src/i2code/idea_cmd/migrate_cmd.py` with migrate command implementation
     - [x] Register `migrate` subcommand in `src/i2code/idea_cmd/cli.py`
 
-- [ ] **Task 3.2: Migration is idempotent and supports --no-commit**
+- [x] **Task 3.2: Migration is idempotent and supports --no-commit**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea migrate`
   - Observable: Running `migrate` when no old-style directories exist prints "No ideas to migrate" and exits 0; `--no-commit` flag stages changes without committing
   - Evidence: `pytest tests/idea-cmd/test_migrate.py::TestMigrateIdempotent` and `pytest tests/idea-cmd/test_migrate.py::TestMigrateNoCommit` pass
   - Steps:
-    - [ ] Add `TestMigrateIdempotent` test: run migrate twice, second run prints message and exits cleanly
-    - [ ] Add `TestMigrateNoCommit` test: `--no-commit` stages files but does not create commit
-    - [ ] Implement idempotency check and `--no-commit` flag in `src/i2code/idea_cmd/migrate_cmd.py`
+    - [x] Add `TestMigrateIdempotent` test: run migrate twice, second run prints message and exits cleanly
+    - [x] Add `TestMigrateNoCommit` test: `--no-commit` stages files but does not create commit
+    - [x] Implement idempotency check and `--no-commit` flag in `src/i2code/idea_cmd/migrate_cmd.py`
 
 ---
 
@@ -286,3 +286,6 @@ validate_transition() is state-based, _has_plan uses idea_dir.glob which works w
 
 ### 2026-03-11 09:10 - mark-task-complete
 All 12 transition rule and force tests pass with metadata-based state
+
+### 2026-03-11 09:30 - mark-task-complete
+Added TestMigrateIdempotent and TestMigrateNoCommit test classes; implementation already existed from task 3.1

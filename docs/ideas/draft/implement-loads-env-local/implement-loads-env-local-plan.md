@@ -90,11 +90,23 @@ This steel thread implements the core capability: `ImplementCommand.execute()` l
 
 ## Steel Thread 4: IsolateMode `.env.local` Handling Is Unchanged
 
-- [ ] **Task 4.1: `IsolateMode._find_env_file()` behavior is unaffected**
+- [x] **Task 4.1: `IsolateMode._find_env_file()` behavior is unaffected**
   - TaskType: OUTCOME
   - Entrypoint: `python -m pytest`
   - Observable: `IsolateMode._find_env_file()` still locates `.env.local` in `main_repo_dir` and passes it via `--env-file` — the new `load_dotenv` call does not interfere
   - Evidence: Existing tests for `IsolateMode._find_env_file()` continue to pass without modification. If no such tests exist, write a test that verifies `_find_env_file()` returns the expected path when `.env.local` exists in `main_repo_dir`.
   - Steps:
-    - [ ] Verify existing `IsolateMode` tests pass unchanged
-    - [ ] If no test exists for `_find_env_file()`, write one in the appropriate test module that asserts the method returns the correct path when `.env.local` is present in `main_repo_dir`
+    - [x] Verify existing `IsolateMode` tests pass unchanged
+    - [x] If no test exists for `_find_env_file()`, write one in the appropriate test module that asserts the method returns the correct path when `.env.local` is present in `main_repo_dir`
+
+---
+
+## Change History
+### 2026-03-12 08:24 - mark-step-complete
+All 39 IsolateMode tests pass unchanged, including TestIsolateModeEnvFile
+
+### 2026-03-12 08:24 - mark-step-complete
+Tests already exist in TestIsolateModeEnvFile: test_includes_env_file_when_present and test_omits_env_file_when_not_present
+
+### 2026-03-12 08:24 - mark-task-complete
+Existing TestIsolateModeEnvFile tests verify _find_env_file() behavior; all 39 IsolateMode tests pass unchanged

@@ -104,13 +104,14 @@ class WorktreeMode:
     def _execute_task(self, next_task):
         """Execute a single task: run Claude, push, create PR, wait for CI."""
         task_description = next_task.print()
-        print(f"Executing task: {task_description}")
+        progress = self._work_project.task_progress()
+        print(f"Executing task {progress.current} of {progress.total}: {task_description}")
 
         start = self._clock()
         self._run_claude_and_validate(next_task, task_description)
         elapsed = self._clock() - start
         duration = _format_duration(elapsed)
-        print(f"Task completed successfully in {duration}.")
+        print(f"Task {progress.current} of {progress.total} completed successfully in {duration}.")
         self._push_and_ensure_pr()
         self._loop_steps.ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)
 

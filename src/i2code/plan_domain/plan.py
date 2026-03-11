@@ -8,6 +8,12 @@ from i2code.plan_domain.task import Task
 from i2code.plan_domain.thread import Thread
 
 
+@dataclass(frozen=True)
+class TaskProgress:
+    current: int
+    total: int
+
+
 @dataclass
 class Plan:
     _preamble_lines: list[str]
@@ -58,6 +64,17 @@ class Plan:
                         task=task,
                     )
         return None
+
+    def task_progress(self) -> TaskProgress:
+        """Return progress for display: current is 1-based (completed_count + 1)."""
+        total = 0
+        completed = 0
+        for thread in self.threads:
+            for task in thread.tasks:
+                total += 1
+                if task.is_completed:
+                    completed += 1
+        return TaskProgress(current=completed + 1, total=total)
 
     def is_task_completed(self, thread: int, task: int) -> bool:
         return self.get_thread(thread).is_task_completed(task)

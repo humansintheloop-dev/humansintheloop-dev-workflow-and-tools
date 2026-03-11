@@ -253,7 +253,7 @@ def _run_with_fake_clock(capsys, start, end):
 ])
 def test_prints_task_duration(capsys, start, end, expected_duration):
     output = _run_with_fake_clock(capsys, start, end)
-    assert f"Task completed successfully in {expected_duration}." in output
+    assert f"Task 1 of 1 completed successfully in {expected_duration}." in output
 
 
 def _setup_failure_task(tmpdir, task_name="Set up", *, ci_workflow=True):

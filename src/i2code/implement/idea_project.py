@@ -5,6 +5,7 @@ import os
 import sys
 
 from i2code.plan.plan_file_io import with_plan_file
+from i2code.plan_domain.plan import TaskProgress
 
 
 class IdeaProject:
@@ -123,6 +124,10 @@ class IdeaProject:
     def get_next_task(self):
         with with_plan_file(self.plan_file) as plan:
             return plan.get_next_task()
+
+    def task_progress(self) -> TaskProgress:
+        with with_plan_file(self.plan_file) as plan:
+            return plan.task_progress()
 
     def is_task_completed(self, thread: int, task: int) -> bool:
         with with_plan_file(self.plan_file) as plan:

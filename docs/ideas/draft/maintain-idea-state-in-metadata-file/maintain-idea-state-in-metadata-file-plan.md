@@ -230,13 +230,13 @@ Implements Scenario 4. New ideas are created in `active/` with a metadata file.
     - [x] Create or update `tests/idea-cmd/test_brainstorm.py` with test verifying brainstorm creates idea in `active/` with metadata file
     - [x] Update `src/i2code/idea_cmd/brainstorm.py` to create idea directory under `docs/ideas/active/` and write `<name>-metadata.yaml` with `state: draft`
 
-- [ ] **Task 6.2: Update write-idea skill to use active/ directory with metadata**
+- [x] **Task 6.2: Update write-idea skill to use active/ directory with metadata**
   - TaskType: OUTCOME
   - Entrypoint: Review `skills/write-idea/SKILL.md`
   - Observable: The write-idea skill instructs Claude to create ideas in `docs/ideas/active/<name>/` and create `<name>-metadata.yaml` with `state: draft`
   - Evidence: `skills/write-idea/SKILL.md` references `docs/ideas/active/` and includes metadata file creation instruction
   - Steps:
-    - [ ] Update `skills/write-idea/SKILL.md`: change directory path from `docs/ideas/draft/<name>/` to `docs/ideas/active/<name>/`; add step to create `<name>-metadata.yaml` with `state: draft`
+    - [x] Update `skills/write-idea/SKILL.md`: change directory path from `docs/ideas/draft/<name>/` to `docs/ideas/active/<name>/`; add step to create `<name>-metadata.yaml` with `state: draft`
 
 ---
 

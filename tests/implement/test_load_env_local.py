@@ -35,3 +35,12 @@ class TestLoadEnvLocal:
         cmd.execute()
 
         assert os.environ["TEST_ENV_LOCAL_VAR"] == "loaded_value"
+
+    def test_execute_succeeds_without_env_local(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        env_before = dict(os.environ)
+
+        cmd = _make_command()
+        cmd.execute()
+
+        assert dict(os.environ) == env_before

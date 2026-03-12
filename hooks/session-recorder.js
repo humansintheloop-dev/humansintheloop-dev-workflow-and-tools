@@ -456,6 +456,42 @@ function handlePermissionRequest(hookInput) {
 }
 
 /**
+ * Handles the PreToolUse hook event
+ * @param {Object} hookInput - The hook input data
+ * @param {string} hookInput.session_id - The Claude session ID
+ * @param {string} hookInput.tool_name - The name of the tool
+ * @param {Object} hookInput.tool_input - The tool input parameters
+ * @param {string} hookInput.cwd - The current working directory
+ */
+function handlePreToolUse(hookInput) {
+  const { session_id, tool_name, tool_input, cwd } = hookInput;
+
+  const projectRoot = findProjectRoot(cwd);
+
+  debugLog(projectRoot, 'handlePreToolUse called', hookInput);
+
+  if (!tool_name) {
+    debugLog(projectRoot, 'Missing tool_name in PreToolUse hook input');
+    return;
+  }
+
+  if (needsSessionCreation(projectRoot, session_id)) {
+    getOrCreateSession(projectRoot, session_id);
+  }
+
+  if (!currentSessionPath) {
+    debugLog(projectRoot, 'No active session for PreToolUse event');
+    return;
+  }
+
+  const toolSummary = formatToolCall(tool_name, tool_input);
+  const timestamp = formatEntryTimestamp();
+  const formatted = `**Tool Call:** [${timestamp}]\n- ${toolSummary}\n\n`;
+  appendToSession(formatted);
+  debugLog(projectRoot, 'PreToolUse recorded successfully');
+}
+
+/**
  * Handles the PostToolUse hook event
  * @param {Object} hookInput - The hook input data
  * @param {string} hookInput.session_id - The Claude session ID
@@ -622,28 +658,24 @@ function handleStop(hookInput) {
   debugLog(projectRoot, 'Response appended successfully');
 }
 
+const EVENT_HANDLERS = {
+  UserPromptSubmit: handleUserPromptSubmit,
+  PermissionRequest: handlePermissionRequest,
+  PreToolUse: handlePreToolUse,
+  PostToolUse: handlePostToolUse,
+  Stop: handleStop,
+};
+
 /**
  * Main hook handler - routes to appropriate handler based on event type
  * @param {Object} hookInput - The hook input data
  */
 function handleHookEvent(hookInput) {
-  const { hook_event_name } = hookInput;
-
-  switch (hook_event_name) {
-    case 'UserPromptSubmit':
-      handleUserPromptSubmit(hookInput);
-      break;
-    case 'PermissionRequest':
-      handlePermissionRequest(hookInput);
-      break;
-    case 'PostToolUse':
-      handlePostToolUse(hookInput);
-      break;
-    case 'Stop':
-      handleStop(hookInput);
-      break;
-    default:
-      console.error(`[session-recorder] Unknown hook event: ${hook_event_name}`);
+  const handler = EVENT_HANDLERS[hookInput.hook_event_name];
+  if (handler) {
+    handler(hookInput);
+  } else {
+    console.error(`[session-recorder] Unknown hook event: ${hookInput.hook_event_name}`);
   }
 }
 
@@ -666,9 +698,11 @@ module.exports = {
   parseTranscript,
   handleUserPromptSubmit,
   handlePermissionRequest,
+  handlePreToolUse,
   handlePostToolUse,
   handleStop,
-  handleHookEvent
+  handleHookEvent,
+  EVENT_HANDLERS
 };
 
 // Main entry point when run as a script

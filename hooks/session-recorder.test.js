@@ -658,5 +658,50 @@ test('handlePermissionRequest handles missing tool_name gracefully', () => {
   assert.ok(!content.includes('**Permission Requested:**'), 'Should not record when tool_name is missing');
 });
 
+// --- Tests for handlePreToolUse ---
+
+test('handlePreToolUse records tool call to session file', () => {
+  startSession('test-session-pre', 'Read a file');
+
+  sessionRecorder.handlePreToolUse(hookInput('PreToolUse', 'test-session-pre', {
+    tool_name: 'Read',
+    tool_input: { file_path: '/src/test.js' }
+  }));
+
+  const content = readSessionContent();
+  assert.ok(content.includes('**Tool Call:**'), 'Should contain Tool Call label');
+  assert.ok(content.includes('Read /src/test.js'), 'Should contain tool call summary');
+});
+
+// --- Tests for EVENT_HANDLERS vs plugin.json registration ---
+
+function readPluginJson() {
+  const pluginPath = path.join(__dirname, '..', '.claude-plugin', 'plugin.json');
+  return JSON.parse(fs.readFileSync(pluginPath, 'utf8'));
+}
+
+function findRegisteredEventsFor(plugin, scriptName) {
+  const registered = new Set();
+  for (const [eventName, entries] of Object.entries(plugin.hooks || {})) {
+    const commands = entries.flatMap(e => (e.hooks || []).map(h => h.command || ''));
+    if (commands.some(cmd => cmd.includes(scriptName))) {
+      registered.add(eventName);
+    }
+  }
+  return registered;
+}
+
+test('every EVENT_HANDLERS event is registered in plugin.json for session-recorder', () => {
+  const registeredEvents = findRegisteredEventsFor(readPluginJson(), 'session-recorder.js');
+  const handledEvents = Object.keys(sessionRecorder.EVENT_HANDLERS);
+
+  for (const event of handledEvents) {
+    assert.ok(
+      registeredEvents.has(event),
+      `EVENT_HANDLERS has '${event}' but plugin.json does not register session-recorder.js for it`
+    );
+  }
+});
+
 // Run all tests
 runTests();

@@ -17,6 +17,10 @@ REQUIRED_PERMISSIONS = [
     "Bash(i2code:*)",
 ]
 
+DENIED_PERMISSIONS = [
+    "Bash(git push:*)",
+]
+
 
 def calculate_claude_permissions(repo_root: str) -> List[str]:
     """Calculate the full list of Claude permissions for a repo root."""
@@ -25,6 +29,14 @@ def calculate_claude_permissions(repo_root: str) -> List[str]:
         f"Edit(/{repo_root}/)",
         f"Bash(rm {repo_root}/*)",
     ]
+
+
+def _merge_permissions(existing: List[str], required: List[str]) -> List[str]:
+    """Merge required permissions into an existing list, preserving order."""
+    for perm in required:
+        if perm not in existing:
+            existing.append(perm)
+    return existing
 
 
 def ensure_claude_permissions(repo_root: str) -> None:
@@ -39,12 +51,9 @@ def ensure_claude_permissions(repo_root: str) -> None:
         os.makedirs(settings_dir, exist_ok=True)
         config = {}
 
-    allow_list = config.get("permissions", {}).get("allow", [])
-    for perm in calculate_claude_permissions(repo_root):
-        if perm not in allow_list:
-            allow_list.append(perm)
-
-    config.setdefault("permissions", {})["allow"] = allow_list
+    permissions = config.setdefault("permissions", {})
+    permissions["allow"] = _merge_permissions(permissions.get("allow", []), calculate_claude_permissions(repo_root))
+    permissions["deny"] = _merge_permissions(permissions.get("deny", []), DENIED_PERMISSIONS)
     with open(settings_file, "w") as f:
         json.dump(config, f, indent=2)
         f.write("\n")

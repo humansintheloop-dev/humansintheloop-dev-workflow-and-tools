@@ -15,7 +15,7 @@ class GithubActionsMonitor:
         self._skip_ci_wait = skip_ci_wait
         self._ci_timeout = ci_timeout
 
-    def wait_for_ci(self, branch, head_sha):
+    def wait_for_workflow_completion(self, branch, head_sha):
         """Wait for CI completion if configured."""
         if not self._skip_ci_wait:
             print("Waiting for CI to complete...")

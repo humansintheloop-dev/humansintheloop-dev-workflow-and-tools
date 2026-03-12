@@ -64,6 +64,7 @@ class WorktreeMode:
 
         if self._git_repo.branch_has_been_pushed() and self._git_repo.has_unpushed_commits():
             self._push_and_ensure_pr()
+            self._loop_steps.ci_monitor.wait_for_workflow_completion(self._git_repo.branch, self._git_repo.head_sha)
 
         while True:
             if self._loop_steps.build_fixer.check_and_fix_ci():
@@ -113,7 +114,7 @@ class WorktreeMode:
         duration = _format_duration(elapsed)
         print(f"Task {progress.current} of {progress.total} completed successfully in {duration}.")
         self._push_and_ensure_pr()
-        self._loop_steps.ci_monitor.wait_for_ci(self._git_repo.branch, self._git_repo.head_sha)
+        self._loop_steps.ci_monitor.wait_for_workflow_completion(self._git_repo.branch, self._git_repo.head_sha)
 
     def _run_claude_and_validate(self, next_task, task_description):
         """Run Claude on the task and validate the result, retrying up to 3 times."""

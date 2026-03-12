@@ -20,8 +20,9 @@ class ImplementCommand:
 
     def execute(self):
         """Implement a development plan using Git worktrees and GitHub Draft PRs."""
-        load_dotenv(".env.local")
         self._validate_and_apply_defaults()
+        if not self.opts.isolate:
+            load_dotenv(".env.local")
 
         if self.opts.dry_run:
             self._print_dry_run()

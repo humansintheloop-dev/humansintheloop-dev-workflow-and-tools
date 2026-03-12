@@ -47,6 +47,17 @@ class TestLoadEnvLocal:
 
         assert os.environ["TEST_EXISTING_VAR"] == "shell-value"
 
+    def test_isolate_mode_does_not_load_env_local(self, tmp_path, monkeypatch):
+        env_file = tmp_path / ".env.local"
+        env_file.write_text("TEST_ISOLATE_VAR=should_not_load\n")
+        monkeypatch.delenv("TEST_ISOLATE_VAR", raising=False)
+        monkeypatch.chdir(tmp_path)
+
+        cmd = _make_command(isolate=True)
+        cmd.execute()
+
+        assert "TEST_ISOLATE_VAR" not in os.environ
+
     def test_execute_succeeds_without_env_local(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         env_before = dict(os.environ)

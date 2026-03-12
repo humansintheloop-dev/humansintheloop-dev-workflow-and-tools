@@ -104,15 +104,15 @@ This steel thread implements the core capability: `ImplementCommand.execute()` l
 ## Steel Thread 5: Skip load_dotenv in Isolate Mode
 In isolate mode, nono propagates environment variables to the sandbox and isolarium receives `.env.local` via `--env-file`. Loading `.env.local` into the host process is unnecessary and could cause confusion. The `load_dotenv` call must be skipped when `--isolate` is specified.
 
-- [ ] **Task 5.1: Do not call `load_dotenv` when running in isolate mode**
+- [x] **Task 5.1: Do not call `load_dotenv` when running in isolate mode**
   - TaskType: OUTCOME
   - Entrypoint: `python -m pytest`
   - Observable: When `--isolate` is specified, `load_dotenv(".env.local")` is not called; `.env.local` values do not appear in the host `os.environ`
   - Evidence: `pytest test sets up `.env.local` in a temp CWD, invokes `ImplementCommand.execute()` with isolate mode, and asserts the `.env.local` variables are NOT loaded into `os.environ``
   - Steps:
-    - [ ] Write a test that verifies `load_dotenv` is NOT called when isolate mode is active (e.g., mock `load_dotenv` and assert it is not called, or check that `.env.local` vars are absent from `os.environ`)
-    - [ ] Move the `load_dotenv(".env.local")` call so it only runs for trunk and worktree modes, not isolate mode
-    - [ ] Verify existing tests for trunk/worktree loading still pass
+    - [x] Write a test that verifies `load_dotenv` is NOT called when isolate mode is active (e.g., mock `load_dotenv` and assert it is not called, or check that `.env.local` vars are absent from `os.environ`)
+    - [x] Move the `load_dotenv(".env.local")` call so it only runs for trunk and worktree modes, not isolate mode
+    - [x] Verify existing tests for trunk/worktree loading still pass
 ## Change History
 ### 2026-03-12 08:24 - mark-step-complete
 All 39 IsolateMode tests pass unchanged, including TestIsolateModeEnvFile
@@ -125,3 +125,15 @@ Existing TestIsolateModeEnvFile tests verify _find_env_file() behavior; all 39 I
 
 ### 2026-03-12 09:23 - insert-thread-after
 Requirement change: nono propagates env vars to sandbox; isolate mode should rely solely on isolarium --env-file mechanism, not load_dotenv in the host process
+
+### 2026-03-12 09:31 - mark-step-complete
+Test verifies load_dotenv is not called when isolate=True; .env.local vars absent from os.environ
+
+### 2026-03-12 09:31 - mark-step-complete
+Moved load_dotenv after _validate_and_apply_defaults(), guarded with if not self.opts.isolate
+
+### 2026-03-12 09:31 - mark-step-complete
+All 1236 tests pass including existing trunk/worktree loading tests
+
+### 2026-03-12 09:31 - mark-task-complete
+load_dotenv skipped in isolate mode; all 1236 tests pass

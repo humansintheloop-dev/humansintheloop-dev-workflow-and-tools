@@ -193,6 +193,42 @@ class GitHubClient:
                 timeout=timeout_seconds,
             )
 
+    def get_resolved_review_comment_ids(self, owner: str, repo: str, pr_number: int) -> set[int]:
+        query = """
+query($owner: String!, $repo: String!, $pr: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $pr) {
+      reviewThreads(first: 100) {
+        nodes {
+          isResolved
+          comments(first: 100) {
+            nodes {
+              databaseId
+            }
+          }
+        }
+      }
+    }
+  }
+}"""
+        result = self._run_gh([
+            "gh", "api", "graphql",
+            "-f", f"query={query}",
+            "-F", f"owner={owner}",
+            "-F", f"repo={repo}",
+            "-F", f"pr={pr_number}",
+        ])
+        if result.returncode != 0:
+            raise RuntimeError(f"GraphQL query failed: {result.stderr}")
+        data = json.loads(result.stdout)
+        resolved_ids: set[int] = set()
+        threads = data["data"]["repository"]["pullRequest"]["reviewThreads"]["nodes"]
+        for thread in threads:
+            if thread["isResolved"]:
+                for comment in thread["comments"]["nodes"]:
+                    resolved_ids.add(comment["databaseId"])
+        return resolved_ids
+
     def get_default_branch(self) -> str:
         result = self._run_gh(
             ["gh", "repo", "view", "--json", "defaultBranchRef",

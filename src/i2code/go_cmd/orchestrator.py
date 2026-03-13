@@ -139,29 +139,34 @@ def _default_implement_runner(flags, directory):
 
 
 def _default_brainstorm_idea(project):
-    return brainstorm_idea(project, ClaudeRunner())
+    repo_root = str(_git_root_from_path(project.directory))
+    return brainstorm_idea(project, ClaudeRunner(), repo_root=repo_root)
 
 
 def _default_create_spec(project):
-    return create_spec(project, ClaudeRunner())
+    repo_root = str(_git_root_from_path(project.directory))
+    return create_spec(project, ClaudeRunner(), repo_root=repo_root)
 
 
 def _default_revise_spec(project):
-    return revise_spec(project, ClaudeRunner())
+    repo_root = str(_git_root_from_path(project.directory))
+    return revise_spec(project, ClaudeRunner(), repo_root=repo_root)
 
 
 def _default_create_plan(project):
+    repo_root = str(_git_root_from_path(project.directory))
     runner = ClaudeRunner()
     services = PlanServices(
         template_renderer=render_template,
         plugin_skills_fn=list_plugin_skills,
         validator_fn=validate_plan,
     )
-    return create_plan(project, runner, services)
+    return create_plan(project, runner, services, repo_root=repo_root)
 
 
 def _default_revise_plan(project):
-    return revise_plan(project, ClaudeRunner(), render_template)
+    repo_root = str(_git_root_from_path(project.directory))
+    return revise_plan(project, ClaudeRunner(), render_template, repo_root=repo_root)
 
 
 @dataclass

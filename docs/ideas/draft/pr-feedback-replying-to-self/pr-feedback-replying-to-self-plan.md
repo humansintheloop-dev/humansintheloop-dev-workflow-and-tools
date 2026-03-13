@@ -145,16 +145,16 @@ This thread adds the secondary defense: comments in resolved review threads are 
 ## Steel Thread 3: Integration Test: Real PR Filtering
 Verify self-comment marker filtering and resolved-thread filtering against a real GitHub PR. No Claude invocation — this tests the filtering and reply mechanics using actual GitHub API responses.
 
-- [ ] **Task 3.1: Create test repo in GH_TEST_ORG**
+- [x] **Task 3.1: Create test repo in GH_TEST_ORG**
   - TaskType: INFRA
   - Entrypoint: `test script`
   - Observable: Test script creates a temporary repo in the GH_TEST_ORG organization, initializes it with a file, and stores the repo name for subsequent tasks. Cleans up the repo at the end of the test run.
   - Evidence: `gh repo view confirms the repo exists in GH_TEST_ORG during the test; repo is deleted in cleanup`
   - Steps:
-    - [ ] Create a test script that reads GH_TEST_ORG env var (fail if unset)
-    - [ ] Create a temporary repo in GH_TEST_ORG with gh repo create
-    - [ ] Push an initial commit with a source file (needed for review comments on a diff)
-    - [ ] Register cleanup to delete the repo at script exit
+    - [x] Create a test script that reads GH_TEST_ORG env var (fail if unset)
+    - [x] Create a temporary repo in GH_TEST_ORG with gh repo create
+    - [x] Push an initial commit with a source file (needed for review comments on a diff)
+    - [x] Register cleanup to delete the repo at script exit
 - [ ] **Task 3.2: Create test PR with comments and verify marker-bearing replies are skipped**
   - TaskType: OUTCOME
   - Entrypoint: `test script`

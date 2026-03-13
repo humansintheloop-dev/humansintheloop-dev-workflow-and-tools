@@ -76,18 +76,18 @@ This thread implements the primary defense against self-reply loops: all i2code 
     - [x] Verify both tests pass
     - Implement using TDD
 
-- [ ] **Task 1.3: Self-comments are filtered out during feedback processing**
+- [x] **Task 1.3: Self-comments are filtered out during feedback processing**
   - TaskType: OUTCOME
   - Entrypoint: `pytest` (run the test for `_get_new_feedback` / `_fetch_unprocessed_feedback`)
   - Observable: When unprocessed comments are fetched and one has a body starting with `<!-- i2code -->`, that comment is excluded from the returned list and its ID is added to `WorkflowState.processed_comment_ids`
   - Evidence: Unit test provides a mix of user comments and `<!-- i2code -->`-prefixed comments; asserts only user comments are returned; asserts marker-bearing comment IDs are added to processed set
   - Steps:
-    - [ ] Read `_get_new_feedback` (spec references `pull_request_review_processor.py:328-333`) and understand current filtering logic
-    - [ ] Read `WorkflowState` to understand `processed_comment_ids` structure and how IDs are added
-    - [ ] Write a failing test: provide unprocessed comments including one with body `<!-- i2code -->\nFixed in abc123`; assert it is filtered out and its ID is marked processed
-    - [ ] Add marker-based filtering after the existing processed-ID filter in the processing pipeline
-    - [ ] Ensure filtered comments are marked as processed in `WorkflowState`
-    - [ ] Verify the test passes
+    - [x] Read `_get_new_feedback` (spec references `pull_request_review_processor.py:328-333`) and understand current filtering logic
+    - [x] Read `WorkflowState` to understand `processed_comment_ids` structure and how IDs are added
+    - [x] Write a failing test: provide unprocessed comments including one with body `<!-- i2code -->\nFixed in abc123`; assert it is filtered out and its ID is marked processed
+    - [x] Add marker-based filtering after the existing processed-ID filter in the processing pipeline
+    - [x] Ensure filtered comments are marked as processed in `WorkflowState`
+    - [x] Verify the test passes
     - Implement using TDD
 
 - [ ] **Task 1.4: User comments in the same thread as i2code replies are still processed**

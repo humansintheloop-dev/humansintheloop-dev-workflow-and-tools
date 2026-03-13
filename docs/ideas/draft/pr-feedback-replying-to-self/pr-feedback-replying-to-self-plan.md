@@ -50,17 +50,17 @@ Use these skills by invoking them before the relevant action:
 
 This thread implements the primary defense against self-reply loops: all i2code replies are prefixed with `<!-- i2code -->`, and comments bearing this marker are filtered out during feedback processing. This is US-1.1 and US-1.2, covering Scenarios 1, 2, and 4 from the spec.
 
-- [ ] **Task 1.1: Fix replies include the `<!-- i2code -->` marker**
+- [x] **Task 1.1: Fix replies include the `<!-- i2code -->` marker**
   - TaskType: OUTCOME
   - Entrypoint: `pytest` (run the test for `_push_and_reply`)
   - Observable: When `_push_and_reply` posts a reply comment, the body starts with `<!-- i2code -->\n` followed by the original reply content (e.g., `<!-- i2code -->\nFixed in abc12345`)
   - Evidence: Unit test mocks `GitHubClient.reply_to_review_comment` and asserts the body argument starts with `<!-- i2code -->\n`
   - Steps:
-    - [ ] Read `src/i2code/implement/pull_request_review_processor.py` to understand the current `_push_and_reply` method (spec references lines 277-302)
-    - [ ] Read existing tests for the processor to understand test patterns and fixtures
-    - [ ] Write a failing test that invokes `_push_and_reply` (or the code path that builds the reply body) and asserts the body starts with `<!-- i2code -->\n`
-    - [ ] Modify the reply body construction in `_push_and_reply` to prepend `<!-- i2code -->\n` before the existing content
-    - [ ] Verify the test passes
+    - [x] Read `src/i2code/implement/pull_request_review_processor.py` to understand the current `_push_and_reply` method (spec references lines 277-302)
+    - [x] Read existing tests for the processor to understand test patterns and fixtures
+    - [x] Write a failing test that invokes `_push_and_reply` (or the code path that builds the reply body) and asserts the body starts with `<!-- i2code -->\n`
+    - [x] Modify the reply body construction in `_push_and_reply` to prepend `<!-- i2code -->\n` before the existing content
+    - [x] Verify the test passes
     - Implement using TDD
 
 - [ ] **Task 1.2: Clarification replies include the `<!-- i2code -->` marker**

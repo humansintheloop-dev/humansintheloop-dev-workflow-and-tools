@@ -288,11 +288,12 @@ class PullRequestReviewProcessor:
             comment_type = self._determine_comment_type(
                 comment_id, new_review_comments, new_conversation,
             )
+            marker = "<!-- i2code -->\n"
             reply_body = f"Fixed in {commit_sha}"
             if comment_type == "review":
-                success = gh_client.reply_to_review_comment(pr_number, comment_id, reply_body)
+                success = gh_client.reply_to_review_comment(pr_number, comment_id, f"{marker}{reply_body}")
             else:
-                success = gh_client.reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{reply_body}")
+                success = gh_client.reply_to_pr_comment(pr_number, f"{marker}Re: comment {comment_id}\n\n{reply_body}")
 
             if success:
                 print(f"  Replied to comment {comment_id}: {reply_body}")

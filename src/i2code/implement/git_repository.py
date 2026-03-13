@@ -303,6 +303,12 @@ class GitRepository:
             return existing
 
         base_branch = self._gh_client.get_default_branch()
+        if base_branch == self._branch:
+            raise RuntimeError(
+                f"Default branch '{base_branch}' is the same as head branch "
+                f"'{self._branch}'. Check that the repository has a valid "
+                f"default branch (e.g. 'main') distinct from the idea branch."
+            )
         title = generate_pr_title(idea_name, idea_directory)
         body = generate_pr_body(idea_directory)
         pr_number = self._gh_client.create_draft_pr(

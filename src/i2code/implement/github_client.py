@@ -10,9 +10,18 @@ class GitHubClient:
     """Wraps GitHub CLI (gh) calls for PR operations.
 
     All subprocess calls go through _run_gh() for consistency.
+
+    Args:
+        cwd: Working directory for gh commands. When set, all gh CLI calls
+            run in this directory so the correct GitHub repository is resolved.
     """
 
+    def __init__(self, cwd=None):
+        self._cwd = cwd
+
     def _run_gh(self, args, **kwargs):
+        if self._cwd is not None and "cwd" not in kwargs:
+            kwargs["cwd"] = self._cwd
         return subprocess.run(
             args,
             capture_output=True,

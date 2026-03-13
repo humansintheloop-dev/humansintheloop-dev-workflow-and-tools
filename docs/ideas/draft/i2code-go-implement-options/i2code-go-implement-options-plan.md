@@ -130,7 +130,7 @@ This thread restructures the HAS_PLAN menu in the orchestrator to always show co
     - [x] Update `_build_has_plan_options()` to always include the configure/revise option at position 2, using label "Configure implement options" or "Revise implement options" based on config file existence
     - [x] Ensure the "Implement" label uses the updated `build_implement_label()` that reflects isolation type
 
-- [ ] **Task 3.2: Default menu selection is configure when no config exists**
+- [x] **Task 3.2: Default menu selection is configure when no config exists**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/idea-cmd/`
   - Observable: When no config file exists, the default selection is "Configure implementation options" (position 2). When config exists and there are uncommitted changes, default is "Commit changes". When config exists and no uncommitted changes, default is "Revise implementation options".
@@ -219,3 +219,6 @@ Tests written for three default-selection scenarios
 
 ### 2026-03-13 17:36 - mark-step-complete
 Updated _commit_default to return position 2 when no commit option exists
+
+### 2026-03-13 17:37 - mark-task-complete
+Default selection now returns configure/revise at position 2, or commit when dirty

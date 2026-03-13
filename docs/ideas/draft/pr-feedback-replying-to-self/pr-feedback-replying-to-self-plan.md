@@ -155,17 +155,17 @@ Verify self-comment marker filtering and resolved-thread filtering against a rea
     - [x] Create a temporary repo in GH_TEST_ORG with gh repo create
     - [x] Push an initial commit with a source file (needed for review comments on a diff)
     - [x] Register cleanup to delete the repo at script exit
-- [ ] **Task 3.2: Create test PR with comments and verify marker-bearing replies are skipped**
+- [x] **Task 3.2: Create test PR with comments and verify marker-bearing replies are skipped**
   - TaskType: OUTCOME
   - Entrypoint: `test script`
   - Observable: Using the GH_TEST_ORG repo from Task 3.1, creates a PR, posts a review comment, replies with a marker-prefixed comment, then runs the feedback fetching logic and confirms the marker-bearing reply is excluded from unprocessed feedback
   - Evidence: `Test script exits 0; marker-bearing comment is not in the returned feedback list and is marked as processed`
   - Steps:
-    - [ ] Create a branch and PR in the GH_TEST_ORG test repo
-    - [ ] Post a review comment on the PR
-    - [ ] Post a reply with i2code marker prefix to simulate an i2code reply
-    - [ ] Invoke the feedback fetching logic and assert the marker reply is filtered out
-    - [ ] Clean up: close the PR
+    - [x] Create a branch and PR in the GH_TEST_ORG test repo
+    - [x] Post a review comment on the PR
+    - [x] Post a reply with i2code marker prefix to simulate an i2code reply
+    - [x] Invoke the feedback fetching logic and assert the marker reply is filtered out
+    - [x] Clean up: close the PR
 - [ ] **Task 3.3: Verify comments in resolved threads are skipped**
   - TaskType: OUTCOME
   - Entrypoint: `test script`
@@ -210,3 +210,6 @@ All 469 tests pass including the new test
 
 ### 2026-03-13 17:40 - mark-task-complete
 Resolved review thread comments are filtered out and marked processed during feedback processing
+
+### 2026-03-13 17:59 - mark-task-complete
+Added integration test steps for marker-bearing reply filtering

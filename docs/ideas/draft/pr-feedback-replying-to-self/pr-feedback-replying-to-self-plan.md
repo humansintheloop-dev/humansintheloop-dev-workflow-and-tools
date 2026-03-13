@@ -118,15 +118,15 @@ This thread adds the secondary defense: comments in resolved review threads are 
     - [x] Verify the test passes
     - Implement using TDD
 
-- [ ] **Task 2.2: Comments in resolved review threads are skipped during feedback processing**
+- [x] **Task 2.2: Comments in resolved review threads are skipped during feedback processing**
   - TaskType: OUTCOME
   - Entrypoint: `pytest`
   - Observable: During feedback processing, after marker filtering (Task 1.3), comments whose IDs appear in the resolved-thread set are excluded from the returned list and marked as processed in `WorkflowState`
   - Evidence: Unit test mocks `get_resolved_review_comment_ids` to return a set of IDs; provides unprocessed comments including some with those IDs; asserts resolved-thread comments are filtered out and marked processed (Scenario 3 from spec)
   - Steps:
-    - [ ] Write a failing test: provide unprocessed review comments, mock `get_resolved_review_comment_ids` to return IDs of some, assert those are excluded and marked processed
-    - [ ] Integrate the resolved-thread filter into the processing pipeline after the marker filter (FR-4 ordering: processed IDs → marker → resolved threads → mark filtered as processed)
-    - [ ] Verify the test passes
+    - [x] Write a failing test: provide unprocessed review comments, mock `get_resolved_review_comment_ids` to return IDs of some, assert those are excluded and marked processed
+    - [x] Integrate the resolved-thread filter into the processing pipeline after the marker filter (FR-4 ordering: processed IDs → marker → resolved threads → mark filtered as processed)
+    - [x] Verify the test passes
     - Implement using TDD
 
 - [ ] **Task 2.3: Mixed resolved and unresolved threads are handled correctly**
@@ -198,3 +198,15 @@ Updated to reference GH_TEST_ORG test repo from Task 3.1
 
 ### 2026-03-13 17:02 - replace-task
 Updated to reference GH_TEST_ORG test repo from Task 3.1
+
+### 2026-03-13 17:40 - mark-step-complete
+Test written and verified failing
+
+### 2026-03-13 17:40 - mark-step-complete
+Resolved-thread filter integrated after marker filter in _fetch_unprocessed_feedback
+
+### 2026-03-13 17:40 - mark-step-complete
+All 469 tests pass including the new test
+
+### 2026-03-13 17:40 - mark-task-complete
+Resolved review thread comments are filtered out and marked processed during feedback processing

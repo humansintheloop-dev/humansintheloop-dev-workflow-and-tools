@@ -85,6 +85,11 @@ class PullRequestReviewProcessor:
         new_conversation, self_conversation_ids = self._filter_self_comments(new_conversation)
         self._state.mark_conversations_processed(self_conversation_ids)
 
+        new_review_comments, resolved_ids = self._filter_resolved_thread_comments(
+            new_review_comments, pr_number,
+        )
+        self._state.mark_comments_processed(resolved_ids)
+
         return (new_review_comments, new_reviews, new_conversation)
 
     @classmethod
@@ -101,6 +106,39 @@ class PullRequestReviewProcessor:
             else:
                 user_comments.append(c)
         return user_comments, self_comment_ids
+
+    def _filter_resolved_thread_comments(self, comments, pr_number):
+        """Remove comments belonging to resolved review threads.
+
+        Returns (remaining_comments, resolved_comment_ids).
+        """
+        owner, repo = self._parse_owner_repo()
+        gh_client = self._git_repo.gh_client
+        resolved_ids = gh_client.get_resolved_review_comment_ids(owner, repo, pr_number)
+        remaining = []
+        filtered_ids = []
+        for c in comments:
+            if c["id"] in resolved_ids:
+                filtered_ids.append(c["id"])
+            else:
+                remaining.append(c)
+        return remaining, filtered_ids
+
+    def _parse_owner_repo(self):
+        """Parse owner and repo from the git remote origin URL."""
+        url = self._git_repo.origin_url
+        # Handle both https://github.com/owner/repo.git and git@github.com:owner/repo.git
+        url = url.rstrip("/")
+        if url.endswith(".git"):
+            url = url[:-4]
+        if ":" in url and "@" in url:
+            # SSH format: git@github.com:owner/repo
+            path = url.split(":")[-1]
+        else:
+            # HTTPS format: https://github.com/owner/repo
+            path = "/".join(url.split("/")[-2:])
+        owner, repo = path.split("/")
+        return owner, repo
 
     def _triage_and_apply_feedback(self, new_review_comments, new_reviews, new_conversation, pr_number):
         """Triage feedback via Claude and apply the results.

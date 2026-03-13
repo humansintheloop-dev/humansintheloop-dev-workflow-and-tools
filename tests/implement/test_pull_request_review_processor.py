@@ -466,6 +466,32 @@ class TestSelfCommentFiltering:
         assert 3 not in fake_state.processed_comment_ids
 
 
+@pytest.mark.unit
+class TestResolvedThreadFiltering:
+    """_fetch_unprocessed_feedback filters out comments in resolved review threads."""
+
+    def test_resolved_thread_comments_excluded_and_marked_processed(self):
+        """Comments whose IDs are in the resolved-thread set are excluded and marked processed."""
+        user_comment = {"id": 1, "body": "Please fix the typo", "user": {"login": "reviewer"}}
+        resolved_comment = {"id": 2, "body": "Consider a constant here", "user": {"login": "reviewer"}}
+        another_user_comment = {"id": 3, "body": "Also check line 10", "user": {"login": "reviewer"}}
+
+        processor, fake_gh, _, fake_state, _ = _make_processor(
+            comments=[user_comment, resolved_comment, another_user_comment],
+            reviews=[],
+            conversation_comments=[],
+        )
+        fake_gh.set_resolved_review_comment_ids("test", "repo", 42, {2})
+
+        review_comments, reviews, conversation = processor._fetch_unprocessed_feedback(42)
+
+        assert len(review_comments) == 2
+        assert all(c["id"] in [1, 3] for c in review_comments)
+        assert 2 in fake_state.processed_comment_ids
+        assert 1 not in fake_state.processed_comment_ids
+        assert 3 not in fake_state.processed_comment_ids
+
+
 PR6_REPO = "humansintheloop-dev/humansintheloop-dev-workflow-and-tools"
 PR6_NUMBER = 6
 

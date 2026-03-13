@@ -118,17 +118,17 @@ This thread adds the isolation type question to the interactive prompt flow.
 
 This thread restructures the HAS_PLAN menu in the orchestrator to always show configure/revise and set correct defaults.
 
-- [ ] **Task 3.1: HAS_PLAN menu always shows configure/revise option at position 2**
+- [x] **Task 3.1: HAS_PLAN menu always shows configure/revise option at position 2**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/idea-cmd/`
   - Observable: `_build_has_plan_options()` always includes "Configure implement options" (when no config exists) or "Revise implement options" (when config exists) at position 2. Menu order is: Revise plan, Configure/Revise options, Move (conditional), Commit (conditional), Implement, Exit.
   - Evidence: pytest runs tests that verify the menu list returned by `_build_has_plan_options()` for: (a) no config file → "Configure implement options" at index 1, (b) config file exists → "Revise implement options" at index 1, (c) both cases have correct relative ordering of all items.
   - Steps:
-    - [ ] Read `src/i2code/idea_cmd/orchestrator.py` to understand `_build_has_plan_options()` and the `CONFIGURE_IMPLEMENT` constant
-    - [ ] Read existing orchestrator tests to understand test patterns and `OrchestratorDeps` injection
-    - [ ] Write failing tests for the three scenarios in Evidence
-    - [ ] Update `_build_has_plan_options()` to always include the configure/revise option at position 2, using label "Configure implement options" or "Revise implement options" based on config file existence
-    - [ ] Ensure the "Implement" label uses the updated `build_implement_label()` that reflects isolation type
+    - [x] Read `src/i2code/idea_cmd/orchestrator.py` to understand `_build_has_plan_options()` and the `CONFIGURE_IMPLEMENT` constant
+    - [x] Read existing orchestrator tests to understand test patterns and `OrchestratorDeps` injection
+    - [x] Write failing tests for the three scenarios in Evidence
+    - [x] Update `_build_has_plan_options()` to always include the configure/revise option at position 2, using label "Configure implement options" or "Revise implement options" based on config file existence
+    - [x] Ensure the "Implement" label uses the updated `build_implement_label()` that reflects isolation type
 
 - [ ] **Task 3.2: Default menu selection is configure when no config exists**
   - TaskType: OUTCOME
@@ -195,3 +195,21 @@ Updated return type annotation in docstring
 
 ### 2026-03-13 17:17 - mark-task-complete
 prompt_implement_config now asks isolation type and conditionally skips trunk question
+
+### 2026-03-13 17:22 - mark-step-complete
+Read orchestrator.py - understood _build_has_plan_options and CONFIGURE_IMPLEMENT
+
+### 2026-03-13 17:22 - mark-step-complete
+Read test_orchestrator_lifecycle_menu.py - understood _build_menu_options pattern with menu_config_by_label and OrchestratorDeps
+
+### 2026-03-13 17:23 - mark-step-complete
+Wrote 5 failing tests covering no-config, config-exists, and ordering scenarios
+
+### 2026-03-13 17:25 - mark-step-complete
+Updated _build_has_plan_options to always include configure/revise at position 2, with dynamic label via _configure_implement_label()
+
+### 2026-03-13 17:26 - mark-step-complete
+build_implement_label already reflects isolation_type from thread 2 work - verified in _build_has_plan_options line 308
+
+### 2026-03-13 17:26 - mark-task-complete
+HAS_PLAN menu always shows configure/revise option at position 2 with dynamic label

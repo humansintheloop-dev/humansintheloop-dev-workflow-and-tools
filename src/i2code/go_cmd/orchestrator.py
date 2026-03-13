@@ -53,6 +53,7 @@ CREATE_PLAN = "Create implementation plan"
 REVISE_PLAN = "Revise the plan"
 IMPLEMENT_PLAN = "Implement the entire plan"
 CONFIGURE_IMPLEMENT = "Configure implement options"
+REVISE_IMPLEMENT = "Revise implement options"
 COMMIT_CHANGES = "Commit changes"
 MOVE_TO_READY = "Move idea to ready"
 MOVE_TO_WIP = "Move idea to wip"
@@ -280,7 +281,7 @@ class Orchestrator:
             self._commit_changes()
         elif selected == REVISE_PLAN:
             self._run_step_with_retry("Revising plan", "revise_plan")
-        elif selected == CONFIGURE_IMPLEMENT:
+        elif selected in (CONFIGURE_IMPLEMENT, REVISE_IMPLEMENT):
             self._configure_implement()
         elif selected.startswith(IMPLEMENT_PLAN):
             self._run_implement()
@@ -306,21 +307,25 @@ class Orchestrator:
     def _build_has_plan_options(self):
         config_path = self._project.implement_config_file
         options = [REVISE_PLAN]
+        options.append(self._configure_implement_label())
         move_label = self._lifecycle_move_label()
         if move_label:
             options.append(move_label)
         if self._has_uncommitted_changes():
             options.append(COMMIT_CHANGES)
         options.append(build_implement_label(config_path))
-        if os.path.isfile(config_path):
-            options.append(CONFIGURE_IMPLEMENT)
         options.append("Exit")
         return options
+
+    def _configure_implement_label(self):
+        if os.path.isfile(self._project.implement_config_file):
+            return REVISE_IMPLEMENT
+        return CONFIGURE_IMPLEMENT
 
     def _commit_default(self, options):
         if COMMIT_CHANGES in options:
             return options.index(COMMIT_CHANGES) + 1
-        return 2
+        return 3
 
     def _has_uncommitted_changes(self):
         result = self._deps.git_runner(

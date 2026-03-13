@@ -11,7 +11,7 @@ from i2code.go_cmd.implement_config import (
     INTERACTIVE, ISOLATION_CHOICES, NON_INTERACTIVE, TRUNK_MODE, WORKTREE_MODE,
 )
 from i2code.go_cmd.orchestrator import (
-    CONFIGURE_IMPLEMENT, EXIT, IMPLEMENT_PLAN,
+    CONFIGURE_IMPLEMENT, EXIT, IMPLEMENT_PLAN, REVISE_IMPLEMENT,
     Orchestrator, OrchestratorDeps,
 )
 
@@ -113,19 +113,20 @@ class TestImplementMenuLabel:
 @pytest.mark.unit
 class TestConfigureOptionVisibility:
 
-    @pytest.mark.parametrize("config_kwargs,should_show", [
-        (None, False),
-        (dict(interactive=True, trunk=False), True),
-    ])
-    def test_configure_option_visibility(self, config_kwargs, should_show):
+    def test_configure_shown_when_no_config(self):
         with TempIdeaProject("my-feature") as project:
             result = _run_has_plan_orchestrator(
-                project, [EXIT], config_kwargs=config_kwargs,
+                project, [EXIT], config_kwargs=None,
             )
-            if should_show:
-                assert CONFIGURE_IMPLEMENT in result.menu_displayed
-            else:
-                assert CONFIGURE_IMPLEMENT not in result.menu_displayed
+            assert CONFIGURE_IMPLEMENT in result.menu_displayed
+
+    def test_revise_shown_when_config_exists(self):
+        with TempIdeaProject("my-feature") as project:
+            result = _run_has_plan_orchestrator(
+                project, [EXIT],
+                config_kwargs=dict(interactive=True, trunk=False),
+            )
+            assert REVISE_IMPLEMENT in result.menu_displayed
 
 
 # ---------------------------------------------------------------------------
@@ -188,7 +189,7 @@ class TestConfigureImplementOptions:
 
         with TempIdeaProject("my-feature") as project:
             user_choices = [
-                CONFIGURE_IMPLEMENT, NON_INTERACTIVE, ISOLATION_CHOICES[0], TRUNK_MODE, EXIT,
+                REVISE_IMPLEMENT, NON_INTERACTIVE, ISOLATION_CHOICES[0], TRUNK_MODE, EXIT,
             ]
             _run_has_plan_orchestrator(
                 project, user_choices,

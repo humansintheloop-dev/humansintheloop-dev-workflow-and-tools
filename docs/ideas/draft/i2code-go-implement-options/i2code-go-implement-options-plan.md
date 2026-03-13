@@ -136,8 +136,8 @@ This thread restructures the HAS_PLAN menu in the orchestrator to always show co
   - Observable: When no config file exists, the default selection is "Configure implementation options" (position 2). When config exists and there are uncommitted changes, default is "Commit changes". When config exists and no uncommitted changes, default is "Revise implementation options".
   - Evidence: pytest runs tests that verify `_commit_default()` (or equivalent) returns the correct default for each condition.
   - Steps:
-    - [ ] Write failing tests for the three default-selection scenarios
-    - [ ] Update `_commit_default()` to return the configure option as default when no config file exists, and the commit option when config exists with uncommitted changes
+    - [x] Write failing tests for the three default-selection scenarios
+    - [x] Update `_commit_default()` to return the configure option as default when no config file exists, and the commit option when config exists with uncommitted changes
 
 ---
 
@@ -213,3 +213,9 @@ build_implement_label already reflects isolation_type from thread 2 work - verif
 
 ### 2026-03-13 17:26 - mark-task-complete
 HAS_PLAN menu always shows configure/revise option at position 2 with dynamic label
+
+### 2026-03-13 17:35 - mark-step-complete
+Tests written for three default-selection scenarios
+
+### 2026-03-13 17:36 - mark-step-complete
+Updated _commit_default to return position 2 when no commit option exists

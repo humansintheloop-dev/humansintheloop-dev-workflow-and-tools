@@ -105,17 +105,17 @@ This thread implements the primary defense against self-reply loops: all i2code 
 
 This thread adds the secondary defense: comments in resolved review threads are skipped. This is US-2.1 and US-2.2, covering Scenarios 3, 5, and 6 from the spec.
 
-- [ ] **Task 2.1: GitHubClient retrieves resolved review thread comment IDs via GraphQL**
+- [x] **Task 2.1: GitHubClient retrieves resolved review thread comment IDs via GraphQL**
   - TaskType: OUTCOME
   - Entrypoint: `pytest`
   - Observable: A new method on `GitHubClient` (e.g., `get_resolved_review_comment_ids`) executes a `gh api graphql` query and returns a `set[int]` of `databaseId` values for comments belonging to resolved review threads
   - Evidence: Unit test mocks the `gh api graphql` subprocess call, provides sample GraphQL response with a mix of resolved and unresolved threads, and asserts only comment IDs from resolved threads are returned
   - Steps:
-    - [ ] Read `src/i2code/implement/github_client.py` to understand existing patterns for `gh` CLI invocations
-    - [ ] Write a failing test for `get_resolved_review_comment_ids(owner, repo, pr_number)` that mocks the subprocess call and asserts correct ID extraction
-    - [ ] Implement the method using `gh api graphql` with the query from the spec (FR-3)
-    - [ ] The query uses `first: 100` for both `reviewThreads` and `comments` — no pagination needed (NFR-2)
-    - [ ] Verify the test passes
+    - [x] Read `src/i2code/implement/github_client.py` to understand existing patterns for `gh` CLI invocations
+    - [x] Write a failing test for `get_resolved_review_comment_ids(owner, repo, pr_number)` that mocks the subprocess call and asserts correct ID extraction
+    - [x] Implement the method using `gh api graphql` with the query from the spec (FR-3)
+    - [x] The query uses `first: 100` for both `reviewThreads` and `comments` — no pagination needed (NFR-2)
+    - [x] Verify the test passes
     - Implement using TDD
 
 - [ ] **Task 2.2: Comments in resolved review threads are skipped during feedback processing**

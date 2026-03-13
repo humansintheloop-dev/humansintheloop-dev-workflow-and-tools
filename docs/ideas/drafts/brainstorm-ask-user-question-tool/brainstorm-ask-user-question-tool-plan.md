@@ -55,20 +55,20 @@ The `AskUserQuestion` tool supports:
 
 This is the only steel thread needed. The change is a single prompt template file edit with no code dependencies.
 
-- [ ] **Task 1.1: Replace text-based multi-choice instructions with AskUserQuestion instructions**
+- [x] **Task 1.1: Replace text-based multi-choice instructions with AskUserQuestion instructions**
   - TaskType: OUTCOME
   - Entrypoint: Read `src/i2code/prompt-templates/brainstorm-idea.md`
   - Observable: The prompt template (1) no longer contains the instruction "list them as A, B, C, D", (2) contains instructions to use `AskUserQuestion` for multi-choice questions with labeled/described options, (3) contains instructions to fall back to regular text for open-ended questions or questions with more than 4 options
   - Evidence: `grep -c "AskUserQuestion" src/i2code/prompt-templates/brainstorm-idea.md` returns a non-zero count AND `grep -c "list them as A, B, C, D" src/i2code/prompt-templates/brainstorm-idea.md` returns 0 AND existing CI passes
   - Steps:
-    - [ ] Read `src/i2code/prompt-templates/brainstorm-idea.md` to understand the current prompt structure and locate the conflicting "list them as A, B, C, D" instruction (FR5)
-    - [ ] Remove the "list them as A, B, C, D" instruction (FR5)
-    - [ ] Add instruction: prefer formulating questions as multi-choice (2-4 options) whenever the question has discrete, enumerable answers (FR1)
-    - [ ] Add instruction: use `AskUserQuestion` tool for multi-choice questions; each option must have a concise `label` (1-5 words) and a `description` explaining the option's meaning or implications (FR2)
-    - [ ] Add instruction: use a short, descriptive `header` tag (max 12 chars) for each question (FR3)
-    - [ ] Add instruction: use `multiSelect: true` when choices are not mutually exclusive (e.g., "Which concerns apply?") (FR3)
-    - [ ] Add instruction: use the `preview` field when comparing concrete artifacts like code snippets, config examples, or mockups (FR3)
-    - [ ] Add instruction: fall back to regular text output when a question is genuinely open-ended or has more than 4 possible answers (FR4)
-    - [ ] Add instruction: if `AskUserQuestion` is unavailable, fall back to text-based questions (reliability NFR)
-    - [ ] Verify the prompt reads naturally and the new instructions integrate with the existing prompt flow (UX NFR — tool-based questions should not break the conversational rhythm)
-    - [ ] Run existing project tests to confirm nothing is broken
+    - [x] Read `src/i2code/prompt-templates/brainstorm-idea.md` to understand the current prompt structure and locate the conflicting "list them as A, B, C, D" instruction (FR5)
+    - [x] Remove the "list them as A, B, C, D" instruction (FR5)
+    - [x] Add instruction: prefer formulating questions as multi-choice (2-4 options) whenever the question has discrete, enumerable answers (FR1)
+    - [x] Add instruction: use `AskUserQuestion` tool for multi-choice questions; each option must have a concise `label` (1-5 words) and a `description` explaining the option's meaning or implications (FR2)
+    - [x] Add instruction: use a short, descriptive `header` tag (max 12 chars) for each question (FR3)
+    - [x] Add instruction: use `multiSelect: true` when choices are not mutually exclusive (e.g., "Which concerns apply?") (FR3)
+    - [x] Add instruction: use the `preview` field when comparing concrete artifacts like code snippets, config examples, or mockups (FR3)
+    - [x] Add instruction: fall back to regular text output when a question is genuinely open-ended or has more than 4 possible answers (FR4)
+    - [x] Add instruction: if `AskUserQuestion` is unavailable, fall back to text-based questions (reliability NFR)
+    - [x] Verify the prompt reads naturally and the new instructions integrate with the existing prompt flow (UX NFR — tool-based questions should not break the conversational rhythm)
+    - [x] Run existing project tests to confirm nothing is broken

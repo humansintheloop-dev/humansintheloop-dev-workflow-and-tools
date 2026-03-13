@@ -42,7 +42,12 @@ Process:
 - Ask me one question at a time so we can develop a thorough, step-by-step understanding of the idea.
 - Each question should build on my previous answers.
 - Define sensible and easily changeable default assumptions so we can focus on the most important aspects.
-- If there are multiple options for a question, list them as A, B, C, D, and I will choose one.
+- When a question has discrete, enumerable answers, prefer formulating it as multi-choice with 2-4 options.
+- For multi-choice questions, use the `AskUserQuestion` tool instead of printing options as text. For each option, provide a concise `label` (1-5 words) and a `description` explaining what the option means or its implications. Include a short, descriptive `header` tag (max 12 chars) for each question.
+- Use `multiSelect: true` when choices are not mutually exclusive (e.g., "Which concerns apply?").
+- Use the `preview` field when comparing concrete artifacts like code snippets, config examples, or mockups.
+- Fall back to regular text output when a question is genuinely open-ended or has more than 4 possible answers.
+- If `AskUserQuestion` is unavailable, fall back to text-based questions with options listed as A, B, C, D.
 - **Proactively identify downstream impacts** - When analyzing architectural changes:
   1. Trace event flows - which services consume events from affected components?
   2. Identify cross-cutting concerns - authorization, auditing, monitoring, caching

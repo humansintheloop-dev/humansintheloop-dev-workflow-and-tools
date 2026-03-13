@@ -127,6 +127,18 @@ class TestEnsurePrOnGitRepository:
         assert len(fake._created_prs) == 1
         assert fake._created_prs[0]["base"] == "develop"
 
+    def test_ensure_pr_raises_when_base_equals_head(self, test_git_repo_with_commit):
+        """ensure_pr should raise when default branch matches the PR head branch."""
+
+        tmpdir, repo = test_git_repo_with_commit
+        fake = FakeGitHubClient()
+        fake.set_default_branch("idea/my-feature")
+        git_repo = GitRepository(repo, gh_client=fake)
+        git_repo.branch = "idea/my-feature"
+
+        with pytest.raises(RuntimeError, match="same as head branch"):
+            git_repo.ensure_pr("/path/to/idea", "my-feature")
+
     def test_ensure_pr_reuses_existing_pr(self, test_git_repo_with_commit):
         """ensure_pr should return existing PR number if one exists."""
 

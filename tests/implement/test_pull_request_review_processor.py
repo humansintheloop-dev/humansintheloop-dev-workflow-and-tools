@@ -338,6 +338,43 @@ class TestDetermineCommentType:
         assert result == "conversation"
 
 
+I2CODE_MARKER = "<!-- i2code -->"
+
+
+@pytest.mark.unit
+class TestPushAndReplyMarker:
+    """_push_and_reply prepends i2code marker to reply bodies."""
+
+    def test_review_comment_reply_starts_with_marker(self):
+        """Reply to review comment body starts with <!-- i2code --> marker."""
+        processor, fake_gh, fake_repo, _, _ = _make_processor()
+        fake_repo.set_head_sha("aaa111")
+        review_comments = [{"id": 100, "body": "Fix this"}]
+        conversation_comments = []
+
+        processor._push_and_reply("abc12345", [100], review_comments, conversation_comments)
+
+        reply_calls = [c for c in fake_gh.calls if c[0] == "reply_to_review_comment"]
+        assert len(reply_calls) == 1
+        body = reply_calls[0][3]
+        assert body.startswith(f"{I2CODE_MARKER}\n"), f"Expected marker prefix, got: {body!r}"
+        assert "Fixed in abc12345" in body
+
+    def test_conversation_comment_reply_starts_with_marker(self):
+        """Reply to conversation comment body starts with <!-- i2code --> marker."""
+        processor, fake_gh, fake_repo, _, _ = _make_processor()
+        fake_repo.set_head_sha("aaa111")
+        review_comments = []
+        conversation_comments = [{"id": 200, "body": "General note"}]
+
+        processor._push_and_reply("abc12345", [200], review_comments, conversation_comments)
+
+        reply_calls = [c for c in fake_gh.calls if c[0] == "reply_to_pr_comment"]
+        assert len(reply_calls) == 1
+        body = reply_calls[0][2]
+        assert body.startswith(f"{I2CODE_MARKER}\n"), f"Expected marker prefix, got: {body!r}"
+
+
 PR6_REPO = "humansintheloop-dev/humansintheloop-dev-workflow-and-tools"
 PR6_NUMBER = 6
 

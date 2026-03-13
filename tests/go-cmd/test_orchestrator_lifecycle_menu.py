@@ -9,7 +9,7 @@ import pytest
 
 from conftest import menu_config_by_label
 from i2code.go_cmd.orchestrator import (
-    COMMIT_CHANGES, EXIT, Orchestrator, OrchestratorDeps,
+    COMMIT_CHANGES, CONFIGURE_IMPLEMENT, EXIT, Orchestrator, OrchestratorDeps,
 )
 from i2code.implement.idea_project import IdeaProject
 
@@ -125,11 +125,11 @@ class TestDraftIdeaMenu:
             options = _build_menu_options(project)
             assert options[2] == MOVE_TO_READY
 
-    def test_draft_idea_move_to_ready_is_default(self):
+    def test_draft_idea_no_config_defaults_to_configure(self):
         with _lifecycle_project("my-feature", "draft") as project:
             _setup_has_plan(project)
             displayed = _get_menu_display(project)
-            assert _find_default(displayed) == MOVE_TO_READY
+            assert _find_default(displayed) == CONFIGURE_IMPLEMENT
 
 
 @pytest.mark.unit
@@ -147,11 +147,11 @@ class TestReadyIdeaMenu:
             options = _build_menu_options(project)
             assert options[2] == MOVE_TO_WIP
 
-    def test_ready_idea_move_to_wip_is_default(self):
+    def test_ready_idea_no_config_defaults_to_configure(self):
         with _lifecycle_project("my-feature", "ready") as project:
             _setup_has_plan(project)
             displayed = _get_menu_display(project)
-            assert _find_default(displayed) == MOVE_TO_WIP
+            assert _find_default(displayed) == CONFIGURE_IMPLEMENT
 
 
 @pytest.mark.unit
@@ -164,13 +164,11 @@ class TestWipIdeaMenu:
             assert MOVE_TO_READY not in options
             assert MOVE_TO_WIP not in options
 
-    def test_wip_idea_implement_is_default(self):
+    def test_wip_idea_no_config_defaults_to_configure(self):
         with _lifecycle_project("my-feature", "wip") as project:
             _setup_has_plan(project)
             displayed = _get_menu_display(project)
-            default = _find_default(displayed)
-            assert default is not None
-            assert default.startswith("Implement")
+            assert _find_default(displayed) == CONFIGURE_IMPLEMENT
 
 
 @pytest.mark.unit

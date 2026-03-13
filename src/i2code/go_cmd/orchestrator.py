@@ -325,7 +325,7 @@ class Orchestrator:
     def _commit_default(self, options):
         if COMMIT_CHANGES in options:
             return options.index(COMMIT_CHANGES) + 1
-        return 3
+        return 2
 
     def _has_uncommitted_changes(self):
         result = self._deps.git_runner(

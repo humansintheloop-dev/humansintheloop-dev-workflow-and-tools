@@ -210,3 +210,26 @@ class TestBuildImplementLabel:
             label = build_implement_label(project.implement_config_file)
             expected = f"Implement the entire plan: i2code implement{expected_suffix}"
             assert label == expected
+
+    def test_label_with_defaults_shows_plain_command(self):
+        from i2code.go_cmd.implement_config import build_implement_label
+
+        with TempIdeaProject("my-feature") as project:
+            _write_config_file(project, interactive=True, trunk=False)
+            label = build_implement_label(project.implement_config_file)
+            assert label == "Implement the entire plan: i2code implement"
+
+    def test_label_with_nono_isolation_and_non_interactive(self):
+        from i2code.go_cmd.implement_config import build_implement_label
+
+        with TempIdeaProject("my-feature") as project:
+            _write_config_file(project, interactive=False, trunk=False, isolation_type="nono")
+            label = build_implement_label(project.implement_config_file)
+            assert label == "Implement the entire plan: i2code implement --non-interactive --isolation-type nono"
+
+    def test_label_with_no_config_file_shows_plain_command(self):
+        from i2code.go_cmd.implement_config import build_implement_label
+
+        with TempIdeaProject("my-feature") as project:
+            label = build_implement_label(project.implement_config_file)
+            assert label == "Implement the entire plan: i2code implement"

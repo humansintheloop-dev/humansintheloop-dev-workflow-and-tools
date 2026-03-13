@@ -65,6 +65,8 @@ class PullRequestReviewProcessor:
             new_review_comments, new_reviews, new_conversation, pr_number,
         )
 
+    I2CODE_MARKER = "<!-- i2code -->"
+
     def _fetch_unprocessed_feedback(self, pr_number):
         """Fetch PR feedback and filter to only unprocessed items."""
         gh_client = self._git_repo.gh_client
@@ -73,11 +75,32 @@ class PullRequestReviewProcessor:
         reviews = gh_client.fetch_pr_reviews(pr_number)
         conversation_comments = gh_client.fetch_pr_conversation_comments(pr_number)
 
-        return (
-            self._get_new_feedback(review_comments, self._state.processed_comment_ids),
-            self._get_new_feedback(reviews, self._state.processed_review_ids),
-            self._get_new_feedback(conversation_comments, self._state.processed_conversation_ids),
-        )
+        new_review_comments = self._get_new_feedback(review_comments, self._state.processed_comment_ids)
+        new_reviews = self._get_new_feedback(reviews, self._state.processed_review_ids)
+        new_conversation = self._get_new_feedback(conversation_comments, self._state.processed_conversation_ids)
+
+        new_review_comments, self_comment_ids = self._filter_self_comments(new_review_comments)
+        self._state.mark_comments_processed(self_comment_ids)
+
+        new_conversation, self_conversation_ids = self._filter_self_comments(new_conversation)
+        self._state.mark_conversations_processed(self_conversation_ids)
+
+        return (new_review_comments, new_reviews, new_conversation)
+
+    @classmethod
+    def _filter_self_comments(cls, comments):
+        """Separate comments into user comments and self-generated comments.
+
+        Returns (user_comments, self_comment_ids).
+        """
+        user_comments = []
+        self_comment_ids = []
+        for c in comments:
+            if c.get("body", "").startswith(cls.I2CODE_MARKER):
+                self_comment_ids.append(c["id"])
+            else:
+                user_comments.append(c)
+        return user_comments, self_comment_ids
 
     def _triage_and_apply_feedback(self, new_review_comments, new_reviews, new_conversation, pr_number):
         """Triage feedback via Claude and apply the results.

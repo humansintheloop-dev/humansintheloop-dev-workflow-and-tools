@@ -129,15 +129,15 @@ This thread adds the secondary defense: comments in resolved review threads are 
     - [x] Verify the test passes
     - Implement using TDD
 
-- [ ] **Task 2.3: Mixed resolved and unresolved threads are handled correctly**
+- [x] **Task 2.3: Mixed resolved and unresolved threads are handled correctly**
   - TaskType: OUTCOME
   - Entrypoint: `pytest`
   - Observable: Given multiple review threads — some resolved, some not — only comments from unresolved threads (that also pass marker filtering) are returned as new feedback
   - Evidence: Unit test provides comments from 3 threads (A resolved, B unresolved, C resolved), mocks resolved-thread IDs for A and C; asserts only Thread B's comment is returned (Scenario 6 from spec)
   - Steps:
-    - [ ] Write a failing test simulating Scenario 6 with three threads
-    - [ ] Verify the existing implementation from Task 2.3 handles this correctly
-    - [ ] If the test passes immediately, this validates the design; if not, fix the filtering logic
+    - [x] Write a failing test simulating Scenario 6 with three threads
+    - [x] Verify the existing implementation from Task 2.3 handles this correctly
+    - [x] If the test passes immediately, this validates the design; if not, fix the filtering logic
     - Implement using TDD
 
 ---

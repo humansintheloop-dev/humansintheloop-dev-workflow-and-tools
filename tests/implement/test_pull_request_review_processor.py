@@ -491,6 +491,27 @@ class TestResolvedThreadFiltering:
         assert 1 not in fake_state.processed_comment_ids
         assert 3 not in fake_state.processed_comment_ids
 
+    def test_mixed_resolved_and_unresolved_threads_returns_only_unresolved(self):
+        """Scenario 6: three threads (A resolved, B unresolved, C resolved) — only B returned."""
+        thread_a_comment = {"id": 10, "body": "Thread A feedback", "user": {"login": "reviewer"}}
+        thread_b_comment = {"id": 20, "body": "Thread B feedback", "user": {"login": "reviewer"}}
+        thread_c_comment = {"id": 30, "body": "Thread C feedback", "user": {"login": "reviewer"}}
+
+        processor, fake_gh, _, fake_state, _ = _make_processor(
+            comments=[thread_a_comment, thread_b_comment, thread_c_comment],
+            reviews=[],
+            conversation_comments=[],
+        )
+        fake_gh.set_resolved_review_comment_ids("test", "repo", 42, {10, 30})
+
+        review_comments, reviews, conversation = processor._fetch_unprocessed_feedback(42)
+
+        assert len(review_comments) == 1
+        assert review_comments[0]["id"] == 20
+        assert 10 in fake_state.processed_comment_ids
+        assert 30 in fake_state.processed_comment_ids
+        assert 20 not in fake_state.processed_comment_ids
+
 
 PR6_REPO = "humansintheloop-dev/humansintheloop-dev-workflow-and-tools"
 PR6_NUMBER = 6

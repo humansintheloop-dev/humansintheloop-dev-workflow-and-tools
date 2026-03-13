@@ -6,6 +6,7 @@ INTERACTIVE = "Interactive"
 NON_INTERACTIVE = "Non-interactive"
 WORKTREE_MODE = "Worktree (branch + PR)"
 TRUNK_MODE = "Trunk (current branch, no PR)"
+ISOLATION_CHOICES = ["None", "Nono", "Container", "VM"]
 
 
 def read_implement_config(path):
@@ -52,18 +53,24 @@ def prompt_implement_config(menu_fn):
         menu_fn: Callable(prompt, default, options) -> 1-based choice index.
 
     Returns:
-        (interactive, trunk) boolean tuple.
+        (interactive, isolation_type, trunk) tuple.
     """
     mode_choice = menu_fn("How should Claude run?", 1, [INTERACTIVE, NON_INTERACTIVE])
     interactive = mode_choice == 1
 
-    branch_choice = menu_fn(
-        "Where should implementation happen?", 1,
-        [WORKTREE_MODE, TRUNK_MODE],
-    )
-    trunk = branch_choice == 2
+    isolation_choice = menu_fn("What isolation type?", 1, ISOLATION_CHOICES)
+    isolation_type = ISOLATION_CHOICES[isolation_choice - 1].lower()
 
-    return interactive, trunk
+    if isolation_type == "none":
+        branch_choice = menu_fn(
+            "Where should implementation happen?", 1,
+            [WORKTREE_MODE, TRUNK_MODE],
+        )
+        trunk = branch_choice == 2
+    else:
+        trunk = False
+
+    return interactive, isolation_type, trunk
 
 
 def build_implement_flags(config):

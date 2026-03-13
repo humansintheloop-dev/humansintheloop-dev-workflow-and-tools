@@ -117,22 +117,75 @@ class TestPromptImplementConfig:
     def test_interactive_mode_and_worktree_branch(self):
         from i2code.go_cmd.implement_config import prompt_implement_config
 
-        choices = iter(["1", "1"])
-        interactive, trunk = prompt_implement_config(
-            menu_fn=lambda prompt, default, options: int(next(choices))
+        choices = iter([1, 1, 1])
+        interactive, isolation_type, trunk = prompt_implement_config(
+            menu_fn=lambda prompt, default, options: next(choices)
         )
         assert interactive is True
+        assert isolation_type == "none"
         assert trunk is False
 
     def test_non_interactive_mode_and_trunk_branch(self):
         from i2code.go_cmd.implement_config import prompt_implement_config
 
-        choices = iter(["2", "2"])
-        interactive, trunk = prompt_implement_config(
-            menu_fn=lambda prompt, default, options: int(next(choices))
+        choices = iter([2, 1, 2])
+        interactive, isolation_type, trunk = prompt_implement_config(
+            menu_fn=lambda prompt, default, options: next(choices)
         )
         assert interactive is False
+        assert isolation_type == "none"
         assert trunk is True
+
+
+@pytest.mark.unit
+class TestPromptImplementConfigWithIsolation:
+
+    def test_isolation_none_asks_all_three_questions(self):
+        """Selecting isolation 'none' asks mode, isolation, and branch strategy."""
+        from i2code.go_cmd.implement_config import prompt_implement_config
+
+        prompts_asked = []
+        answers = iter([1, 1, 1])
+
+        def menu_fn(prompt, default, options):
+            prompts_asked.append(prompt)
+            return next(answers)
+
+        result = prompt_implement_config(menu_fn)
+        assert result == (True, "none", False)
+        assert len(prompts_asked) == 3
+
+    def test_isolation_nono_skips_trunk_question(self):
+        """Selecting isolation 'nono' skips branch strategy, sets trunk=False."""
+        from i2code.go_cmd.implement_config import prompt_implement_config
+
+        prompts_asked = []
+
+        def menu_fn(prompt, default, options):
+            prompts_asked.append(prompt)
+            if "Claude" in prompt:
+                return 1  # Interactive
+            if "isolation" in prompt.lower():
+                return 2  # Nono
+            return 1
+
+        result = prompt_implement_config(menu_fn)
+        assert result == (True, "nono", False)
+        assert len(prompts_asked) == 2
+
+    def test_non_interactive_vm_skips_trunk_question(self):
+        """Non-interactive + VM isolation skips branch strategy."""
+        from i2code.go_cmd.implement_config import prompt_implement_config
+
+        def menu_fn(prompt, default, options):
+            if "Claude" in prompt:
+                return 2  # Non-interactive
+            if "isolation" in prompt.lower():
+                return 4  # VM
+            return 1
+
+        result = prompt_implement_config(menu_fn)
+        assert result == (False, "vm", False)
 
 
 @pytest.mark.unit

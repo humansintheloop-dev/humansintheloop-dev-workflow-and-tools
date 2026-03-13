@@ -101,16 +101,16 @@ This thread adds `isolation_type` support to the config data layer — reading, 
 
 This thread adds the isolation type question to the interactive prompt flow.
 
-- [ ] **Task 2.1: prompt_implement_config asks isolation type and conditionally skips trunk question**
+- [x] **Task 2.1: prompt_implement_config asks isolation type and conditionally skips trunk question**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/implement/`
   - Observable: `prompt_implement_config(menu_fn)` asks three questions in order: mode, isolation type, branch strategy. When isolation type is not "none", it skips the branch strategy question and sets trunk to `false`. Returns `(interactive, isolation_type, trunk)`.
   - Evidence: pytest runs tests with injected `menu_fn` that simulate: (a) selecting isolation "none" → all three questions asked, returns `(True, "none", False)`, (b) selecting isolation "nono" → trunk question skipped, returns `(True, "nono", False)`, (c) selecting non-interactive + VM → returns `(False, "vm", False)`
   - Steps:
-    - [ ] Read current `prompt_implement_config()` in `src/i2code/implement/implement_config.py` to understand how `menu_fn` is called
-    - [ ] Write failing tests with injected `menu_fn` for the three scenarios described in Evidence
-    - [ ] Update `prompt_implement_config()` to: (a) add isolation type question after mode question with choices `["None", "Nono", "Container", "VM"]`, (b) conditionally ask branch strategy only when isolation is "none", (c) return 3-tuple `(interactive, isolation_type, trunk)`
-    - [ ] Update return type annotation if type hints are used
+    - [x] Read current `prompt_implement_config()` in `src/i2code/implement/implement_config.py` to understand how `menu_fn` is called
+    - [x] Write failing tests with injected `menu_fn` for the three scenarios described in Evidence
+    - [x] Update `prompt_implement_config()` to: (a) add isolation type question after mode question with choices `["None", "Nono", "Container", "VM"]`, (b) conditionally ask branch strategy only when isolation is "none", (c) return 3-tuple `(interactive, isolation_type, trunk)`
+    - [x] Update return type annotation if type hints are used
 
 ---
 
@@ -180,3 +180,18 @@ build_implement_flags emits --isolation-type flag when isolation_type is not non
 
 ### 2026-03-13 17:11 - mark-task-complete
 build_implement_label includes isolation_type in menu text via build_implement_flags delegation
+
+### 2026-03-13 17:14 - mark-step-complete
+Read current prompt_implement_config implementation
+
+### 2026-03-13 17:16 - mark-step-complete
+Wrote failing tests for three isolation scenarios
+
+### 2026-03-13 17:16 - mark-step-complete
+Updated prompt_implement_config with isolation question and conditional branch strategy
+
+### 2026-03-13 17:16 - mark-step-complete
+Updated return type annotation in docstring
+
+### 2026-03-13 17:17 - mark-task-complete
+prompt_implement_config now asks isolation type and conditionally skips trunk question

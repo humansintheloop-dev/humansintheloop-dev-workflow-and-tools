@@ -188,11 +188,12 @@ class PullRequestReviewProcessor:
                 comment_id, new_review_comments, new_conversation,
             )
 
+            marker = "<!-- i2code -->\n"
             print(f"Asking for clarification on comment {comment_id}...")
             if comment_type == "review":
-                success = gh_client.reply_to_review_comment(pr_number, comment_id, question)
+                success = gh_client.reply_to_review_comment(pr_number, comment_id, f"{marker}{question}")
             else:
-                success = gh_client.reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{question}")
+                success = gh_client.reply_to_pr_comment(pr_number, f"{marker}Re: comment {comment_id}\n\n{question}")
 
             if success:
                 print(f"  Replied to comment {comment_id}")

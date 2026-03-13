@@ -63,17 +63,17 @@ This thread implements the primary defense against self-reply loops: all i2code 
     - [x] Verify the test passes
     - Implement using TDD
 
-- [ ] **Task 1.2: Clarification replies include the `<!-- i2code -->` marker**
+- [x] **Task 1.2: Clarification replies include the `<!-- i2code -->` marker**
   - TaskType: OUTCOME
   - Entrypoint: `pytest` (run the test for `_reply_with_clarifications`)
   - Observable: When `_reply_with_clarifications` posts a reply (both review comments and conversation comments), the body starts with `<!-- i2code -->\n` followed by the original clarification content
   - Evidence: Unit tests mock `GitHubClient.reply_to_review_comment` and `GitHubClient.reply_to_pr_comment`, assert the body argument starts with `<!-- i2code -->\n` for both code paths
   - Steps:
-    - [ ] Read `_reply_with_clarifications` in `src/i2code/implement/pull_request_review_processor.py` (spec references lines 179-200)
-    - [ ] Write a failing test for the review-comment clarification path asserting the marker prefix
-    - [ ] Write a failing test for the conversation-comment clarification path asserting the marker prefix (body format: `<!-- i2code -->\nRe: comment {id}\n\n{question}`)
-    - [ ] Modify the reply body construction in `_reply_with_clarifications` to prepend `<!-- i2code -->\n`
-    - [ ] Verify both tests pass
+    - [x] Read `_reply_with_clarifications` in `src/i2code/implement/pull_request_review_processor.py` (spec references lines 179-200)
+    - [x] Write a failing test for the review-comment clarification path asserting the marker prefix
+    - [x] Write a failing test for the conversation-comment clarification path asserting the marker prefix (body format: `<!-- i2code -->\nRe: comment {id}\n\n{question}`)
+    - [x] Modify the reply body construction in `_reply_with_clarifications` to prepend `<!-- i2code -->\n`
+    - [x] Verify both tests pass
     - Implement using TDD
 
 - [ ] **Task 1.3: Self-comments are filtered out during feedback processing**

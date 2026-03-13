@@ -23,6 +23,8 @@ def read_implement_config(path):
             line = line.strip()
             if line.startswith("interactive:"):
                 values["interactive"] = line.split(":", 1)[1].strip() == "true"
+            elif line.startswith("isolation_type:"):
+                values["isolation_type"] = line.split(":", 1)[1].strip()
             elif line.startswith("trunk:"):
                 values["trunk"] = line.split(":", 1)[1].strip() == "true"
 
@@ -30,6 +32,7 @@ def read_implement_config(path):
         return None
 
     values.setdefault("interactive", True)
+    values.setdefault("isolation_type", "none")
     values.setdefault("trunk", False)
     return values
 

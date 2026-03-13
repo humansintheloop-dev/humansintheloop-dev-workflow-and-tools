@@ -70,6 +70,35 @@ class TestReadConfigDefaults:
 
 
 @pytest.mark.unit
+class TestReadConfigIsolationType:
+
+    def test_read_config_with_isolation_type(self):
+        from i2code.go_cmd.implement_config import read_implement_config
+
+        with TempIdeaProject("my-feature") as project:
+            path = project.implement_config_file
+            with open(path, "w") as f:
+                f.write("interactive: true\n")
+                f.write("isolation_type: nono\n")
+                f.write("trunk: false\n")
+            config = read_implement_config(path)
+            assert config["interactive"] is True
+            assert config["isolation_type"] == "nono"
+            assert config["trunk"] is False
+
+    def test_legacy_config_missing_isolation_type_defaults_to_none(self):
+        from i2code.go_cmd.implement_config import read_implement_config
+
+        with TempIdeaProject("my-feature") as project:
+            path = project.implement_config_file
+            with open(path, "w") as f:
+                f.write("interactive: true\n")
+                f.write("trunk: false\n")
+            config = read_implement_config(path)
+            assert config["isolation_type"] == "none"
+
+
+@pytest.mark.unit
 class TestPromptImplementConfig:
 
     def test_interactive_mode_and_worktree_branch(self):

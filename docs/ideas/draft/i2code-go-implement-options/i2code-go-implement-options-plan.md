@@ -56,16 +56,16 @@ Run `grep -r "CONFIGURE_IMPLEMENT" src/` to find the constant definition and all
 
 This thread adds `isolation_type` support to the config data layer — reading, writing, building flags, and building the menu label — without touching the orchestrator menu yet. All tasks use TDD.
 
-- [ ] **Task 1.1: read_implement_config returns isolation_type with backward compatibility**
+- [x] **Task 1.1: read_implement_config returns isolation_type with backward compatibility**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/implement/`
   - Observable: `read_implement_config()` returns a dict with three keys (`interactive`, `isolation_type`, `trunk`). When `isolation_type` is missing from the YAML file, it defaults to `"none"`.
   - Evidence: pytest runs tests that (a) read a config with all three fields and verify the dict, (b) read a legacy config with only `interactive` and `trunk` and verify `isolation_type` defaults to `"none"`.
   - Steps:
-    - [ ] Read `src/i2code/implement/implement_config.py` to understand current `read_implement_config()` signature and return type
-    - [ ] Read existing tests in `tests/implement/` for implement_config to understand test patterns
-    - [ ] Write failing tests for: (a) reading a config with `isolation_type: nono` returns all three fields, (b) reading a legacy config missing `isolation_type` returns `isolation_type: "none"`
-    - [ ] Update `read_implement_config()` to include `isolation_type` in the returned dict, defaulting to `"none"` if missing
+    - [x] Read `src/i2code/implement/implement_config.py` to understand current `read_implement_config()` signature and return type
+    - [x] Read existing tests in `tests/implement/` for implement_config to understand test patterns
+    - [x] Write failing tests for: (a) reading a config with `isolation_type: nono` returns all three fields, (b) reading a legacy config missing `isolation_type` returns `isolation_type: "none"`
+    - [x] Update `read_implement_config()` to include `isolation_type` in the returned dict, defaulting to `"none"` if missing
 
 - [ ] **Task 1.2: write_implement_config writes isolation_type field**
   - TaskType: OUTCOME

@@ -8,7 +8,7 @@ import pytest
 
 from conftest import TempIdeaProject, menu_config_by_label
 from i2code.go_cmd.implement_config import (
-    INTERACTIVE, NON_INTERACTIVE, TRUNK_MODE, WORKTREE_MODE,
+    INTERACTIVE, ISOLATION_CHOICES, NON_INTERACTIVE, TRUNK_MODE, WORKTREE_MODE,
 )
 from i2code.go_cmd.orchestrator import (
     CONFIGURE_IMPLEMENT, EXIT, IMPLEMENT_PLAN,
@@ -139,7 +139,7 @@ class TestImplementSelectionPromptsWhenNoConfig:
     def test_implement_prompts_for_config_then_runs(self):
         with TempIdeaProject("my-feature") as project:
             mock_implement = MagicMock(return_value=_success_result())
-            user_choices = [IMPLEMENT_PLAN, INTERACTIVE, WORKTREE_MODE, EXIT]
+            user_choices = [IMPLEMENT_PLAN, INTERACTIVE, ISOLATION_CHOICES[0], WORKTREE_MODE, EXIT]
             _run_has_plan_orchestrator(
                 project, user_choices,
                 implement_runner=mock_implement,
@@ -188,7 +188,7 @@ class TestConfigureImplementOptions:
 
         with TempIdeaProject("my-feature") as project:
             user_choices = [
-                CONFIGURE_IMPLEMENT, NON_INTERACTIVE, TRUNK_MODE, EXIT,
+                CONFIGURE_IMPLEMENT, NON_INTERACTIVE, ISOLATION_CHOICES[0], TRUNK_MODE, EXIT,
             ]
             _run_has_plan_orchestrator(
                 project, user_choices,

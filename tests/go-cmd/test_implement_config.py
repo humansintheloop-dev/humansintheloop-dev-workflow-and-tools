@@ -6,12 +6,12 @@ import pytest
 from conftest import TempIdeaProject
 
 
-def _write_config_file(project, interactive, trunk):
+def _write_config_file(project, interactive, trunk, isolation_type="none"):
     """Write implement config and return the config file path."""
     from i2code.go_cmd.implement_config import write_implement_config
 
     path = project.implement_config_file
-    write_implement_config(path, interactive=interactive, trunk=trunk)
+    write_implement_config(path, interactive=interactive, isolation_type=isolation_type, trunk=trunk)
     return path
 
 
@@ -96,6 +96,19 @@ class TestReadConfigIsolationType:
                 f.write("trunk: false\n")
             config = read_implement_config(path)
             assert config["isolation_type"] == "none"
+
+
+@pytest.mark.unit
+class TestWriteConfigIsolationType:
+
+    def test_write_then_read_preserves_isolation_type(self):
+        from i2code.go_cmd.implement_config import read_implement_config, write_implement_config
+
+        with TempIdeaProject("my-feature") as project:
+            path = project.implement_config_file
+            write_implement_config(path, interactive=True, isolation_type="nono", trunk=False)
+            config = read_implement_config(path)
+            assert config["isolation_type"] == "nono"
 
 
 @pytest.mark.unit

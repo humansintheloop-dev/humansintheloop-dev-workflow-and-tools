@@ -60,6 +60,7 @@ def _run_has_plan_orchestrator(project, menu_labels, *,
 
     if config_kwargs is not None:
         from i2code.go_cmd.implement_config import write_implement_config
+        config_kwargs.setdefault("isolation_type", "none")
         write_implement_config(project.implement_config_file, **config_kwargs)
 
     config = menu_config_by_label(menu_labels)

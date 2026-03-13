@@ -67,15 +67,15 @@ This thread adds `isolation_type` support to the config data layer — reading, 
     - [x] Write failing tests for: (a) reading a config with `isolation_type: nono` returns all three fields, (b) reading a legacy config missing `isolation_type` returns `isolation_type: "none"`
     - [x] Update `read_implement_config()` to include `isolation_type` in the returned dict, defaulting to `"none"` if missing
 
-- [ ] **Task 1.2: write_implement_config writes isolation_type field**
+- [x] **Task 1.2: write_implement_config writes isolation_type field**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/implement/`
   - Observable: `write_implement_config(path, interactive, isolation_type, trunk)` writes a YAML file containing all three fields.
   - Evidence: pytest runs a test that calls `write_implement_config()` with `isolation_type="nono"` and verifies the written file contains `isolation_type: nono`.
   - Steps:
-    - [ ] Write failing test that calls `write_implement_config()` with all three args and reads back the file to verify `isolation_type` is present
-    - [ ] Update `write_implement_config()` signature to accept `isolation_type` parameter and write it to the YAML file
-    - [ ] Update all callers of `write_implement_config()` (search with `grep -r "write_implement_config" src/`) to pass `isolation_type`
+    - [x] Write failing test that calls `write_implement_config()` with all three args and reads back the file to verify `isolation_type` is present
+    - [x] Update `write_implement_config()` signature to accept `isolation_type` parameter and write it to the YAML file
+    - [x] Update all callers of `write_implement_config()` (search with `grep -r "write_implement_config" src/`) to pass `isolation_type`
 
 - [ ] **Task 1.3: build_implement_flags includes --isolation-type flag**
   - TaskType: OUTCOME
@@ -168,3 +168,9 @@ This thread updates the orchestrator methods that call prompt/read/write to hand
   - Steps:
     - [ ] Write failing test that calls `_display_implement_config()` with a config dict containing `isolation_type: "nono"` and verifies stdout contains `Isolation: nono`
     - [ ] Update `_display_implement_config()` to include the isolation type line
+
+---
+
+## Change History
+### 2026-03-13 17:01 - mark-task-complete
+write_implement_config now accepts and writes isolation_type field; all callers updated

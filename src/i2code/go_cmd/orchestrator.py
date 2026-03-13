@@ -345,7 +345,7 @@ class Orchestrator:
         if config is None:
             menu_fn = self._menu_fn_for_prompts()
             interactive, trunk = prompt_implement_config(menu_fn)
-            write_implement_config(config_path, interactive, trunk)
+            write_implement_config(config_path, interactive, "none", trunk)
         return read_implement_config(config_path)
 
     def _menu_fn_for_prompts(self):
@@ -380,7 +380,7 @@ class Orchestrator:
         menu_fn = self._menu_fn_for_prompts()
         interactive, trunk = prompt_implement_config(menu_fn)
         write_implement_config(
-            self._project.implement_config_file, interactive, trunk,
+            self._project.implement_config_file, interactive, "none", trunk,
         )
 
     def _check_plan_completion(self):

@@ -119,11 +119,11 @@ class TestDraftIdeaMenu:
             options = _build_menu_options(project)
             assert MOVE_TO_READY in options
 
-    def test_draft_idea_move_to_ready_is_option_2(self):
+    def test_draft_idea_move_to_ready_is_option_3(self):
         with _lifecycle_project("my-feature", "draft") as project:
             _setup_has_plan(project)
             options = _build_menu_options(project)
-            assert options[1] == MOVE_TO_READY
+            assert options[2] == MOVE_TO_READY
 
     def test_draft_idea_move_to_ready_is_default(self):
         with _lifecycle_project("my-feature", "draft") as project:
@@ -141,11 +141,11 @@ class TestReadyIdeaMenu:
             options = _build_menu_options(project)
             assert MOVE_TO_WIP in options
 
-    def test_ready_idea_move_to_wip_is_option_2(self):
+    def test_ready_idea_move_to_wip_is_option_3(self):
         with _lifecycle_project("my-feature", "ready") as project:
             _setup_has_plan(project)
             options = _build_menu_options(project)
-            assert options[1] == MOVE_TO_WIP
+            assert options[2] == MOVE_TO_WIP
 
     def test_ready_idea_move_to_wip_is_default(self):
         with _lifecycle_project("my-feature", "ready") as project:

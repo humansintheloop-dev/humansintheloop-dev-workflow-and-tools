@@ -37,10 +37,11 @@ def read_implement_config(path):
     return values
 
 
-def write_implement_config(path, interactive, trunk):
+def write_implement_config(path, interactive, isolation_type, trunk):
     """Write implement config to a YAML-like file."""
     with open(path, "w") as f:
         f.write(f"interactive: {str(interactive).lower()}\n")
+        f.write(f"isolation_type: {isolation_type}\n")
         f.write(f"trunk: {str(trunk).lower()}\n")
 
 

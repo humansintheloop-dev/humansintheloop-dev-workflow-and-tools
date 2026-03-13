@@ -90,15 +90,15 @@ This thread implements the primary defense against self-reply loops: all i2code 
     - [x] Verify the test passes
     - Implement using TDD
 
-- [ ] **Task 1.4: User comments in the same thread as i2code replies are still processed**
+- [x] **Task 1.4: User comments in the same thread as i2code replies are still processed**
   - TaskType: OUTCOME
   - Entrypoint: `pytest`
   - Observable: When a thread contains both an i2code reply (with `<!-- i2code -->` marker) and a subsequent user comment (without the marker), the user comment is returned as new feedback while the i2code reply is filtered out
   - Evidence: Unit test provides a thread with [user comment, i2code reply, user follow-up]; asserts both user comments are returned but the i2code reply is filtered out (Scenario 4 from spec)
   - Steps:
-    - [ ] Write a failing test simulating Scenario 4: user comment → i2code reply → user follow-up; assert the follow-up is included in results
-    - [ ] Verify the existing implementation from Task 1.3 already handles this correctly (the filter is per-comment body, not per-thread)
-    - [ ] If the test passes immediately, this validates the design; if not, fix the filtering logic
+    - [x] Write a failing test simulating Scenario 4: user comment → i2code reply → user follow-up; assert the follow-up is included in results
+    - [x] Verify the existing implementation from Task 1.3 already handles this correctly (the filter is per-comment body, not per-thread)
+    - [x] If the test passes immediately, this validates the design; if not, fix the filtering logic
     - Implement using TDD
 
 ## Steel Thread 2: Resolved Conversation Filtering

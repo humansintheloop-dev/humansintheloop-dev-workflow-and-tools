@@ -441,6 +441,30 @@ class TestSelfCommentFiltering:
         assert conversation[0]["id"] == 10
         assert 11 in fake_state.processed_conversation_ids
 
+    def test_user_followup_after_i2code_reply_is_included(self):
+        """Scenario 4: user comment → i2code reply → user follow-up.
+
+        The i2code reply is filtered out but both user comments are returned.
+        """
+        user_comment = {"id": 1, "body": "Why is this function public?", "user": {"login": "reviewer"}}
+        i2code_reply = {"id": 2, "body": "<!-- i2code -->\nIt's public because it's called from integration tests.", "user": {"login": "reviewer"}}
+        user_followup = {"id": 3, "body": "OK, but can we make it package-private instead?", "user": {"login": "reviewer"}}
+
+        processor, _, _, fake_state, _ = _make_processor(
+            comments=[user_comment, i2code_reply, user_followup],
+            reviews=[],
+            conversation_comments=[],
+        )
+
+        review_comments, reviews, conversation = processor._fetch_unprocessed_feedback(42)
+
+        assert len(review_comments) == 2
+        assert review_comments[0]["id"] == 1
+        assert review_comments[1]["id"] == 3
+        assert 2 in fake_state.processed_comment_ids
+        assert 1 not in fake_state.processed_comment_ids
+        assert 3 not in fake_state.processed_comment_ids
+
 
 PR6_REPO = "humansintheloop-dev/humansintheloop-dev-workflow-and-tools"
 PR6_NUMBER = 6

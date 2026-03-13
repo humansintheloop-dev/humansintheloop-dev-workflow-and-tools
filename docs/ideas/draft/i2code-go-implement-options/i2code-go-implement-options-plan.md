@@ -86,14 +86,14 @@ This thread adds `isolation_type` support to the config data layer — reading, 
     - [x] Write failing tests: (a) config with `isolation_type: "nono"` produces `["--isolation-type", "nono"]` in flags, (b) config with `isolation_type: "none"` does NOT include `--isolation-type` in flags, (c) config with `isolation_type: "container"` and `interactive: false` produces both `--non-interactive` and `--isolation-type container`
     - [x] Update `build_implement_flags()` to emit `--isolation-type {value}` when isolation_type is not `"none"`
 
-- [ ] **Task 1.4: build_implement_label reflects isolation_type in menu text**
+- [x] **Task 1.4: build_implement_label reflects isolation_type in menu text**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/implement/`
   - Observable: `build_implement_label(config_path)` includes `--isolation-type {value}` in the label string when isolation type is not "none". Examples: `"Implement the entire plan: i2code implement --non-interactive --isolation-type nono"`.
   - Evidence: pytest runs tests with different config files and verifies the label string.
   - Steps:
-    - [ ] Write failing tests: (a) config with defaults produces `"Implement the entire plan: i2code implement"`, (b) config with `isolation_type: "nono"` and `interactive: false` produces `"Implement the entire plan: i2code implement --non-interactive --isolation-type nono"`, (c) no config file produces `"Implement the entire plan: i2code implement"`
-    - [ ] Update `build_implement_label()` to use the updated `build_implement_flags()` (likely already works if flags are correct, but verify)
+    - [x] Write failing tests: (a) config with defaults produces `"Implement the entire plan: i2code implement"`, (b) config with `isolation_type: "nono"` and `interactive: false` produces `"Implement the entire plan: i2code implement --non-interactive --isolation-type nono"`, (c) no config file produces `"Implement the entire plan: i2code implement"`
+    - [x] Update `build_implement_label()` to use the updated `build_implement_flags()` (likely already works if flags are correct, but verify)
 
 ---
 
@@ -177,3 +177,6 @@ write_implement_config now accepts and writes isolation_type field; all callers 
 
 ### 2026-03-13 17:07 - mark-task-complete
 build_implement_flags emits --isolation-type flag when isolation_type is not none
+
+### 2026-03-13 17:11 - mark-task-complete
+build_implement_label includes isolation_type in menu text via build_implement_flags delegation

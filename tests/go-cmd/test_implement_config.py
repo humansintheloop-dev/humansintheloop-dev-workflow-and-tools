@@ -163,6 +163,30 @@ class TestBuildImplementFlags:
         assert "--non-interactive" in flags
         assert "--trunk" in flags
 
+    def test_isolation_type_nono_produces_flag(self):
+        from i2code.go_cmd.implement_config import build_implement_flags
+
+        config = {"interactive": True, "isolation_type": "nono", "trunk": False}
+        flags = build_implement_flags(config)
+        assert "--isolation-type" in flags
+        assert "nono" in flags
+
+    def test_isolation_type_none_omits_flag(self):
+        from i2code.go_cmd.implement_config import build_implement_flags
+
+        config = {"interactive": True, "isolation_type": "none", "trunk": False}
+        flags = build_implement_flags(config)
+        assert "--isolation-type" not in flags
+
+    def test_non_interactive_and_container_isolation_produces_both_flags(self):
+        from i2code.go_cmd.implement_config import build_implement_flags
+
+        config = {"interactive": False, "isolation_type": "container", "trunk": False}
+        flags = build_implement_flags(config)
+        assert "--non-interactive" in flags
+        assert "--isolation-type" in flags
+        assert "container" in flags
+
 
 @pytest.mark.unit
 class TestBuildImplementLabel:

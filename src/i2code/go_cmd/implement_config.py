@@ -73,6 +73,10 @@ def build_implement_flags(config):
         flags.append("--non-interactive")
     if config["trunk"]:
         flags.append("--trunk")
+    isolation_type = config.get("isolation_type", "none")
+    if isolation_type != "none":
+        flags.append("--isolation-type")
+        flags.append(isolation_type)
     return flags
 
 

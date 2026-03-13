@@ -77,14 +77,14 @@ This thread adds `isolation_type` support to the config data layer — reading, 
     - [x] Update `write_implement_config()` signature to accept `isolation_type` parameter and write it to the YAML file
     - [x] Update all callers of `write_implement_config()` (search with `grep -r "write_implement_config" src/`) to pass `isolation_type`
 
-- [ ] **Task 1.3: build_implement_flags includes --isolation-type flag**
+- [x] **Task 1.3: build_implement_flags includes --isolation-type flag**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/implement/`
   - Observable: `build_implement_flags(config)` returns `--isolation-type {value}` when `isolation_type` is not `"none"`, and omits it when `isolation_type` is `"none"`.
   - Evidence: pytest runs tests with configs containing various isolation types and verifies the flag list.
   - Steps:
-    - [ ] Write failing tests: (a) config with `isolation_type: "nono"` produces `["--isolation-type", "nono"]` in flags, (b) config with `isolation_type: "none"` does NOT include `--isolation-type` in flags, (c) config with `isolation_type: "container"` and `interactive: false` produces both `--non-interactive` and `--isolation-type container`
-    - [ ] Update `build_implement_flags()` to emit `--isolation-type {value}` when isolation_type is not `"none"`
+    - [x] Write failing tests: (a) config with `isolation_type: "nono"` produces `["--isolation-type", "nono"]` in flags, (b) config with `isolation_type: "none"` does NOT include `--isolation-type` in flags, (c) config with `isolation_type: "container"` and `interactive: false` produces both `--non-interactive` and `--isolation-type container`
+    - [x] Update `build_implement_flags()` to emit `--isolation-type {value}` when isolation_type is not `"none"`
 
 - [ ] **Task 1.4: build_implement_label reflects isolation_type in menu text**
   - TaskType: OUTCOME
@@ -174,3 +174,6 @@ This thread updates the orchestrator methods that call prompt/read/write to hand
 ## Change History
 ### 2026-03-13 17:01 - mark-task-complete
 write_implement_config now accepts and writes isolation_type field; all callers updated
+
+### 2026-03-13 17:07 - mark-task-complete
+build_implement_flags emits --isolation-type flag when isolation_type is not none

@@ -67,16 +67,16 @@ This steel thread fixes the core bug: the parser currently stores inter-element 
     - [x] Modify `src/i2code/plan_domain/thread.py` — in `Thread.to_lines()`, insert `lines.append('')` before each task except the first
     - [x] Run `pytest tests/plan-domain/test_thread_to_lines_blank_lines.py` and verify all 4 tests pass
 
-- [ ] **Task 1.3: Round-trip tests pass after parser and serializer changes**
+- [x] **Task 1.3: Round-trip tests pass after parser and serializer changes**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/plan-domain/test_parse_write_round_trip.py`
   - Observable: Parsing a standard plan file and serializing it back produces identical output. Round-trip equivalence is maintained.
   - Evidence: `pytest tests/plan-domain/test_parse_write_round_trip.py` — all tests pass
   - Steps:
-    - [ ] Run `pytest tests/plan-domain/test_parse_write_round_trip.py` and identify any failures caused by the parser/serializer changes from Tasks 1.1 and 1.2
-    - [ ] Fix any round-trip test failures — the parser now strips trailing blanks from tasks, and `Thread.to_lines()` now adds them back, so round-trip should be preserved for well-formatted plans
-    - [ ] If the `test_no_separator_lines` test exists and expects threads without `---` separators to round-trip without `---`, update it to expect `---` separators in output (per FR4/FR5 in the spec)
-    - [ ] Run full `pytest tests/plan-domain/` and verify all tests pass
+    - [x] Run `pytest tests/plan-domain/test_parse_write_round_trip.py` and identify any failures caused by the parser/serializer changes from Tasks 1.1 and 1.2
+    - [x] Fix any round-trip test failures — the parser now strips trailing blanks from tasks, and `Thread.to_lines()` now adds them back, so round-trip should be preserved for well-formatted plans
+    - [x] If the `test_no_separator_lines` test exists and expects threads without `---` separators to round-trip without `---`, update it to expect `---` separators in output (per FR4/FR5 in the spec)
+    - [x] Run full `pytest tests/plan-domain/` and verify all tests pass
 
 ---
 
@@ -136,3 +136,6 @@ New test passes, 6 round-trip failures deferred to Task 1.3 as planned
 
 ### 2026-03-14 11:45 - mark-task-complete
 Parser strips trailing blank lines; new test passes; round-trip test fixes deferred to Task 1.3
+
+### 2026-03-14 12:04 - mark-task-complete
+All 12 round-trip tests pass; all 181 plan-domain tests pass

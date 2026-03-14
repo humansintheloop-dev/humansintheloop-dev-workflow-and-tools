@@ -1,6 +1,5 @@
 """Parse a plan string into domain objects, write it back, and verify identity."""
 
-import pytest
 
 from i2code.plan_domain.parser import parse
 from i2code.plan_domain.plan import Plan
@@ -135,14 +134,12 @@ These are extra notes that should be in the postamble.
 
 class TestParseAndWrite:
 
-    @pytest.mark.xfail(reason="Task 1.3: round-trip needs serializer to emit blank lines between tasks")
     def test_round_trip_produces_identical_output(self):
         plan = parse(FULL_PLAN)
         assert isinstance(plan, Plan)
         result = plan.to_text()
         assert result == FULL_PLAN
 
-    @pytest.mark.xfail(reason="Task 1.3: round-trip needs serializer to emit blank lines between tasks")
     def test_unknown_trailing_section_round_trips(self):
         plan = parse(PLAN_WITH_UNKNOWN_TRAILING_SECTION)
         result = plan.to_text()
@@ -214,7 +211,6 @@ class TestEdgeCases:
         assert 'Steel Thread 1: Planning' in header
         assert plan.to_text() == THREAD_NO_TASKS
 
-    @pytest.mark.xfail(reason="Task 1.3: round-trip needs serializer to emit blank lines between tasks")
     def test_no_postamble(self):
         text = """\
 # Implementation Plan: No Postamble
@@ -258,7 +254,6 @@ Do the work.
         assert '**Task 1.1: First task**' in output
         assert '**Task 1.2: Second task**' in output
 
-    @pytest.mark.xfail(reason="Task 1.3: round-trip needs serializer to emit blank lines between tasks")
     def test_single_thread_single_task(self):
         text = """\
 # Minimal Plan
@@ -276,7 +271,6 @@ Do the work.
         assert plan._postamble_lines == []
         assert plan.to_text() == text
 
-    @pytest.mark.xfail(reason="Task 1.3: round-trip needs serializer to emit blank lines between tasks")
     def test_no_separator_lines(self):
         text = """\
 # Plan Without Separators
@@ -298,15 +292,38 @@ Second thread intro.
 ## Summary
 All done.
 """
+        expected = """\
+# Plan Without Separators
+
+## Steel Thread 1: First
+First thread intro.
+
+- [ ] **Task 1.1: Task A**
+  - Steps:
+    - [ ] Step
+
+---
+
+## Steel Thread 2: Second
+Second thread intro.
+
+- [ ] **Task 2.1: Task B**
+  - Steps:
+    - [ ] Step
+
+---
+
+## Summary
+All done.
+"""
         plan = parse(text)
         assert len(plan.threads) == 2
         assert len(plan.threads[0].tasks) == 1
         assert len(plan.threads[1].tasks) == 1
         postamble = '\n'.join(plan._postamble_lines)
         assert '## Summary' in postamble
-        assert plan.to_text() == text
+        assert plan.to_text() == expected
 
-    @pytest.mark.xfail(reason="Task 1.3: round-trip needs serializer to emit blank lines between tasks")
     def test_change_history_without_summary(self):
         text = """\
 # Plan

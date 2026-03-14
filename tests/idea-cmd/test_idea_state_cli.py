@@ -448,3 +448,70 @@ class TestStateTransitionNoCommit:
             cwd=str(git_repo), check=True, capture_output=True, text=True,
         )
         assert "my-feature-metadata.yaml" in staged.stdout
+
+
+def _write_plan_file(idea_dir, name, content):
+    """Write a plan file with the given content."""
+    plan_path = os.path.join(idea_dir, f"{name}-plan.md")
+    with open(plan_path, "w") as f:
+        f.write(content)
+
+
+COMPLETED_PLAN = """\
+# Implementation Plan: Test
+
+## Steel Thread 1: Do stuff
+
+- [x] **Task 1.1: First task**
+  - Steps:
+    - [x] Step one
+
+- [x] **Task 1.2: Second task**
+  - Steps:
+    - [x] Step one
+"""
+
+INCOMPLETE_PLAN = """\
+# Implementation Plan: Test
+
+## Steel Thread 1: Do stuff
+
+- [x] **Task 1.1: First task**
+  - Steps:
+    - [x] Step one
+
+- [ ] **Task 1.2: Second task**
+  - Steps:
+    - [ ] Step one
+"""
+
+
+@pytest.mark.unit
+class TestCompletedPlans:
+
+    def test_transitions_wip_ideas_with_completed_plans(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        # Create three wip ideas
+        dir_a = _create_active_idea(git_repo, "idea-a", state="wip")
+        _write_plan_file(dir_a, "idea-a", COMPLETED_PLAN)
+        dir_b = _create_active_idea(git_repo, "idea-b", state="wip")
+        _write_plan_file(dir_b, "idea-b", COMPLETED_PLAN)
+        dir_c = _create_active_idea(git_repo, "idea-c", state="wip")
+        _write_plan_file(dir_c, "idea-c", INCOMPLETE_PLAN)
+        _git_add_and_commit(git_repo, "Initial commit")
+
+        result = cli.invoke(main, ["idea", "state", "--completed-plans"])
+
+        assert result.exit_code == 0, result.output
+        assert "Move idea idea-a from wip to completed" in result.output
+        assert "Move idea idea-b from wip to completed" in result.output
+        assert "idea-c" not in result.output
+        # Verify metadata states
+        with open(os.path.join(dir_a, "idea-a-metadata.yaml")) as f:
+            assert yaml.safe_load(f)["state"] == "completed"
+        with open(os.path.join(dir_b, "idea-b-metadata.yaml")) as f:
+            assert yaml.safe_load(f)["state"] == "completed"
+        with open(os.path.join(dir_c, "idea-c-metadata.yaml")) as f:
+            assert yaml.safe_load(f)["state"] == "wip"
+        # Verify commit message
+        assert _last_commit_message(git_repo) == "Mark ideas with completed plans as completed: idea-a, idea-b"

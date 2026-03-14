@@ -394,8 +394,8 @@ class TestIsolateModeIsolatedPathRelativeToClone:
 
         _, cmd, _ = subprocess_runner.calls[0]
         idea_dir_arg = _extract_isolated_path(cmd)
-        assert idea_dir_arg == "docs/features/test-feature", (
-            f"Expected 'docs/features/test-feature', got '{idea_dir_arg}'"
+        assert idea_dir_arg == "./docs/features/test-feature", (
+            f"Expected './docs/features/test-feature', got '{idea_dir_arg}'"
         )
 
 

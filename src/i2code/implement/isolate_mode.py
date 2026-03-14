@@ -153,8 +153,8 @@ class IsolateMode:
         return args
 
     def _build_inner_args(self, clone_dir):
-        rel_idea_dir = os.path.relpath(
-            self._project.directory, clone_dir,
+        rel_idea_dir = os.path.join(
+            ".", os.path.relpath(self._project.directory, clone_dir),
         )
         args = ["i2code", "--with-sdkman", "implement", "--isolated", rel_idea_dir]
         args.extend(flag for attr, flag in _BOOL_FLAGS if getattr(self._options, attr))

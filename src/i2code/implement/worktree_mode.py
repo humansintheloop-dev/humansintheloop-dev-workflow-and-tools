@@ -88,11 +88,13 @@ class WorktreeMode:
 
     def _review_poll_loop(self):
         """Poll for review feedback until the PR is merged or closed."""
+        print("Waiting for review feedback...")
         while True:
             if self._loop_steps.build_fixer.check_and_fix_ci():
                 continue
 
             if self._loop_steps.review_processor.process_feedback():
+                print("Waiting for review feedback...")
                 continue
 
             pr_state = self._git_repo.gh_client.get_pr_state(self._git_repo.pr_number)
@@ -100,6 +102,8 @@ class WorktreeMode:
                 print(f"PR has been {pr_state.lower()}.")
                 return
 
+            interval = _format_duration(REVIEW_POLL_INTERVAL_SECONDS)
+            print(f"No new feedback. Checking again in {interval}...")
             self._sleep(REVIEW_POLL_INTERVAL_SECONDS)
 
     def _execute_task(self, next_task):

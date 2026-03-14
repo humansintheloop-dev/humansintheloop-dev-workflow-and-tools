@@ -9,6 +9,7 @@ import click
 from i2code.idea.metadata import read_metadata, write_metadata
 from i2code.idea_cmd.transition_rules import validate_transition
 from i2code.idea.resolver import LIFECYCLE_STATES, list_ideas, resolve_idea
+from i2code.plan_domain.parser import parse as parse_plan
 
 
 def _complete_name_or_path(ctx, _param, incomplete):
@@ -84,23 +85,80 @@ def _handle_transition(name_or_path, new_state, *, force, no_commit):
     click.echo(message)
 
 
+def _has_fully_completed_plan(idea_dir, name):
+    """Check if an idea has a plan file with all tasks completed."""
+    plan_path = idea_dir / f"{name}-plan.md"
+    if not plan_path.is_file():
+        return False
+    plan = parse_plan(plan_path.read_text())
+    return plan.task_progress().total > 0 and plan.get_next_task() is None
+
+
+def _find_active_wip_ideas(git_root):
+    """Return active wip ideas."""
+    return [
+        idea for idea in list_ideas(git_root)
+        if idea.state == "wip"
+        and (git_root / "docs" / "ideas" / "active" / idea.name).is_dir()
+    ]
+
+
+def _transition_finished_ideas(wip_ideas, git_root):
+    """Transition wip ideas with completed plans, returning transitioned names."""
+    transitioned = []
+    for idea in wip_ideas:
+        idea_dir = git_root / idea.directory
+        if not _has_fully_completed_plan(idea_dir, idea.name):
+            continue
+        message = execute_transition(idea.name, idea_dir, "completed", git_root)
+        if message:
+            click.echo(message)
+            transitioned.append(idea.name)
+    return transitioned
+
+
+def _complete_finished_plans(git_root, no_commit):
+    """Transition all wip ideas with fully-completed plans to completed."""
+    transitioned = _transition_finished_ideas(_find_active_wip_ideas(git_root), git_root)
+    if not transitioned:
+        click.echo("No wip ideas with completed plans found")
+        return
+    if not no_commit:
+        names = ", ".join(transitioned)
+        _git_commit(f"Mark ideas with completed plans as completed: {names}", git_root)
+
+
+def _validate_args(name_or_path, completed_plans):
+    """Validate mutual exclusivity of name_or_path and --completed-plans."""
+    if completed_plans and name_or_path:
+        raise click.UsageError("Provide an idea name or use --completed-plans, not both.")
+    if not completed_plans and name_or_path is None:
+        raise click.UsageError("Provide an idea name or use --completed-plans.")
+
+
 @click.command("state")
-@click.argument("name_or_path", shell_complete=_complete_name_or_path)
+@click.argument("name_or_path", required=False, default=None, shell_complete=_complete_name_or_path)
 @click.argument(
     "new_state",
     required=False,
     default=None,
     type=click.Choice(LIFECYCLE_STATES, case_sensitive=False),
 )
+@click.option("--completed-plans", is_flag=True, default=False, help="Transition all wip ideas with completed plans.")
 @click.option("--force", is_flag=True, default=False, help="Bypass transition rules.")
 @click.option("--no-commit", is_flag=True, default=False, help="Stage changes but do not commit.")
-def idea_state(name_or_path, new_state, force, no_commit):  # noqa: FBT002
+def idea_state(name_or_path, new_state, **kwargs):
     """Display or transition the lifecycle state of an idea."""
+    completed_plans = kwargs["completed_plans"]
+    no_commit = kwargs["no_commit"]
     try:
-        if new_state is None:
+        _validate_args(name_or_path, completed_plans)
+        if completed_plans:
+            _complete_finished_plans(Path.cwd(), no_commit)
+        elif new_state is None:
             click.echo(_resolve_state(name_or_path))
         else:
-            _handle_transition(name_or_path, new_state, force=force, no_commit=no_commit)
+            _handle_transition(name_or_path, new_state, force=kwargs["force"], no_commit=no_commit)
     except (ValueError, RuntimeError) as exc:
         click.echo(str(exc), err=True)
         sys.exit(1)

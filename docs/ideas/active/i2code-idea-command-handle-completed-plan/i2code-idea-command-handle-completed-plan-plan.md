@@ -62,16 +62,16 @@ The implementation modifies `src/i2code/idea_cmd/state_cmd.py` to add the new fl
 
 This thread implements the primary happy-path scenario (Scenario 1 from spec): multiple wip ideas with completed plans are transitioned in a single command.
 
-- [ ] **Task 1.1: `--completed-plans` transitions wip ideas with all-done plans to completed**
+- [x] **Task 1.1: `--completed-plans` transitions wip ideas with all-done plans to completed**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea state --completed-plans`
   - Observable: All `wip` ideas whose plan files have every task marked `[x]` are transitioned to `completed`. Each transition prints `Move idea <name> from wip to completed`. A single git commit is created with message `Mark ideas with completed plans as completed: <names>`. Ideas with incomplete plans remain in `wip`.
   - Evidence: pytest test in `tests/idea-cmd/test_idea_state_cli.py` that creates three wip ideas (two with fully-completed plans, one with an incomplete plan), invokes the CLI, asserts exit code 0, verifies output contains both transition messages, verifies the incomplete idea remains wip, and checks the git commit message.
   - Steps:
-    - [ ] Write a test class `TestCompletedPlans` in `tests/idea-cmd/test_idea_state_cli.py` with a test that sets up a git repo with three active wip ideas, creates plan files (two fully completed, one incomplete), invokes `i2code idea state --completed-plans`, and asserts the expected output, metadata state changes, and commit message
-    - [ ] Add `--completed-plans` flag to the `idea_state` Click command in `src/i2code/idea_cmd/state_cmd.py`. Make `name_or_path` optional (change `required` to `False`, default to `None`)
-    - [ ] Implement `_complete_finished_plans(git_root, no_commit)` function in `src/i2code/idea_cmd/state_cmd.py` following the `_archive_completed()` pattern from `src/i2code/idea_cmd/archive_cmd.py:55`: use `list_ideas(git_root)` to find wip ideas, check each for a plan file at `<idea_dir>/<name>-plan.md`, parse it with `i2code.plan_domain.parser.parse()`, check `plan.task_progress().total > 0` and `plan.get_next_task() is None`, call `execute_transition()` for matches, then commit
-    - [ ] Update the `idea_state` command body to dispatch to `_complete_finished_plans()` when `--completed-plans` is set
+    - [x] Write a test class `TestCompletedPlans` in `tests/idea-cmd/test_idea_state_cli.py` with a test that sets up a git repo with three active wip ideas, creates plan files (two fully completed, one incomplete), invokes `i2code idea state --completed-plans`, and asserts the expected output, metadata state changes, and commit message
+    - [x] Add `--completed-plans` flag to the `idea_state` Click command in `src/i2code/idea_cmd/state_cmd.py`. Make `name_or_path` optional (change `required` to `False`, default to `None`)
+    - [x] Implement `_complete_finished_plans(git_root, no_commit)` function in `src/i2code/idea_cmd/state_cmd.py` following the `_archive_completed()` pattern from `src/i2code/idea_cmd/archive_cmd.py:55`: use `list_ideas(git_root)` to find wip ideas, check each for a plan file at `<idea_dir>/<name>-plan.md`, parse it with `i2code.plan_domain.parser.parse()`, check `plan.task_progress().total > 0` and `plan.get_next_task() is None`, call `execute_transition()` for matches, then commit
+    - [x] Update the `idea_state` command body to dispatch to `_complete_finished_plans()` when `--completed-plans` is set
 
 ## Steel Thread 2: Empty result handling
 
@@ -120,3 +120,21 @@ Implements Scenarios 4, 5, and 6: error handling and edge cases.
   - Steps:
     - [ ] Write test in `TestCompletedPlans` with three wip ideas (no plan, empty plan, completed plan), invokes `--completed-plans`, asserts only the completed-plan idea appears in output and has state `completed`
     - [ ] Verify the implementation correctly skips ideas where plan file doesn't exist or `task_progress().total == 0` (should already work from Task 1.1)
+
+---
+
+## Change History
+### 2026-03-14 15:54 - mark-step-complete
+Test class TestCompletedPlans written with test_transitions_wip_ideas_with_completed_plans
+
+### 2026-03-14 15:55 - mark-step-complete
+Added --completed-plans flag and made name_or_path optional
+
+### 2026-03-14 15:55 - mark-step-complete
+Implemented _complete_finished_plans following _archive_completed pattern
+
+### 2026-03-14 15:55 - mark-step-complete
+Updated idea_state command body to dispatch to _complete_finished_plans
+
+### 2026-03-14 15:55 - mark-task-complete
+All steps completed, test passes, CodeScene quality gates pass

@@ -112,15 +112,15 @@ This thread addresses thread-level spacing: `---` separators between threads and
     - [x] Modify `src/i2code/plan_domain/plan.py` — in `Plan.to_text()`, emit `['', '---', '']` before the postamble when it exists
     - [x] Verify the parser also strips trailing `---`/blank lines from the postamble's leading edge (the parser change from Task 2.1 should handle this, but verify)
 
-- [ ] **Task 2.4: Full round-trip and integration verification**
+- [x] **Task 2.4: Full round-trip and integration verification**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/plan-domain/`
   - Observable: All tests in `tests/plan-domain/` pass, including round-trip tests, blank-line tests, and the new separator tests. The `replace-task` scenario also produces correct spacing.
   - Evidence: `pytest tests/plan-domain/` — all tests pass with exit code 0
   - Steps:
-    - [ ] Add a test for the `replace-task` scenario: parse a plan with 2 tasks, replace task 2, serialize, verify blank line between task 1 and the replacement task
-    - [ ] Run `pytest tests/plan-domain/` and fix any remaining failures
-    - [ ] Verify all 4 scenarios from the spec are covered by tests: (1) insert task and verify spacing, (2) replace task and verify spacing, (3) insert thread and verify separators, (4) round-trip with no modifications
+    - [x] Add a test for the `replace-task` scenario: parse a plan with 2 tasks, replace task 2, serialize, verify blank line between task 1 and the replacement task
+    - [x] Run `pytest tests/plan-domain/` and fix any remaining failures
+    - [x] Verify all 4 scenarios from the spec are covered by tests: (1) insert task and verify spacing, (2) replace task and verify spacing, (3) insert thread and verify separators, (4) round-trip with no modifications
 
 ---
 
@@ -148,3 +148,15 @@ Added test_plan_to_text_thread_separators.py verifying insert-thread-before, ins
 
 ### 2026-03-14 12:35 - mark-task-complete
 Added tests verifying Plan.to_text() emits --- separator before postamble and round-trips correctly
+
+### 2026-03-14 12:40 - mark-step-complete
+Added test_replace_task_has_blank_lines_between_tasks
+
+### 2026-03-14 12:40 - mark-step-complete
+All 193 tests pass
+
+### 2026-03-14 12:40 - mark-step-complete
+Verified: insert-task spacing, replace-task spacing, insert-thread separators, round-trip identity
+
+### 2026-03-14 12:40 - mark-task-complete
+All 193 tests pass covering all 4 spec scenarios

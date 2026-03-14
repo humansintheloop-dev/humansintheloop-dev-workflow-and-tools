@@ -83,3 +83,10 @@ class TestThreadToLinesBlankLines:
         thread.insert_task_after(1, _new_task())
         lines = thread.to_lines(1)
         assert _has_blank_line_before_each_task(lines)
+
+    def test_replace_task_has_blank_lines_between_tasks(self):
+        plan = parse(PLAN_TEXT)
+        thread = plan.threads[0]
+        thread.replace_task(2, _new_task("Replaced"))
+        lines = thread.to_lines(1)
+        assert _has_blank_line_before_each_task(lines)

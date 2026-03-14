@@ -40,13 +40,23 @@ def _discover_legacy_ideas(git_root: Path) -> list[tuple[str, str, Path]]:
     return ideas
 
 
+def _move_idea_directory(old_path: Path, new_path: Path, git_root: Path) -> None:
+    result = subprocess.run(
+        ["git", "mv", str(old_path), str(new_path)],
+        cwd=str(git_root), capture_output=True,
+    )
+    if result.returncode != 0:
+        shutil.move(str(old_path), str(new_path))
+        subprocess.run(
+            ["git", "add", str(new_path)],
+            cwd=str(git_root), check=True, capture_output=True,
+        )
+
+
 def _migrate_idea(idea: tuple[str, str, Path], active_dir: Path, git_root: Path) -> None:
     name, state, old_path = idea
     new_path = active_dir / name
-    subprocess.run(
-        ["git", "mv", str(old_path), str(new_path)],
-        cwd=str(git_root), check=True, capture_output=True,
-    )
+    _move_idea_directory(old_path, new_path, git_root)
     metadata_path = new_path / f"{name}-metadata.yaml"
     write_metadata(metadata_path, {"state": state})
     subprocess.run(

@@ -171,6 +171,49 @@ class TestMigrateIdempotent:
 
 
 @pytest.mark.unit
+class TestMigrateUntrackedFiles:
+
+    def test_migrates_untracked_idea_directory(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        # Create initial commit so HEAD exists
+        (git_repo / "README.md").write_text("hello")
+        _git_add_and_commit(git_repo, "initial")
+        # Create idea but do NOT commit it — entirely untracked
+        _create_idea(git_repo, "draft", "idea-alpha")
+
+        result = _invoke_migrate(cli, no_commit=True)
+
+        assert result.exit_code == 0
+        active_dir = git_repo / "docs" / "ideas" / "active"
+        assert (active_dir / "idea-alpha").is_dir()
+        assert (active_dir / "idea-alpha" / "idea-alpha-idea.md").is_file()
+        assert not (git_repo / "docs" / "ideas" / "draft" / "idea-alpha").exists()
+
+    def test_migrates_tracked_directory_with_untracked_files(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _create_idea(git_repo, "draft", "idea-alpha")
+        _git_add_and_commit(git_repo, "initial ideas")
+        # Add an untracked file after commit
+        untracked = git_repo / "docs" / "ideas" / "draft" / "idea-alpha" / "untracked.yaml"
+        untracked.write_text("key: value\n")
+
+        result = _invoke_migrate(cli, no_commit=True)
+
+        assert result.exit_code == 0
+        active_dir = git_repo / "docs" / "ideas" / "active"
+        assert (active_dir / "idea-alpha" / "idea-alpha-idea.md").is_file()
+        assert (active_dir / "idea-alpha" / "untracked.yaml").is_file()
+        assert not (git_repo / "docs" / "ideas" / "draft" / "idea-alpha").exists()
+        # Old path should not appear as an unstaged deletion
+        unstaged = subprocess.run(
+            ["git", "diff", "--name-only"],
+            cwd=git_repo, check=True, capture_output=True, text=True,
+        ).stdout
+        assert "docs/ideas/draft/idea-alpha" not in unstaged
+
+
+
+@pytest.mark.unit
 class TestMigrateNoCommit:
 
     def test_stages_files_without_committing(self, git_repo, cli, monkeypatch):

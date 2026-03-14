@@ -338,6 +338,181 @@ class TestDetermineCommentType:
         assert result == "conversation"
 
 
+I2CODE_MARKER = "<!-- i2code -->"
+
+
+def _get_reply_body(fake_gh, call_name):
+    """Extract the reply body from the single matching call on fake_gh."""
+    reply_calls = [c for c in fake_gh.calls if c[0] == call_name]
+    assert len(reply_calls) == 1, f"Expected 1 {call_name} call, got {len(reply_calls)}"
+    body_index = 3 if call_name == "reply_to_review_comment" else 2
+    return reply_calls[0][body_index]
+
+
+def _assert_marker_prefixed(body, *expected_substrings):
+    """Assert body starts with the i2code marker and contains expected substrings."""
+    assert body.startswith(f"{I2CODE_MARKER}\n"), f"Expected marker prefix, got: {body!r}"
+    for substring in expected_substrings:
+        assert substring in body, f"Expected {substring!r} in body: {body!r}"
+
+
+def _push_and_reply_body(comment_id, review_comments, conversation_comments):
+    """Call _push_and_reply and return the reply body posted to the matching call."""
+    processor, fake_gh, fake_repo, _, _ = _make_processor()
+    fake_repo.set_head_sha("aaa111")
+    processor._push_and_reply("abc12345", [comment_id], review_comments, conversation_comments)
+    call_name = "reply_to_review_comment" if review_comments else "reply_to_pr_comment"
+    return _get_reply_body(fake_gh, call_name)
+
+
+def _clarification_reply_body(comment_id, question, review_comments, conversation_comments):
+    """Call _reply_with_clarifications and return the reply body."""
+    processor, fake_gh, _, _, _ = _make_processor()
+    processor._reply_with_clarifications(
+        [{"comment_id": comment_id, "question": question}],
+        42, review_comments, conversation_comments,
+    )
+    call_name = "reply_to_review_comment" if review_comments else "reply_to_pr_comment"
+    return _get_reply_body(fake_gh, call_name)
+
+
+@pytest.mark.unit
+class TestPushAndReplyMarker:
+    """_push_and_reply prepends i2code marker to reply bodies."""
+
+    def test_review_comment_reply_starts_with_marker(self):
+        body = _push_and_reply_body(100, [{"id": 100, "body": "Fix this"}], [])
+        _assert_marker_prefixed(body, "Fixed in abc12345")
+
+    def test_conversation_comment_reply_starts_with_marker(self):
+        body = _push_and_reply_body(200, [], [{"id": 200, "body": "General note"}])
+        _assert_marker_prefixed(body)
+
+
+@pytest.mark.unit
+class TestReplyWithClarificationsMarker:
+    """_reply_with_clarifications prepends i2code marker to clarification replies."""
+
+    def test_review_comment_clarification_starts_with_marker(self):
+        body = _clarification_reply_body(100, "Could you elaborate?", [{"id": 100, "body": "What does this do?"}], [])
+        _assert_marker_prefixed(body, "Could you elaborate?")
+
+    def test_conversation_comment_clarification_starts_with_marker(self):
+        body = _clarification_reply_body(200, "Can you explain further?", [], [{"id": 200, "body": "Why this approach?"}])
+        _assert_marker_prefixed(body, "Re: comment 200", "Can you explain further?")
+
+
+@pytest.mark.unit
+class TestSelfCommentFiltering:
+    """_fetch_unprocessed_feedback filters out comments with i2code marker."""
+
+    def test_filters_out_marker_comments_and_marks_processed(self):
+        """Comments starting with <!-- i2code --> are excluded and their IDs marked processed."""
+        user_comment = {"id": 1, "body": "Please fix the typo", "user": {"login": "reviewer"}}
+        self_comment = {"id": 2, "body": "<!-- i2code -->\nFixed in abc123", "user": {"login": "bot"}}
+        another_user_comment = {"id": 3, "body": "Also check line 10", "user": {"login": "reviewer"}}
+
+        processor, _, _, fake_state, _ = _make_processor(
+            comments=[user_comment, self_comment, another_user_comment],
+            reviews=[],
+            conversation_comments=[],
+        )
+
+        review_comments, reviews, conversation = processor._fetch_unprocessed_feedback(42)
+
+        assert len(review_comments) == 2
+        assert all(c["id"] in [1, 3] for c in review_comments)
+        assert 2 in fake_state.processed_comment_ids
+
+    def test_filters_marker_from_conversation_comments(self):
+        """Marker filtering also applies to conversation comments."""
+        user_comment = {"id": 10, "body": "Nice work", "user": {"login": "reviewer"}}
+        self_comment = {"id": 11, "body": "<!-- i2code -->\nRe: comment 10\n\nClarification", "user": {"login": "bot"}}
+
+        processor, _, _, fake_state, _ = _make_processor(
+            comments=[],
+            reviews=[],
+            conversation_comments=[user_comment, self_comment],
+        )
+
+        review_comments, reviews, conversation = processor._fetch_unprocessed_feedback(42)
+
+        assert len(conversation) == 1
+        assert conversation[0]["id"] == 10
+        assert 11 in fake_state.processed_conversation_ids
+
+    def test_user_followup_after_i2code_reply_is_included(self):
+        """Scenario 4: user comment → i2code reply → user follow-up.
+
+        The i2code reply is filtered out but both user comments are returned.
+        """
+        user_comment = {"id": 1, "body": "Why is this function public?", "user": {"login": "reviewer"}}
+        i2code_reply = {"id": 2, "body": "<!-- i2code -->\nIt's public because it's called from integration tests.", "user": {"login": "reviewer"}}
+        user_followup = {"id": 3, "body": "OK, but can we make it package-private instead?", "user": {"login": "reviewer"}}
+
+        processor, _, _, fake_state, _ = _make_processor(
+            comments=[user_comment, i2code_reply, user_followup],
+            reviews=[],
+            conversation_comments=[],
+        )
+
+        review_comments, reviews, conversation = processor._fetch_unprocessed_feedback(42)
+
+        assert len(review_comments) == 2
+        assert review_comments[0]["id"] == 1
+        assert review_comments[1]["id"] == 3
+        assert 2 in fake_state.processed_comment_ids
+        assert 1 not in fake_state.processed_comment_ids
+        assert 3 not in fake_state.processed_comment_ids
+
+
+@pytest.mark.unit
+class TestResolvedThreadFiltering:
+    """_fetch_unprocessed_feedback filters out comments in resolved review threads."""
+
+    def test_resolved_thread_comments_excluded_and_marked_processed(self):
+        """Comments whose IDs are in the resolved-thread set are excluded and marked processed."""
+        user_comment = {"id": 1, "body": "Please fix the typo", "user": {"login": "reviewer"}}
+        resolved_comment = {"id": 2, "body": "Consider a constant here", "user": {"login": "reviewer"}}
+        another_user_comment = {"id": 3, "body": "Also check line 10", "user": {"login": "reviewer"}}
+
+        processor, fake_gh, _, fake_state, _ = _make_processor(
+            comments=[user_comment, resolved_comment, another_user_comment],
+            reviews=[],
+            conversation_comments=[],
+        )
+        fake_gh.set_resolved_review_comment_ids("test", "repo", 42, {2})
+
+        review_comments, reviews, conversation = processor._fetch_unprocessed_feedback(42)
+
+        assert len(review_comments) == 2
+        assert all(c["id"] in [1, 3] for c in review_comments)
+        assert 2 in fake_state.processed_comment_ids
+        assert 1 not in fake_state.processed_comment_ids
+        assert 3 not in fake_state.processed_comment_ids
+
+    def test_mixed_resolved_and_unresolved_threads_returns_only_unresolved(self):
+        """Scenario 6: three threads (A resolved, B unresolved, C resolved) — only B returned."""
+        thread_a_comment = {"id": 10, "body": "Thread A feedback", "user": {"login": "reviewer"}}
+        thread_b_comment = {"id": 20, "body": "Thread B feedback", "user": {"login": "reviewer"}}
+        thread_c_comment = {"id": 30, "body": "Thread C feedback", "user": {"login": "reviewer"}}
+
+        processor, fake_gh, _, fake_state, _ = _make_processor(
+            comments=[thread_a_comment, thread_b_comment, thread_c_comment],
+            reviews=[],
+            conversation_comments=[],
+        )
+        fake_gh.set_resolved_review_comment_ids("test", "repo", 42, {10, 30})
+
+        review_comments, reviews, conversation = processor._fetch_unprocessed_feedback(42)
+
+        assert len(review_comments) == 1
+        assert review_comments[0]["id"] == 20
+        assert 10 in fake_state.processed_comment_ids
+        assert 30 in fake_state.processed_comment_ids
+        assert 20 not in fake_state.processed_comment_ids
+
+
 PR6_REPO = "humansintheloop-dev/humansintheloop-dev-workflow-and-tools"
 PR6_NUMBER = 6
 

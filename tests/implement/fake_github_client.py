@@ -36,6 +36,7 @@ class FakeGitHubClient:
         self._default_branch = "main"
         self._reply_results = True
         self._workflow_completion_results = {}
+        self._resolved_review_comment_ids = {}
         self.calls = []
 
     def set_pr_list(self, prs):
@@ -118,6 +119,9 @@ class FakeGitHubClient:
     def set_workflow_completion_result(self, branch, sha, result):
         self._workflow_completion_results[(branch, sha)] = result
 
+    def set_resolved_review_comment_ids(self, owner, repo, pr_number, ids):
+        self._resolved_review_comment_ids[(owner, repo, pr_number)] = ids
+
     def fetch_pr_comments(self, pr_number):
         self.calls.append(("fetch_pr_comments", pr_number))
         return self._pr_comments.get(pr_number, [])
@@ -155,6 +159,10 @@ class FakeGitHubClient:
         if (branch, sha) in self._workflow_completion_results:
             return self._workflow_completion_results[(branch, sha)]
         return (True, None)
+
+    def get_resolved_review_comment_ids(self, owner, repo, pr_number):
+        self.calls.append(("get_resolved_review_comment_ids", owner, repo, pr_number))
+        return self._resolved_review_comment_ids.get((owner, repo, pr_number), set())
 
     def get_default_branch(self):
         self.calls.append(("get_default_branch",))

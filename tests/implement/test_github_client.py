@@ -40,6 +40,7 @@ class TestFakeGitHubClientConformance:
             "fetch_failed_checks", "get_workflow_runs_for_commit",
             "get_workflow_failure_logs", "wait_for_workflow_completion",
             "get_default_branch",
+            "get_resolved_review_comment_ids",
         }
 
         for method in real_methods:
@@ -321,6 +322,91 @@ class TestGitHubClientGetDefaultBranch:
         client = _gh_client(monkeypatch, returncode=1, stderr="not a GitHub repository")
         with pytest.raises(RuntimeError, match="Failed to detect default branch"):
             client.get_default_branch()
+
+
+@pytest.mark.unit
+class TestGitHubClientGetResolvedReviewCommentIds:
+    """Test GitHubClient.get_resolved_review_comment_ids()."""
+
+    def _graphql_response(self, threads):
+        """Build a GraphQL response with the given thread specs.
+
+        Each thread is a dict with 'isResolved' and 'comment_ids'.
+        """
+        return json.dumps({
+            "data": {
+                "repository": {
+                    "pullRequest": {
+                        "reviewThreads": {
+                            "nodes": [
+                                {
+                                    "isResolved": t["isResolved"],
+                                    "comments": {
+                                        "nodes": [
+                                            {"databaseId": cid}
+                                            for cid in t["comment_ids"]
+                                        ]
+                                    },
+                                }
+                                for t in threads
+                            ]
+                        }
+                    }
+                }
+            }
+        })
+
+    def test_returns_comment_ids_from_resolved_threads_only(self, monkeypatch):
+        response = self._graphql_response([
+            {"isResolved": True, "comment_ids": [101, 102]},
+            {"isResolved": False, "comment_ids": [201, 202]},
+            {"isResolved": True, "comment_ids": [301]},
+        ])
+        client = _gh_client(monkeypatch, stdout=response)
+
+        result = client.get_resolved_review_comment_ids("myowner", "myrepo", 42)
+
+        assert result == {101, 102, 301}
+
+    def test_returns_empty_set_when_no_resolved_threads(self, monkeypatch):
+        response = self._graphql_response([
+            {"isResolved": False, "comment_ids": [201]},
+        ])
+        client = _gh_client(monkeypatch, stdout=response)
+
+        result = client.get_resolved_review_comment_ids("myowner", "myrepo", 42)
+
+        assert result == set()
+
+    def test_returns_empty_set_when_no_threads(self, monkeypatch):
+        response = self._graphql_response([])
+        client = _gh_client(monkeypatch, stdout=response)
+
+        result = client.get_resolved_review_comment_ids("myowner", "myrepo", 42)
+
+        assert result == set()
+
+    def test_passes_graphql_query_with_correct_variables(self, monkeypatch):
+        captured_cmds = []
+
+        def capture_run(cmd, **kwargs):
+            captured_cmds.append(cmd)
+            return _gh_result(stdout=self._graphql_response([]))
+
+        monkeypatch.setattr("subprocess.run", capture_run)
+        client = GitHubClient()
+
+        client.get_resolved_review_comment_ids("myowner", "myrepo", 42)
+
+        cmd = captured_cmds[0]
+        assert "gh" in cmd[0]
+        assert "api" in cmd
+        assert "graphql" in cmd
+        # Verify variables are passed
+        cmd_str = " ".join(cmd)
+        assert "myowner" in cmd_str
+        assert "myrepo" in cmd_str
+        assert "42" in cmd_str
 
 
 @pytest.mark.unit

@@ -65,6 +65,8 @@ class PullRequestReviewProcessor:
             new_review_comments, new_reviews, new_conversation, pr_number,
         )
 
+    I2CODE_MARKER = "<!-- i2code -->"
+
     def _fetch_unprocessed_feedback(self, pr_number):
         """Fetch PR feedback and filter to only unprocessed items."""
         gh_client = self._git_repo.gh_client
@@ -73,11 +75,78 @@ class PullRequestReviewProcessor:
         reviews = gh_client.fetch_pr_reviews(pr_number)
         conversation_comments = gh_client.fetch_pr_conversation_comments(pr_number)
 
-        return (
-            self._get_new_feedback(review_comments, self._state.processed_comment_ids),
-            self._get_new_feedback(reviews, self._state.processed_review_ids),
-            self._get_new_feedback(conversation_comments, self._state.processed_conversation_ids),
+        new_review_comments = self._get_new_feedback(review_comments, self._state.processed_comment_ids)
+        new_reviews = self._get_new_feedback(reviews, self._state.processed_review_ids)
+        new_conversation = self._get_new_feedback(conversation_comments, self._state.processed_conversation_ids)
+
+        new_review_comments, self_comment_ids = self._filter_self_comments(new_review_comments)
+        self._state.mark_comments_processed(self_comment_ids)
+
+        new_conversation, self_conversation_ids = self._filter_self_comments(new_conversation)
+        self._state.mark_conversations_processed(self_conversation_ids)
+
+        new_review_comments, resolved_ids = self._filter_resolved_thread_comments(
+            new_review_comments, pr_number,
         )
+        self._state.mark_comments_processed(resolved_ids)
+
+        return (new_review_comments, new_reviews, new_conversation)
+
+    @classmethod
+    def _filter_self_comments(cls, comments):
+        """Separate comments into user comments and self-generated comments.
+
+        Returns (user_comments, self_comment_ids).
+        """
+        user_comments = []
+        self_comment_ids = []
+        for c in comments:
+            if c.get("body", "").startswith(cls.I2CODE_MARKER):
+                self_comment_ids.append(c["id"])
+            else:
+                user_comments.append(c)
+        return user_comments, self_comment_ids
+
+    def _filter_resolved_thread_comments(self, comments, pr_number):
+        """Remove comments belonging to resolved review threads.
+
+        Returns (remaining_comments, resolved_comment_ids).
+        """
+        owner, repo = self._parse_owner_repo()
+        gh_client = self._git_repo.gh_client
+        resolved_ids = gh_client.get_resolved_review_comment_ids(owner, repo, pr_number)
+        return self._exclude_resolved_comments(comments, resolved_ids)
+
+    @staticmethod
+    def _exclude_resolved_comments(comments, resolved_ids):
+        """Partition comments by whether their ID is in the resolved set.
+
+        Returns (remaining_comments, resolved_comment_ids).
+        """
+        remaining = []
+        filtered_ids = []
+        for c in comments:
+            if c["id"] in resolved_ids:
+                filtered_ids.append(c["id"])
+            else:
+                remaining.append(c)
+        return remaining, filtered_ids
+
+    def _parse_owner_repo(self):
+        """Parse owner and repo from the git remote origin URL."""
+        url = self._git_repo.origin_url
+        # Handle both https://github.com/owner/repo.git and git@github.com:owner/repo.git
+        url = url.rstrip("/")
+        if url.endswith(".git"):
+            url = url[:-4]
+        if ":" in url and "@" in url:
+            # SSH format: git@github.com:owner/repo
+            path = url.split(":")[-1]
+        else:
+            # HTTPS format: https://github.com/owner/repo
+            path = "/".join(url.split("/")[-2:])
+        owner, repo = path.split("/")
+        return owner, repo
 
     def _triage_and_apply_feedback(self, new_review_comments, new_reviews, new_conversation, pr_number):
         """Triage feedback via Claude and apply the results.
@@ -188,11 +257,12 @@ class PullRequestReviewProcessor:
                 comment_id, new_review_comments, new_conversation,
             )
 
+            marker = "<!-- i2code -->\n"
             print(f"Asking for clarification on comment {comment_id}...")
             if comment_type == "review":
-                success = gh_client.reply_to_review_comment(pr_number, comment_id, question)
+                success = gh_client.reply_to_review_comment(pr_number, comment_id, f"{marker}{question}")
             else:
-                success = gh_client.reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{question}")
+                success = gh_client.reply_to_pr_comment(pr_number, f"{marker}Re: comment {comment_id}\n\n{question}")
 
             if success:
                 print(f"  Replied to comment {comment_id}")
@@ -288,11 +358,12 @@ class PullRequestReviewProcessor:
             comment_type = self._determine_comment_type(
                 comment_id, new_review_comments, new_conversation,
             )
+            marker = "<!-- i2code -->\n"
             reply_body = f"Fixed in {commit_sha}"
             if comment_type == "review":
-                success = gh_client.reply_to_review_comment(pr_number, comment_id, reply_body)
+                success = gh_client.reply_to_review_comment(pr_number, comment_id, f"{marker}{reply_body}")
             else:
-                success = gh_client.reply_to_pr_comment(pr_number, f"Re: comment {comment_id}\n\n{reply_body}")
+                success = gh_client.reply_to_pr_comment(pr_number, f"{marker}Re: comment {comment_id}\n\n{reply_body}")
 
             if success:
                 print(f"  Replied to comment {comment_id}: {reply_body}")

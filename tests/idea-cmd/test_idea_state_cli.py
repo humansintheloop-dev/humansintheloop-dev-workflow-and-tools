@@ -515,3 +515,18 @@ class TestCompletedPlans:
             assert yaml.safe_load(f)["state"] == "wip"
         # Verify commit message
         assert _last_commit_message(git_repo) == "Mark ideas with completed plans as completed: idea-a, idea-b"
+
+    def test_prints_message_when_no_ideas_have_completed_plans(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        # One wip idea without plan, one with incomplete plan
+        _create_active_idea(git_repo, "idea-no-plan", state="wip")
+        dir_incomplete = _create_active_idea(git_repo, "idea-incomplete", state="wip")
+        _write_plan_file(dir_incomplete, "idea-incomplete", INCOMPLETE_PLAN)
+        _git_add_and_commit(git_repo, "Initial commit")
+        commit_before = _last_commit_message(git_repo)
+
+        result = cli.invoke(main, ["idea", "state", "--completed-plans"])
+
+        assert result.exit_code == 0, result.output
+        assert "No wip ideas with completed plans found" in result.output
+        assert _last_commit_message(git_repo) == commit_before

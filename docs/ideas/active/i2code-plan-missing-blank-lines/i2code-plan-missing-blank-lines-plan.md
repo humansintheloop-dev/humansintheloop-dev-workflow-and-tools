@@ -84,14 +84,14 @@ This steel thread fixes the core bug: the parser currently stores inter-element 
 
 This thread addresses thread-level spacing: `---` separators between threads and before the postamble.
 
-- [ ] **Task 2.1: Parser strips trailing `---` and blank lines from thread lines**
+- [x] **Task 2.1: Parser strips trailing `---` and blank lines from thread lines**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/plan-domain/`
   - Observable: When a plan with multiple threads separated by `---` is parsed, each `Thread` object's lines (including `_header_lines` and the last task's `_lines`) contain no trailing `---` or blank lines that serve as inter-thread spacing.
   - Evidence: `pytest tests/plan-domain/` passes — specifically, a new test in `tests/plan-domain/test_parser_strips_thread_separators.py` parses a multi-thread plan and asserts that each thread's raw lines do not end with `---` or `''`
   - Steps:
-    - [ ] Write a test in `tests/plan-domain/test_parser_strips_thread_separators.py` that parses a plan with two threads separated by `\n---\n` and asserts the first thread's lines do not end with `''` or `---`
-    - [ ] Modify `src/i2code/plan_domain/parser.py` — when constructing `Thread` objects, strip trailing lines that are `---` or empty from the thread's raw line slice before assigning to `_header_lines` and tasks
+    - [x] Write a test in `tests/plan-domain/test_parser_strips_thread_separators.py` that parses a plan with two threads separated by `\n---\n` and asserts the first thread's lines do not end with `''` or `---`
+    - [x] Modify `src/i2code/plan_domain/parser.py` — when constructing `Thread` objects, strip trailing lines that are `---` or empty from the thread's raw line slice before assigning to `_header_lines` and tasks
 
 - [ ] **Task 2.2: `Plan.to_text()` emits `---` separators between threads**
   - TaskType: OUTCOME
@@ -139,3 +139,6 @@ Parser strips trailing blank lines; new test passes; round-trip test fixes defer
 
 ### 2026-03-14 12:04 - mark-task-complete
 All 12 round-trip tests pass; all 181 plan-domain tests pass
+
+### 2026-03-14 12:08 - mark-task-complete
+Added test_parser_strips_thread_separators.py verifying parser strips trailing --- and blank lines from thread lines. Implementation already existed in parser.py (_strip_trailing_separators). All 186 tests pass.

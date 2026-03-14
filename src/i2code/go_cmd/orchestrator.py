@@ -118,9 +118,9 @@ _STEP_DISPATCH = {
 }
 
 _MENU_PROMPTS = {
-    WorkflowState.HAS_IDEA_NO_SPEC: "Idea exists. What would you like to do?",
-    WorkflowState.HAS_SPEC: "Specification created. What would you like to do?",
-    WorkflowState.HAS_PLAN: "Implementation plan exists. What would you like to do?",
+    WorkflowState.HAS_IDEA_NO_SPEC: "{name}: Idea exists. What would you like to do?",
+    WorkflowState.HAS_SPEC: "{name}: Specification created. What would you like to do?",
+    WorkflowState.HAS_PLAN: "{name}: Implementation plan exists. What would you like to do?",
 }
 
 _MENU_DEFAULTS = {
@@ -241,8 +241,9 @@ class Orchestrator:
 
     def _dispatch_with_menu(self, state):
         options = self.menu_options_for(state)
+        prompt = _MENU_PROMPTS[state].format(name=self._project.name)
         choice = get_user_choice(
-            _MENU_PROMPTS[state], _MENU_DEFAULTS.get(state, 1),
+            prompt, _MENU_DEFAULTS.get(state, 1),
             options, config=self._deps.menu_config,
         )
         if options[choice - 1] == "Exit":
@@ -255,8 +256,11 @@ class Orchestrator:
 
     def _dispatch_has_plan(self, _state):
         options = self._build_has_plan_options()
+        prompt = _MENU_PROMPTS[WorkflowState.HAS_PLAN].format(
+            name=self._project.name,
+        )
         choice = get_user_choice(
-            _MENU_PROMPTS[WorkflowState.HAS_PLAN],
+            prompt,
             self._commit_default(options), options,
             config=self._deps.menu_config,
         )

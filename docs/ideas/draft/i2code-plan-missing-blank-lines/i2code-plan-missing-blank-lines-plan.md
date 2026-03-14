@@ -93,14 +93,14 @@ This thread addresses thread-level spacing: `---` separators between threads and
     - [x] Write a test in `tests/plan-domain/test_parser_strips_thread_separators.py` that parses a plan with two threads separated by `\n---\n` and asserts the first thread's lines do not end with `''` or `---`
     - [x] Modify `src/i2code/plan_domain/parser.py` — when constructing `Thread` objects, strip trailing lines that are `---` or empty from the thread's raw line slice before assigning to `_header_lines` and tasks
 
-- [ ] **Task 2.2: `Plan.to_text()` emits `---` separators between threads**
+- [x] **Task 2.2: `Plan.to_text()` emits `---` separators between threads**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/plan-domain/`
   - Observable: `insert-thread-before`, `insert-thread-after`, and `replace-thread` produce plan output with `---` separators between all threads. Serializing a multi-thread plan always includes `\n---\n` between consecutive threads.
   - Evidence: `pytest tests/plan-domain/` passes — a new test in `tests/plan-domain/test_plan_to_text_thread_separators.py` parses a multi-thread plan, inserts a thread, serializes, and verifies `---` separators appear between all threads
   - Steps:
-    - [ ] Write a test in `tests/plan-domain/test_plan_to_text_thread_separators.py` that: (a) parses a plan with 2 threads, inserts a new thread before thread 1, serializes, and asserts `---` separators between all 3 threads; (b) parses a plan with 2 threads, serializes without modifications, and asserts round-trip equivalence
-    - [ ] Modify `src/i2code/plan_domain/plan.py` — in `Plan.to_text()`, emit `['', '---', '']` before each thread except the first
+    - [x] Write a test in `tests/plan-domain/test_plan_to_text_thread_separators.py` that: (a) parses a plan with 2 threads, inserts a new thread before thread 1, serializes, and asserts `---` separators between all 3 threads; (b) parses a plan with 2 threads, serializes without modifications, and asserts round-trip equivalence
+    - [x] Modify `src/i2code/plan_domain/plan.py` — in `Plan.to_text()`, emit `['', '---', '']` before each thread except the first
 
 - [ ] **Task 2.3: `Plan.to_text()` emits separator before postamble**
   - TaskType: OUTCOME
@@ -142,3 +142,6 @@ All 12 round-trip tests pass; all 181 plan-domain tests pass
 
 ### 2026-03-14 12:08 - mark-task-complete
 Added test_parser_strips_thread_separators.py verifying parser strips trailing --- and blank lines from thread lines. Implementation already existed in parser.py (_strip_trailing_separators). All 186 tests pass.
+
+### 2026-03-14 12:22 - mark-task-complete
+Added test_plan_to_text_thread_separators.py verifying insert-thread-before, insert-thread-after, replace-thread, and round-trip all produce --- separators between threads. Plan.to_text() already emitted separators correctly. All 190 tests pass.

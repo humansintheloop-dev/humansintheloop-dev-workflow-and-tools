@@ -116,16 +116,16 @@ This thread replaces `_commit_default()` with lifecycle-aware logic. The option 
 
 ### Task 1.4: Missing/unknown metadata falls back to option 2
 
-- [ ] **Task 1.4: Missing or unknown metadata state falls back to option 2**
+- [x] **Task 1.4: Missing or unknown metadata state falls back to option 2**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <idea-without-metadata>` (menu presentation)
   - Observable: When metadata file is missing or has unknown state, default is option 2 (Configure/Revise implement options)
   - Evidence: `pytest tests/go-cmd/test_orchestrator_default_selection.py -v` passes with tests for no-metadata and unknown-state scenarios
   - Steps:
-    - [ ] Ensure `tests/go-cmd/test_orchestrator_default_selection.py` has a test for no-metadata fallback (the existing `test_no_config_defaults_to_configure` already covers this with `_wip_project` which has no metadata).
-    - [ ] Add a test with metadata containing an unrecognized state (e.g., `state: archived`) — assert default is option 2 (configure/revise).
-    - [ ] Verify `_lifecycle_default()` handles `None` state and unknown states by falling back to `return 2`.
-    - [ ] Run all go-cmd tests to confirm no regressions.
+    - [x] Ensure `tests/go-cmd/test_orchestrator_default_selection.py` has a test for no-metadata fallback (the existing `test_no_config_defaults_to_configure` already covers this with `_wip_project` which has no metadata).
+    - [x] Add a test with metadata containing an unrecognized state (e.g., `state: archived`) — assert default is option 2 (configure/revise).
+    - [x] Verify `_lifecycle_default()` handles `None` state and unknown states by falling back to `return 2`.
+    - [x] Run all go-cmd tests to confirm no regressions.
 
 ## Steel Thread 2: Optimize Metadata Reading
 
@@ -176,3 +176,6 @@ All 200 go-cmd tests pass
 
 ### 2026-03-14 16:24 - mark-task-complete
 WIP state defaults to implement when clean, commit when dirty
+
+### 2026-03-14 16:28 - mark-task-complete
+Added test for unknown state fallback; verified existing implementation handles None and unknown states correctly

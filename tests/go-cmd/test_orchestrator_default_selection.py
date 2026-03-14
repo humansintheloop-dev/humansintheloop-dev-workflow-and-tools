@@ -98,6 +98,13 @@ class TestDefaultSelectionByConfig:
             displayed = _get_menu_display(project, git_runner=_dirty_git())
             assert _find_default(displayed) == COMMIT_CHANGES
 
+    def test_unknown_state_defaults_to_configure(self):
+        with _wip_project("my-feature") as project:
+            _setup_has_plan(project)
+            _create_file(project, f"{project.name}-metadata.yaml", "state: archived\n")
+            displayed = _get_menu_display(project)
+            assert _find_default(displayed) == CONFIGURE_IMPLEMENT
+
     def test_config_exists_no_changes_defaults_to_revise(self):
         with _wip_project("my-feature") as project:
             _setup_has_plan(project)

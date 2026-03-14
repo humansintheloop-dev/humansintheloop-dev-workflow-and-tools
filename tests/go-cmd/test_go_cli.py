@@ -1,6 +1,8 @@
 """CLI integration tests for the go command."""
 
 import os
+import subprocess
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -121,7 +123,10 @@ class TestGoCommandDirectoryCreation:
 class TestGoCommandNameResolution:
     @patch("i2code.go_cmd.cli.Orchestrator")
     @patch("i2code.go_cmd.cli.resolve_idea")
-    def test_resolves_idea_name_to_directory(self, mock_resolve, mock_orch_cls):
+    def test_resolves_idea_name_to_directory(self, mock_resolve, mock_orch_cls, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        idea_dir = tmp_path / "docs" / "ideas" / "ready" / "my-feature"
+        idea_dir.mkdir(parents=True)
         mock_resolve.return_value = IdeaInfo(
             name="my-feature", state="ready", directory="docs/ideas/ready/my-feature",
         )
@@ -137,15 +142,20 @@ class TestGoCommandNameResolution:
 
     @patch("i2code.go_cmd.cli.Orchestrator")
     @patch("i2code.go_cmd.cli.resolve_idea")
-    def test_error_when_idea_name_not_found(self, mock_resolve, mock_orch_cls):
-        mock_resolve.side_effect = ValueError("Idea not found: no-such-idea")
+    def test_creates_idea_in_active_when_name_not_found(self, mock_resolve, mock_orch_cls, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        subprocess.run(["git", "init"], cwd=str(tmp_path), check=True, capture_output=True)
+        mock_resolve.side_effect = ValueError("Idea not found: new-idea")
+        mock_orch = MagicMock()
+        mock_orch_cls.return_value = mock_orch
 
         runner = CliRunner()
-        result = runner.invoke(main, ["go", "no-such-idea"])
+        result = runner.invoke(main, ["go", "new-idea"], input="y\n")
 
-        assert result.exit_code == 1
-        assert "not found" in result.output.lower()
-        mock_orch_cls.assert_not_called()
+        assert result.exit_code == 0
+        expected_dir = Path(os.path.realpath(tmp_path)) / "docs" / "ideas" / "active" / "new-idea"
+        assert expected_dir.is_dir()
+        mock_orch.run.assert_called_once()
 
     @patch("i2code.go_cmd.cli.Orchestrator")
     @patch("i2code.go_cmd.cli.resolve_idea")

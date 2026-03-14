@@ -34,13 +34,15 @@ def _resolve_directory(argument):
         return argument
     if os.sep in argument or argument.startswith("."):
         return None
+    git_root = Path.cwd()
     try:
-        git_root = Path.cwd()
         idea = resolve_idea(argument, git_root)
         return str(git_root / idea.directory)
     except ValueError as exc:
-        click.echo(str(exc), err=True)
-        sys.exit(1)
+        if "not found" not in str(exc).lower():
+            click.echo(str(exc), err=True)
+            sys.exit(1)
+        return str(git_root / "docs" / "ideas" / "active" / argument)
 
 
 @click.command("go")
@@ -50,7 +52,7 @@ def go_cmd(directory):
     resolved = _resolve_directory(directory)
     if resolved is not None:
         directory = resolved
-    elif not os.path.isdir(directory):
+    if not os.path.isdir(directory):
         click.echo(f"Directory does not exist: {directory}")
         click.echo("")
         if not click.confirm("Would you like to create it?", default=False):

@@ -160,14 +160,14 @@ This thread updates the orchestrator methods that call prompt/read/write to hand
 
 ## Steel Thread 5: Display Config Shows Isolation Type (FR8)
 
-- [ ] **Task 5.1: _display_implement_config shows isolation type**
+- [x] **Task 5.1: _display_implement_config shows isolation type**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/idea-cmd/`
   - Observable: `_display_implement_config(config)` prints `Isolation: {value}` alongside Mode and Branch.
   - Evidence: pytest runs a test that captures stdout from `_display_implement_config()` with `isolation_type: "nono"` and asserts the output contains `Isolation: nono`.
   - Steps:
-    - [ ] Write failing test that calls `_display_implement_config()` with a config dict containing `isolation_type: "nono"` and verifies stdout contains `Isolation: nono`
-    - [ ] Update `_display_implement_config()` to include the isolation type line
+    - [x] Write failing test that calls `_display_implement_config()` with a config dict containing `isolation_type: "nono"` and verifies stdout contains `Isolation: nono`
+    - [x] Update `_display_implement_config()` to include the isolation type line
 
 ---
 
@@ -225,3 +225,6 @@ Default selection now returns configure/revise at position 2, or commit when dir
 
 ### 2026-03-14 09:59 - mark-task-complete
 Tests verify isolation_type flows through _ensure_implement_config, _configure_implement, and _display_implement_config
+
+### 2026-03-14 10:03 - mark-task-complete
+Test and implementation already exist from commit f7a437f

@@ -48,15 +48,15 @@ Use these skills by invoking them before the relevant action:
 
 This steel thread fixes the core bug: the parser currently stores inter-element spacing as trailing content in each element's `_lines`, but `Task.create()` and `Thread.create()` don't add this spacing. The fix normalizes responsibility — the parser strips trailing whitespace, and the serializers (`Thread.to_lines()`, `Plan.to_text()`) emit separators explicitly.
 
-- [ ] **Task 1.1: Parser strips trailing blank lines from task `_lines`**
+- [x] **Task 1.1: Parser strips trailing blank lines from task `_lines`**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/plan-domain/`
   - Observable: When a plan is parsed, each `Task` object's `_lines` list contains no trailing empty-string elements. The existing test `tests/plan-domain/test_thread_to_lines_blank_lines.py` assertions about blank lines between tasks begin to be addressed.
   - Evidence: `pytest tests/plan-domain/` passes — specifically, a new test in `tests/plan-domain/test_parser_strips_trailing_blanks.py` parses a plan with blank lines between tasks and asserts that each task's `_lines` list does not end with `''`
   - Steps:
-    - [ ] Write a test in `tests/plan-domain/test_parser_strips_trailing_blanks.py` that parses a plan with two tasks separated by a blank line and asserts the first task's `_lines` does not end with `''`
-    - [ ] Modify `src/i2code/plan_domain/parser.py` — in `_parse_thread`, after slicing `_lines` for each task, strip trailing empty lines (lines that are `''` or whitespace-only)
-    - [ ] Run `pytest tests/plan-domain/` and verify the new test passes and existing tests still pass (some round-trip tests may now need adjustment — defer that to Task 1.3)
+    - [x] Write a test in `tests/plan-domain/test_parser_strips_trailing_blanks.py` that parses a plan with two tasks separated by a blank line and asserts the first task's `_lines` does not end with `''`
+    - [x] Modify `src/i2code/plan_domain/parser.py` — in `_parse_thread`, after slicing `_lines` for each task, strip trailing empty lines (lines that are `''` or whitespace-only)
+    - [x] Run `pytest tests/plan-domain/` and verify the new test passes and existing tests still pass (some round-trip tests may now need adjustment — defer that to Task 1.3)
 
 - [ ] **Task 1.2: `Thread.to_lines()` emits a blank line between consecutive tasks**
   - TaskType: OUTCOME
@@ -121,3 +121,18 @@ This thread addresses thread-level spacing: `---` separators between threads and
     - [ ] Add a test for the `replace-task` scenario: parse a plan with 2 tasks, replace task 2, serialize, verify blank line between task 1 and the replacement task
     - [ ] Run `pytest tests/plan-domain/` and fix any remaining failures
     - [ ] Verify all 4 scenarios from the spec are covered by tests: (1) insert task and verify spacing, (2) replace task and verify spacing, (3) insert thread and verify separators, (4) round-trip with no modifications
+
+---
+
+## Change History
+### 2026-03-14 11:45 - mark-step-complete
+Test written in test_parser_strips_trailing_blanks.py
+
+### 2026-03-14 11:45 - mark-step-complete
+Added _strip_trailing_blank_lines in parser.py _parse_thread
+
+### 2026-03-14 11:45 - mark-step-complete
+New test passes, 6 round-trip failures deferred to Task 1.3 as planned
+
+### 2026-03-14 11:45 - mark-task-complete
+Parser strips trailing blank lines; new test passes; round-trip test fixes deferred to Task 1.3

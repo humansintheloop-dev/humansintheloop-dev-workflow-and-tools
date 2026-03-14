@@ -115,6 +115,14 @@ class PullRequestReviewProcessor:
         owner, repo = self._parse_owner_repo()
         gh_client = self._git_repo.gh_client
         resolved_ids = gh_client.get_resolved_review_comment_ids(owner, repo, pr_number)
+        return self._exclude_resolved_comments(comments, resolved_ids)
+
+    @staticmethod
+    def _exclude_resolved_comments(comments, resolved_ids):
+        """Partition comments by whether their ID is in the resolved set.
+
+        Returns (remaining_comments, resolved_comment_ids).
+        """
         remaining = []
         filtered_ids = []
         for c in comments:

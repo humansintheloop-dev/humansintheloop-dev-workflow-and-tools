@@ -117,5 +117,7 @@ class Thread:
         lines = list(self._header_lines)
         lines[0] = re.sub(r'Steel Thread \d+:', f'Steel Thread {thread_number}:', lines[0])
         for task_num, task in enumerate(self.tasks, 1):
+            if task_num > 1:
+                lines.append('')
             lines.extend(task.to_lines(thread_number, task_num))
         return lines

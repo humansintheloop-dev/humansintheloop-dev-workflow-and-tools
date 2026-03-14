@@ -332,14 +332,10 @@ assert comment_b_id not in resolved_ids, (
     f'Comment B (id={comment_b_id}) should NOT be in resolved set, got {resolved_ids}'
 )
 
-# Now simulate filtering: resolved-thread comments should be excluded
-remaining = []
-filtered_ids = []
-for c in comments:
-    if c['id'] in resolved_ids:
-        filtered_ids.append(c['id'])
-    else:
-        remaining.append(c)
+# Call the production filtering method
+from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
+
+remaining, filtered_ids = PullRequestReviewProcessor._exclude_resolved_comments(comments, resolved_ids)
 
 print(f'  Remaining (unresolved) comments: {len(remaining)}')
 print(f'  Filtered (resolved) comment IDs: {filtered_ids}')

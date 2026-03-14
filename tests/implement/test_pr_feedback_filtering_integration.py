@@ -214,13 +214,21 @@ class TestPrFeedbackFiltering:
             "-f", f"body={marker_body}",
         )
 
+        human_reply_body = "Thanks, but could you also add a docstring?"
+        _gh_api(
+            f"repos/{pr.repo_full_name}/pulls/{pr.pr_number}/comments/{comment_id}/replies",
+            "-f", f"body={human_reply_body}",
+        )
+
         comments = _fetch_review_comments(pr)
-        assert len(comments) == 2, f"Expected 2 comments (original + reply), got {len(comments)}"
+        assert len(comments) == 3, f"Expected 3 comments (original + marker reply + human reply), got {len(comments)}"
 
         user_comments, self_comment_ids = PullRequestReviewProcessor._filter_self_comments(comments)
 
-        assert len(user_comments) == 1
-        assert "Please refactor" in user_comments[0]["body"]
+        assert len(user_comments) == 2
+        user_bodies = [c["body"] for c in user_comments]
+        assert any("Please refactor" in b for b in user_bodies)
+        assert any("add a docstring" in b for b in user_bodies)
         assert len(self_comment_ids) == 1
 
         marker_comment = [c for c in comments if c["id"] == self_comment_ids[0]][0]

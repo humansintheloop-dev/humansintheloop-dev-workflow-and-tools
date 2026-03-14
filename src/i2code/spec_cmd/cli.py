@@ -2,6 +2,7 @@
 
 import click
 
+from i2code.idea.resolver import resolve_idea_directory
 from i2code.implement.claude_runner import ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
 from i2code.spec_cmd.create_spec import create_spec
@@ -17,7 +18,7 @@ def spec():
 @click.argument("directory")
 def spec_create(directory):
     """Create a specification from an idea."""
-    project = IdeaProject(directory)
+    project = IdeaProject(resolve_idea_directory(directory))
     claude_runner = ClaudeRunner()
     create_spec(project, claude_runner)
 
@@ -26,6 +27,6 @@ def spec_create(directory):
 @click.argument("directory")
 def spec_revise(directory):
     """Revise an existing specification."""
-    project = IdeaProject(directory)
+    project = IdeaProject(resolve_idea_directory(directory))
     claude_runner = ClaudeRunner()
     revise_spec(project, claude_runner)

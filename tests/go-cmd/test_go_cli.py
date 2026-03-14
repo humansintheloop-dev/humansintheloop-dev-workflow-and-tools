@@ -122,7 +122,7 @@ class TestGoCommandDirectoryCreation:
 @pytest.mark.unit
 class TestGoCommandNameResolution:
     @patch("i2code.go_cmd.cli.Orchestrator")
-    @patch("i2code.go_cmd.cli.resolve_idea")
+    @patch("i2code.idea.resolver.resolve_idea")
     def test_resolves_idea_name_to_directory(self, mock_resolve, mock_orch_cls, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         idea_dir = tmp_path / "docs" / "ideas" / "ready" / "my-feature"
@@ -141,7 +141,7 @@ class TestGoCommandNameResolution:
         assert project.directory.endswith("docs/ideas/ready/my-feature")
 
     @patch("i2code.go_cmd.cli.Orchestrator")
-    @patch("i2code.go_cmd.cli.resolve_idea")
+    @patch("i2code.idea.resolver.resolve_idea")
     def test_creates_idea_in_active_when_name_not_found(self, mock_resolve, mock_orch_cls, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         subprocess.run(["git", "init"], cwd=str(tmp_path), check=True, capture_output=True)
@@ -158,7 +158,7 @@ class TestGoCommandNameResolution:
         mock_orch.run.assert_called_once()
 
     @patch("i2code.go_cmd.cli.Orchestrator")
-    @patch("i2code.go_cmd.cli.resolve_idea")
+    @patch("i2code.idea.resolver.resolve_idea")
     def test_error_when_idea_name_ambiguous(self, mock_resolve, mock_orch_cls):
         mock_resolve.side_effect = ValueError(
             "Idea 'my-feature' found in multiple states: ready, wip"

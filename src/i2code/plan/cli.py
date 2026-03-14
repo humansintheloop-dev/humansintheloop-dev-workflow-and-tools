@@ -6,6 +6,7 @@ from i2code.go_cmd.create_plan import PlanServices, create_plan
 from i2code.go_cmd.plan_validator import validate_plan
 from i2code.go_cmd.plugin_skills import list_plugin_skills
 from i2code.go_cmd.revise_plan import revise_plan
+from i2code.idea.resolver import resolve_idea_directory
 from i2code.implement.claude_runner import ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
 from i2code.plan.plan_cli import register as register_plan_commands
@@ -29,7 +30,7 @@ register_thread_commands(plan)
 @click.argument("directory")
 def plan_create(directory):
     """Create an implementation plan from a specification."""
-    project = IdeaProject(directory)
+    project = IdeaProject(resolve_idea_directory(directory))
     claude_runner = ClaudeRunner()
     services = PlanServices(
         template_renderer=render_template,
@@ -43,6 +44,6 @@ def plan_create(directory):
 @click.argument("directory")
 def plan_revise(directory):
     """Revise an existing implementation plan."""
-    project = IdeaProject(directory)
+    project = IdeaProject(resolve_idea_directory(directory))
     claude_runner = ClaudeRunner()
     revise_plan(project, claude_runner, render_template)

@@ -2,6 +2,7 @@
 
 import click
 
+from i2code.idea.resolver import resolve_idea_directory
 from i2code.implement.command_assembler import (
     assemble_command,
     assemble_implement,
@@ -48,6 +49,7 @@ from i2code.implement.scaffold_opts import ScaffoldOpts
 @click.pass_context
 def implement_cmd(ctx, **kwargs):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
+    kwargs["idea_directory"] = resolve_idea_directory(kwargs["idea_directory"])
     command = assemble_command(ctx, assemble_implement, ImplementOpts(**kwargs))
     command.execute()
 
@@ -61,5 +63,6 @@ def implement_cmd(ctx, **kwargs):
 @click.pass_context
 def scaffold_cmd(ctx, **kwargs):
     """Generate project scaffolding for an idea directory."""
+    kwargs["idea_directory"] = resolve_idea_directory(kwargs["idea_directory"])
     command = assemble_command(ctx, assemble_scaffold, ScaffoldOpts(**kwargs))
     command.execute()

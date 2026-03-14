@@ -17,6 +17,26 @@ class IdeaInfo:
     directory: str
 
 
+def resolve_idea_directory(argument: str, *, resolve: bool = False) -> str:
+    """Resolve a CLI argument to an idea directory path.
+
+    If argument contains os.sep or starts with '.', return it as-is.
+    Otherwise, map bare name to docs/ideas/active/<name> under cwd.
+    When resolve=True, try resolve_idea() first to find existing ideas.
+    """
+    if os.sep in argument or argument.startswith("."):
+        return argument
+    git_root = Path.cwd()
+    if resolve:
+        try:
+            idea = resolve_idea(argument, git_root)
+            return str(git_root / idea.directory)
+        except ValueError as exc:
+            if "not found" not in str(exc).lower():
+                raise
+    return str(git_root / "docs" / "ideas" / "active" / argument)
+
+
 def resolve_idea(name: str, git_root: Path) -> IdeaInfo:
     """Find a single idea by name in active/ and archived/ directories.
 

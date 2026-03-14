@@ -41,7 +41,7 @@ def _parse_thread(lines: list[str]) -> Thread:
         return Thread(_header_lines=lines)
 
     tasks = [
-        Task(_lines=lines[start:end])
+        Task(_lines=_strip_trailing_blank_lines(lines[start:end]))
         for start, end in _consecutive_ranges(task_starts, len(lines))
     ]
 
@@ -59,6 +59,12 @@ def _find_postamble_start(lines: list[str], last_thread_start: int) -> int:
                 return i - 1
             return i
     return len(lines)
+
+
+def _strip_trailing_blank_lines(lines: list[str]) -> list[str]:
+    while lines and lines[-1].strip() == '':
+        lines.pop()
+    return lines
 
 
 def _consecutive_ranges(starts: list[int], end: int) -> list[tuple[int, int]]:

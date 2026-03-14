@@ -86,16 +86,16 @@ This thread replaces `_commit_default()` with lifecycle-aware logic. The option 
 
 ### Task 1.2: Ready state defaults to "Configure/Revise implement options"
 
-- [ ] **Task 1.2: Ready state defaults to "Configure/Revise implement options"**
+- [x] **Task 1.2: Ready state defaults to "Configure/Revise implement options"**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <idea-in-ready-state>` (menu presentation)
   - Observable: When idea is in `ready` state, the default menu option is "Configure implement options" (or "Revise implement options" if config exists)
   - Evidence: `pytest tests/go-cmd/test_orchestrator_lifecycle_menu.py::TestReadyIdeaMenu -v` passes with updated test asserting ready state defaults to configure/revise
   - Steps:
-    - [ ] In `tests/go-cmd/test_orchestrator_lifecycle_menu.py`, rename `TestReadyIdeaMenu.test_ready_idea_no_config_defaults_to_configure` to `test_ready_idea_defaults_to_configure` (this test already passes since option 2 is configure, but verifying it still works with new logic).
-    - [ ] Add `test_ready_idea_with_config_defaults_to_revise` — verifies that with an existing config file, default is `REVISE_IMPLEMENT`.
-    - [ ] In `_lifecycle_default()`, add the `"ready"` case: return the 1-based index of the configure/revise label (which is always option 2).
-    - [ ] Run tests.
+    - [x] In `tests/go-cmd/test_orchestrator_lifecycle_menu.py`, rename `TestReadyIdeaMenu.test_ready_idea_no_config_defaults_to_configure` to `test_ready_idea_defaults_to_configure` (this test already passes since option 2 is configure, but verifying it still works with new logic).
+    - [x] Add `test_ready_idea_with_config_defaults_to_revise` — verifies that with an existing config file, default is `REVISE_IMPLEMENT`.
+    - [x] In `_lifecycle_default()`, add the `"ready"` case: return the 1-based index of the configure/revise label (which is always option 2).
+    - [x] Run tests.
 
 ### Task 1.3: WIP state defaults based on uncommitted changes
 
@@ -140,3 +140,21 @@ This thread replaces `_commit_default()` with lifecycle-aware logic. The option 
     - [ ] Pass the state to `_lifecycle_default()` so it does not re-read the metadata file.
     - [ ] Remove the metadata reading from `_lifecycle_move_label()` — it should now accept state as a parameter and just do the dict lookup.
     - [ ] Run all go-cmd tests to confirm no regressions.
+
+---
+
+## Change History
+### 2026-03-14 16:17 - mark-step-complete
+Renamed test method
+
+### 2026-03-14 16:17 - mark-step-complete
+Added test_ready_idea_with_config_defaults_to_revise
+
+### 2026-03-14 16:17 - mark-step-complete
+Added ready case in _lifecycle_default
+
+### 2026-03-14 16:17 - mark-step-complete
+All 199 tests pass
+
+### 2026-03-14 16:18 - mark-task-complete
+Ready state defaults to configure/revise implement options

@@ -333,6 +333,9 @@ class Orchestrator:
         state = self._read_lifecycle_state()
         if state == "draft" and MOVE_TO_READY in options:
             return options.index(MOVE_TO_READY) + 1
+        if state == "ready":
+            configure_label = self._configure_implement_label()
+            return options.index(configure_label) + 1
         if COMMIT_CHANGES in options:
             return options.index(COMMIT_CHANGES) + 1
         return 2

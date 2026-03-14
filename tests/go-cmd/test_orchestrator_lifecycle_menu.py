@@ -9,7 +9,8 @@ import pytest
 
 from conftest import menu_config_by_label
 from i2code.go_cmd.orchestrator import (
-    COMMIT_CHANGES, CONFIGURE_IMPLEMENT, EXIT, Orchestrator, OrchestratorDeps,
+    COMMIT_CHANGES, CONFIGURE_IMPLEMENT, EXIT, REVISE_IMPLEMENT,
+    Orchestrator, OrchestratorDeps,
 )
 from i2code.implement.idea_project import IdeaProject
 
@@ -156,11 +157,18 @@ class TestReadyIdeaMenu:
             options = _build_menu_options(project)
             assert options[2] == MOVE_TO_WIP
 
-    def test_ready_idea_no_config_defaults_to_configure(self):
+    def test_ready_idea_defaults_to_configure(self):
         with _lifecycle_project("my-feature", "ready") as project:
             _setup_has_plan(project)
             displayed = _get_menu_display(project)
             assert _find_default(displayed) == CONFIGURE_IMPLEMENT
+
+    def test_ready_idea_with_config_defaults_to_revise(self):
+        with _lifecycle_project("my-feature", "ready") as project:
+            _setup_has_plan(project)
+            _create_file(project, f"{project.name}-implement-config.yaml", "model: fast\n")
+            displayed = _get_menu_display(project)
+            assert _find_default(displayed) == REVISE_IMPLEMENT
 
 
 @pytest.mark.unit

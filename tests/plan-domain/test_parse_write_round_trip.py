@@ -1,5 +1,6 @@
 """Parse a plan string into domain objects, write it back, and verify identity."""
 
+
 from i2code.plan_domain.parser import parse
 from i2code.plan_domain.plan import Plan
 
@@ -291,13 +292,37 @@ Second thread intro.
 ## Summary
 All done.
 """
+        expected = """\
+# Plan Without Separators
+
+## Steel Thread 1: First
+First thread intro.
+
+- [ ] **Task 1.1: Task A**
+  - Steps:
+    - [ ] Step
+
+---
+
+## Steel Thread 2: Second
+Second thread intro.
+
+- [ ] **Task 2.1: Task B**
+  - Steps:
+    - [ ] Step
+
+---
+
+## Summary
+All done.
+"""
         plan = parse(text)
         assert len(plan.threads) == 2
         assert len(plan.threads[0].tasks) == 1
         assert len(plan.threads[1].tasks) == 1
         postamble = '\n'.join(plan._postamble_lines)
         assert '## Summary' in postamble
-        assert plan.to_text() == text
+        assert plan.to_text() == expected
 
     def test_change_history_without_summary(self):
         text = """\

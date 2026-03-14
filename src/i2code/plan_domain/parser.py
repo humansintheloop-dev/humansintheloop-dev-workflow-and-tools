@@ -29,7 +29,7 @@ def parse(text: str) -> Plan:
 
 def _parse_threads(lines: list[str], thread_starts: list[int], end: int) -> list[Thread]:
     return [
-        _parse_thread(lines[start:end])
+        _parse_thread(_strip_trailing_separators(lines[start:end]))
         for start, end in _consecutive_ranges(thread_starts, end)
     ]
 
@@ -41,7 +41,7 @@ def _parse_thread(lines: list[str]) -> Thread:
         return Thread(_header_lines=lines)
 
     tasks = [
-        Task(_lines=lines[start:end])
+        Task(_lines=_strip_trailing_blank_lines(lines[start:end]))
         for start, end in _consecutive_ranges(task_starts, len(lines))
     ]
 
@@ -55,10 +55,21 @@ def _find_matching_lines(lines: list[str], pattern: re.Pattern) -> list[int]:
 def _find_postamble_start(lines: list[str], last_thread_start: int) -> int:
     for i in range(last_thread_start + 1, len(lines)):
         if lines[i].startswith('## ') and not _THREAD_HEADING_RE.match(lines[i]):
-            if i > 0 and lines[i - 1].strip() == '---':
-                return i - 1
             return i
     return len(lines)
+
+
+def _strip_trailing_blank_lines(lines: list[str]) -> list[str]:
+    while lines and lines[-1].strip() == '':
+        lines.pop()
+    return lines
+
+
+def _strip_trailing_separators(lines: list[str]) -> list[str]:
+    result = list(lines)
+    while result and result[-1].strip() in ('', '---'):
+        result.pop()
+    return result
 
 
 def _consecutive_ranges(starts: list[int], end: int) -> list[tuple[int, int]]:

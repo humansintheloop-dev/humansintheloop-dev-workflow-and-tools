@@ -149,6 +149,12 @@ class Plan:
     def to_text(self) -> str:
         lines = list(self._preamble_lines)
         for thread_num, thread in enumerate(self.threads, 1):
+            if thread_num > 1:
+                lines.extend(['', '---', ''])
             lines.extend(thread.to_lines(thread_num))
+        if self._postamble_lines:
+            lines.extend(['', '---', ''])
         lines.extend(self._postamble_lines)
+        if not lines or lines[-1] != '':
+            lines.append('')
         return '\n'.join(lines)

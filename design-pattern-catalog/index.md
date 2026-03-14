@@ -14,6 +14,10 @@
 
 - [Compose Method](refactoring/compose-method.md) — Extract helpers so a method reads as a narrative at one level of abstraction
 
+## Testing
+
+- [Test Scripts as Simple Wrappers](testing/test-scripts-as-simple-wrappers.md) — Test logic belongs in pytest; shell scripts should only orchestrate
+
 ## Dependency Injection
 
 - [Bundle Constructor Parameters](dependency-injection/bundle-constructor-parameters.md) — Reducing constructor args without breaking DI

@@ -528,7 +528,7 @@ class TestCompletedPlans:
         result = cli.invoke(main, ["idea", "state", "--completed-plans"])
 
         assert result.exit_code == 0, result.output
-        assert "No wip ideas with completed plans found" in result.output
+        assert "No ideas with completed plans found" in result.output
         assert _last_commit_message(git_repo) == commit_before
 
     def test_no_commit_stages_without_committing(self, git_repo, cli, monkeypatch):
@@ -565,6 +565,19 @@ class TestCompletedPlans:
 
         assert result.exit_code != 0
         assert "Provide an idea name or use --completed-plans." in result.output
+
+    def test_transitions_draft_ideas_with_completed_plans(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        dir_a = _create_active_idea(git_repo, "idea-draft", state="draft")
+        _write_plan_file(dir_a, "idea-draft", COMPLETED_PLAN)
+        _git_add_and_commit(git_repo, "Initial commit")
+
+        result = cli.invoke(main, ["idea", "state", "--completed-plans"])
+
+        assert result.exit_code == 0, result.output
+        assert "Move idea idea-draft from draft to completed" in result.output
+        with open(os.path.join(dir_a, "idea-draft-metadata.yaml")) as f:
+            assert yaml.safe_load(f)["state"] == "completed"
 
     def test_skips_ideas_without_plans_and_with_empty_plans(self, git_repo, cli, monkeypatch):
         monkeypatch.chdir(git_repo)
@@ -620,7 +633,7 @@ class TestDryRun:
         result = cli.invoke(main, ["idea", "state", "--completed-plans", "--dry-run"])
 
         assert result.exit_code == 0, result.output
-        assert "No wip ideas with completed plans found" in result.output
+        assert "No ideas with completed plans found" in result.output
 
     def test_dry_run_requires_completed_plans(self, git_repo, cli, monkeypatch):
         monkeypatch.chdir(git_repo)

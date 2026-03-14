@@ -92,11 +92,11 @@ def _has_fully_completed_plan(idea_dir, name):
     return plan.task_progress().total > 0 and plan.get_next_task() is None
 
 
-def _find_active_wip_ideas(git_root):
-    """Return active wip ideas."""
+def _find_active_incomplete_ideas(git_root):
+    """Return active ideas in draft or wip state."""
     return [
         idea for idea in list_ideas(git_root)
-        if idea.state == "wip"
+        if idea.state in ("draft", "wip")
         and (git_root / "docs" / "ideas" / "active" / idea.name).is_dir()
     ]
 
@@ -129,11 +129,11 @@ def _transition_finished_ideas(wip_ideas, git_root):
 
 def _complete_finished_plans(git_root, no_commit, dry_run):
     """Transition all wip ideas with fully-completed plans to completed."""
-    wip_ideas = _find_active_wip_ideas(git_root)
+    wip_ideas = _find_active_incomplete_ideas(git_root)
     process = _preview_finished_ideas if dry_run else _transition_finished_ideas
     transitioned = process(wip_ideas, git_root)
     if not transitioned:
-        click.echo("No wip ideas with completed plans found")
+        click.echo("No ideas with completed plans found")
         return
     if dry_run or no_commit:
         return

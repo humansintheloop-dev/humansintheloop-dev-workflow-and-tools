@@ -58,14 +58,14 @@ This steel thread fixes the core bug: the parser currently stores inter-element 
     - [x] Modify `src/i2code/plan_domain/parser.py` — in `_parse_thread`, after slicing `_lines` for each task, strip trailing empty lines (lines that are `''` or whitespace-only)
     - [x] Run `pytest tests/plan-domain/` and verify the new test passes and existing tests still pass (some round-trip tests may now need adjustment — defer that to Task 1.3)
 
-- [ ] **Task 1.2: `Thread.to_lines()` emits a blank line between consecutive tasks**
+- [x] **Task 1.2: `Thread.to_lines()` emits a blank line between consecutive tasks**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/plan-domain/test_thread_to_lines_blank_lines.py`
   - Observable: `insert-task-before` and `insert-task-after` produce output with a blank line between all tasks. The 2 currently-failing tests in `tests/plan-domain/test_thread_to_lines_blank_lines.py` now pass.
   - Evidence: `pytest tests/plan-domain/test_thread_to_lines_blank_lines.py` — all 4 tests pass (previously 2 failed)
   - Steps:
-    - [ ] Modify `src/i2code/plan_domain/thread.py` — in `Thread.to_lines()`, insert `lines.append('')` before each task except the first
-    - [ ] Run `pytest tests/plan-domain/test_thread_to_lines_blank_lines.py` and verify all 4 tests pass
+    - [x] Modify `src/i2code/plan_domain/thread.py` — in `Thread.to_lines()`, insert `lines.append('')` before each task except the first
+    - [x] Run `pytest tests/plan-domain/test_thread_to_lines_blank_lines.py` and verify all 4 tests pass
 
 - [ ] **Task 1.3: Round-trip tests pass after parser and serializer changes**
   - TaskType: OUTCOME

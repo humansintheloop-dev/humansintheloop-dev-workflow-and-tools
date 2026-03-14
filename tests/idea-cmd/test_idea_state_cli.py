@@ -545,3 +545,44 @@ class TestCompletedPlans:
         with open(os.path.join(dir_a, "idea-x-metadata.yaml")) as f:
             assert yaml.safe_load(f)["state"] == "completed"
         assert _last_commit_message(git_repo) == commit_before
+
+    def test_error_when_name_and_completed_plans_both_provided(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _create_active_idea(git_repo, "my-idea", state="wip")
+        _git_add_and_commit(git_repo, "Initial commit")
+
+        result = cli.invoke(main, ["idea", "state", "my-idea", "--completed-plans"])
+
+        assert result.exit_code != 0
+        assert "Provide an idea name or use --completed-plans, not both." in result.output
+
+    def test_error_when_neither_name_nor_completed_plans(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _create_active_idea(git_repo, "some-idea", state="draft")
+        _git_add_and_commit(git_repo, "Initial commit")
+
+        result = cli.invoke(main, ["idea", "state"])
+
+        assert result.exit_code != 0
+        assert "Provide an idea name or use --completed-plans." in result.output
+
+    def test_skips_ideas_without_plans_and_with_empty_plans(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        # No plan file
+        _create_active_idea(git_repo, "idea-no-plan", state="wip")
+        # Empty plan (no tasks)
+        dir_empty = _create_active_idea(git_repo, "idea-empty", state="wip")
+        _write_plan_file(dir_empty, "idea-empty", "# Plan\n\nNo tasks here.\n")
+        # Completed plan
+        dir_done = _create_active_idea(git_repo, "idea-done", state="wip")
+        _write_plan_file(dir_done, "idea-done", COMPLETED_PLAN)
+        _git_add_and_commit(git_repo, "Initial commit")
+
+        result = cli.invoke(main, ["idea", "state", "--completed-plans"])
+
+        assert result.exit_code == 0, result.output
+        assert "Move idea idea-done from wip to completed" in result.output
+        assert "idea-no-plan" not in result.output
+        assert "idea-empty" not in result.output
+        with open(os.path.join(dir_done, "idea-done-metadata.yaml")) as f:
+            assert yaml.safe_load(f)["state"] == "completed"

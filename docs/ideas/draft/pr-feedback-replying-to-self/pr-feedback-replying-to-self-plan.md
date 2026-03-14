@@ -166,17 +166,17 @@ Verify self-comment marker filtering and resolved-thread filtering against a rea
     - [x] Post a reply with i2code marker prefix to simulate an i2code reply
     - [x] Invoke the feedback fetching logic and assert the marker reply is filtered out
     - [x] Clean up: close the PR
-- [ ] **Task 3.3: Verify comments in resolved threads are skipped**
+- [x] **Task 3.3: Verify comments in resolved threads are skipped**
   - TaskType: OUTCOME
   - Entrypoint: `test script`
   - Observable: Using the GH_TEST_ORG repo from Task 3.1, creates a PR with review comments in multiple threads, resolves one thread, then runs the feedback fetching logic and confirms comments in the resolved thread are excluded
   - Evidence: `Test script exits 0; comments from the resolved thread are not in the returned feedback list and are marked as processed; comments from unresolved threads are included`
   - Steps:
-    - [ ] Create a branch and PR in the GH_TEST_ORG test repo with changes that support multiple review comment threads
-    - [ ] Post review comments on different parts of the diff
-    - [ ] Resolve one thread using gh api graphql mutation
-    - [ ] Invoke the feedback fetching logic and assert resolved-thread comments are filtered out while unresolved-thread comments are returned
-    - [ ] Clean up: close the PR
+    - [x] Create a branch and PR in the GH_TEST_ORG test repo with changes that support multiple review comment threads
+    - [x] Post review comments on different parts of the diff
+    - [x] Resolve one thread using gh api graphql mutation
+    - [x] Invoke the feedback fetching logic and assert resolved-thread comments are filtered out while unresolved-thread comments are returned
+    - [x] Clean up: close the PR
 ## Change History
 ### 2026-03-13 16:58 - delete-task
 Rate limiting is not a realistic concern (120 req/hr vs 5000 limit). Transient network errors affect REST calls equally. Graceful degradation test adds complexity without meaningful value.
@@ -213,3 +213,21 @@ Resolved review thread comments are filtered out and marked processed during fee
 
 ### 2026-03-13 17:59 - mark-task-complete
 Added integration test steps for marker-bearing reply filtering
+
+### 2026-03-14 09:59 - mark-step-complete
+Created branch with utils.py containing 3 functions on separate lines to support multiple review threads
+
+### 2026-03-14 09:59 - mark-step-complete
+Posts review comments on line 1 (thread A) and line 5 (thread B) of utils.py
+
+### 2026-03-14 09:59 - mark-step-complete
+Finds thread node ID via GraphQL query, then resolves thread A with resolveReviewThread mutation
+
+### 2026-03-14 10:00 - mark-step-complete
+Invokes GitHubClient.get_resolved_review_comment_ids and asserts resolved thread A comments are filtered out while unresolved thread B comments are returned
+
+### 2026-03-14 10:00 - mark-step-complete
+Closes PR after verification, repo deletion handled by cleanup trap
+
+### 2026-03-14 10:00 - mark-task-complete
+Integration test for resolved thread filtering added to test-pr-feedback-filtering.sh

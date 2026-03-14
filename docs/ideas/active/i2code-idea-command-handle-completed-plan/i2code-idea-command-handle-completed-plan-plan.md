@@ -90,14 +90,14 @@ Implements Scenario 2: no matching ideas found.
 
 Implements Scenario 3: stage without committing.
 
-- [ ] **Task 3.1: `--completed-plans --no-commit` stages changes without creating a commit**
+- [x] **Task 3.1: `--completed-plans --no-commit` stages changes without creating a commit**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea state --completed-plans --no-commit`
   - Observable: Matching ideas' metadata files are updated and staged, transition messages are printed, but no git commit is created
   - Evidence: pytest test that creates a wip idea with completed plan, invokes with both flags, asserts transition message in output, verifies metadata file shows `completed`, and checks no new commit was created
   - Steps:
-    - [ ] Write test in `TestCompletedPlans` that sets up git repo with one wip idea with a completed plan, invokes `--completed-plans --no-commit`, asserts output, checks metadata state is `completed`, and verifies commit count hasn't changed
-    - [ ] Verify `_complete_finished_plans()` respects the `no_commit` parameter (should already work from Task 1.1)
+    - [x] Write test in `TestCompletedPlans` that sets up git repo with one wip idea with a completed plan, invokes `--completed-plans --no-commit`, asserts output, checks metadata state is `completed`, and verifies commit count hasn't changed
+    - [x] Verify `_complete_finished_plans()` respects the `no_commit` parameter (should already work from Task 1.1)
 
 ## Steel Thread 4: Mutual exclusivity and validation
 
@@ -147,3 +147,12 @@ Implementation already handles empty case from Task 1.1
 
 ### 2026-03-14 15:56 - mark-task-complete
 Test verifies empty case handling
+
+### 2026-03-14 15:57 - mark-step-complete
+Test written and passes
+
+### 2026-03-14 15:57 - mark-step-complete
+Already works from Task 1.1
+
+### 2026-03-14 15:57 - mark-task-complete
+Test verifies --no-commit works with --completed-plans

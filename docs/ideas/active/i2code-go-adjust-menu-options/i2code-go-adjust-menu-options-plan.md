@@ -99,20 +99,20 @@ This thread replaces `_commit_default()` with lifecycle-aware logic. The option 
 
 ### Task 1.3: WIP state defaults based on uncommitted changes
 
-- [ ] **Task 1.3: WIP state defaults to "Commit changes" or "Implement the entire plan"**
+- [x] **Task 1.3: WIP state defaults to "Commit changes" or "Implement the entire plan"**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <idea-in-wip-state>` (menu presentation)
   - Observable: When idea is in `wip` state with uncommitted changes, default is "Commit changes". When no uncommitted changes, default is the implement option.
   - Evidence: `pytest tests/go-cmd/test_orchestrator_lifecycle_menu.py::TestWipIdeaMenu tests/go-cmd/test_orchestrator_default_selection.py -v` passes with new/updated tests
   - Steps:
-    - [ ] In `tests/go-cmd/test_orchestrator_lifecycle_menu.py`, change `TestWipIdeaMenu.test_wip_idea_no_config_defaults_to_configure` to `test_wip_idea_no_changes_defaults_to_implement` — assert default is the implement label (matches `"Implement the entire plan"`).
-    - [ ] Add `test_wip_idea_with_uncommitted_changes_defaults_to_commit` in `TestWipIdeaMenu` — assert default is `COMMIT_CHANGES` when git is dirty.
-    - [ ] In `_lifecycle_default()`, add the `"wip"` case: if `COMMIT_CHANGES` is in options, return its index; otherwise return the index of the implement option.
-    - [ ] Update `tests/go-cmd/test_orchestrator_default_selection.py` — the existing tests use `_wip_project()` which has no metadata file. These tests now exercise the "no metadata / unknown state" fallback (Task 1.4). Review and adjust assertions:
+    - [x] In `tests/go-cmd/test_orchestrator_lifecycle_menu.py`, change `TestWipIdeaMenu.test_wip_idea_no_config_defaults_to_configure` to `test_wip_idea_no_changes_defaults_to_implement` — assert default is the implement label (matches `"Implement the entire plan"`).
+    - [x] Add `test_wip_idea_with_uncommitted_changes_defaults_to_commit` in `TestWipIdeaMenu` — assert default is `COMMIT_CHANGES` when git is dirty.
+    - [x] In `_lifecycle_default()`, add the `"wip"` case: if `COMMIT_CHANGES` is in options, return its index; otherwise return the index of the implement option.
+    - [x] Update `tests/go-cmd/test_orchestrator_default_selection.py` — the existing tests use `_wip_project()` which has no metadata file. These tests now exercise the "no metadata / unknown state" fallback (Task 1.4). Review and adjust assertions:
       - `test_no_config_defaults_to_configure` — still valid (no metadata → falls back to option 2)
       - `test_config_exists_with_uncommitted_changes_defaults_to_commit` — will now default to option 2 (configure/revise) since no metadata means fallback. Update this test to use a lifecycle project in `wip` state, or add a separate test. If keeping the no-metadata test, change expected default to `REVISE_IMPLEMENT`.
       - `test_config_exists_no_changes_defaults_to_revise` — still valid (no metadata → option 2 is revise implement)
-    - [ ] Run all go-cmd tests.
+    - [x] Run all go-cmd tests.
 
 ### Task 1.4: Missing/unknown metadata falls back to option 2
 
@@ -158,3 +158,21 @@ All 199 tests pass
 
 ### 2026-03-14 16:18 - mark-task-complete
 Ready state defaults to configure/revise implement options
+
+### 2026-03-14 16:23 - mark-step-complete
+Renamed test to test_wip_idea_no_changes_defaults_to_implement, asserts default starts with IMPLEMENT_PLAN
+
+### 2026-03-14 16:23 - mark-step-complete
+Added test_wip_idea_with_uncommitted_changes_defaults_to_commit
+
+### 2026-03-14 16:23 - mark-step-complete
+Added wip case in _lifecycle_default and _implement_option_index helper
+
+### 2026-03-14 16:23 - mark-step-complete
+Existing tests in test_orchestrator_default_selection.py pass as-is - they exercise the no-metadata fallback
+
+### 2026-03-14 16:23 - mark-step-complete
+All 200 go-cmd tests pass
+
+### 2026-03-14 16:24 - mark-task-complete
+WIP state defaults to implement when clean, commit when dirty

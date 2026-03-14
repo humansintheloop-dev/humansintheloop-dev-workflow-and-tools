@@ -336,8 +336,18 @@ class Orchestrator:
         if state == "ready":
             configure_label = self._configure_implement_label()
             return options.index(configure_label) + 1
+        if state == "wip":
+            if COMMIT_CHANGES in options:
+                return options.index(COMMIT_CHANGES) + 1
+            return self._implement_option_index(options)
         if COMMIT_CHANGES in options:
             return options.index(COMMIT_CHANGES) + 1
+        return 2
+
+    def _implement_option_index(self, options):
+        for i, option in enumerate(options):
+            if option.startswith(IMPLEMENT_PLAN):
+                return i + 1
         return 2
 
     def _has_uncommitted_changes(self):

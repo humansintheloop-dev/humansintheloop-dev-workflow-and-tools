@@ -208,6 +208,56 @@ class TestUnarchive:
         assert _last_commit_message(git_repo) == commit_before
 
 
+def _invoke_archive_completed(runner, **flags):
+    """Invoke `i2code idea archive --completed` and return the result."""
+    args = ["idea", "archive", "--completed"]
+    if flags.get("no_commit"):
+        args.append("--no-commit")
+    return runner.invoke(main, args)
+
+
+@pytest.mark.unit
+class TestArchiveCompleted:
+
+    def test_archives_all_completed_ideas(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _create_idea(git_repo, "done-one", "active", "completed")
+        _create_idea(git_repo, "done-two", "active", "completed")
+        _create_idea(git_repo, "still-wip", "active", "wip")
+        _git_add_and_commit(git_repo, "Initial commit")
+
+        result = _invoke_archive_completed(cli)
+
+        assert result.exit_code == 0
+        assert (git_repo / "docs" / "ideas" / "archived" / "done-one").is_dir()
+        assert (git_repo / "docs" / "ideas" / "archived" / "done-two").is_dir()
+        assert (git_repo / "docs" / "ideas" / "active" / "still-wip").is_dir()
+        assert not (git_repo / "docs" / "ideas" / "active" / "done-one").exists()
+        assert not (git_repo / "docs" / "ideas" / "active" / "done-two").exists()
+
+    def test_prints_each_archived_idea(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _create_idea(git_repo, "done-one", "active", "completed")
+        _create_idea(git_repo, "done-two", "active", "completed")
+        _git_add_and_commit(git_repo, "Initial commit")
+
+        result = _invoke_archive_completed(cli)
+
+        assert result.exit_code == 0
+        assert "done-one" in result.output
+        assert "done-two" in result.output
+
+    def test_exits_with_message_when_no_completed_ideas(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _create_idea(git_repo, "still-wip", "active", "wip")
+        _git_add_and_commit(git_repo, "Initial commit")
+
+        result = _invoke_archive_completed(cli)
+
+        assert result.exit_code == 0
+        assert "no completed ideas" in result.output.lower()
+
+
 @pytest.mark.unit
 class TestArchiveRoundTrip:
 

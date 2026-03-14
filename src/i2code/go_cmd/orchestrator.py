@@ -365,6 +365,7 @@ class Orchestrator:
         print("Implementation options:", file=output)
         mode = "interactive" if config["interactive"] else "non-interactive"
         print(f"  Mode: {mode}", file=output)
+        print(f"  Isolation: {config.get('isolation_type', 'none')}", file=output)
         branch = "trunk" if config["trunk"] else "worktree"
         print(f"  Branch: {branch}", file=output)
 

@@ -200,6 +200,46 @@ class TestConfigureImplementOptions:
             assert updated["trunk"] is True
 
 
+@pytest.mark.unit
+class TestEnsureImplementConfigWritesIsolationType:
+
+    @pytest.mark.parametrize("isolation_index,extra_choices,expected", [
+        (0, [WORKTREE_MODE], "none"),
+        (1, [], "nono"),
+    ])
+    def test_ensure_config_writes_isolation_type(self, isolation_index,
+                                                  extra_choices, expected):
+        from i2code.go_cmd.implement_config import read_implement_config
+
+        with TempIdeaProject("my-feature") as project:
+            mock_implement = MagicMock(return_value=_success_result())
+            user_choices = [
+                IMPLEMENT_PLAN, INTERACTIVE, ISOLATION_CHOICES[isolation_index],
+                *extra_choices, EXIT,
+            ]
+            _run_has_plan_orchestrator(
+                project, user_choices, implement_runner=mock_implement,
+            )
+            config = read_implement_config(project.implement_config_file)
+            assert config["isolation_type"] == expected
+
+
+@pytest.mark.unit
+class TestConfigureImplementWritesIsolationType:
+
+    def test_configure_writes_isolation_type(self):
+        from i2code.go_cmd.implement_config import read_implement_config
+
+        with TempIdeaProject("my-feature") as project:
+            _run_has_plan_orchestrator(
+                project,
+                [REVISE_IMPLEMENT, NON_INTERACTIVE, ISOLATION_CHOICES[2], EXIT],
+                config_kwargs=dict(interactive=True, trunk=False),
+            )
+            updated = read_implement_config(project.implement_config_file)
+            assert updated["isolation_type"] == "container"
+
+
 # ---------------------------------------------------------------------------
 # Display implement config
 # ---------------------------------------------------------------------------
@@ -219,6 +259,16 @@ class TestDisplayImplementConfig:
             assert "Implementation options:" in result.output_displayed
             assert "Mode: interactive" in result.output_displayed
             assert "Branch: worktree" in result.output_displayed
+
+    def test_displays_isolation_type(self):
+        with TempIdeaProject("my-feature") as project:
+            mock_implement = MagicMock(return_value=_success_result())
+            result = _run_has_plan_orchestrator(
+                project, [IMPLEMENT_PLAN, EXIT],
+                config_kwargs=dict(interactive=True, trunk=False, isolation_type="nono"),
+                implement_runner=mock_implement,
+            )
+            assert "Isolation: nono" in result.output_displayed
 
 
 # ---------------------------------------------------------------------------

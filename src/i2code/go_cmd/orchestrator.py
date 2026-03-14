@@ -267,7 +267,7 @@ class Orchestrator:
         )
         choice = get_user_choice(
             prompt,
-            self._commit_default(options), options,
+            self._lifecycle_default(options), options,
             config=self._deps.menu_config,
         )
         return self._handle_has_plan_choice(options[choice - 1])
@@ -295,7 +295,7 @@ class Orchestrator:
         message = self._deps.transition_fn(name, old_path, new_state, git_root)
         print(message, file=self._deps.output)
 
-    def _lifecycle_move_label(self):
+    def _read_lifecycle_state(self):
         metadata_path = Path(self._project.metadata_file)
         if not metadata_path.is_file():
             return None
@@ -303,7 +303,10 @@ class Orchestrator:
             metadata = read_metadata(metadata_path)
         except (OSError, ValueError):
             return None
-        state = metadata.get("state")
+        return metadata.get("state")
+
+    def _lifecycle_move_label(self):
+        state = self._read_lifecycle_state()
         if state is None:
             return None
         return _LIFECYCLE_MOVE_OPTIONS.get(state)
@@ -326,7 +329,10 @@ class Orchestrator:
             return REVISE_IMPLEMENT
         return CONFIGURE_IMPLEMENT
 
-    def _commit_default(self, options):
+    def _lifecycle_default(self, options):
+        state = self._read_lifecycle_state()
+        if state == "draft" and MOVE_TO_READY in options:
+            return options.index(MOVE_TO_READY) + 1
         if COMMIT_CHANGES in options:
             return options.index(COMMIT_CHANGES) + 1
         return 2

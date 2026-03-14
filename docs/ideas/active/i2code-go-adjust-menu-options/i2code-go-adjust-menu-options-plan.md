@@ -71,7 +71,7 @@ This thread replaces `_commit_default()` with lifecycle-aware logic. The option 
 
 ### Task 1.1: Draft state defaults to "Move idea to ready"
 
-- [ ] **Task 1.1: Draft state defaults to "Move idea to ready"**
+- [x] **Task 1.1: Draft state defaults to "Move idea to ready"**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <idea-in-draft-state>` (menu presentation)
   - Observable: When idea is in `draft` state, the default menu option is "Move idea to ready" instead of "Configure implement options"

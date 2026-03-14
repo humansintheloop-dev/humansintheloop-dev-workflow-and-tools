@@ -128,11 +128,17 @@ class TestDraftIdeaMenu:
             options = _build_menu_options(project)
             assert options[2] == MOVE_TO_READY
 
-    def test_draft_idea_no_config_defaults_to_configure(self):
+    def test_draft_idea_defaults_to_move_to_ready(self):
         with _lifecycle_project("my-feature", "draft") as project:
             _setup_has_plan(project)
             displayed = _get_menu_display(project)
-            assert _find_default(displayed) == CONFIGURE_IMPLEMENT
+            assert _find_default(displayed) == MOVE_TO_READY
+
+    def test_draft_idea_with_uncommitted_changes_defaults_to_move_to_ready(self):
+        with _lifecycle_project("my-feature", "draft") as project:
+            _setup_has_plan(project)
+            displayed = _get_menu_display(project, git_runner=_dirty_git())
+            assert _find_default(displayed) == MOVE_TO_READY
 
 
 @pytest.mark.unit

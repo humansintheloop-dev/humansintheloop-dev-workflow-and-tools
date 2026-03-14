@@ -530,3 +530,18 @@ class TestCompletedPlans:
         assert result.exit_code == 0, result.output
         assert "No wip ideas with completed plans found" in result.output
         assert _last_commit_message(git_repo) == commit_before
+
+    def test_no_commit_stages_without_committing(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        dir_a = _create_active_idea(git_repo, "idea-x", state="wip")
+        _write_plan_file(dir_a, "idea-x", COMPLETED_PLAN)
+        _git_add_and_commit(git_repo, "Initial commit")
+        commit_before = _last_commit_message(git_repo)
+
+        result = cli.invoke(main, ["idea", "state", "--completed-plans", "--no-commit"])
+
+        assert result.exit_code == 0, result.output
+        assert "Move idea idea-x from wip to completed" in result.output
+        with open(os.path.join(dir_a, "idea-x-metadata.yaml")) as f:
+            assert yaml.safe_load(f)["state"] == "completed"
+        assert _last_commit_message(git_repo) == commit_before

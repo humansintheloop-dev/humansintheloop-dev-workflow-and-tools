@@ -28,10 +28,8 @@ def _complete_name_or_path(ctx, _param, incomplete):
 def _resolve_state(name_or_path):
     """Resolve lifecycle state from a name or directory path."""
     path = Path(name_or_path)
-    if path.is_dir():
-        name = path.name
-        return resolve_idea(name, Path.cwd()).state
-    return resolve_idea(name_or_path, Path.cwd()).state
+    name = path.name if path.is_dir() else name_or_path
+    return resolve_idea(name, Path.cwd()).state
 
 
 def _git_commit(message, git_root):
@@ -103,6 +101,18 @@ def _find_active_wip_ideas(git_root):
     ]
 
 
+def _preview_finished_ideas(wip_ideas, git_root):
+    """Show wip ideas that would be transitioned, without making changes."""
+    previewed = []
+    for idea in wip_ideas:
+        idea_dir = git_root / idea.directory
+        if not _has_fully_completed_plan(idea_dir, idea.name):
+            continue
+        click.echo(f"Would move idea {idea.name} from wip to completed")
+        previewed.append(idea.name)
+    return previewed
+
+
 def _transition_finished_ideas(wip_ideas, git_root):
     """Transition wip ideas with completed plans, returning transitioned names."""
     transitioned = []
@@ -117,22 +127,29 @@ def _transition_finished_ideas(wip_ideas, git_root):
     return transitioned
 
 
-def _complete_finished_plans(git_root, no_commit):
+def _complete_finished_plans(git_root, no_commit, dry_run):
     """Transition all wip ideas with fully-completed plans to completed."""
-    transitioned = _transition_finished_ideas(_find_active_wip_ideas(git_root), git_root)
+    wip_ideas = _find_active_wip_ideas(git_root)
+    process = _preview_finished_ideas if dry_run else _transition_finished_ideas
+    transitioned = process(wip_ideas, git_root)
     if not transitioned:
         click.echo("No wip ideas with completed plans found")
         return
-    if not no_commit:
-        names = ", ".join(transitioned)
-        _git_commit(f"Mark ideas with completed plans as completed: {names}", git_root)
+    if dry_run or no_commit:
+        return
+    names = ", ".join(transitioned)
+    _git_commit(f"Mark ideas with completed plans as completed: {names}", git_root)
 
 
-def _validate_args(name_or_path, completed_plans):
-    """Validate mutual exclusivity of name_or_path and --completed-plans."""
-    if completed_plans and name_or_path:
-        raise click.UsageError("Provide an idea name or use --completed-plans, not both.")
-    if not completed_plans and name_or_path is None:
+def _validate_args(name_or_path, completed_plans, dry_run):
+    """Validate flag combinations for the state command."""
+    if completed_plans:
+        if name_or_path:
+            raise click.UsageError("Provide an idea name or use --completed-plans, not both.")
+        return
+    if dry_run:
+        raise click.UsageError("--dry-run can only be used with --completed-plans.")
+    if name_or_path is None:
         raise click.UsageError("Provide an idea name or use --completed-plans.")
 
 
@@ -145,16 +162,18 @@ def _validate_args(name_or_path, completed_plans):
     type=click.Choice(LIFECYCLE_STATES, case_sensitive=False),
 )
 @click.option("--completed-plans", is_flag=True, default=False, help="Transition all wip ideas with completed plans.")
+@click.option("--dry-run", is_flag=True, default=False, help="Show what would change without making changes.")
 @click.option("--force", is_flag=True, default=False, help="Bypass transition rules.")
 @click.option("--no-commit", is_flag=True, default=False, help="Stage changes but do not commit.")
 def idea_state(name_or_path, new_state, **kwargs):
     """Display or transition the lifecycle state of an idea."""
     completed_plans = kwargs["completed_plans"]
+    dry_run = kwargs["dry_run"]
     no_commit = kwargs["no_commit"]
     try:
-        _validate_args(name_or_path, completed_plans)
+        _validate_args(name_or_path, completed_plans, dry_run)
         if completed_plans:
-            _complete_finished_plans(Path.cwd(), no_commit)
+            _complete_finished_plans(Path.cwd(), no_commit, dry_run)
         elif new_state is None:
             click.echo(_resolve_state(name_or_path))
         else:

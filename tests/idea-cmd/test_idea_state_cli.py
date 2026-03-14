@@ -586,3 +586,48 @@ class TestCompletedPlans:
         assert "idea-empty" not in result.output
         with open(os.path.join(dir_done, "idea-done-metadata.yaml")) as f:
             assert yaml.safe_load(f)["state"] == "completed"
+
+
+@pytest.mark.unit
+class TestDryRun:
+
+    def test_dry_run_shows_what_would_change_without_modifying(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        dir_a = _create_active_idea(git_repo, "idea-a", state="wip")
+        _write_plan_file(dir_a, "idea-a", COMPLETED_PLAN)
+        dir_b = _create_active_idea(git_repo, "idea-b", state="wip")
+        _write_plan_file(dir_b, "idea-b", INCOMPLETE_PLAN)
+        _git_add_and_commit(git_repo, "Initial commit")
+        commit_before = _last_commit_message(git_repo)
+
+        result = cli.invoke(main, ["idea", "state", "--completed-plans", "--dry-run"])
+
+        assert result.exit_code == 0, result.output
+        assert "Would move idea idea-a from wip to completed" in result.output
+        assert "idea-b" not in result.output
+        # Verify metadata unchanged
+        with open(os.path.join(dir_a, "idea-a-metadata.yaml")) as f:
+            assert yaml.safe_load(f)["state"] == "wip"
+        # Verify no commit created
+        assert _last_commit_message(git_repo) == commit_before
+
+    def test_dry_run_with_no_matching_ideas(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        dir_a = _create_active_idea(git_repo, "idea-a", state="wip")
+        _write_plan_file(dir_a, "idea-a", INCOMPLETE_PLAN)
+        _git_add_and_commit(git_repo, "Initial commit")
+
+        result = cli.invoke(main, ["idea", "state", "--completed-plans", "--dry-run"])
+
+        assert result.exit_code == 0, result.output
+        assert "No wip ideas with completed plans found" in result.output
+
+    def test_dry_run_requires_completed_plans(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        _create_active_idea(git_repo, "idea-a", state="wip")
+        _git_add_and_commit(git_repo, "Initial commit")
+
+        result = cli.invoke(main, ["idea", "state", "idea-a", "--dry-run"])
+
+        assert result.exit_code != 0
+        assert "--dry-run can only be used with --completed-plans" in result.output

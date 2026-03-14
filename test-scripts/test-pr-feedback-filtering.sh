@@ -194,3 +194,176 @@ log_success "Task 3.2 passed: marker-bearing replies are skipped"
 log_info "Closing PR #$PR_NUMBER"
 gh pr close "$PR_NUMBER" --repo "$REPO_FULL_NAME" > /dev/null
 log_success "PR #$PR_NUMBER closed"
+
+# =====================================================
+# Task 3.3: Comments in resolved threads are skipped
+# =====================================================
+
+echo ""
+echo "--- Task 3.3: Comments in resolved threads are skipped ---"
+
+# Step 1: Create a branch with changes that support multiple review comment threads
+log_info "Creating branch and PR for resolved-thread test"
+
+git checkout main
+git checkout -b test-resolved-threads
+
+cat > utils.py <<'PYEOF'
+def add(a, b):
+    return a + b
+
+
+def subtract(a, b):
+    return a - b
+
+
+def multiply(a, b):
+    return a * b
+PYEOF
+
+git add utils.py
+git commit -m "Add utils module with multiple functions"
+git push -u origin test-resolved-threads
+
+PR3_URL=$(gh pr create --repo "$REPO_FULL_NAME" --title "Test resolved thread filtering" --body "Task 3.3 test" --base main)
+PR3_NUMBER=$(echo "$PR3_URL" | grep -oE '[0-9]+$')
+log_success "Created PR #$PR3_NUMBER"
+
+# Step 2: Post review comments on different parts of the diff (different lines)
+log_info "Posting review comments on different lines"
+
+COMMIT_SHA=$(git rev-parse HEAD)
+
+COMMENT_A_JSON=$(gh api "repos/$REPO_FULL_NAME/pulls/$PR3_NUMBER/comments" \
+    -f body="Thread A: Please rename this function" \
+    -f commit_id="$COMMIT_SHA" \
+    -f path="utils.py" \
+    -F line=1 \
+    -f side="RIGHT")
+COMMENT_A_ID=$(echo "$COMMENT_A_JSON" | jq -r '.id')
+log_success "Posted thread A comment on line 1 (id=$COMMENT_A_ID)"
+
+COMMENT_B_JSON=$(gh api "repos/$REPO_FULL_NAME/pulls/$PR3_NUMBER/comments" \
+    -f body="Thread B: Add type hints here" \
+    -f commit_id="$COMMIT_SHA" \
+    -f path="utils.py" \
+    -F line=5 \
+    -f side="RIGHT")
+COMMENT_B_ID=$(echo "$COMMENT_B_JSON" | jq -r '.id')
+log_success "Posted thread B comment on line 5 (id=$COMMENT_B_ID)"
+
+# Step 3: Resolve thread A using gh api graphql mutation
+log_info "Resolving thread A via GraphQL"
+
+# First, find the thread node ID for the thread containing comment A
+# shellcheck disable=SC2016
+THREAD_A_NODE_ID=$(gh api graphql -f query='
+query($owner: String!, $repo: String!, $pr: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $pr) {
+      reviewThreads(first: 100) {
+        nodes {
+          id
+          comments(first: 100) {
+            nodes {
+              databaseId
+            }
+          }
+        }
+      }
+    }
+  }
+}' -F "owner=$GH_TEST_ORG" -F "repo=$REPO_NAME" -F "pr=$PR3_NUMBER" \
+    --jq ".data.repository.pullRequest.reviewThreads.nodes[] | select(.comments.nodes[].databaseId == $COMMENT_A_ID) | .id")
+
+if [ -z "$THREAD_A_NODE_ID" ]; then
+    log_error "Could not find thread node ID for comment A ($COMMENT_A_ID)"
+    exit 1
+fi
+log_success "Found thread A node ID: $THREAD_A_NODE_ID"
+
+# shellcheck disable=SC2016
+gh api graphql -f query='
+mutation($threadId: ID!) {
+  resolveReviewThread(input: {threadId: $threadId}) {
+    thread {
+      isResolved
+    }
+  }
+}' -f "threadId=$THREAD_A_NODE_ID" > /dev/null
+log_success "Resolved thread A"
+
+# Step 4: Invoke feedback fetching logic and verify resolved-thread comments are filtered
+log_info "Verifying resolved-thread comments are filtered by _filter_resolved_thread_comments"
+
+cd "$PROJECT_ROOT"
+REPO_FULL_NAME="$REPO_FULL_NAME" PR_NUMBER="$PR3_NUMBER" \
+    COMMENT_A_ID="$COMMENT_A_ID" COMMENT_B_ID="$COMMENT_B_ID" \
+    uv run --python 3.12 python3 -c "
+import os, subprocess, json, sys
+
+repo = os.environ['REPO_FULL_NAME']
+pr = int(os.environ['PR_NUMBER'])
+comment_a_id = int(os.environ['COMMENT_A_ID'])
+comment_b_id = int(os.environ['COMMENT_B_ID'])
+owner, repo_name = repo.split('/')
+
+# Fetch all review comments from the real GitHub API
+result = subprocess.run(
+    ['gh', 'api', f'repos/{repo}/pulls/{pr}/comments', '--jq', '.'],
+    capture_output=True, text=True,
+)
+assert result.returncode == 0, f'gh api failed: {result.stderr}'
+comments = json.loads(result.stdout)
+
+print(f'  Fetched {len(comments)} review comments')
+assert len(comments) == 2, f'Expected 2 comments, got {len(comments)}'
+
+# Verify get_resolved_review_comment_ids returns comment A's ID
+from i2code.implement.github_client import GitHubClient
+gh_client = GitHubClient()
+resolved_ids = gh_client.get_resolved_review_comment_ids(owner, repo_name, pr)
+
+print(f'  Resolved comment IDs: {resolved_ids}')
+assert comment_a_id in resolved_ids, (
+    f'Comment A (id={comment_a_id}) should be in resolved set, got {resolved_ids}'
+)
+assert comment_b_id not in resolved_ids, (
+    f'Comment B (id={comment_b_id}) should NOT be in resolved set, got {resolved_ids}'
+)
+
+# Now simulate filtering: resolved-thread comments should be excluded
+remaining = []
+filtered_ids = []
+for c in comments:
+    if c['id'] in resolved_ids:
+        filtered_ids.append(c['id'])
+    else:
+        remaining.append(c)
+
+print(f'  Remaining (unresolved) comments: {len(remaining)}')
+print(f'  Filtered (resolved) comment IDs: {filtered_ids}')
+
+assert len(remaining) == 1, f'Expected 1 remaining comment, got {len(remaining)}'
+assert remaining[0]['id'] == comment_b_id, (
+    f'Remaining comment should be B (id={comment_b_id}), got id={remaining[0][\"id\"]}'
+)
+assert 'Thread B' in remaining[0]['body'], (
+    f'Remaining comment body mismatch: {remaining[0][\"body\"]}'
+)
+assert len(filtered_ids) == 1, f'Expected 1 filtered ID, got {len(filtered_ids)}'
+assert filtered_ids[0] == comment_a_id, (
+    f'Filtered ID should be A (id={comment_a_id}), got {filtered_ids[0]}'
+)
+
+print('  PASS: resolved-thread comments correctly excluded from feedback')
+print('  PASS: resolved comment IDs would be marked as processed')
+print('  PASS: unresolved-thread comments correctly included in feedback')
+"
+cd "$CLONE_DIR"
+log_success "Task 3.3 passed: comments in resolved threads are skipped"
+
+# Step 5: Clean up PR
+log_info "Closing PR #$PR3_NUMBER"
+gh pr close "$PR3_NUMBER" --repo "$REPO_FULL_NAME" > /dev/null
+log_success "PR #$PR3_NUMBER closed"

@@ -17,3 +17,4 @@ debug.log
 .coverage
 pytest-of-*/
 .env.local
+logs/

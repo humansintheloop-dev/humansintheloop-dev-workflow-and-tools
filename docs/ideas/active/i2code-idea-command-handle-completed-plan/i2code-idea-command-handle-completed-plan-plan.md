@@ -103,23 +103,23 @@ Implements Scenario 3: stage without committing.
 
 Implements Scenarios 4, 5, and 6: error handling and edge cases.
 
-- [ ] **Task 4.1: Error when both `name_or_path` and `--completed-plans` are provided**
+- [x] **Task 4.1: Error when both `name_or_path` and `--completed-plans` are provided**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea state my-idea --completed-plans`
   - Observable: Raises `UsageError` with message `Provide an idea name or use --completed-plans, not both.`, non-zero exit code
   - Evidence: pytest test that invokes with both a name argument and `--completed-plans` flag, asserts non-zero exit code and error message in output
   - Steps:
-    - [ ] Write test in `TestCompletedPlans` that invokes `i2code idea state my-idea --completed-plans` and asserts the usage error message and non-zero exit
-    - [ ] Add validation at the top of `idea_state` command: if both `name_or_path` and `completed_plans` are provided, raise `click.UsageError`; if neither is provided (and `name_or_path` is None and not `completed_plans`), raise `click.UsageError` with `Provide an idea name or use --completed-plans.`
+    - [x] Write test in `TestCompletedPlans` that invokes `i2code idea state my-idea --completed-plans` and asserts the usage error message and non-zero exit
+    - [x] Add validation at the top of `idea_state` command: if both `name_or_path` and `completed_plans` are provided, raise `click.UsageError`; if neither is provided (and `name_or_path` is None and not `completed_plans`), raise `click.UsageError` with `Provide an idea name or use --completed-plans.`
 
-- [ ] **Task 4.2: Wip ideas without plan files or with empty plans are skipped**
+- [x] **Task 4.2: Wip ideas without plan files or with empty plans are skipped**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea state --completed-plans`
   - Observable: Wip idea without plan file is skipped. Wip idea with empty plan (zero tasks) is skipped. Only ideas with at least one task and all tasks complete are transitioned.
   - Evidence: pytest test that creates three wip ideas: one without a plan file, one with an empty plan (no tasks), and one with a fully completed plan. Asserts only the completed-plan idea is transitioned.
   - Steps:
-    - [ ] Write test in `TestCompletedPlans` with three wip ideas (no plan, empty plan, completed plan), invokes `--completed-plans`, asserts only the completed-plan idea appears in output and has state `completed`
-    - [ ] Verify the implementation correctly skips ideas where plan file doesn't exist or `task_progress().total == 0` (should already work from Task 1.1)
+    - [x] Write test in `TestCompletedPlans` with three wip ideas (no plan, empty plan, completed plan), invokes `--completed-plans`, asserts only the completed-plan idea appears in output and has state `completed`
+    - [x] Verify the implementation correctly skips ideas where plan file doesn't exist or `task_progress().total == 0` (should already work from Task 1.1)
 
 ---
 
@@ -156,3 +156,21 @@ Already works from Task 1.1
 
 ### 2026-03-14 15:57 - mark-task-complete
 Test verifies --no-commit works with --completed-plans
+
+### 2026-03-14 15:58 - mark-step-complete
+Tests for mutual exclusivity written and pass
+
+### 2026-03-14 15:58 - mark-step-complete
+Validation already implemented in Task 1.1
+
+### 2026-03-14 15:58 - mark-task-complete
+Tests verify mutual exclusivity errors
+
+### 2026-03-14 15:59 - mark-step-complete
+Test written and passes
+
+### 2026-03-14 15:59 - mark-step-complete
+Already works from Task 1.1
+
+### 2026-03-14 15:59 - mark-task-complete
+Test verifies ideas without plans and empty plans are skipped

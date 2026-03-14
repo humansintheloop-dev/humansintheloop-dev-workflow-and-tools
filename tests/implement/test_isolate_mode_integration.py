@@ -365,6 +365,6 @@ class TestIsolateModeCreatesWorktree:
         assert not idea_dir_arg.startswith(".."), (
             f"Inner idea dir should be relative within worktree, got {idea_dir_arg}"
         )
-        assert idea_dir_arg == idea_name, (
-            f"Expected inner idea dir to be '{idea_name}', got {idea_dir_arg}"
+        assert idea_dir_arg == f"./{idea_name}", (
+            f"Expected inner idea dir to be './{idea_name}', got {idea_dir_arg}"
         )

@@ -97,7 +97,8 @@ def _create_branch_and_pr(repo, tmpdir, branch_spec):
 
     result = subprocess.run(
         ["gh", "pr", "create", "--repo", branch_spec["repo_full_name"],
-         "--title", branch_spec["title"], "--body", "Integration test", "--base", "main"],
+         "--title", branch_spec["title"], "--body", "Integration test",
+         "--head", branch_spec["branch"], "--base", "main"],
         capture_output=True, text=True,
     )
     assert result.returncode == 0, f"PR creation failed: {result.stderr}"

@@ -129,17 +129,17 @@ This thread replaces `_commit_default()` with lifecycle-aware logic. The option 
 
 ## Steel Thread 2: Optimize Metadata Reading
 
-- [ ] **Task 2.1: Read metadata once per menu build instead of twice**
+- [x] **Task 2.1: Read metadata once per menu build instead of twice**
   - TaskType: REFACTOR
   - Entrypoint: `pytest tests/go-cmd/ -v`
   - Observable: No behavior change — all existing tests pass
   - Evidence: `pytest tests/go-cmd/ -v` passes with zero failures
   - Steps:
-    - [ ] In `_build_has_plan_options()`, call `_read_lifecycle_state()` once and store the result.
-    - [ ] Pass the state to `_lifecycle_move_label()` (rename or add parameter) so it does not re-read the metadata file.
-    - [ ] Pass the state to `_lifecycle_default()` so it does not re-read the metadata file.
-    - [ ] Remove the metadata reading from `_lifecycle_move_label()` — it should now accept state as a parameter and just do the dict lookup.
-    - [ ] Run all go-cmd tests to confirm no regressions.
+    - [x] In `_build_has_plan_options()`, call `_read_lifecycle_state()` once and store the result.
+    - [x] Pass the state to `_lifecycle_move_label()` (rename or add parameter) so it does not re-read the metadata file.
+    - [x] Pass the state to `_lifecycle_default()` so it does not re-read the metadata file.
+    - [x] Remove the metadata reading from `_lifecycle_move_label()` — it should now accept state as a parameter and just do the dict lookup.
+    - [x] Run all go-cmd tests to confirm no regressions.
 
 ---
 
@@ -179,3 +179,6 @@ WIP state defaults to implement when clean, commit when dirty
 
 ### 2026-03-14 16:28 - mark-task-complete
 Added test for unknown state fallback; verified existing implementation handles None and unknown states correctly
+
+### 2026-03-14 16:33 - mark-task-complete
+Refactored to read metadata once per menu build

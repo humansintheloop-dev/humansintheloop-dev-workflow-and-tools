@@ -145,16 +145,16 @@ This thread restructures the HAS_PLAN menu in the orchestrator to always show co
 
 This thread updates the orchestrator methods that call prompt/read/write to handle the three-field config tuple.
 
-- [ ] **Task 4.1: _ensure_implement_config and _configure_implement pass isolation_type**
+- [x] **Task 4.1: _ensure_implement_config and _configure_implement pass isolation_type**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/idea-cmd/`
   - Observable: `_ensure_implement_config()` and `_configure_implement()` correctly receive the 3-tuple from `prompt_implement_config()` and pass `isolation_type` to `write_implement_config()`. The written config file contains all three fields.
   - Evidence: pytest runs tests that simulate the configure flow and verify the written config file contains `isolation_type`.
   - Steps:
-    - [ ] Write failing tests that trigger `_ensure_implement_config()` via the menu and verify the config file written contains `isolation_type`
-    - [ ] Update `_ensure_implement_config()` to unpack 3-tuple `(interactive, isolation_type, trunk)` from `prompt_implement_config()` and pass all three to `write_implement_config()`
-    - [ ] Update `_configure_implement()` similarly
-    - [ ] Update `_display_implement_config()` to show isolation type (per FR8: `Isolation: {value}`)
+    - [x] Write failing tests that trigger `_ensure_implement_config()` via the menu and verify the config file written contains `isolation_type`
+    - [x] Update `_ensure_implement_config()` to unpack 3-tuple `(interactive, isolation_type, trunk)` from `prompt_implement_config()` and pass all three to `write_implement_config()`
+    - [x] Update `_configure_implement()` similarly
+    - [x] Update `_display_implement_config()` to show isolation type (per FR8: `Isolation: {value}`)
 
 ---
 
@@ -222,3 +222,6 @@ Updated _commit_default to return position 2 when no commit option exists
 
 ### 2026-03-13 17:37 - mark-task-complete
 Default selection now returns configure/revise at position 2, or commit when dirty
+
+### 2026-03-14 09:59 - mark-task-complete
+Tests verify isolation_type flows through _ensure_implement_config, _configure_implement, and _display_implement_config

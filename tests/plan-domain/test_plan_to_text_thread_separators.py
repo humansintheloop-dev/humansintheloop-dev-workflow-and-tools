@@ -91,3 +91,42 @@ class TestPlanToTextThreadSeparators:
         plan = parse(TWO_THREAD_PLAN)
         result = plan.to_text()
         assert result == TWO_THREAD_PLAN
+
+
+PLAN_WITH_POSTAMBLE = """\
+# Implementation Plan: Test
+
+---
+
+## Steel Thread 1: First
+Intro one.
+
+- [ ] **Task 1.1: Task A**
+  - TaskType: INFRA
+  - Entrypoint: `echo a`
+  - Observable: A
+  - Evidence: `echo a-done`
+  - Steps:
+    - [ ] Do A
+
+---
+
+## Change History
+- Changed something
+"""
+
+
+class TestPlanToTextPostambleSeparator:
+    """Plan.to_text() emits --- separator between last thread and postamble."""
+
+    def test_separator_between_last_thread_and_postamble(self):
+        plan = parse(PLAN_WITH_POSTAMBLE)
+        result = plan.to_text()
+        assert '\n---\n' in result.split('## Steel Thread 1')[1].split('## Change History')[0], (
+            "Expected --- separator between last thread and postamble"
+        )
+
+    def test_round_trip_plan_with_postamble(self):
+        plan = parse(PLAN_WITH_POSTAMBLE)
+        result = plan.to_text()
+        assert result == PLAN_WITH_POSTAMBLE

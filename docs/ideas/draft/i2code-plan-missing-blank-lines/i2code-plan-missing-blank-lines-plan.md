@@ -102,15 +102,15 @@ This thread addresses thread-level spacing: `---` separators between threads and
     - [x] Write a test in `tests/plan-domain/test_plan_to_text_thread_separators.py` that: (a) parses a plan with 2 threads, inserts a new thread before thread 1, serializes, and asserts `---` separators between all 3 threads; (b) parses a plan with 2 threads, serializes without modifications, and asserts round-trip equivalence
     - [x] Modify `src/i2code/plan_domain/plan.py` — in `Plan.to_text()`, emit `['', '---', '']` before each thread except the first
 
-- [ ] **Task 2.3: `Plan.to_text()` emits separator before postamble**
+- [x] **Task 2.3: `Plan.to_text()` emits separator before postamble**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/plan-domain/`
   - Observable: When a plan has a postamble, serialization emits `\n---\n` between the last thread and the postamble.
   - Evidence: `pytest tests/plan-domain/` passes — a new test in `tests/plan-domain/test_plan_to_text_thread_separators.py` (or the same file from Task 2.2) parses a plan with a postamble, serializes, and verifies the `---` separator appears before the postamble
   - Steps:
-    - [ ] Add a test that parses a plan with threads and a postamble, serializes it, and asserts `---` and blank lines appear between the last thread and the postamble
-    - [ ] Modify `src/i2code/plan_domain/plan.py` — in `Plan.to_text()`, emit `['', '---', '']` before the postamble when it exists
-    - [ ] Verify the parser also strips trailing `---`/blank lines from the postamble's leading edge (the parser change from Task 2.1 should handle this, but verify)
+    - [x] Add a test that parses a plan with threads and a postamble, serializes it, and asserts `---` and blank lines appear between the last thread and the postamble
+    - [x] Modify `src/i2code/plan_domain/plan.py` — in `Plan.to_text()`, emit `['', '---', '']` before the postamble when it exists
+    - [x] Verify the parser also strips trailing `---`/blank lines from the postamble's leading edge (the parser change from Task 2.1 should handle this, but verify)
 
 - [ ] **Task 2.4: Full round-trip and integration verification**
   - TaskType: OUTCOME
@@ -145,3 +145,6 @@ Added test_parser_strips_thread_separators.py verifying parser strips trailing -
 
 ### 2026-03-14 12:22 - mark-task-complete
 Added test_plan_to_text_thread_separators.py verifying insert-thread-before, insert-thread-after, replace-thread, and round-trip all produce --- separators between threads. Plan.to_text() already emitted separators correctly. All 190 tests pass.
+
+### 2026-03-14 12:35 - mark-task-complete
+Added tests verifying Plan.to_text() emits --- separator before postamble and round-trips correctly

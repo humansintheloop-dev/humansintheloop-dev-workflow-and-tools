@@ -77,14 +77,14 @@ This thread implements the primary happy-path scenario (Scenario 1 from spec): m
 
 Implements Scenario 2: no matching ideas found.
 
-- [ ] **Task 2.1: Print informational message when no wip ideas have completed plans**
+- [x] **Task 2.1: Print informational message when no wip ideas have completed plans**
   - TaskType: OUTCOME
   - Entrypoint: `i2code idea state --completed-plans`
   - Observable: Prints `No wip ideas with completed plans found` to stdout, exits 0, no git commit created
   - Evidence: pytest test that creates wip ideas without plan files (or with incomplete plans), invokes the CLI, asserts exit code 0 and output message, and verifies no new commit was created
   - Steps:
-    - [ ] Write test in `TestCompletedPlans` that sets up a git repo with a wip idea that has no plan file and a wip idea with an incomplete plan, invokes `--completed-plans`, asserts output is `No wip ideas with completed plans found` and exit code is 0
-    - [ ] Verify the `_complete_finished_plans()` implementation handles the empty case (this should already work from Task 1.1's implementation)
+    - [x] Write test in `TestCompletedPlans` that sets up a git repo with a wip idea that has no plan file and a wip idea with an incomplete plan, invokes `--completed-plans`, asserts output is `No wip ideas with completed plans found` and exit code is 0
+    - [x] Verify the `_complete_finished_plans()` implementation handles the empty case (this should already work from Task 1.1's implementation)
 
 ## Steel Thread 3: `--no-commit` support
 
@@ -138,3 +138,12 @@ Updated idea_state command body to dispatch to _complete_finished_plans
 
 ### 2026-03-14 15:55 - mark-task-complete
 All steps completed, test passes, CodeScene quality gates pass
+
+### 2026-03-14 15:56 - mark-step-complete
+Test written and passes
+
+### 2026-03-14 15:56 - mark-step-complete
+Implementation already handles empty case from Task 1.1
+
+### 2026-03-14 15:56 - mark-task-complete
+Test verifies empty case handling

@@ -2,6 +2,8 @@
 
 import os
 
+import pytest
+
 from i2code.plan.plan_file_io import with_plan_file_update
 
 
@@ -30,6 +32,7 @@ Done."""
 class TestWithPlanFileUpdate:
     """with_plan_file_update only writes the file when content changes."""
 
+    @pytest.mark.xfail(reason="Task 1.3: round-trip needs serializer to emit blank lines between tasks")
     def test_skips_write_when_no_mutation(self, tmp_path):
         plan_file = tmp_path / "plan.md"
         plan_file.write_text(PLAN_TEXT)

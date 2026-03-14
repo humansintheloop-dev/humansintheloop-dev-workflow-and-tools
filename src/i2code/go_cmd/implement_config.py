@@ -6,6 +6,7 @@ INTERACTIVE = "Interactive"
 NON_INTERACTIVE = "Non-interactive"
 WORKTREE_MODE = "Worktree (branch + PR)"
 TRUNK_MODE = "Trunk (current branch, no PR)"
+ISOLATION_CHOICES = ["None", "Nono", "Container", "VM"]
 
 
 def read_implement_config(path):
@@ -23,6 +24,8 @@ def read_implement_config(path):
             line = line.strip()
             if line.startswith("interactive:"):
                 values["interactive"] = line.split(":", 1)[1].strip() == "true"
+            elif line.startswith("isolation_type:"):
+                values["isolation_type"] = line.split(":", 1)[1].strip()
             elif line.startswith("trunk:"):
                 values["trunk"] = line.split(":", 1)[1].strip() == "true"
 
@@ -30,14 +33,16 @@ def read_implement_config(path):
         return None
 
     values.setdefault("interactive", True)
+    values.setdefault("isolation_type", "none")
     values.setdefault("trunk", False)
     return values
 
 
-def write_implement_config(path, interactive, trunk):
+def write_implement_config(path, interactive, isolation_type, trunk):
     """Write implement config to a YAML-like file."""
     with open(path, "w") as f:
         f.write(f"interactive: {str(interactive).lower()}\n")
+        f.write(f"isolation_type: {isolation_type}\n")
         f.write(f"trunk: {str(trunk).lower()}\n")
 
 
@@ -48,18 +53,24 @@ def prompt_implement_config(menu_fn):
         menu_fn: Callable(prompt, default, options) -> 1-based choice index.
 
     Returns:
-        (interactive, trunk) boolean tuple.
+        (interactive, isolation_type, trunk) tuple.
     """
     mode_choice = menu_fn("How should Claude run?", 1, [INTERACTIVE, NON_INTERACTIVE])
     interactive = mode_choice == 1
 
-    branch_choice = menu_fn(
-        "Where should implementation happen?", 1,
-        [WORKTREE_MODE, TRUNK_MODE],
-    )
-    trunk = branch_choice == 2
+    isolation_choice = menu_fn("What isolation type?", 1, ISOLATION_CHOICES)
+    isolation_type = ISOLATION_CHOICES[isolation_choice - 1].lower()
 
-    return interactive, trunk
+    if isolation_type == "none":
+        branch_choice = menu_fn(
+            "Where should implementation happen?", 1,
+            [WORKTREE_MODE, TRUNK_MODE],
+        )
+        trunk = branch_choice == 2
+    else:
+        trunk = False
+
+    return interactive, isolation_type, trunk
 
 
 def build_implement_flags(config):
@@ -69,6 +80,10 @@ def build_implement_flags(config):
         flags.append("--non-interactive")
     if config["trunk"]:
         flags.append("--trunk")
+    isolation_type = config.get("isolation_type", "none")
+    if isolation_type != "none":
+        flags.append("--isolation-type")
+        flags.append(isolation_type)
     return flags
 
 

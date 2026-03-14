@@ -159,7 +159,21 @@ class FakeGitRepository:
 
     def ensure_pr(self, idea_directory, idea_name):
         self.calls.append(("ensure_pr", idea_directory, idea_name))
-        if self.pr_number is None:
-            self.pr_number = 100
+        if self.pr_number is not None:
+            return self.pr_number
+
+        existing = self._gh_client.find_pr(self.branch)
+        if existing is not None:
+            self.pr_number = existing
+            return existing
+
+        base_branch = self._gh_client.get_default_branch()
+        if base_branch == self.branch:
+            raise RuntimeError(
+                f"Default branch '{base_branch}' is the same as head branch "
+                f"'{self.branch}'. Check that the repository has a valid "
+                f"default branch (e.g. 'main') distinct from the idea branch."
+            )
+        self.pr_number = 100
         return self.pr_number
 

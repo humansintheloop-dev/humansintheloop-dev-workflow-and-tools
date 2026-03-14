@@ -6,12 +6,12 @@ import pytest
 from conftest import TempIdeaProject
 
 
-def _write_config_file(project, interactive, trunk):
+def _write_config_file(project, interactive, trunk, isolation_type="none"):
     """Write implement config and return the config file path."""
     from i2code.go_cmd.implement_config import write_implement_config
 
     path = project.implement_config_file
-    write_implement_config(path, interactive=interactive, trunk=trunk)
+    write_implement_config(path, interactive=interactive, isolation_type=isolation_type, trunk=trunk)
     return path
 
 
@@ -70,27 +70,122 @@ class TestReadConfigDefaults:
 
 
 @pytest.mark.unit
+class TestReadConfigIsolationType:
+
+    def test_read_config_with_isolation_type(self):
+        from i2code.go_cmd.implement_config import read_implement_config
+
+        with TempIdeaProject("my-feature") as project:
+            path = project.implement_config_file
+            with open(path, "w") as f:
+                f.write("interactive: true\n")
+                f.write("isolation_type: nono\n")
+                f.write("trunk: false\n")
+            config = read_implement_config(path)
+            assert config["interactive"] is True
+            assert config["isolation_type"] == "nono"
+            assert config["trunk"] is False
+
+    def test_legacy_config_missing_isolation_type_defaults_to_none(self):
+        from i2code.go_cmd.implement_config import read_implement_config
+
+        with TempIdeaProject("my-feature") as project:
+            path = project.implement_config_file
+            with open(path, "w") as f:
+                f.write("interactive: true\n")
+                f.write("trunk: false\n")
+            config = read_implement_config(path)
+            assert config["isolation_type"] == "none"
+
+
+@pytest.mark.unit
+class TestWriteConfigIsolationType:
+
+    def test_write_then_read_preserves_isolation_type(self):
+        from i2code.go_cmd.implement_config import read_implement_config, write_implement_config
+
+        with TempIdeaProject("my-feature") as project:
+            path = project.implement_config_file
+            write_implement_config(path, interactive=True, isolation_type="nono", trunk=False)
+            config = read_implement_config(path)
+            assert config["isolation_type"] == "nono"
+
+
+@pytest.mark.unit
 class TestPromptImplementConfig:
 
     def test_interactive_mode_and_worktree_branch(self):
         from i2code.go_cmd.implement_config import prompt_implement_config
 
-        choices = iter(["1", "1"])
-        interactive, trunk = prompt_implement_config(
-            menu_fn=lambda prompt, default, options: int(next(choices))
+        choices = iter([1, 1, 1])
+        interactive, isolation_type, trunk = prompt_implement_config(
+            menu_fn=lambda prompt, default, options: next(choices)
         )
         assert interactive is True
+        assert isolation_type == "none"
         assert trunk is False
 
     def test_non_interactive_mode_and_trunk_branch(self):
         from i2code.go_cmd.implement_config import prompt_implement_config
 
-        choices = iter(["2", "2"])
-        interactive, trunk = prompt_implement_config(
-            menu_fn=lambda prompt, default, options: int(next(choices))
+        choices = iter([2, 1, 2])
+        interactive, isolation_type, trunk = prompt_implement_config(
+            menu_fn=lambda prompt, default, options: next(choices)
         )
         assert interactive is False
+        assert isolation_type == "none"
         assert trunk is True
+
+
+@pytest.mark.unit
+class TestPromptImplementConfigWithIsolation:
+
+    def test_isolation_none_asks_all_three_questions(self):
+        """Selecting isolation 'none' asks mode, isolation, and branch strategy."""
+        from i2code.go_cmd.implement_config import prompt_implement_config
+
+        prompts_asked = []
+        answers = iter([1, 1, 1])
+
+        def menu_fn(prompt, default, options):
+            prompts_asked.append(prompt)
+            return next(answers)
+
+        result = prompt_implement_config(menu_fn)
+        assert result == (True, "none", False)
+        assert len(prompts_asked) == 3
+
+    def test_isolation_nono_skips_trunk_question(self):
+        """Selecting isolation 'nono' skips branch strategy, sets trunk=False."""
+        from i2code.go_cmd.implement_config import prompt_implement_config
+
+        prompts_asked = []
+
+        def menu_fn(prompt, default, options):
+            prompts_asked.append(prompt)
+            if "Claude" in prompt:
+                return 1  # Interactive
+            if "isolation" in prompt.lower():
+                return 2  # Nono
+            return 1
+
+        result = prompt_implement_config(menu_fn)
+        assert result == (True, "nono", False)
+        assert len(prompts_asked) == 2
+
+    def test_non_interactive_vm_skips_trunk_question(self):
+        """Non-interactive + VM isolation skips branch strategy."""
+        from i2code.go_cmd.implement_config import prompt_implement_config
+
+        def menu_fn(prompt, default, options):
+            if "Claude" in prompt:
+                return 2  # Non-interactive
+            if "isolation" in prompt.lower():
+                return 4  # VM
+            return 1
+
+        result = prompt_implement_config(menu_fn)
+        assert result == (False, "vm", False)
 
 
 @pytest.mark.unit
@@ -121,6 +216,30 @@ class TestBuildImplementFlags:
         assert "--non-interactive" in flags
         assert "--trunk" in flags
 
+    def test_isolation_type_nono_produces_flag(self):
+        from i2code.go_cmd.implement_config import build_implement_flags
+
+        config = {"interactive": True, "isolation_type": "nono", "trunk": False}
+        flags = build_implement_flags(config)
+        assert "--isolation-type" in flags
+        assert "nono" in flags
+
+    def test_isolation_type_none_omits_flag(self):
+        from i2code.go_cmd.implement_config import build_implement_flags
+
+        config = {"interactive": True, "isolation_type": "none", "trunk": False}
+        flags = build_implement_flags(config)
+        assert "--isolation-type" not in flags
+
+    def test_non_interactive_and_container_isolation_produces_both_flags(self):
+        from i2code.go_cmd.implement_config import build_implement_flags
+
+        config = {"interactive": False, "isolation_type": "container", "trunk": False}
+        flags = build_implement_flags(config)
+        assert "--non-interactive" in flags
+        assert "--isolation-type" in flags
+        assert "container" in flags
+
 
 @pytest.mark.unit
 class TestBuildImplementLabel:
@@ -144,3 +263,26 @@ class TestBuildImplementLabel:
             label = build_implement_label(project.implement_config_file)
             expected = f"Implement the entire plan: i2code implement{expected_suffix}"
             assert label == expected
+
+    def test_label_with_defaults_shows_plain_command(self):
+        from i2code.go_cmd.implement_config import build_implement_label
+
+        with TempIdeaProject("my-feature") as project:
+            _write_config_file(project, interactive=True, trunk=False)
+            label = build_implement_label(project.implement_config_file)
+            assert label == "Implement the entire plan: i2code implement"
+
+    def test_label_with_nono_isolation_and_non_interactive(self):
+        from i2code.go_cmd.implement_config import build_implement_label
+
+        with TempIdeaProject("my-feature") as project:
+            _write_config_file(project, interactive=False, trunk=False, isolation_type="nono")
+            label = build_implement_label(project.implement_config_file)
+            assert label == "Implement the entire plan: i2code implement --non-interactive --isolation-type nono"
+
+    def test_label_with_no_config_file_shows_plain_command(self):
+        from i2code.go_cmd.implement_config import build_implement_label
+
+        with TempIdeaProject("my-feature") as project:
+            label = build_implement_label(project.implement_config_file)
+            assert label == "Implement the entire plan: i2code implement"

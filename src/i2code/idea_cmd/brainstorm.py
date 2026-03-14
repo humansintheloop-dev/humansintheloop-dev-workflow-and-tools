@@ -4,8 +4,10 @@ import glob
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 from i2code.claude_cmd import build_allowed_tools_flag
+from i2code.idea.metadata import write_metadata
 from i2code.implement.claude_runner import ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 from i2code.session_manager import get_or_create_session_args
@@ -65,6 +67,10 @@ def brainstorm_idea(
         idea_file = os.path.join(project.directory, f"{project.name}-idea.md")
         with open(idea_file, "w") as f:
             f.write(IDEA_TEMPLATE_TEXT + "\n")
+
+        metadata_path = Path(project.metadata_file)
+        if not metadata_path.exists():
+            write_metadata(metadata_path, {"state": "draft"})
 
         editor_cmd = detect_editor()
         full_cmd = editor_cmd + [idea_file]

@@ -8,10 +8,10 @@ import pytest
 
 from conftest import TempIdeaProject, menu_config_by_label
 from i2code.go_cmd.implement_config import (
-    INTERACTIVE, NON_INTERACTIVE, TRUNK_MODE, WORKTREE_MODE,
+    INTERACTIVE, ISOLATION_CHOICES, NON_INTERACTIVE, TRUNK_MODE, WORKTREE_MODE,
 )
 from i2code.go_cmd.orchestrator import (
-    CONFIGURE_IMPLEMENT, EXIT, IMPLEMENT_PLAN,
+    CONFIGURE_IMPLEMENT, EXIT, IMPLEMENT_PLAN, REVISE_IMPLEMENT,
     Orchestrator, OrchestratorDeps,
 )
 
@@ -60,6 +60,7 @@ def _run_has_plan_orchestrator(project, menu_labels, *,
 
     if config_kwargs is not None:
         from i2code.go_cmd.implement_config import write_implement_config
+        config_kwargs.setdefault("isolation_type", "none")
         write_implement_config(project.implement_config_file, **config_kwargs)
 
     config = menu_config_by_label(menu_labels)
@@ -112,19 +113,20 @@ class TestImplementMenuLabel:
 @pytest.mark.unit
 class TestConfigureOptionVisibility:
 
-    @pytest.mark.parametrize("config_kwargs,should_show", [
-        (None, False),
-        (dict(interactive=True, trunk=False), True),
-    ])
-    def test_configure_option_visibility(self, config_kwargs, should_show):
+    def test_configure_shown_when_no_config(self):
         with TempIdeaProject("my-feature") as project:
             result = _run_has_plan_orchestrator(
-                project, [EXIT], config_kwargs=config_kwargs,
+                project, [EXIT], config_kwargs=None,
             )
-            if should_show:
-                assert CONFIGURE_IMPLEMENT in result.menu_displayed
-            else:
-                assert CONFIGURE_IMPLEMENT not in result.menu_displayed
+            assert CONFIGURE_IMPLEMENT in result.menu_displayed
+
+    def test_revise_shown_when_config_exists(self):
+        with TempIdeaProject("my-feature") as project:
+            result = _run_has_plan_orchestrator(
+                project, [EXIT],
+                config_kwargs=dict(interactive=True, trunk=False),
+            )
+            assert REVISE_IMPLEMENT in result.menu_displayed
 
 
 # ---------------------------------------------------------------------------
@@ -138,7 +140,7 @@ class TestImplementSelectionPromptsWhenNoConfig:
     def test_implement_prompts_for_config_then_runs(self):
         with TempIdeaProject("my-feature") as project:
             mock_implement = MagicMock(return_value=_success_result())
-            user_choices = [IMPLEMENT_PLAN, INTERACTIVE, WORKTREE_MODE, EXIT]
+            user_choices = [IMPLEMENT_PLAN, INTERACTIVE, ISOLATION_CHOICES[0], WORKTREE_MODE, EXIT]
             _run_has_plan_orchestrator(
                 project, user_choices,
                 implement_runner=mock_implement,
@@ -187,7 +189,7 @@ class TestConfigureImplementOptions:
 
         with TempIdeaProject("my-feature") as project:
             user_choices = [
-                CONFIGURE_IMPLEMENT, NON_INTERACTIVE, TRUNK_MODE, EXIT,
+                REVISE_IMPLEMENT, NON_INTERACTIVE, ISOLATION_CHOICES[0], TRUNK_MODE, EXIT,
             ]
             _run_has_plan_orchestrator(
                 project, user_choices,
@@ -196,6 +198,46 @@ class TestConfigureImplementOptions:
             updated = read_implement_config(project.implement_config_file)
             assert updated["interactive"] is False
             assert updated["trunk"] is True
+
+
+@pytest.mark.unit
+class TestEnsureImplementConfigWritesIsolationType:
+
+    @pytest.mark.parametrize("isolation_index,extra_choices,expected", [
+        (0, [WORKTREE_MODE], "none"),
+        (1, [], "nono"),
+    ])
+    def test_ensure_config_writes_isolation_type(self, isolation_index,
+                                                  extra_choices, expected):
+        from i2code.go_cmd.implement_config import read_implement_config
+
+        with TempIdeaProject("my-feature") as project:
+            mock_implement = MagicMock(return_value=_success_result())
+            user_choices = [
+                IMPLEMENT_PLAN, INTERACTIVE, ISOLATION_CHOICES[isolation_index],
+                *extra_choices, EXIT,
+            ]
+            _run_has_plan_orchestrator(
+                project, user_choices, implement_runner=mock_implement,
+            )
+            config = read_implement_config(project.implement_config_file)
+            assert config["isolation_type"] == expected
+
+
+@pytest.mark.unit
+class TestConfigureImplementWritesIsolationType:
+
+    def test_configure_writes_isolation_type(self):
+        from i2code.go_cmd.implement_config import read_implement_config
+
+        with TempIdeaProject("my-feature") as project:
+            _run_has_plan_orchestrator(
+                project,
+                [REVISE_IMPLEMENT, NON_INTERACTIVE, ISOLATION_CHOICES[2], EXIT],
+                config_kwargs=dict(interactive=True, trunk=False),
+            )
+            updated = read_implement_config(project.implement_config_file)
+            assert updated["isolation_type"] == "container"
 
 
 # ---------------------------------------------------------------------------
@@ -217,6 +259,16 @@ class TestDisplayImplementConfig:
             assert "Implementation options:" in result.output_displayed
             assert "Mode: interactive" in result.output_displayed
             assert "Branch: worktree" in result.output_displayed
+
+    def test_displays_isolation_type(self):
+        with TempIdeaProject("my-feature") as project:
+            mock_implement = MagicMock(return_value=_success_result())
+            result = _run_has_plan_orchestrator(
+                project, [IMPLEMENT_PLAN, EXIT],
+                config_kwargs=dict(interactive=True, trunk=False, isolation_type="nono"),
+                implement_runner=mock_implement,
+            )
+            assert "Isolation: nono" in result.output_displayed
 
 
 # ---------------------------------------------------------------------------

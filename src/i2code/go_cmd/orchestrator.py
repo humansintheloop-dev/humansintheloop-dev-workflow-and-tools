@@ -24,7 +24,7 @@ from i2code.go_cmd.plugin_skills import list_plugin_skills
 from i2code.go_cmd.revise_plan import revise_plan
 from i2code.idea_cmd.brainstorm import brainstorm_idea
 from i2code.idea_cmd.state_cmd import execute_transition
-from i2code.idea.resolver import state_from_path
+from i2code.idea.metadata import read_metadata
 from i2code.implement.claude_runner import ClaudeResult, ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
 from i2code.spec_cmd.create_spec import create_spec
@@ -53,6 +53,7 @@ CREATE_PLAN = "Create implementation plan"
 REVISE_PLAN = "Revise the plan"
 IMPLEMENT_PLAN = "Implement the entire plan"
 CONFIGURE_IMPLEMENT = "Configure implement options"
+REVISE_IMPLEMENT = "Revise implement options"
 COMMIT_CHANGES = "Commit changes"
 MOVE_TO_READY = "Move idea to ready"
 MOVE_TO_WIP = "Move idea to wip"
@@ -280,7 +281,7 @@ class Orchestrator:
             self._commit_changes()
         elif selected == REVISE_PLAN:
             self._run_step_with_retry("Revising plan", "revise_plan")
-        elif selected == CONFIGURE_IMPLEMENT:
+        elif selected in (CONFIGURE_IMPLEMENT, REVISE_IMPLEMENT):
             self._configure_implement()
         elif selected.startswith(IMPLEMENT_PLAN):
             self._run_implement()
@@ -293,29 +294,37 @@ class Orchestrator:
         git_root = _git_root_from_path(old_path)
         message = self._deps.transition_fn(name, old_path, new_state, git_root)
         print(message, file=self._deps.output)
-        new_dir = git_root / "docs" / "ideas" / new_state / name
-        self._project = IdeaProject(str(new_dir))
 
     def _lifecycle_move_label(self):
+        metadata_path = Path(self._project.metadata_file)
+        if not metadata_path.is_file():
+            return None
         try:
-            state = state_from_path(Path(self._project.directory))
-        except ValueError:
+            metadata = read_metadata(metadata_path)
+        except (OSError, ValueError):
+            return None
+        state = metadata.get("state")
+        if state is None:
             return None
         return _LIFECYCLE_MOVE_OPTIONS.get(state)
 
     def _build_has_plan_options(self):
         config_path = self._project.implement_config_file
         options = [REVISE_PLAN]
+        options.append(self._configure_implement_label())
         move_label = self._lifecycle_move_label()
         if move_label:
             options.append(move_label)
         if self._has_uncommitted_changes():
             options.append(COMMIT_CHANGES)
         options.append(build_implement_label(config_path))
-        if os.path.isfile(config_path):
-            options.append(CONFIGURE_IMPLEMENT)
         options.append("Exit")
         return options
+
+    def _configure_implement_label(self):
+        if os.path.isfile(self._project.implement_config_file):
+            return REVISE_IMPLEMENT
+        return CONFIGURE_IMPLEMENT
 
     def _commit_default(self, options):
         if COMMIT_CHANGES in options:
@@ -344,8 +353,8 @@ class Orchestrator:
         config = read_implement_config(config_path)
         if config is None:
             menu_fn = self._menu_fn_for_prompts()
-            interactive, trunk = prompt_implement_config(menu_fn)
-            write_implement_config(config_path, interactive, trunk)
+            interactive, isolation_type, trunk = prompt_implement_config(menu_fn)
+            write_implement_config(config_path, interactive, isolation_type, trunk)
         return read_implement_config(config_path)
 
     def _menu_fn_for_prompts(self):
@@ -360,6 +369,7 @@ class Orchestrator:
         print("Implementation options:", file=output)
         mode = "interactive" if config["interactive"] else "non-interactive"
         print(f"  Mode: {mode}", file=output)
+        print(f"  Isolation: {config.get('isolation_type', 'none')}", file=output)
         branch = "trunk" if config["trunk"] else "worktree"
         print(f"  Branch: {branch}", file=output)
 
@@ -378,9 +388,9 @@ class Orchestrator:
 
     def _configure_implement(self):
         menu_fn = self._menu_fn_for_prompts()
-        interactive, trunk = prompt_implement_config(menu_fn)
+        interactive, isolation_type, trunk = prompt_implement_config(menu_fn)
         write_implement_config(
-            self._project.implement_config_file, interactive, trunk,
+            self._project.implement_config_file, interactive, isolation_type, trunk,
         )
 
     def _check_plan_completion(self):

@@ -2,8 +2,10 @@
 
 import click
 
+from i2code.idea_cmd.archive_cmd import idea_archive, idea_unarchive
 from i2code.idea_cmd.brainstorm import brainstorm_idea
 from i2code.idea_cmd.list_cmd import idea_list
+from i2code.idea_cmd.migrate_cmd import idea_migrate
 from i2code.idea_cmd.state_cmd import idea_state
 from i2code.implement.claude_runner import ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
@@ -14,7 +16,10 @@ def idea():
     """Brainstorm and explore ideas."""
 
 
+idea.add_command(idea_archive)
 idea.add_command(idea_list)
+idea.add_command(idea_unarchive)
+idea.add_command(idea_migrate)
 idea.add_command(idea_state)
 
 

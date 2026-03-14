@@ -6,8 +6,9 @@ from pathlib import Path
 
 import click
 
+from i2code.idea.metadata import read_metadata, write_metadata
 from i2code.idea_cmd.transition_rules import validate_transition
-from i2code.idea.resolver import LIFECYCLE_STATES, IdeaInfo, list_ideas, resolve_idea, state_from_path
+from i2code.idea.resolver import LIFECYCLE_STATES, list_ideas, resolve_idea
 
 
 def _complete_name_or_path(ctx, _param, incomplete):
@@ -23,70 +24,64 @@ def _complete_name_or_path(ctx, _param, incomplete):
     return completions
 
 
-def _extract_invalid_state(name_or_path):
-    """If name_or_path looks like docs/ideas/{invalid_state}/..., return the invalid state."""
-    parts = Path(name_or_path).parts
-    for i, (first, second) in enumerate(zip(parts, parts[1:])):
-        if (first, second) == ("docs", "ideas") and i + 2 < len(parts):
-            candidate = parts[i + 2]
-            if candidate not in LIFECYCLE_STATES:
-                return candidate
-    return None
-
-
 def _resolve_state(name_or_path):
     """Resolve lifecycle state from a name or directory path."""
-    return _resolve_idea_from_name_or_path(name_or_path, Path.cwd()).state
-
-
-def _resolve_idea_from_name_or_path(name_or_path, git_root):
-    """Resolve an IdeaInfo from either a name or a directory path."""
     path = Path(name_or_path)
     if path.is_dir():
-        state = state_from_path(path)
-        name = path.resolve().name
-        directory = str(path.resolve().relative_to(git_root.resolve()))
-        return IdeaInfo(name=name, state=state, directory=directory)
-    invalid = _extract_invalid_state(name_or_path)
-    if invalid is not None:
-        valid = ", ".join(LIFECYCLE_STATES)
-        msg = f"'{invalid}' is not a valid state. Valid states: {valid}"
-        raise ValueError(msg)
-    return resolve_idea(name_or_path, git_root)
+        name = path.name
+        return resolve_idea(name, Path.cwd()).state
+    return resolve_idea(name_or_path, Path.cwd()).state
+
+
+def _git_commit(message, git_root):
+    """Create a git commit. Raises RuntimeError on failure."""
+    result = subprocess.run(
+        ["git", "commit", "-m", message],
+        cwd=str(git_root), capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip())
 
 
 def execute_transition(name, old_path, new_state, git_root):
-    """Move an idea directory to a new lifecycle state via git mv and commit.
+    """Update an idea's state in its metadata file and stage it.
 
-    Returns a message string on success.
-    Raises RuntimeError with the git error on failure.
+    Returns a commit message string, or None if already in the target state.
+    Raises RuntimeError on git failure.
     """
-    old_state = state_from_path(Path(old_path))
+    old_state = resolve_idea(name, git_root).state
     if old_state == new_state:
-        return f"Idea {name} is already in state {new_state}"
-    new_parent = git_root / "docs" / "ideas" / new_state
-    new_parent.mkdir(parents=True, exist_ok=True)
-    new_path = new_parent / name
-    subprocess.run(
-        ["git", "add", str(old_path)],
-        cwd=str(git_root), capture_output=True, text=True,
-    )
+        return None
+    metadata_path = Path(old_path) / f"{name}-metadata.yaml"
+    metadata = read_metadata(metadata_path)
+    metadata["state"] = new_state
+    write_metadata(metadata_path, metadata)
     result = subprocess.run(
-        ["git", "mv", str(old_path), str(new_path)],
+        ["git", "add", str(metadata_path)],
         cwd=str(git_root), capture_output=True, text=True,
     )
     if result.returncode != 0:
-        msg = result.stderr.strip()
-        raise RuntimeError(msg)
-    commit_message = f"Move idea {name} from {old_state} to {new_state}"
-    result = subprocess.run(
-        ["git", "commit", "-m", commit_message],
-        cwd=str(git_root), capture_output=True, text=True,
-    )
-    if result.returncode != 0:
-        msg = result.stderr.strip()
-        raise RuntimeError(msg)
-    return commit_message
+        raise RuntimeError(result.stderr.strip())
+    return f"Move idea {name} from {old_state} to {new_state}"
+
+
+def _handle_transition(name_or_path, new_state, *, force, no_commit):
+    """Validate and execute a state transition."""
+    git_root = Path.cwd()
+    idea = resolve_idea(name_or_path, git_root)
+    idea_dir = git_root / idea.directory
+    if not force:
+        violation = validate_transition(idea.state, new_state, idea_dir)
+        if violation:
+            click.echo(f"{violation}. Use --force to override.", err=True)
+            sys.exit(1)
+    message = execute_transition(idea.name, idea_dir, new_state, git_root)
+    if message is None:
+        click.echo(f"Idea {idea.name} is already in state {new_state}")
+        return
+    if not no_commit:
+        _git_commit(message, git_root)
+    click.echo(message)
 
 
 @click.command("state")
@@ -98,26 +93,14 @@ def execute_transition(name, old_path, new_state, git_root):
     type=click.Choice(LIFECYCLE_STATES, case_sensitive=False),
 )
 @click.option("--force", is_flag=True, default=False, help="Bypass transition rules.")
-def idea_state(name_or_path, new_state, force):  # noqa: FBT002
+@click.option("--no-commit", is_flag=True, default=False, help="Stage changes but do not commit.")
+def idea_state(name_or_path, new_state, force, no_commit):  # noqa: FBT002
     """Display or transition the lifecycle state of an idea."""
     try:
         if new_state is None:
-            state = _resolve_state(name_or_path)
-            click.echo(state)
+            click.echo(_resolve_state(name_or_path))
         else:
-            git_root = Path.cwd()
-            idea = _resolve_idea_from_name_or_path(name_or_path, git_root)
-            idea_dir = git_root / idea.directory
-            if not force:
-                violation = validate_transition(idea.state, new_state, idea_dir)
-                if violation:
-                    click.echo(f"{violation}. Use --force to override.", err=True)
-                    sys.exit(1)
-            message = execute_transition(idea.name, idea_dir, new_state, git_root)
-            click.echo(message)
-    except ValueError as exc:
-        click.echo(str(exc), err=True)
-        sys.exit(1)
-    except RuntimeError as exc:
+            _handle_transition(name_or_path, new_state, force=force, no_commit=no_commit)
+    except (ValueError, RuntimeError) as exc:
         click.echo(str(exc), err=True)
         sys.exit(1)

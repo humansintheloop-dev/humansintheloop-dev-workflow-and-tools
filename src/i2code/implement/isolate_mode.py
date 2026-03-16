@@ -149,6 +149,7 @@ class IsolateMode:
             args.append("shell")
             return args
         args.append("run")
+        args.append("--create")
         src_dir = _find_i2code_src_dir()
         if src_dir:
             args.extend(["--read", src_dir])

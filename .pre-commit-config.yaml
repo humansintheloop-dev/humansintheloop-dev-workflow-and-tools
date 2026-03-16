@@ -40,3 +40,10 @@ repos:
         language: script
         pass_filenames: false
         files: ^(src/|test-scripts/|tests/)
+  - repo: local
+    hooks:
+      - id: block-claude-coauthor
+        name: Block Claude Co-Authored-By in commit messages
+        entry: bash -c 'if grep -q "noreply@anthropic.com" "$1"; then echo "Commit message contains noreply@anthropic.com. Use the idea-to-code:commit-guidelines skill for the correct commit message format."; exit 1; fi' --
+        language: system
+        stages: [commit-msg]

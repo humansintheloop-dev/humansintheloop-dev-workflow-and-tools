@@ -3,7 +3,7 @@
 # End-to-end test script for i2code implement
 #
 # This script:
-# 1. Clones an existing source repository containing an idea
+# 1. Archives files from a source repository at a given ref
 # 2. Discovers the single idea in docs/features/
 # 3. Copies config files (CLAUDE.md, settings.local.json)
 # 4. Creates a GitHub repository under an organization
@@ -17,6 +17,7 @@
 #                     in docs/features/
 #
 # Options:
+#   --ref REF         Git ref (tag, branch, HEAD) to archive from (default: HEAD)
 #   --dry-run         Show what would be done without executing
 #   --keep-repo       Don't delete the GitHub repo on exit (for debugging)
 #   --setup-only      Only create repo and push, don't run i2code implement
@@ -26,6 +27,7 @@
 #   --isolate             Run inside an isolarium VM
 #   --isolation-type TYPE Isolation environment type (passed as --isolation-type)
 #   --skip-scaffolding    Skip the scaffolding step
+#   --debug-claude        Show full Claude output instead of progress dots
 #   -h, --help            Show this help message
 #
 # Environment:
@@ -52,7 +54,9 @@ EXTRA_PROMPT=""
 ISOLATE=false
 ISOLATION_TYPE=""
 SKIP_SCAFFOLDING=false
+DEBUG_CLAUDE=false
 SOURCE_REPO_PATH=""
+REF="HEAD"
 
 # Discovered at runtime
 IDEA_DIR=""
@@ -166,8 +170,16 @@ parse_args() {
                 ISOLATION_TYPE="$2"
                 shift 2
                 ;;
+            --ref)
+                REF="$2"
+                shift 2
+                ;;
             --skip-scaffolding)
                 SKIP_SCAFFOLDING=true
+                shift
+                ;;
+            --debug-claude)
+                DEBUG_CLAUDE=true
                 shift
                 ;;
             -h|--help)
@@ -236,13 +248,30 @@ check_prerequisites() {
     log_success "All prerequisites satisfied"
 }
 
+is_mutable_ref() {
+    local ref="$1"
+    if [ "$ref" = "HEAD" ]; then
+        return 0
+    fi
+    # Tags are immutable — branches are mutable
+    if git -C "$SOURCE_REPO_PATH" show-ref --verify --quiet "refs/tags/$ref" 2>/dev/null; then
+        return 1
+    fi
+    return 0
+}
+
 verify_pristine() {
-    log_info "Verifying source repo matches pristine tag..."
+    if ! is_mutable_ref "$REF"; then
+        log_info "Ref '$REF' is a tag — skipping pristine check"
+        return
+    fi
+
+    log_info "Verifying source repo has no uncommitted changes at '$REF'..."
 
     local diff
-    diff=$(git -C "$SOURCE_REPO_PATH" diff pristine)
+    diff=$(git -C "$SOURCE_REPO_PATH" diff "$REF")
     if [ -n "$diff" ]; then
-        log_error "Source repo has changes relative to the pristine tag"
+        log_error "Source repo has uncommitted changes relative to '$REF'"
         exit 1
     fi
 
@@ -253,11 +282,11 @@ verify_pristine() {
         exit 1
     fi
 
-    log_success "Source repo is pristine"
+    log_success "Source repo is clean at '$REF'"
 }
 
 clone_repository() {
-    log_info "Cloning source repository..."
+    log_info "Archiving source repository at ref '$REF'..."
 
     local source_abs
     source_abs="$(cd "$SOURCE_REPO_PATH" && pwd)"
@@ -272,40 +301,38 @@ clone_repository() {
 
     CLONE_DIR="${source_parent}/${clone_name}"
 
-    git clone "$source_abs" "$CLONE_DIR"
+    mkdir -p "$CLONE_DIR"
+    git -C "$SOURCE_REPO_PATH" archive "$REF" | tar xf - -C "$CLONE_DIR"
+    cd "$CLONE_DIR"
+    git init
+    git add .
+    git commit -m "Initial commit from $REF"
 
-    log_success "Cloned to: $CLONE_DIR"
+    log_success "Created repo from archive: $CLONE_DIR"
 }
 
 discover_idea() {
-    log_info "Discovering idea in docs/features/..."
+    log_info "Discovering idea by searching for *-plan.md files..."
 
-    local features_dir="$CLONE_DIR/docs/features"
+    local plan_files=()
+    while IFS= read -r -d '' file; do
+        plan_files+=("$file")
+    done < <(find "$CLONE_DIR/docs" -name "*-plan.md" -print0)
 
-    if [ ! -d "$features_dir" ]; then
-        log_error "docs/features/ directory not found in cloned repo"
+    if [ ${#plan_files[@]} -eq 0 ]; then
+        log_error "No *-plan.md files found in repo"
         exit 1
     fi
 
-    local idea_dirs=()
-    for dir in "$features_dir"/*/; do
-        [ -d "$dir" ] && idea_dirs+=("$dir")
-    done
-
-    if [ ${#idea_dirs[@]} -eq 0 ]; then
-        log_error "No idea directories found in docs/features/"
-        exit 1
-    fi
-
-    if [ ${#idea_dirs[@]} -gt 1 ]; then
-        log_error "Multiple idea directories found in docs/features/ (expected exactly 1):"
-        for dir in "${idea_dirs[@]}"; do
-            log_error "  $(basename "$dir")"
+    if [ ${#plan_files[@]} -gt 1 ]; then
+        log_error "Multiple *-plan.md files found (expected exactly 1):"
+        for f in "${plan_files[@]}"; do
+            log_error "  ${f#"$CLONE_DIR"/}"
         done
         exit 1
     fi
 
-    IDEA_DIR="${idea_dirs[0]%/}"
+    IDEA_DIR="$(dirname "${plan_files[0]}")"
     IDEA_NAME="$(basename "$IDEA_DIR")"
 
     log_success "Discovered idea: $IDEA_NAME"
@@ -323,12 +350,6 @@ copy_config_files() {
     mkdir -p "$CLONE_DIR/.claude"
     cp "$CONFIG_FILES_DIR/settings.local.json" "$CLONE_DIR/.claude/settings.local.json"
     log_info "  Copied settings.local.json"
-
-    if [ "$SKIP_SCAFFOLDING" = true ]; then
-        mkdir -p "$CLONE_DIR/.hitl_dev"
-        touch "$CLONE_DIR/.hitl_dev/scaffolding-done"
-        log_info "  Created .hitl_dev/scaffolding-done (skip scaffolding)"
-    fi
 
     log_success "Config files copied"
 }
@@ -383,10 +404,21 @@ run_implement_with_worktree() {
     if [ -n "$EXTRA_PROMPT" ]; then
         cmd+=("--extra-prompt" "$EXTRA_PROMPT")
     fi
+    if [ "$SKIP_SCAFFOLDING" = true ]; then
+        cmd+=("--skip-scaffolding")
+    fi
+    if [ "$DEBUG_CLAUDE" = true ]; then
+        cmd+=("--debug-claude")
+    fi
     cmd+=("$IDEA_DIR")
 
     log_info "Command: ${cmd[*]}"
-    which isolarium || { log_error "isolarium not found on PATH"; exit 1; }
+    if [ "$ISOLATE" = true ] || [ -n "$ISOLATION_TYPE" ]; then
+        which isolarium || { log_error "isolarium not found on PATH"; exit 1; }
+    fi
+
+    # Remove .venv directories from PATH so that nono sandbox uses uv-tool-installed i2code
+    PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '\.venv' | paste -sd ':' -)
     "${cmd[@]}"
 
     local exit_code=$?
@@ -452,8 +484,28 @@ verify_results() {
     log_success "Verification complete"
 }
 
+setup_logging() {
+    local log_dir="$PROJECT_ROOT/logs"
+    mkdir -p "$log_dir"
+
+    local repo_dir
+    if [ -n "$SOURCE_REPO_PATH" ]; then
+        repo_dir="$(basename "$SOURCE_REPO_PATH")"
+    else
+        repo_dir="$(basename "$RESUME_DIR")"
+    fi
+
+    local timestamp
+    timestamp=$(date +%Y%m%d%H%M%S)
+    local log_file="$log_dir/${repo_dir}-${REF}-${timestamp}.log"
+
+    log_info "Logging output to $log_file"
+    exec > >(tee "$log_file") 2>&1
+}
+
 main() {
     parse_args "$@"
+    setup_logging
 
     echo ""
     echo "========================================="
@@ -467,8 +519,10 @@ main() {
         echo "Source repo: $SOURCE_REPO_PATH"
         echo "GitHub org:  $GH_TEST_ORG"
         echo ""
+        echo "Ref:         $REF"
+        echo ""
         echo "Would execute:"
-        echo "  1. Clone $SOURCE_REPO_PATH to sibling directory"
+        echo "  1. Archive $SOURCE_REPO_PATH at ref '$REF' to sibling directory"
         echo "  2. Discover idea in docs/features/"
         echo "  3. Copy CLAUDE.md and settings.local.json"
         echo "  4. Commit config files"

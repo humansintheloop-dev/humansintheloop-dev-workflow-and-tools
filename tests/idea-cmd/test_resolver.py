@@ -95,7 +95,7 @@ class TestListIdeasWithArchived:
 
 @pytest.mark.unit
 class TestMissingMetadataFile:
-    def test_warns_when_metadata_file_missing(self, tmp_path):
+    def test_defaults_to_draft_when_metadata_file_missing(self, tmp_path):
         idea_dir = tmp_path / "docs" / "ideas" / "active" / "no-meta"
         idea_dir.mkdir(parents=True)
         # No metadata file created
@@ -106,6 +106,5 @@ class TestMissingMetadataFile:
 
         assert len(result) == 1
         assert result[0].name == "no-meta"
-        assert result[0].state == "unknown"
-        assert len(w) == 1
-        assert "metadata" in str(w[0].message).lower()
+        assert result[0].state == "draft"
+        assert len(w) == 0

@@ -233,6 +233,22 @@ class TestStateTransition:
             data = yaml.safe_load(f)
         assert data["state"] == "completed"
 
+    def test_creates_metadata_file_when_missing(self, git_repo, cli, monkeypatch):
+        monkeypatch.chdir(git_repo)
+        idea_dir = git_repo / "docs" / "ideas" / "active" / "no-meta"
+        idea_dir.mkdir(parents=True)
+        (idea_dir / "no-meta-idea.md").write_text("# no-meta\n")
+        _git_add_and_commit(git_repo, "Initial commit")
+
+        result = _invoke_transition(cli, "no-meta", "ready", force=True)
+
+        assert result.exit_code == 0
+        metadata_path = idea_dir / "no-meta-metadata.yaml"
+        assert metadata_path.exists()
+        with open(metadata_path) as f:
+            data = yaml.safe_load(f)
+        assert data["state"] == "ready"
+
     def test_directory_does_not_move(self, git_repo, cli, monkeypatch):
         monkeypatch.chdir(git_repo)
         _committed_active_idea(git_repo, "my-feature", state="wip")

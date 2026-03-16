@@ -1,7 +1,6 @@
 """Idea name resolver: locates ideas by name across active/archived directories."""
 
 import os
-import warnings
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -56,15 +55,14 @@ def resolve_idea(name: str, git_root: Path) -> IdeaInfo:
 def _read_state_from_metadata(idea_dir: Path, name: str) -> str:
     """Read lifecycle state from an idea's metadata file.
 
-    Returns 'unknown' and emits a warning if the metadata file is missing.
+    Defaults to 'draft' if the metadata file is missing.
     """
     metadata_path = idea_dir / f"{name}-metadata.yaml"
     try:
         data = read_metadata(metadata_path)
-        return data.get("state", "unknown")
+        return data.get("state", "draft")
     except FileNotFoundError:
-        warnings.warn(f"Metadata file not found for idea '{name}': {metadata_path}", stacklevel=2)
-        return "unknown"
+        return "draft"
 
 
 def _ideas_in_location(location_dir: Path, git_root: Path) -> list[IdeaInfo]:

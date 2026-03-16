@@ -52,7 +52,10 @@ def execute_transition(name, old_path, new_state, git_root):
     if old_state == new_state:
         return None
     metadata_path = Path(old_path) / f"{name}-metadata.yaml"
-    metadata = read_metadata(metadata_path)
+    try:
+        metadata = read_metadata(metadata_path)
+    except FileNotFoundError:
+        metadata = {}
     metadata["state"] = new_state
     write_metadata(metadata_path, metadata)
     result = subprocess.run(

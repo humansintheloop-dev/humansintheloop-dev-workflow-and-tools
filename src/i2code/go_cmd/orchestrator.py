@@ -261,13 +261,13 @@ class Orchestrator:
         return True
 
     def _dispatch_has_plan(self, _state):
-        options = self._build_has_plan_options()
+        options, lifecycle_state = self._build_has_plan_options()
         prompt = _MENU_PROMPTS[WorkflowState.HAS_PLAN].format(
             name=self._project.name,
         )
         choice = get_user_choice(
             prompt,
-            self._commit_default(options), options,
+            self._lifecycle_default(options, lifecycle_state), options,
             config=self._deps.menu_config,
         )
         return self._handle_has_plan_choice(options[choice - 1])
@@ -295,7 +295,7 @@ class Orchestrator:
         message = self._deps.transition_fn(name, old_path, new_state, git_root)
         print(message, file=self._deps.output)
 
-    def _lifecycle_move_label(self):
+    def _read_lifecycle_state(self):
         metadata_path = Path(self._project.metadata_file)
         if not metadata_path.is_file():
             return None
@@ -303,32 +303,50 @@ class Orchestrator:
             metadata = read_metadata(metadata_path)
         except (OSError, ValueError):
             return None
-        state = metadata.get("state")
+        return metadata.get("state")
+
+    def _lifecycle_move_label(self, state):
         if state is None:
             return None
         return _LIFECYCLE_MOVE_OPTIONS.get(state)
 
     def _build_has_plan_options(self):
         config_path = self._project.implement_config_file
+        lifecycle_state = self._read_lifecycle_state()
         options = [REVISE_PLAN]
         options.append(self._configure_implement_label())
-        move_label = self._lifecycle_move_label()
+        move_label = self._lifecycle_move_label(lifecycle_state)
         if move_label:
             options.append(move_label)
         if self._has_uncommitted_changes():
             options.append(COMMIT_CHANGES)
         options.append(build_implement_label(config_path))
         options.append("Exit")
-        return options
+        return options, lifecycle_state
 
     def _configure_implement_label(self):
         if os.path.isfile(self._project.implement_config_file):
             return REVISE_IMPLEMENT
         return CONFIGURE_IMPLEMENT
 
-    def _commit_default(self, options):
+    def _lifecycle_default(self, options, state):
+        if state == "draft" and MOVE_TO_READY in options:
+            return options.index(MOVE_TO_READY) + 1
+        if state == "ready":
+            configure_label = self._configure_implement_label()
+            return options.index(configure_label) + 1
+        if state == "wip":
+            if COMMIT_CHANGES in options:
+                return options.index(COMMIT_CHANGES) + 1
+            return self._implement_option_index(options)
         if COMMIT_CHANGES in options:
             return options.index(COMMIT_CHANGES) + 1
+        return 2
+
+    def _implement_option_index(self, options):
+        for i, option in enumerate(options):
+            if option.startswith(IMPLEMENT_PLAN):
+                return i + 1
         return 2
 
     def _has_uncommitted_changes(self):

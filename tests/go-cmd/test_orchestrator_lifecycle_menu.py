@@ -9,7 +9,9 @@ import pytest
 
 from conftest import menu_config_by_label
 from i2code.go_cmd.orchestrator import (
-    COMMIT_CHANGES, CONFIGURE_IMPLEMENT, EXIT, Orchestrator, OrchestratorDeps,
+    COMMIT_CHANGES, CONFIGURE_IMPLEMENT, EXIT, IMPLEMENT_PLAN,
+    REVISE_IMPLEMENT,
+    Orchestrator, OrchestratorDeps,
 )
 from i2code.implement.idea_project import IdeaProject
 
@@ -128,11 +130,17 @@ class TestDraftIdeaMenu:
             options = _build_menu_options(project)
             assert options[2] == MOVE_TO_READY
 
-    def test_draft_idea_no_config_defaults_to_configure(self):
+    def test_draft_idea_defaults_to_move_to_ready(self):
         with _lifecycle_project("my-feature", "draft") as project:
             _setup_has_plan(project)
             displayed = _get_menu_display(project)
-            assert _find_default(displayed) == CONFIGURE_IMPLEMENT
+            assert _find_default(displayed) == MOVE_TO_READY
+
+    def test_draft_idea_with_uncommitted_changes_defaults_to_move_to_ready(self):
+        with _lifecycle_project("my-feature", "draft") as project:
+            _setup_has_plan(project)
+            displayed = _get_menu_display(project, git_runner=_dirty_git())
+            assert _find_default(displayed) == MOVE_TO_READY
 
 
 @pytest.mark.unit
@@ -150,11 +158,18 @@ class TestReadyIdeaMenu:
             options = _build_menu_options(project)
             assert options[2] == MOVE_TO_WIP
 
-    def test_ready_idea_no_config_defaults_to_configure(self):
+    def test_ready_idea_defaults_to_configure(self):
         with _lifecycle_project("my-feature", "ready") as project:
             _setup_has_plan(project)
             displayed = _get_menu_display(project)
             assert _find_default(displayed) == CONFIGURE_IMPLEMENT
+
+    def test_ready_idea_with_config_defaults_to_revise(self):
+        with _lifecycle_project("my-feature", "ready") as project:
+            _setup_has_plan(project)
+            _create_file(project, f"{project.name}-implement-config.yaml", "model: fast\n")
+            displayed = _get_menu_display(project)
+            assert _find_default(displayed) == REVISE_IMPLEMENT
 
 
 @pytest.mark.unit
@@ -167,11 +182,18 @@ class TestWipIdeaMenu:
             assert MOVE_TO_READY not in options
             assert MOVE_TO_WIP not in options
 
-    def test_wip_idea_no_config_defaults_to_configure(self):
+    def test_wip_idea_no_changes_defaults_to_implement(self):
         with _lifecycle_project("my-feature", "wip") as project:
             _setup_has_plan(project)
             displayed = _get_menu_display(project)
-            assert _find_default(displayed) == CONFIGURE_IMPLEMENT
+            default = _find_default(displayed)
+            assert default is not None and default.startswith(IMPLEMENT_PLAN)
+
+    def test_wip_idea_with_uncommitted_changes_defaults_to_commit(self):
+        with _lifecycle_project("my-feature", "wip") as project:
+            _setup_has_plan(project)
+            displayed = _get_menu_display(project, git_runner=_dirty_git())
+            assert _find_default(displayed) == COMMIT_CHANGES
 
 
 @pytest.mark.unit

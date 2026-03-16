@@ -71,7 +71,7 @@ This thread replaces `_commit_default()` with lifecycle-aware logic. The option 
 
 ### Task 1.1: Draft state defaults to "Move idea to ready"
 
-- [ ] **Task 1.1: Draft state defaults to "Move idea to ready"**
+- [x] **Task 1.1: Draft state defaults to "Move idea to ready"**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <idea-in-draft-state>` (menu presentation)
   - Observable: When idea is in `draft` state, the default menu option is "Move idea to ready" instead of "Configure implement options"
@@ -86,57 +86,99 @@ This thread replaces `_commit_default()` with lifecycle-aware logic. The option 
 
 ### Task 1.2: Ready state defaults to "Configure/Revise implement options"
 
-- [ ] **Task 1.2: Ready state defaults to "Configure/Revise implement options"**
+- [x] **Task 1.2: Ready state defaults to "Configure/Revise implement options"**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <idea-in-ready-state>` (menu presentation)
   - Observable: When idea is in `ready` state, the default menu option is "Configure implement options" (or "Revise implement options" if config exists)
   - Evidence: `pytest tests/go-cmd/test_orchestrator_lifecycle_menu.py::TestReadyIdeaMenu -v` passes with updated test asserting ready state defaults to configure/revise
   - Steps:
-    - [ ] In `tests/go-cmd/test_orchestrator_lifecycle_menu.py`, rename `TestReadyIdeaMenu.test_ready_idea_no_config_defaults_to_configure` to `test_ready_idea_defaults_to_configure` (this test already passes since option 2 is configure, but verifying it still works with new logic).
-    - [ ] Add `test_ready_idea_with_config_defaults_to_revise` — verifies that with an existing config file, default is `REVISE_IMPLEMENT`.
-    - [ ] In `_lifecycle_default()`, add the `"ready"` case: return the 1-based index of the configure/revise label (which is always option 2).
-    - [ ] Run tests.
+    - [x] In `tests/go-cmd/test_orchestrator_lifecycle_menu.py`, rename `TestReadyIdeaMenu.test_ready_idea_no_config_defaults_to_configure` to `test_ready_idea_defaults_to_configure` (this test already passes since option 2 is configure, but verifying it still works with new logic).
+    - [x] Add `test_ready_idea_with_config_defaults_to_revise` — verifies that with an existing config file, default is `REVISE_IMPLEMENT`.
+    - [x] In `_lifecycle_default()`, add the `"ready"` case: return the 1-based index of the configure/revise label (which is always option 2).
+    - [x] Run tests.
 
 ### Task 1.3: WIP state defaults based on uncommitted changes
 
-- [ ] **Task 1.3: WIP state defaults to "Commit changes" or "Implement the entire plan"**
+- [x] **Task 1.3: WIP state defaults to "Commit changes" or "Implement the entire plan"**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <idea-in-wip-state>` (menu presentation)
   - Observable: When idea is in `wip` state with uncommitted changes, default is "Commit changes". When no uncommitted changes, default is the implement option.
   - Evidence: `pytest tests/go-cmd/test_orchestrator_lifecycle_menu.py::TestWipIdeaMenu tests/go-cmd/test_orchestrator_default_selection.py -v` passes with new/updated tests
   - Steps:
-    - [ ] In `tests/go-cmd/test_orchestrator_lifecycle_menu.py`, change `TestWipIdeaMenu.test_wip_idea_no_config_defaults_to_configure` to `test_wip_idea_no_changes_defaults_to_implement` — assert default is the implement label (matches `"Implement the entire plan"`).
-    - [ ] Add `test_wip_idea_with_uncommitted_changes_defaults_to_commit` in `TestWipIdeaMenu` — assert default is `COMMIT_CHANGES` when git is dirty.
-    - [ ] In `_lifecycle_default()`, add the `"wip"` case: if `COMMIT_CHANGES` is in options, return its index; otherwise return the index of the implement option.
-    - [ ] Update `tests/go-cmd/test_orchestrator_default_selection.py` — the existing tests use `_wip_project()` which has no metadata file. These tests now exercise the "no metadata / unknown state" fallback (Task 1.4). Review and adjust assertions:
+    - [x] In `tests/go-cmd/test_orchestrator_lifecycle_menu.py`, change `TestWipIdeaMenu.test_wip_idea_no_config_defaults_to_configure` to `test_wip_idea_no_changes_defaults_to_implement` — assert default is the implement label (matches `"Implement the entire plan"`).
+    - [x] Add `test_wip_idea_with_uncommitted_changes_defaults_to_commit` in `TestWipIdeaMenu` — assert default is `COMMIT_CHANGES` when git is dirty.
+    - [x] In `_lifecycle_default()`, add the `"wip"` case: if `COMMIT_CHANGES` is in options, return its index; otherwise return the index of the implement option.
+    - [x] Update `tests/go-cmd/test_orchestrator_default_selection.py` — the existing tests use `_wip_project()` which has no metadata file. These tests now exercise the "no metadata / unknown state" fallback (Task 1.4). Review and adjust assertions:
       - `test_no_config_defaults_to_configure` — still valid (no metadata → falls back to option 2)
       - `test_config_exists_with_uncommitted_changes_defaults_to_commit` — will now default to option 2 (configure/revise) since no metadata means fallback. Update this test to use a lifecycle project in `wip` state, or add a separate test. If keeping the no-metadata test, change expected default to `REVISE_IMPLEMENT`.
       - `test_config_exists_no_changes_defaults_to_revise` — still valid (no metadata → option 2 is revise implement)
-    - [ ] Run all go-cmd tests.
+    - [x] Run all go-cmd tests.
 
 ### Task 1.4: Missing/unknown metadata falls back to option 2
 
-- [ ] **Task 1.4: Missing or unknown metadata state falls back to option 2**
+- [x] **Task 1.4: Missing or unknown metadata state falls back to option 2**
   - TaskType: OUTCOME
   - Entrypoint: `i2code go <idea-without-metadata>` (menu presentation)
   - Observable: When metadata file is missing or has unknown state, default is option 2 (Configure/Revise implement options)
   - Evidence: `pytest tests/go-cmd/test_orchestrator_default_selection.py -v` passes with tests for no-metadata and unknown-state scenarios
   - Steps:
-    - [ ] Ensure `tests/go-cmd/test_orchestrator_default_selection.py` has a test for no-metadata fallback (the existing `test_no_config_defaults_to_configure` already covers this with `_wip_project` which has no metadata).
-    - [ ] Add a test with metadata containing an unrecognized state (e.g., `state: archived`) — assert default is option 2 (configure/revise).
-    - [ ] Verify `_lifecycle_default()` handles `None` state and unknown states by falling back to `return 2`.
-    - [ ] Run all go-cmd tests to confirm no regressions.
+    - [x] Ensure `tests/go-cmd/test_orchestrator_default_selection.py` has a test for no-metadata fallback (the existing `test_no_config_defaults_to_configure` already covers this with `_wip_project` which has no metadata).
+    - [x] Add a test with metadata containing an unrecognized state (e.g., `state: archived`) — assert default is option 2 (configure/revise).
+    - [x] Verify `_lifecycle_default()` handles `None` state and unknown states by falling back to `return 2`.
+    - [x] Run all go-cmd tests to confirm no regressions.
 
 ## Steel Thread 2: Optimize Metadata Reading
 
-- [ ] **Task 2.1: Read metadata once per menu build instead of twice**
+- [x] **Task 2.1: Read metadata once per menu build instead of twice**
   - TaskType: REFACTOR
   - Entrypoint: `pytest tests/go-cmd/ -v`
   - Observable: No behavior change — all existing tests pass
   - Evidence: `pytest tests/go-cmd/ -v` passes with zero failures
   - Steps:
-    - [ ] In `_build_has_plan_options()`, call `_read_lifecycle_state()` once and store the result.
-    - [ ] Pass the state to `_lifecycle_move_label()` (rename or add parameter) so it does not re-read the metadata file.
-    - [ ] Pass the state to `_lifecycle_default()` so it does not re-read the metadata file.
-    - [ ] Remove the metadata reading from `_lifecycle_move_label()` — it should now accept state as a parameter and just do the dict lookup.
-    - [ ] Run all go-cmd tests to confirm no regressions.
+    - [x] In `_build_has_plan_options()`, call `_read_lifecycle_state()` once and store the result.
+    - [x] Pass the state to `_lifecycle_move_label()` (rename or add parameter) so it does not re-read the metadata file.
+    - [x] Pass the state to `_lifecycle_default()` so it does not re-read the metadata file.
+    - [x] Remove the metadata reading from `_lifecycle_move_label()` — it should now accept state as a parameter and just do the dict lookup.
+    - [x] Run all go-cmd tests to confirm no regressions.
+
+---
+
+## Change History
+### 2026-03-14 16:17 - mark-step-complete
+Renamed test method
+
+### 2026-03-14 16:17 - mark-step-complete
+Added test_ready_idea_with_config_defaults_to_revise
+
+### 2026-03-14 16:17 - mark-step-complete
+Added ready case in _lifecycle_default
+
+### 2026-03-14 16:17 - mark-step-complete
+All 199 tests pass
+
+### 2026-03-14 16:18 - mark-task-complete
+Ready state defaults to configure/revise implement options
+
+### 2026-03-14 16:23 - mark-step-complete
+Renamed test to test_wip_idea_no_changes_defaults_to_implement, asserts default starts with IMPLEMENT_PLAN
+
+### 2026-03-14 16:23 - mark-step-complete
+Added test_wip_idea_with_uncommitted_changes_defaults_to_commit
+
+### 2026-03-14 16:23 - mark-step-complete
+Added wip case in _lifecycle_default and _implement_option_index helper
+
+### 2026-03-14 16:23 - mark-step-complete
+Existing tests in test_orchestrator_default_selection.py pass as-is - they exercise the no-metadata fallback
+
+### 2026-03-14 16:23 - mark-step-complete
+All 200 go-cmd tests pass
+
+### 2026-03-14 16:24 - mark-task-complete
+WIP state defaults to implement when clean, commit when dirty
+
+### 2026-03-14 16:28 - mark-task-complete
+Added test for unknown state fallback; verified existing implementation handles None and unknown states correctly
+
+### 2026-03-14 16:33 - mark-task-complete
+Refactored to read metadata once per menu build

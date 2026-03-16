@@ -128,7 +128,7 @@ class IsolateMode:
 
     def _launch(self, cwd):
         cmd = self._build_isolarium_command(clone_dir=cwd)
-        print(f"Running (cwd= {cwd} ): {' '.join(cmd)}")
+        print(f"Running (cwd= {cwd} ): {' '.join(cmd)}", flush=True)
         return self._subprocess_runner.run(cmd, cwd=cwd)
 
     def _build_isolarium_command(self, clone_dir):

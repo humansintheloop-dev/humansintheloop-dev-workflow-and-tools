@@ -381,6 +381,30 @@ class TestWorktreeModeNonInteractive:
             method, cmd, cwd = fake_runner.calls[0]
             assert method == "run"
 
+    def test_non_interactive_passes_allowed_tools(self, capsys):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            plan_path, idea_dir, fake_repo, fake_runner = _setup_task_with_success(tmpdir)
+            fake_runner.set_result(ClaudeResult(
+                returncode=0,
+                output=CapturedOutput("<SUCCESS>task implemented: bbb</SUCCESS>"),
+            ))
+            opts = ImplementOpts(
+                idea_directory=idea_dir, non_interactive=True, skip_ci_wait=True,
+            )
+            mode, _, fake_runner, _, _ = _make_worktree_mode(
+                plan_path, idea_dir, tmpdir,
+                fake_repo=fake_repo, fake_runner=fake_runner, opts=opts,
+            )
+            mode.execute()
+
+            assert len(fake_runner.calls) == 1
+            _, cmd, _ = fake_runner.calls[0]
+            assert "--allowedTools" in cmd
+            tools_index = cmd.index("--allowedTools")
+            tools_value = cmd[tools_index + 1]
+            assert f"Edit(/{tmpdir}/)" in tools_value
+            assert f"Write(/{tmpdir}/)" in tools_value
+
     def test_non_interactive_exits_without_success_tag(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             mode, _, _, _, _ = _make_non_interactive_mode(

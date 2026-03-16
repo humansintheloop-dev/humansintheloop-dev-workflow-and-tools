@@ -4,6 +4,7 @@ import sys
 import time
 from dataclasses import dataclass
 
+from i2code.implement.claude_permissions import calculate_claude_permissions
 from i2code.implement.git_setup import (
     has_ci_workflow_files,
 )
@@ -183,12 +184,17 @@ class WorktreeMode:
         if self._opts.mock_claude:
             return [self._opts.mock_claude, task_description]
 
+        extra_cli_args = None
+        if self._opts.non_interactive:
+            permissions = calculate_claude_permissions(self._git_repo.working_tree_dir)
+            extra_cli_args = ["--allowedTools", ",".join(permissions)]
         return CommandBuilder().build_task_command(
             self._work_project.directory,
             task_description,
             TaskCommandOpts(
                 interactive=not self._opts.non_interactive,
                 extra_prompt=self._opts.extra_prompt,
+                extra_cli_args=extra_cli_args,
             ),
         )
 

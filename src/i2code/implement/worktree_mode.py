@@ -166,7 +166,8 @@ class WorktreeMode:
             self._git_repo.ensure_pr(
                 self._work_project.directory, self._work_project.name,
             )
-            print(f"Created Draft PR #{self._git_repo.pr_number}")
+            pr_url = self._git_repo.gh_client.get_pr_url(self._git_repo.pr_number)
+            print(f"Created Draft PR #{self._git_repo.pr_number}: {pr_url}")
 
     def _print_completion(self):
         """Print completion message with PR URL if available."""

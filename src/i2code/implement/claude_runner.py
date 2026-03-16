@@ -78,6 +78,13 @@ def _read_pipe_with_progress(pipe, chunks: List[str]):
         buffer = _print_dot_per_line(buffer + text)
 
 
+def _read_pipe_verbose(pipe, chunks: List[str]):
+    """Read stdout pipe, printing full output."""
+    for text in _read_pipe_chunks(pipe, chunks):
+        sys.stdout.write(text)
+        sys.stdout.flush()
+
+
 def _read_pipe_to_stderr(pipe, chunks: List[str]):
     """Read stderr pipe, forwarding output to stderr."""
     for text in _read_pipe_chunks(pipe, chunks):
@@ -124,7 +131,7 @@ def _parse_stream_json_output(full_stdout: str) -> DiagnosticInfo:
     )
 
 
-def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
+def run_claude_with_output_capture(cmd: List[str], cwd: str, debug: bool = False) -> ClaudeResult:
     """Run Claude command, capturing output while displaying progress.
 
     For stream-json output, prints a dot for each JSON message received.
@@ -142,8 +149,9 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str) -> ClaudeResult:
     stdout_chunks: List[str] = []
     stderr_chunks: List[str] = []
 
+    stdout_reader = _read_pipe_verbose if debug else _read_pipe_with_progress
     stdout_thread = threading.Thread(
-        target=_read_pipe_with_progress,
+        target=stdout_reader,
         args=(process.stdout, stdout_chunks),
     )
     stderr_thread = threading.Thread(
@@ -240,8 +248,9 @@ def print_task_failure_diagnostics(
 class ClaudeRunner:
     """Delegates to the module-level run functions."""
 
-    def __init__(self, interactive: bool = True):
+    def __init__(self, interactive: bool = True, debug: bool = False):
         self._interactive = interactive
+        self._debug = debug
 
     def run(self, cmd: List[str], cwd: str) -> ClaudeResult:
         print(f"Running Claude (cwd= {cwd} ): {' '.join(cmd)}")
@@ -253,4 +262,4 @@ class ClaudeRunner:
         return run_claude_interactive(cmd, cwd=cwd)
 
     def run_batch(self, cmd: List[str], cwd: str) -> ClaudeResult:
-        return run_claude_with_output_capture(cmd, cwd=cwd)
+        return run_claude_with_output_capture(cmd, cwd=cwd, debug=self._debug)

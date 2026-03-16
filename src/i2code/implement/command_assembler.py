@@ -20,7 +20,7 @@ def assemble_implement(opts):
     repo = Repo(project.directory, search_parent_directories=True)
     gh_client = GitHubClient(cwd=repo.working_tree_dir)
     git_repo = GitRepository(repo, gh_client=gh_client)
-    claude_runner = ClaudeRunner(interactive=not opts.non_interactive)
+    claude_runner = ClaudeRunner(interactive=not opts.non_interactive, debug=opts.debug_claude)
     build_fixer_factory = GithubActionsBuildFixerFactory(
         opts=opts,
         claude_runner=claude_runner,

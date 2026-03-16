@@ -14,6 +14,7 @@ _BOOL_FLAGS = [
     ("setup_only", "--setup-only"),
     ("non_interactive", "--non-interactive"),
     ("skip_ci_wait", "--skip-ci-wait"),
+    ("debug_claude", "--debug-claude"),
 ]
 
 _VALUE_FLAGS = [
@@ -105,14 +106,17 @@ class IsolateMode:
             wt_git_repo.working_tree_dir, wt_git_repo.main_repo_dir,
         )
 
-        scaffolder = self._scaffolder_factory(wt_git_repo)
-        setup_ok = scaffolder.ensure_scaffolding_setup(
-            self._options, idea_directory=work_project.directory,
-            branch=f"idea/{self._project.name}",
-        )
-        if not setup_ok:
-            print("Error: Project scaffolding setup failed", file=sys.stderr)
-            sys.exit(1)
+        if self._options.skip_scaffolding:
+            print("Scaffolding: skipped (--skip-scaffolding)")
+        else:
+            scaffolder = self._scaffolder_factory(wt_git_repo)
+            setup_ok = scaffolder.ensure_scaffolding_setup(
+                self._options, idea_directory=work_project.directory,
+                branch=f"idea/{self._project.name}",
+            )
+            if not setup_ok:
+                print("Error: Project scaffolding setup failed", file=sys.stderr)
+                sys.exit(1)
 
         clone_repo = wt_git_repo.clone(self._project.name)
         self._project_setup.setup_clone(clone_repo)

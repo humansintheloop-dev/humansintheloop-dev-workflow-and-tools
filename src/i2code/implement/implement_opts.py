@@ -26,6 +26,8 @@ class ImplementOpts:
     dry_run: bool = False
     ignore_uncommitted_idea_changes: bool = False
     address_review_comments: bool = False
+    skip_scaffolding: bool = False
+    debug_claude: bool = False
 
     _TRUNK_INCOMPATIBLE = [
         ("cleanup", "--cleanup"),

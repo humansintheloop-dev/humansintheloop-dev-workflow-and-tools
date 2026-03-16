@@ -46,9 +46,14 @@ from i2code.implement.scaffold_opts import ScaffoldOpts
               help="Skip validation that idea files are committed")
 @click.option("--address-review-comments", is_flag=True,
               help="Keep running after tasks complete, polling for and addressing PR review comments")
+@click.option("--skip-scaffolding", is_flag=True,
+              help="Skip project scaffolding step")
+@click.option("--debug-claude", is_flag=True,
+              help="Show full Claude output instead of progress dots")
 @click.pass_context
 def implement_cmd(ctx, **kwargs):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
+    print(f"i2code implement: {kwargs['idea_directory']}")
     kwargs["idea_directory"] = resolve_idea_directory(kwargs["idea_directory"])
     command = assemble_command(ctx, assemble_implement, ImplementOpts(**kwargs))
     command.execute()

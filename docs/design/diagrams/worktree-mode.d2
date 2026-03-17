@@ -1,6 +1,6 @@
 direction: right
 
-**.style.font-size: 20
+**.style.font-size: 40
 
 legend: "Claude Code" {
   icon: ../simpler-coding-agent-logo.png
@@ -8,7 +8,7 @@ legend: "Claude Code" {
 }
 
 Plan: Plan with tasks {
-  style.font-size: 28
+  style.font-size: 56
   task: "" {
     shape: image
     icon: ../plan-task.png
@@ -17,12 +17,12 @@ Plan: Plan with tasks {
 }
 
 Main: "i2code implement" {
-  style.font-size: 28
+  style.font-size: 56
   direction: down
 
   Setup: "Setup:" {
-    style.font-size: 24
-    direction: right
+    style.font-size: 48
+    direction: down
     worktree: "Ensure Git worktree exists"
     recovery: "Commit recovery" {
       icon: ../simpler-coding-agent-logo.png
@@ -30,10 +30,11 @@ Main: "i2code implement" {
     }
     push: "Push commits"
     worktree -> recovery -> push
+
   }
 
   Loop: "For each incomplete task:" {
-    style.font-size: 24
+    style.font-size: 48
     direction: down
     fix-ci: "Fix CI failures" {
       icon: ../simpler-coding-agent-logo.png
@@ -56,17 +57,17 @@ Main: "i2code implement" {
 
   Setup -> Loop
   Loop -> ready
+
 }
 
 PR: "GitHub Pull Request" {
-  style.font-size: 28
+  style.font-size: 56
   shape: rectangle
 }
 
 Plan -> Main -> PR
-PR -> Main: "comments / reviews" {
-  style.stroke-dash: 3
-}
+
+
+PR.left: 2500
+PR.top: 1000
 PR.near: Main
-PR.left: 1800
-PR.top: 300

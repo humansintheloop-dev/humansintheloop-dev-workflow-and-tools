@@ -4,6 +4,8 @@
 
 `i2code implement <idea_directory>` takes an idea directory (e.g., `docs/ideas/wip/my-feature/`) and implements the tasks defined in its plan file by invoking Claude for each task.
 
+See [`cli.py`](../../src/i2code/implement/cli.py) for Click command definition and option parsing, and [`implement_command.py`](../../src/i2code/implement/implement_command.py) for the top-level orchestrator.
+
 ## 1. Validation Phase
 
 1. **Validate idea directory** — confirms the directory exists.
@@ -12,9 +14,11 @@
 4. **Check idea files committed** — ensures idea files are committed to git. Skipped when `--isolated` or `--ignore-uncommitted-idea-changes`.
 5. **Check task completion** — reads the plan file; exits early with "All tasks are already complete" if nothing remains. Skipped when `--address-review-comments` is set (the review polling loop should still run even if all tasks are done).
 
+Idea directory structure and task state are managed by [`idea_project.py`](../../src/i2code/implement/idea_project.py).
+
 ## 2. Mode Selection
 
-The command selects one of three execution modes based on flags:
+The command selects one of three execution modes based on flags. Mode instances are created by [`mode_factory.py`](../../src/i2code/implement/mode_factory.py).
 
 | Flag | Mode | Description |
 |------|------|-------------|
@@ -38,22 +42,22 @@ The command selects one of three execution modes based on flags:
 
 ## 3. Trunk Mode (`--trunk`)
 
-Simplest mode — runs tasks directly on the current branch.
+Simplest mode — runs tasks directly on the current branch. See [`trunk_mode.py`](../../src/i2code/implement/trunk_mode.py).
 
 ![Trunk Mode](diagrams/trunk-mode.png)
 
 ### Steps
 
-1. **Commit recovery** — checks if a previous run left uncommitted changes from a completed task. If found, invokes Claude to commit them (up to 2 attempts).
+1. **Commit recovery** — checks if a previous run left uncommitted changes from a completed task. If found, invokes Claude to commit them (up to 2 attempts). See [`commit_recovery.py`](../../src/i2code/implement/commit_recovery.py).
 2. **Task loop** — for each incomplete task in the plan file:
-    a. Build a Claude command with the task description from `task_execution.j2`.
-    b. Run Claude (up to 3 attempts per task).
+    a. Build a Claude command with the task description from `task_execution.j2`. See [`command_builder.py`](../../src/i2code/implement/command_builder.py).
+    b. Run Claude (up to 3 attempts per task). See [`claude_runner.py`](../../src/i2code/implement/claude_runner.py).
     c. Validate success (see [Success Criteria](#success-criteria)).
 3. Print "All tasks completed!" when done.
 
 ## 4. Worktree Mode (default)
 
-Full workflow with git isolation, Draft PR creation, and CI monitoring.
+Full workflow with git isolation, Draft PR creation, and CI monitoring. See [`worktree_mode.py`](../../src/i2code/implement/worktree_mode.py).
 
 ![Worktree Mode](diagrams/worktree-mode.png)
 
@@ -68,19 +72,19 @@ Full workflow with git isolation, Draft PR creation, and CI monitoring.
 
 ### Main Loop (`WorktreeMode.execute`)
 
-7. **Commit recovery** — checks if a previous run left uncommitted changes from a completed task. If found, invokes Claude to commit them (up to 2 attempts).
+7. **Commit recovery** — checks if a previous run left uncommitted changes from a completed task. If found, invokes Claude to commit them (up to 2 attempts). See [`commit_recovery.py`](../../src/i2code/implement/commit_recovery.py).
 8. **Push unpushed commits** — if the branch was previously pushed and has new local commits, push and ensure a PR exists.
 
 Then repeats until all tasks are done:
 
-9. **Check/fix CI failures** — if CI is failing on the current HEAD, invoke Claude to fix it (up to `--ci-fix-retries` attempts, default 3). Push each fix and wait for CI. If a fix was attempted, restart the loop from step 9.
-10. **Process PR review feedback** — fetch unprocessed review comments, reviews, and conversation comments. Triage via Claude into "will fix" and "needs clarification" groups. Reply with clarifications, invoke Claude for fixes, push, and reply with commit SHAs. If feedback was processed, restart the loop from step 9.
+9. **Check/fix CI failures** — if CI is failing on the current HEAD, invoke Claude to fix it (up to `--ci-fix-retries` attempts, default 3). Push each fix and wait for CI. If a fix was attempted, restart the loop from step 9. See [`github_actions_build_fixer.py`](../../src/i2code/implement/github_actions_build_fixer.py).
+10. **Process PR review feedback** — fetch unprocessed review comments, reviews, and conversation comments. Triage via Claude into "will fix" and "needs clarification" groups. Reply with clarifications, invoke Claude for fixes, push, and reply with commit SHAs. If feedback was processed, restart the loop from step 9. See [`pull_request_review_processor.py`](../../src/i2code/implement/pull_request_review_processor.py).
 11. **Execute next task**:
-    a. Build and run the Claude command (up to 3 attempts).
+    a. Build and run the Claude command (up to 3 attempts). See [`command_builder.py`](../../src/i2code/implement/command_builder.py) and [`claude_runner.py`](../../src/i2code/implement/claude_runner.py).
     b. Validate success (see [Success Criteria](#success-criteria)).
     c. Push changes to remote.
     d. Create a Draft PR if one doesn't exist.
-    e. Wait for CI to complete (respects `--ci-timeout`, default 600s).
+    e. Wait for CI to complete (respects `--ci-timeout`, default 600s). See [`github_actions_monitor.py`](../../src/i2code/implement/github_actions_monitor.py).
 
 ### Completion
 
@@ -90,14 +94,14 @@ Then repeats until all tasks are done:
 
 ## 5. Isolate Mode (`--isolate`)
 
-Delegates execution to an isolarium VM for sandboxed execution.
+Delegates execution to an isolarium VM for sandboxed execution. See [`isolate_mode.py`](../../src/i2code/implement/isolate_mode.py).
 
 ![Isolate Mode](diagrams/isolate-mode.png)
 
 ### First Run (`IsolateMode._setup_worktree_and_launch`)
 
 1. **Create idea branch and worktree** — creates `idea/<name>` branch and a git worktree, same as worktree mode setup.
-2. **Run project scaffolding** (`ProjectScaffolder.ensure_scaffolding_setup`) — invokes Claude to generate build tooling (e.g., Gradle wrapper, CI workflow file). Guarded by a `.hitl_dev/scaffolding-done` file so it runs only once. After scaffolding, pushes to remote and waits for CI. If CI fails, invokes the build fixer. Skipped when `--skip-scaffolding` is set.
+2. **Run project scaffolding** — invokes Claude to generate build tooling (e.g., Gradle wrapper, CI workflow file). Guarded by a `.hitl_dev/scaffolding-done` file so it runs only once. After scaffolding, pushes to remote and waits for CI. If CI fails, invokes the build fixer. Skipped when `--skip-scaffolding` is set. See [`project_scaffolding.py`](../../src/i2code/implement/project_scaffolding.py).
 3. **Clone the worktree** — creates a local clone of the worktree for isolarium to operate on.
 4. **Launch isolarium** — runs `isolarium run -- i2code implement --isolated <idea_dir>` inside the VM.
 
@@ -109,7 +113,7 @@ Inside the VM, `--isolated` causes `ImplementCommand._worktree_mode()` to run, w
 
 ## Success Criteria
 
-Each Claude task invocation is validated against these criteria:
+Each Claude task invocation is validated against these criteria (see [`claude_runner.py`](../../src/i2code/implement/claude_runner.py)):
 
 | # | Check | On failure | Applies to |
 |---|-------|------------|------------|
@@ -129,7 +133,7 @@ In non-interactive mode (`--non-interactive`), Claude's stdout is captured via `
 
 ## Commit Recovery
 
-On startup (before the task loop), both trunk and worktree modes check for uncommitted changes left by a previous crashed run:
+On startup (before the task loop), both trunk and worktree modes check for uncommitted changes left by a previous crashed run (see [`commit_recovery.py`](../../src/i2code/implement/commit_recovery.py)):
 
 1. Diff the plan file against HEAD.
 2. Parse both the working-tree and HEAD versions of the plan.
@@ -140,17 +144,17 @@ On startup (before the task loop), both trunk and worktree modes check for uncom
 
 | File | Purpose |
 |------|---------|
-| `src/i2code/implement/cli.py` | Click command definition and option parsing |
-| `src/i2code/implement/implement_command.py` | Top-level orchestrator, mode dispatch |
-| `src/i2code/implement/mode_factory.py` | Creates mode instances with wired dependencies |
-| `src/i2code/implement/trunk_mode.py` | Trunk mode execution |
-| `src/i2code/implement/worktree_mode.py` | Worktree mode execution with PR/CI loop |
-| `src/i2code/implement/isolate_mode.py` | Isolate mode delegation to isolarium |
-| `src/i2code/implement/project_scaffolding.py` | Project scaffolding orchestration (isolate mode) |
-| `src/i2code/implement/commit_recovery.py` | Detects and recovers uncommitted completed tasks |
-| `src/i2code/implement/claude_runner.py` | Claude process management and result diagnostics |
-| `src/i2code/implement/command_builder.py` | Builds all Claude CLI commands from templates |
-| `src/i2code/implement/github_actions_build_fixer.py` | Detects and fixes CI failures via Claude |
-| `src/i2code/implement/pull_request_review_processor.py` | Processes PR review feedback via triage |
-| `src/i2code/implement/github_actions_monitor.py` | Waits for CI completion and reports results |
-| `src/i2code/implement/idea_project.py` | Idea directory, plan file, and task state |
+| [`cli.py`](../../src/i2code/implement/cli.py) | Click command definition and option parsing |
+| [`implement_command.py`](../../src/i2code/implement/implement_command.py) | Top-level orchestrator, mode dispatch |
+| [`mode_factory.py`](../../src/i2code/implement/mode_factory.py) | Creates mode instances with wired dependencies |
+| [`trunk_mode.py`](../../src/i2code/implement/trunk_mode.py) | Trunk mode execution |
+| [`worktree_mode.py`](../../src/i2code/implement/worktree_mode.py) | Worktree mode execution with PR/CI loop |
+| [`isolate_mode.py`](../../src/i2code/implement/isolate_mode.py) | Isolate mode delegation to isolarium |
+| [`project_scaffolding.py`](../../src/i2code/implement/project_scaffolding.py) | Project scaffolding orchestration (isolate mode) |
+| [`commit_recovery.py`](../../src/i2code/implement/commit_recovery.py) | Detects and recovers uncommitted completed tasks |
+| [`claude_runner.py`](../../src/i2code/implement/claude_runner.py) | Claude process management and result diagnostics |
+| [`command_builder.py`](../../src/i2code/implement/command_builder.py) | Builds all Claude CLI commands from templates |
+| [`github_actions_build_fixer.py`](../../src/i2code/implement/github_actions_build_fixer.py) | Detects and fixes CI failures via Claude |
+| [`pull_request_review_processor.py`](../../src/i2code/implement/pull_request_review_processor.py) | Processes PR review feedback via triage |
+| [`github_actions_monitor.py`](../../src/i2code/implement/github_actions_monitor.py) | Waits for CI completion and reports results |
+| [`idea_project.py`](../../src/i2code/implement/idea_project.py) | Idea directory, plan file, and task state |

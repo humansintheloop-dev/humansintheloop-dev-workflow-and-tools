@@ -1,4 +1,4 @@
-direction: right
+direction: left
 
 **.style.font-size: 20
 
@@ -18,13 +18,14 @@ Plan: Plan with tasks {
 
 Host: Host {
   style.font-size: 24
-  grid-rows: 3
+  direction: down
   branch: "Create idea branch and worktree"
   scaffold: "Run project scaffolding" {
     icon: ../simpler-coding-agent-logo.png
     icon.near: bottom-right
   }
   clone: "Clone worktree"
+  branch -> scaffold -> clone
 }
 
 VM: "Isolarium VM" {

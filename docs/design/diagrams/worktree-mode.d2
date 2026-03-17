@@ -18,20 +18,23 @@ Plan: Plan with tasks {
 
 Main: "i2code implement" {
   style.font-size: 28
+  direction: down
+
   Setup: "Setup:" {
     style.font-size: 24
-    grid-rows: 3
+    direction: right
     worktree: "Ensure Git worktree exists"
     recovery: "Commit recovery" {
       icon: ../simpler-coding-agent-logo.png
       icon.near: bottom-right
     }
     push: "Push commits"
+    worktree -> recovery -> push
   }
 
   Loop: "For each incomplete task:" {
     style.font-size: 24
-    grid-rows: 5
+    direction: down
     fix-ci: "Fix CI failures" {
       icon: ../simpler-coding-agent-logo.png
       icon.near: bottom-right
@@ -46,11 +49,13 @@ Main: "i2code implement" {
     }
     push-pr: "Push / Create PR"
     wait-ci: "Wait for CI"
+    fix-ci -> comments -> implement -> push-pr -> wait-ci
   }
 
   ready: "Mark PR ready"
 
-  Setup -> Loop -> ready
+  Setup -> Loop
+  Loop -> ready
 }
 
 PR: "GitHub Pull Request" {
@@ -58,8 +63,10 @@ PR: "GitHub Pull Request" {
   shape: rectangle
 }
 
-Plan -> Main.Setup
-Main.ready -> PR
-PR -> Main.Loop: "comments / reviews" {
+Plan -> Main -> PR
+PR -> Main: "comments / reviews" {
   style.stroke-dash: 3
 }
+PR.near: Main
+PR.left: 1800
+PR.top: 300

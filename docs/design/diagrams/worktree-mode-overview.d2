@@ -1,0 +1,49 @@
+direction: right
+
+**.style.font-size: 40
+
+legend: "Claude Code" {
+  icon: ../simpler-coding-agent-logo.png
+  near: bottom-center
+}
+
+Plan: Plan with tasks {
+  style.font-size: 56
+  task: "" {
+    shape: image
+    icon: ../plan-task.png
+    width: 300
+  }
+}
+
+Main: "i2code implement" {
+  style.font-size: 56
+  direction: down
+
+  Setup: "Setup"
+  Recovery: "Recovery" {
+    icon: ../simpler-coding-agent-logo.png
+    icon.near: bottom-right
+  }
+  Loop: "Implement Task Loop" {
+    icon: ../simpler-coding-agent-logo.png
+    icon.near: bottom-right
+  }
+
+  ready: "Mark PR ready"
+
+  Setup -> Recovery -> Loop -> ready
+
+}
+
+PR: "GitHub Pull Request" {
+  style.font-size: 56
+  shape: rectangle
+}
+
+Plan -> Main -> PR
+
+
+PR.left: 2500
+PR.top: 1000
+PR.near: Main

@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor
+from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor, parse_owner_repo
 from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
 
 from fake_git_repository import FakeGitRepository
@@ -268,6 +268,31 @@ class TestGetNewFeedback:
     def test_get_new_feedback_returns_empty_when_all_processed(self):
         """Should return empty list when all feedback processed."""
         assert PullRequestReviewProcessor._get_new_feedback([{"id": 1, "body": "Comment"}], [1]) == []
+
+
+@pytest.mark.unit
+class TestParseOwnerRepo:
+    """Test parsing owner/repo from git remote URLs."""
+
+    def test_https_with_credentials(self):
+        assert parse_owner_repo(
+            "https://x-access-token:ghs_abc123@github.com/my-org/my-repo.git"
+        ) == ("my-org", "my-repo")
+
+    def test_ssh(self):
+        assert parse_owner_repo(
+            "git@github.com:my-org/my-repo.git"
+        ) == ("my-org", "my-repo")
+
+    def test_https(self):
+        assert parse_owner_repo(
+            "https://github.com/my-org/my-repo.git"
+        ) == ("my-org", "my-repo")
+
+    def test_https_without_dot_git(self):
+        assert parse_owner_repo(
+            "https://github.com/my-org/my-repo"
+        ) == ("my-org", "my-repo")
 
 
 @pytest.mark.unit

@@ -133,20 +133,7 @@ class PullRequestReviewProcessor:
         return remaining, filtered_ids
 
     def _parse_owner_repo(self):
-        """Parse owner and repo from the git remote origin URL."""
-        url = self._git_repo.origin_url
-        # Handle both https://github.com/owner/repo.git and git@github.com:owner/repo.git
-        url = url.rstrip("/")
-        if url.endswith(".git"):
-            url = url[:-4]
-        if ":" in url and "@" in url:
-            # SSH format: git@github.com:owner/repo
-            path = url.split(":")[-1]
-        else:
-            # HTTPS format: https://github.com/owner/repo
-            path = "/".join(url.split("/")[-2:])
-        owner, repo = path.split("/")
-        return owner, repo
+        return parse_owner_repo(self._git_repo.origin_url)
 
     def _triage_and_apply_feedback(self, new_review_comments, new_reviews, new_conversation, pr_number):
         """Triage feedback via Claude and apply the results.
@@ -506,3 +493,20 @@ class PullRequestReviewProcessor:
         with open(log_dir / "log.log", "a") as f:
             timestamp = datetime.now(timezone.utc).isoformat()
             f.write(f"[{timestamp}] {message}\n")
+
+
+def _is_ssh_url(url: str) -> bool:
+    return "://" not in url and ":" in url and "@" in url
+
+
+def parse_owner_repo(url: str) -> tuple[str, str]:
+    """Parse owner and repo from a git remote URL."""
+    url = url.rstrip("/")
+    if url.endswith(".git"):
+        url = url[:-4]
+    if _is_ssh_url(url):
+        path = url.split(":")[-1]
+    else:
+        path = "/".join(url.split("/")[-2:])
+    owner, repo = path.split("/")
+    return owner, repo

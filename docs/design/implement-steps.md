@@ -10,7 +10,7 @@
 2. **Validate required files** — checks for `<name>-idea.md` (or `.txt`), `<name>-spec.md`, and `<name>-plan.md`.
 3. **Dry run exit** — if `--dry-run`, print the selected mode and exit.
 4. **Check idea files committed** — ensures idea files are committed to git. Skipped when `--isolated` or `--ignore-uncommitted-idea-changes`.
-5. **Check task completion** — reads the plan file; exits early with "All tasks are already complete" if nothing remains.
+5. **Check task completion** — reads the plan file; exits early with "All tasks are already complete" if nothing remains. Skipped when `--address-review-comments` is set (the review polling loop should still run even if all tasks are done).
 
 ## 2. Mode Selection
 
@@ -22,9 +22,37 @@ The command selects one of three execution modes based on flags:
 | `--isolate` | Isolate | Delegate to an isolarium VM for sandboxed execution |
 | *(default)* | Worktree | Full workflow with git worktree, Draft PR, and CI integration |
 
+### Additional Flags
+
+| Flag | Description |
+|------|-------------|
+| `--cleanup` | Remove worktree and delete local branches after PR is merged/closed |
+| `--address-review-comments` | Keep running after tasks complete, polling for and addressing PR review comments |
+| `--skip-scaffolding` | Skip project scaffolding step (isolate mode) |
+| `--debug-claude` | Show full Claude output instead of progress dots |
+| `--shell` | Drop into an isolarium shell instead of running tasks (implies `--isolate`) |
+| `--isolation-type TYPE` | Isolation environment type (passed as `--type` to isolarium, implies `--isolate`) |
+| `--mock-claude SCRIPT` | Use mock script instead of Claude (for testing) |
+| `--extra-prompt TEXT` | Extra text to append to Claude's prompt |
+| `--skip-ci-wait` | Skip waiting for CI after push (for testing) |
+
 ## 3. Trunk Mode (`--trunk`)
 
 Simplest mode — runs tasks directly on the current branch.
+
+```mermaid
+flowchart LR
+    Plan["Plan with tasks"] ==> Trunk
+
+    subgraph Trunk["i2code implement --trunk"]
+        A["fa:fa-robot Commit recovery"] --> Loop
+
+        subgraph Loop["For each task:"]
+            B["fa:fa-robot Implement task"]
+            C["Validate success"]
+        end
+    end
+```
 
 ### Steps
 
@@ -39,24 +67,49 @@ Simplest mode — runs tasks directly on the current branch.
 
 Full workflow with git isolation, Draft PR creation, and CI monitoring.
 
+```mermaid
+flowchart LR
+    Plan["Plan with tasks"] ==> Main
+
+    subgraph Main["i2code implement"]
+        subgraph Setup[" "]
+            direction LR
+            A["Ensure Git worktree exists"] --> B["fa:fa-robot Commit recovery"] --> C["Push commits"]
+        end
+
+        Setup --> Loop
+
+        subgraph Loop["For each task:"]
+            direction TB
+            D["fa:fa-robot Fix CI failures"] --> E["fa:fa-robot Process PR comments"] --> F["fa:fa-robot Implement task"] --> G["Push / Create PR"] --> H["Wait for CI"]
+        end
+
+        Loop --> Ready["Mark PR ready"]
+    end
+
+    Ready ==> PR["GitHub Pull Request"]
+    PR -. "comments / reviews" .-> Loop
+```
+
 ### Setup (`ImplementCommand._worktree_mode`)
 
-1. **Create idea branch** — creates or reuses an `idea/<name>` branch.
-2. **Create/reuse worktree** — creates a git worktree for the idea branch (or reuses the current directory when `--isolated`).
-3. **Setup worktree** — copies necessary project config into the worktree.
-4. **Find existing PR** — reuses a Draft PR if one already exists for the branch.
+1. **Check task completion** — exits early if all tasks are complete (skipped when `--address-review-comments` is set).
+2. **Create idea branch** — creates or reuses an `idea/<name>` branch.
+3. **Create/reuse worktree** — creates a git worktree for the idea branch (or reuses the current directory when `--isolated`).
+4. **Setup worktree** — copies necessary project config into the worktree.
 5. **Setup-only exit** — if `--setup-only`, print "Setup complete" and exit.
+6. **Find existing PR** — reuses a Draft PR if one already exists for the branch. If `--address-review-comments` is set and no PR exists, exit with an error.
 
 ### Main Loop (`WorktreeMode.execute`)
 
-6. **Commit recovery** — checks if a previous run left uncommitted changes from a completed task. If found, invokes Claude to commit them (up to 2 attempts).
-7. **Push unpushed commits** — if the branch was previously pushed and has new local commits, push and ensure a PR exists.
+7. **Commit recovery** — checks if a previous run left uncommitted changes from a completed task. If found, invokes Claude to commit them (up to 2 attempts).
+8. **Push unpushed commits** — if the branch was previously pushed and has new local commits, push and ensure a PR exists.
 
 Then repeats until all tasks are done:
 
-8. **Check/fix CI failures** — if CI is failing on the current HEAD, invoke Claude to fix it (up to `--ci-fix-retries` attempts, default 3). Push each fix and wait for CI. If a fix was attempted, restart the loop from step 8.
-9. **Process PR review feedback** — fetch unprocessed review comments, reviews, and conversation comments. Triage via Claude into "will fix" and "needs clarification" groups. Reply with clarifications, invoke Claude for fixes, push, and reply with commit SHAs. If feedback was processed, restart the loop from step 8.
-10. **Execute next task**:
+9. **Check/fix CI failures** — if CI is failing on the current HEAD, invoke Claude to fix it (up to `--ci-fix-retries` attempts, default 3). Push each fix and wait for CI. If a fix was attempted, restart the loop from step 9.
+10. **Process PR review feedback** — fetch unprocessed review comments, reviews, and conversation comments. Triage via Claude into "will fix" and "needs clarification" groups. Reply with clarifications, invoke Claude for fixes, push, and reply with commit SHAs. If feedback was processed, restart the loop from step 9.
+11. **Execute next task**:
     a. Build and run the Claude command (up to 3 attempts).
     b. Validate success (see [Success Criteria](#success-criteria)).
     c. Push changes to remote.
@@ -67,15 +120,36 @@ Then repeats until all tasks are done:
 
 1. Mark the Draft PR as ready for review.
 2. Print the PR URL.
+3. **Review polling** (optional) — if `--address-review-comments` is set, enter a polling loop that repeatedly checks for CI failures and new review feedback until the PR is merged or closed. Sleeps between polls.
 
 ## 5. Isolate Mode (`--isolate`)
 
 Delegates execution to an isolarium VM for sandboxed execution.
 
+```mermaid
+flowchart LR
+    Plan["Plan with tasks"] ==> Host
+
+    subgraph Host["Host"]
+        A["Create idea branch and worktree"]
+        B["fa:fa-robot Run project scaffolding"]
+        C["Clone worktree"]
+        A --> B --> C
+    end
+
+    Host ==> VM
+
+    subgraph VM["Isolarium VM"]
+        D["fa:fa-robot Worktree Mode task loop (see Section 4)"]
+    end
+
+    VM ==> PR["GitHub Pull Request"]
+```
+
 ### First Run (`IsolateMode._setup_worktree_and_launch`)
 
 1. **Create idea branch and worktree** — creates `idea/<name>` branch and a git worktree, same as worktree mode setup.
-2. **Run project scaffolding** (`ProjectScaffolder.ensure_scaffolding_setup`) — invokes Claude to generate build tooling (e.g., Gradle wrapper, CI workflow file). Guarded by a `.hitl_dev/scaffolding-done` file so it runs only once. After scaffolding, pushes to remote and waits for CI. If CI fails, invokes the build fixer.
+2. **Run project scaffolding** (`ProjectScaffolder.ensure_scaffolding_setup`) — invokes Claude to generate build tooling (e.g., Gradle wrapper, CI workflow file). Guarded by a `.hitl_dev/scaffolding-done` file so it runs only once. After scaffolding, pushes to remote and waits for CI. If CI fails, invokes the build fixer. Skipped when `--skip-scaffolding` is set.
 3. **Clone the worktree** — creates a local clone of the worktree for isolarium to operate on.
 4. **Launch isolarium** — runs `isolarium run -- i2code implement --isolated <idea_dir>` inside the VM.
 

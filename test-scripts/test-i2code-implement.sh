@@ -297,7 +297,11 @@ clone_repository() {
 
     local timestamp
     timestamp=$(date +%Y%m%d%H%M%S)
-    local clone_name="${source_basename}-cl-${timestamp}"
+    local isolation_segment=""
+    if [ -n "$ISOLATION_TYPE" ]; then
+        isolation_segment="-${ISOLATION_TYPE}"
+    fi
+    local clone_name="${source_basename}-cl${isolation_segment}-${timestamp}"
 
     CLONE_DIR="${source_parent}/${clone_name}"
 
@@ -415,6 +419,8 @@ run_implement_with_worktree() {
     log_info "Command: ${cmd[*]}"
     if [ "$ISOLATE" = true ] || [ -n "$ISOLATION_TYPE" ]; then
         which isolarium || { log_error "isolarium not found on PATH"; exit 1; }
+        log_info "Destroying existing isolarium environment i2code-${IDEA_NAME} (if any)..."
+        isolarium --name "i2code-${IDEA_NAME}" --type "$ISOLATION_TYPE" destroy 2>/dev/null || true
     fi
 
     # Remove .venv directories from PATH so that nono sandbox uses uv-tool-installed i2code
@@ -497,7 +503,11 @@ setup_logging() {
 
     local timestamp
     timestamp=$(date +%Y%m%d%H%M%S)
-    local log_file="$log_dir/${repo_dir}-${REF}-${timestamp}.log"
+    local isolation_segment=""
+    if [ -n "$ISOLATION_TYPE" ]; then
+        isolation_segment="-${ISOLATION_TYPE}"
+    fi
+    local log_file="$log_dir/${repo_dir}-${REF}${isolation_segment}-${timestamp}.log"
 
     log_info "Logging output to $log_file"
     exec > >(tee "$log_file") 2>&1

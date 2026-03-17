@@ -117,7 +117,7 @@ class WorktreeMode:
         self._run_claude_and_validate(next_task, task_description)
         elapsed = self._clock() - start
         duration = _format_duration(elapsed)
-        print(f"Task {progress.current} of {progress.total} completed successfully in {duration}.")
+        print(f"Task {progress.current} of {progress.total} completed successfully in {duration}.", flush=True)
         self._push_and_ensure_pr()
         self._loop_steps.ci_monitor.wait_for_workflow_completion(self._git_repo.branch, self._git_repo.head_sha)
 

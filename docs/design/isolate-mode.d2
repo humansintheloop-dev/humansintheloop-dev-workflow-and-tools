@@ -1,0 +1,30 @@
+direction: right
+
+Plan: Plan with tasks {
+  shape: rectangle
+}
+
+Host: Host {
+  grid-rows: 3
+  branch: "Create idea branch and worktree"
+  scaffold: "Run project scaffolding" {
+    icon: ./simpler-coding-agent-logo.png
+    icon.near: bottom-right
+  }
+  clone: "Clone worktree"
+}
+
+VM: "Isolarium VM" {
+  grid-rows: 1
+  loop: "Worktree Mode task loop (see Section 4)" {
+    icon: ./simpler-coding-agent-logo.png
+    icon.near: bottom-right
+  }
+}
+
+PR: "GitHub Pull Request" {
+  shape: rectangle
+}
+
+Plan -> Host
+Host -> VM -> PR

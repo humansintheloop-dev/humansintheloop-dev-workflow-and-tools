@@ -40,56 +40,22 @@ The command selects one of three execution modes based on flags:
 
 Simplest mode — runs tasks directly on the current branch.
 
-```mermaid
-flowchart LR
-    Plan["Plan with tasks"] ==> Trunk
-
-    subgraph Trunk["i2code implement --trunk"]
-        A["fa:fa-robot Commit recovery"] --> Loop
-
-        subgraph Loop["For each task:"]
-            B["fa:fa-robot Implement task"]
-            C["Validate success"]
-        end
-    end
-```
+![Trunk Mode](trunk-mode.png)
 
 ### Steps
 
 1. **Commit recovery** — checks if a previous run left uncommitted changes from a completed task. If found, invokes Claude to commit them (up to 2 attempts).
 2. **Task loop** — for each incomplete task in the plan file:
-   a. Build a Claude command with the task description from `task_execution.j2`.
-   b. Run Claude (up to 3 attempts per task).
-   c. Validate success (see [Success Criteria](#success-criteria)).
+    a. Build a Claude command with the task description from `task_execution.j2`.
+    b. Run Claude (up to 3 attempts per task).
+    c. Validate success (see [Success Criteria](#success-criteria)).
 3. Print "All tasks completed!" when done.
 
 ## 4. Worktree Mode (default)
 
 Full workflow with git isolation, Draft PR creation, and CI monitoring.
 
-```mermaid
-flowchart LR
-    Plan["Plan with tasks"] ==> Main
-
-    subgraph Main["i2code implement"]
-        subgraph Setup[" "]
-            direction LR
-            A["Ensure Git worktree exists"] --> B["fa:fa-robot Commit recovery"] --> C["Push commits"]
-        end
-
-        Setup --> Loop
-
-        subgraph Loop["For each task:"]
-            direction TB
-            D["fa:fa-robot Fix CI failures"] --> E["fa:fa-robot Process PR comments"] --> F["fa:fa-robot Implement task"] --> G["Push / Create PR"] --> H["Wait for CI"]
-        end
-
-        Loop --> Ready["Mark PR ready"]
-    end
-
-    Ready ==> PR["GitHub Pull Request"]
-    PR -. "comments / reviews" .-> Loop
-```
+![Worktree Mode](worktree-mode.png)
 
 ### Setup (`ImplementCommand._worktree_mode`)
 
@@ -126,25 +92,7 @@ Then repeats until all tasks are done:
 
 Delegates execution to an isolarium VM for sandboxed execution.
 
-```mermaid
-flowchart LR
-    Plan["Plan with tasks"] ==> Host
-
-    subgraph Host["Host"]
-        A["Create idea branch and worktree"]
-        B["fa:fa-robot Run project scaffolding"]
-        C["Clone worktree"]
-        A --> B --> C
-    end
-
-    Host ==> VM
-
-    subgraph VM["Isolarium VM"]
-        D["fa:fa-robot Worktree Mode task loop (see Section 4)"]
-    end
-
-    VM ==> PR["GitHub Pull Request"]
-```
+![Isolate Mode](isolate-mode.png)
 
 ### First Run (`IsolateMode._setup_worktree_and_launch`)
 

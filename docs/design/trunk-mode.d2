@@ -1,0 +1,25 @@
+direction: right
+
+Plan: Plan with tasks {
+  shape: rectangle
+}
+
+Trunk: "i2code implement --trunk" {
+  recovery: "Commit recovery" {
+    icon: ./simpler-coding-agent-logo.png
+    icon.near: bottom-right
+  }
+
+  Loop: "For each task:" {
+    grid-rows: 2
+    implement: "Implement task and commit" {
+      icon: ./simpler-coding-agent-logo.png
+      icon.near: bottom-right
+    }
+    validate: "Validate success"
+  }
+
+  recovery -> Loop
+}
+
+Plan -> Trunk

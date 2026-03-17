@@ -24,12 +24,17 @@ Main: "i2code implement" {
     style.font-size: 48
     direction: down
     worktree: "Ensure Git worktree exists"
-    recovery: "Commit recovery" {
+  }
+
+  Recovery: "Recovery:" {
+    style.font-size: 48
+    direction: down
+    commit_recovery: "Commit recovery" {
       icon: ../simpler-coding-agent-logo.png
       icon.near: bottom-right
     }
     push: "Push commits"
-    worktree -> recovery -> push
+    commit_recovery -> push
 
   }
 
@@ -55,8 +60,7 @@ Main: "i2code implement" {
 
   ready: "Mark PR ready"
 
-  Setup -> Loop
-  Loop -> ready
+  Setup -> Recovery -> Loop -> ready
 
 }
 

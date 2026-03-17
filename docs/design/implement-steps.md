@@ -40,7 +40,7 @@ The command selects one of three execution modes based on flags:
 
 Simplest mode — runs tasks directly on the current branch.
 
-![Trunk Mode](trunk-mode.png)
+![Trunk Mode](diagrams/trunk-mode.png)
 
 ### Steps
 
@@ -55,7 +55,7 @@ Simplest mode — runs tasks directly on the current branch.
 
 Full workflow with git isolation, Draft PR creation, and CI monitoring.
 
-![Worktree Mode](worktree-mode.png)
+![Worktree Mode](diagrams/worktree-mode.png)
 
 ### Setup (`ImplementCommand._worktree_mode`)
 
@@ -92,7 +92,7 @@ Then repeats until all tasks are done:
 
 Delegates execution to an isolarium VM for sandboxed execution.
 
-![Isolate Mode](isolate-mode.png)
+![Isolate Mode](diagrams/isolate-mode.png)
 
 ### First Run (`IsolateMode._setup_worktree_and_launch`)
 

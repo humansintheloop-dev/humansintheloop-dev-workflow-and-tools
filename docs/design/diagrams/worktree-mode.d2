@@ -1,12 +1,16 @@
 direction: right
 
 legend: "Claude Code" {
-  icon: ./simpler-coding-agent-logo.png
+  icon: ../simpler-coding-agent-logo.png
   near: bottom-right
 }
 
 Plan: Plan with tasks {
-  shape: rectangle
+  task: "" {
+    shape: image
+    icon: ../plan-task.png
+    width: 300
+  }
 }
 
 Main: "i2code implement" {
@@ -14,7 +18,7 @@ Main: "i2code implement" {
     grid-rows: 3
     worktree: "Ensure Git worktree exists"
     recovery: "Commit recovery" {
-      icon: ./simpler-coding-agent-logo.png
+      icon: ../simpler-coding-agent-logo.png
       icon.near: bottom-right
     }
     push: "Push commits"
@@ -23,15 +27,15 @@ Main: "i2code implement" {
   Loop: "For each incomplete task:" {
     grid-rows: 5
     fix-ci: "Fix CI failures" {
-      icon: ./simpler-coding-agent-logo.png
+      icon: ../simpler-coding-agent-logo.png
       icon.near: bottom-right
     }
     comments: "Process PR comments" {
-      icon: ./simpler-coding-agent-logo.png
+      icon: ../simpler-coding-agent-logo.png
       icon.near: bottom-right
     }
     implement: "Implement task and commit" {
-      icon: ./simpler-coding-agent-logo.png
+      icon: ../simpler-coding-agent-logo.png
       icon.near: bottom-right
     }
     push-pr: "Push / Create PR"

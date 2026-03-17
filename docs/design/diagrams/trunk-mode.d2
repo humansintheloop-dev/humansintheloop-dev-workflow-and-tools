@@ -1,11 +1,14 @@
 direction: right
 
+**.style.font-size: 20
+
 legend: "Claude Code" {
   icon: ../simpler-coding-agent-logo.png
   near: bottom-right
 }
 
 Plan: Plan with tasks {
+  style.font-size: 28
   task: "" {
     shape: image
     icon: ../plan-task.png
@@ -14,12 +17,14 @@ Plan: Plan with tasks {
 }
 
 Trunk: "i2code implement --trunk" {
+  style.font-size: 28
   recovery: "Commit recovery" {
     icon: ../simpler-coding-agent-logo.png
     icon.near: bottom-right
   }
 
   Loop: "For each task:" {
+    style.font-size: 24
     grid-rows: 2
     implement: "Implement task and commit" {
       icon: ../simpler-coding-agent-logo.png

@@ -1,11 +1,14 @@
 direction: right
 
+**.style.font-size: 20
+
 legend: "Claude Code" {
   icon: ../simpler-coding-agent-logo.png
   near: bottom-right
 }
 
 Plan: Plan with tasks {
+  style.font-size: 24
   task: "" {
     shape: image
     icon: ../plan-task.png
@@ -14,6 +17,7 @@ Plan: Plan with tasks {
 }
 
 Host: Host {
+  style.font-size: 24
   grid-rows: 3
   branch: "Create idea branch and worktree"
   scaffold: "Run project scaffolding" {
@@ -24,6 +28,7 @@ Host: Host {
 }
 
 VM: "Isolarium VM" {
+  style.font-size: 24
   grid-rows: 1
   loop: "Worktree Mode task loop (see Section 4)" {
     icon: ../simpler-coding-agent-logo.png
@@ -32,6 +37,7 @@ VM: "Isolarium VM" {
 }
 
 PR: "GitHub Pull Request" {
+  style.font-size: 24
   shape: rectangle
 }
 

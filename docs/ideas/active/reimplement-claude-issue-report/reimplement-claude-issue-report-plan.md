@@ -123,7 +123,7 @@ Creates the skill, updates plugin configuration, and removes the old slash comma
     - [x] Delete `claude-code-plugins/idea-to-code/hooks/issue-session-tagger.js`
     - [x] Run `./test-scripts/test-end-to-end.sh` to verify nothing is broken
 
-- [ ] **Task 4.3: End-to-end test validates full pipeline (skill → hook → CLI → file)**
+- [x] **Task 4.3: End-to-end test validates full pipeline (skill → hook → CLI → file)**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/issue/test_e2e.py -v -m integration_claude`
   - Observable: A pytest test runs `claude -p "/claude-issue-report Test issue: wrong commit format"` in a temp git repo with `.hitl/issues/active/`, and verifies: exactly one `.md` file created, valid YAML frontmatter with `status: active` and valid `category`, contains `## 5 Whys Analysis`, `## Context (Last 5 Messages)`, `## Suggested improvement`, `## Resolution` sections, `claude_session_id` is not `unknown`
@@ -197,3 +197,6 @@ Created tests/issue/test_e2e.py with @pytest.mark.integration_claude marker
 
 ### 2026-03-18 17:19 - mark-step-complete
 Test sets up temp git repo, runs claude -p subprocess, asserts file creation and content. 8 passed, 1 xfail (session_id hook limitation in -p mode).
+
+### 2026-03-18 17:21 - mark-task-complete
+E2e test passes: 8 passed, 1 xfail (session_id hook limitation in claude -p + --plugin-dir mode)

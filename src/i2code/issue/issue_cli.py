@@ -5,7 +5,7 @@ import sys
 
 import click
 
-from i2code.issue.create import create_issue
+from i2code.issue.create_issue import create_issue
 
 
 @click.group("issue")

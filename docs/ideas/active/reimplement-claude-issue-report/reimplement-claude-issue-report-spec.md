@@ -54,8 +54,8 @@ A new Click command group `issue` is added to `src/i2code/cli.py` with `create` 
 
 **Module location:** `src/i2code/issue/` with:
 - `src/i2code/issue/__init__.py`
-- `src/i2code/issue/cli.py` — Click group and `create` command
-- `src/i2code/issue/create.py` — issue creation logic
+- `src/i2code/issue/issue_cli.py` — Click group and `create` command
+- `src/i2code/issue/create_issue.py` — issue creation logic
 
 **Command signature:**
 
@@ -243,8 +243,8 @@ echo '<json>' | i2code issue create --session-id abc123
 | File | Purpose |
 |------|---------|
 | `src/i2code/issue/__init__.py` | Package init |
-| `src/i2code/issue/cli.py` | Click group `issue` with `create` subcommand |
-| `src/i2code/issue/create.py` | Issue creation logic (JSON parsing, template rendering, file writing) |
+| `src/i2code/issue/issue_cli.py` | Click group `issue` with `create` subcommand |
+| `src/i2code/issue/create_issue.py` | Issue creation logic (JSON parsing, template rendering, file writing) |
 | `claude-code-plugins/idea-to-code/skills/claude-issue-report/SKILL.md` | Skill definition |
 | `claude-code-plugins/idea-to-code/hooks/issue-session-injector.js` | PreToolUse hook for session ID injection |
 

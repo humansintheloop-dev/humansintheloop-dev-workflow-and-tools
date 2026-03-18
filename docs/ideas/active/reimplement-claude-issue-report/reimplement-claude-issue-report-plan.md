@@ -50,10 +50,10 @@ Implement using TDD.
   - Observable: A markdown file is created in `.hitl/issues/active/` with filename `YYYY-MM-DD-HH-MM-SS.md`, containing correct YAML frontmatter (`id`, `created`, `status: active`, `category: rule-violation`, `claude_session_id: test-session-123`) and all content sections (`# Test issue`, `## 5 Whys Analysis`, `## Context`, `## Suggested improvement`, `## Resolution`). The absolute path to the file is printed to stdout.
   - Evidence: Pytest unit tests in `tests/issue/` using Click's `CliRunner` with `input=` for stdin, writing to `tmp_path`, asserting file content, frontmatter fields, and stdout output. Run via `./test-scripts/test-unit.sh`.
   - Steps:
-    - [x] Create `tests/issue/__init__.py` and `tests/issue/test_create.py` with a happy-path test: invoke `create` via `CliRunner` with valid JSON stdin and `--session-id`, assert exit code 0, file exists in target dir, frontmatter has correct fields, content sections present, stdout contains absolute path
+    - [x] Create `tests/issue/__init__.py` and `tests/issue/test_issue_create.py` with a happy-path test: invoke `create` via `CliRunner` with valid JSON stdin and `--session-id`, assert exit code 0, file exists in target dir, frontmatter has correct fields, content sections present, stdout contains absolute path
     - [x] Create `src/i2code/issue/__init__.py` (empty package init)
-    - [x] Create `src/i2code/issue/create.py` with issue creation logic: parse JSON from stdin, validate required fields, generate timestamp-based ID, render markdown template, write file to `.hitl/issues/active/`, return absolute path
-    - [x] Create `src/i2code/issue/cli.py` with Click group `issue` and `create` subcommand that reads stdin, accepts optional `--session-id`, calls creation logic, prints path to stdout
+    - [x] Create `src/i2code/issue/create_issue.py` with issue creation logic: parse JSON from stdin, validate required fields, generate timestamp-based ID, render markdown template, write file to `.hitl/issues/active/`, return absolute path
+    - [x] Create `src/i2code/issue/issue_cli.py` with Click group `issue` and `create` subcommand that reads stdin, accepts optional `--session-id`, calls creation logic, prints path to stdout
     - [x] Modify `src/i2code/cli.py` to import and register the `issue` command group via `main.add_command(issue)`
     - [x] Add test for missing `--session-id` flag: file is created with `claude_session_id: unknown`
 
@@ -75,13 +75,13 @@ Implement using TDD.
   - TaskType: OUTCOME
   - Entrypoint: `echo '{"description":"test"}' | uv run i2code issue create` (missing required fields)
   - Observable: CLI exits with code 1 and prints descriptive error to stderr for each case: missing required field (`description`, `category`, `analysis`, `context`, `suggestion`), invalid category value, malformed JSON, and missing `.hitl/issues/active/` directory (mentioning `i2code tracking setup`)
-  - Evidence: Pytest unit tests in `tests/issue/test_create.py` using `CliRunner`, asserting exit code 1 and stderr content for each error case. Run via `./test-scripts/test-unit.sh`.
+  - Evidence: Pytest unit tests in `tests/issue/test_issue_create.py` using `CliRunner`, asserting exit code 1 and stderr content for each error case. Run via `./test-scripts/test-unit.sh`.
   - Steps:
     - [x] Add test: JSON missing `description` field → exit 1, stderr mentions missing field
     - [x] Add test: JSON with `category: "foo"` → exit 1, stderr lists valid categories (`rule-violation`, `improvement`, `confusion`)
     - [x] Add test: malformed JSON on stdin → exit 1, stderr mentions invalid JSON
     - [x] Add test: `.hitl/issues/active/` directory doesn't exist → exit 1, stderr mentions `i2code tracking setup`
-    - [x] Implement validation logic in `src/i2code/issue/create.py` to handle all error cases
+    - [x] Implement validation logic in `src/i2code/issue/create_issue.py` to handle all error cases
 
 ## Steel Thread 3: PreToolUse Hook Injects Session ID
 
@@ -125,11 +125,11 @@ Creates the skill, updates plugin configuration, and removes the old slash comma
 
 - [x] **Task 4.3: End-to-end test validates full pipeline (skill → hook → CLI → file)**
   - TaskType: OUTCOME
-  - Entrypoint: `uv run python3 -m pytest tests/issue/test_e2e.py -v -m integration_claude`
+  - Entrypoint: `uv run python3 -m pytest tests/issue/test_issue_creation_e2e.py -v -m integration_claude`
   - Observable: A pytest test runs `claude -p "/claude-issue-report Test issue: wrong commit format"` in a temp git repo with `.hitl/issues/active/`, and verifies: exactly one `.md` file created, valid YAML frontmatter with `status: active` and valid `category`, contains `## 5 Whys Analysis`, `## Context (Last 5 Messages)`, `## Suggested improvement`, `## Resolution` sections, `claude_session_id` is not `unknown`
-  - Evidence: `uv run python3 -m pytest tests/issue/test_e2e.py -v -m integration_claude` passes. This test is excluded from fast CI runs via the `integration_claude` marker.
+  - Evidence: `uv run python3 -m pytest tests/issue/test_issue_creation_e2e.py -v -m integration_claude` passes. This test is excluded from fast CI runs via the `integration_claude` marker.
   - Steps:
-    - [x] Create `tests/issue/test_e2e.py` with `@pytest.mark.integration_claude` marker
+    - [x] Create `tests/issue/test_issue_creation_e2e.py` with `@pytest.mark.integration_claude` marker
     - [x] Test sets up temp git repo with `.hitl/issues/active/` directory, runs `claude -p` subprocess, asserts file creation and content per spec section T4
 
 ---

@@ -12,13 +12,13 @@ from pathlib import Path
 import pytest
 import yaml
 
+from i2code.issue import VALID_CATEGORIES
+
 # Absolute path to the project root (two levels up from tests/issue/)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Plugin directory containing .claude-plugin/plugin.json
 PLUGIN_DIR = PROJECT_ROOT / "claude-code-plugins" / "idea-to-code"
-
-VALID_CATEGORIES = {"rule-violation", "improvement", "confusion"}
 
 
 @pytest.mark.integration_claude

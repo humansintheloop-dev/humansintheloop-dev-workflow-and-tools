@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "idea-to-code",
-      "source": "./"
+      "source": "./claude-code-plugins/idea-to-code"
     }
   ]
 }

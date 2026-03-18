@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_JSON="$SCRIPT_DIR/.claude-plugin/plugin.json"
+PLUGIN_JSON="$SCRIPT_DIR/claude-code-plugins/idea-to-code/.claude-plugin/plugin.json"
 TIMESTAMP=$(date +"%Y%m%d%H%M%S")
 
 if [ "$1" = "--force" ]; then

@@ -33,7 +33,7 @@ repos:
         entry: ./test-scripts/test-plugin-javascript.sh
         language: script
         pass_filenames: false
-        files: ^hooks/.*\.js$
+        files: ^claude-code-plugins/.*\.js$
       - id: precommit-check
         name: Run precommit.sh checks
         entry: ./test-scripts/test-precommit.sh

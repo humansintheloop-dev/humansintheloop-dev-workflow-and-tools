@@ -10,6 +10,7 @@ image::./idea-to-code.png[]
 * Interactively executes the implementation plan using test-driven development (TDD), with human oversight
 * Constrains GenAI interactions with explicit development and debugging instructions
 * Implements a feedback loop for continually improving how Claude Code operates
+* Run Claude Code in a secure sandbox using [Isolarium](https://github.com/humansintheloop-dev/isolarium/tree/main)
 
 == Why humans in the loop development?
 
@@ -113,6 +114,20 @@ i2code idea brainstorm docs/features/my-feature
 i2code spec create docs/features/my-feature
 i2code plan create docs/features/my-feature
 ----
+
+=== Running Claude Code in a secure sandbox
+
+The `i2code implement` command provides the option of running Claude Code in a secure sandbox using [Isolarium](https://github.com/humansintheloop-dev/isolarium/tree/main).
+
+The `--isolation-type` option specifies the sandbox type:
+
+
+```bash
+$ i2code implement --isolation-type nono/container/vm my-idea
+```
+
+Claude will then run in an isolated environment of the specified type.
+
 
 === Guiding Claude code
 

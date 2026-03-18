@@ -20,6 +20,15 @@ Tests live in `tests/` but directory names don't always match source:
 | `tests/plan-domain/` | `src/i2code/plan_domain/` |
 | `test-scripts/` | End-to-end and smoke tests |
 
+Pytest tests use these markers (`@pytest.mark.*`):
+
+| Marker | Description |
+|--------|-------------|
+| `unit` | Pure unit tests (vast majority) |
+| `integration` | Integration tests hitting real local systems |
+| `integration_gh` | Integration tests that call the GitHub API |
+| `manual` | Tests requiring manual/human intervention |
+
 ## 2. Claude Code Plugin
 
 Plugin source lives in `claude-code-plugins/idea-to-code/`, with the marketplace index in `.claude-plugin/marketplace.json`.

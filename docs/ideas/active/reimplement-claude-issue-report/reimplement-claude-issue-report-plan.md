@@ -89,14 +89,14 @@ Creates the PreToolUse hook that transparently appends `--session-id` to `i2code
 
 Implement using TDD.
 
-- [ ] **Task 3.1: PreToolUse hook appends `--session-id` to `i2code issue create` commands**
+- [x] **Task 3.1: PreToolUse hook appends `--session-id` to `i2code issue create` commands**
   - TaskType: OUTCOME
   - Entrypoint: `echo '{"tool_name":"Bash","tool_input":{"command":"echo ... | i2code issue create"},"session_id":"abc123"}' | node claude-code-plugins/idea-to-code/hooks/issue-session-injector.js`
   - Observable: Hook outputs modified tool input JSON with `--session-id abc123` appended to the command. For non-matching commands (e.g., `git status`), commands without `session_id`, and commands that already contain `--session-id`, the hook exits 0 without modifying the command.
   - Evidence: Node.js unit tests in `claude-code-plugins/idea-to-code/hooks/issue-session-injector.test.js` following the `enforce-bash-conventions.test.js` pattern (using `assert` module). Run via `./test-scripts/test-plugin-javascript.sh`.
   - Steps:
-    - [ ] Create `claude-code-plugins/idea-to-code/hooks/issue-session-injector.test.js` with tests: (1) injects session ID into matching command, (2) no session_id → passes through unchanged, (3) non-matching command → passes through, (4) already has `--session-id` → not appended twice
-    - [ ] Create `claude-code-plugins/idea-to-code/hooks/issue-session-injector.js` implementing the PreToolUse hook: check `tool_name === 'Bash'`, check command contains `i2code issue create`, check `session_id` present and command doesn't already have `--session-id`, append `--session-id <id>`, output modified tool input JSON
+    - [x] Create `claude-code-plugins/idea-to-code/hooks/issue-session-injector.test.js` with tests: (1) injects session ID into matching command, (2) no session_id → passes through unchanged, (3) non-matching command → passes through, (4) already has `--session-id` → not appended twice
+    - [x] Create `claude-code-plugins/idea-to-code/hooks/issue-session-injector.js` implementing the PreToolUse hook: check `tool_name === 'Bash'`, check command contains `i2code issue create`, check `session_id` present and command doesn't already have `--session-id`, append `--session-id <id>`, output modified tool input JSON
 
 ## Steel Thread 4: Skill Definition and Migration
 
@@ -173,3 +173,6 @@ Wrapped json.JSONDecodeError with descriptive Invalid JSON message
 
 ### 2026-03-18 16:35 - mark-task-complete
 All 8 validation tests pass, 1365 total tests pass
+
+### 2026-03-18 16:42 - mark-task-complete
+Implemented issue-session-injector hook with tests

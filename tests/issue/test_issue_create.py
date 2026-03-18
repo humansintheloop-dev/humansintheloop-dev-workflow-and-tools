@@ -43,26 +43,16 @@ def _invoke_create(tmp_path, input_data=None, args=None):
 @pytest.mark.unit
 class TestIssueCreateHappyPath:
 
-    def test_exits_zero_on_valid_input(self, tmp_path):
+    def test_valid_input_creates_correct_issue_file(self, tmp_path):
         result = _invoke_create(tmp_path, args=["--session-id", "test-session-123"])
         assert result.exit_code == 0, f"stderr: {result.output}"
 
-    def test_creates_file_in_active_directory(self, tmp_path):
-        _invoke_create(tmp_path, args=["--session-id", "test-session-123"])
         active_dir = tmp_path / ".hitl" / "issues" / "active"
         md_files = list(active_dir.glob("*.md"))
         assert len(md_files) == 1
-
-    def test_filename_matches_timestamp_pattern(self, tmp_path):
-        _invoke_create(tmp_path, args=["--session-id", "test-session-123"])
-        active_dir = tmp_path / ".hitl" / "issues" / "active"
-        md_files = list(active_dir.glob("*.md"))
         assert re.match(r"\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.md", md_files[0].name)
 
-    def test_frontmatter_has_correct_fields(self, tmp_path):
-        _invoke_create(tmp_path, args=["--session-id", "test-session-123"])
-        active_dir = tmp_path / ".hitl" / "issues" / "active"
-        content = list(active_dir.glob("*.md"))[0].read_text()
+        content = md_files[0].read_text()
 
         assert "id:" in content
         assert "created:" in content
@@ -70,19 +60,12 @@ class TestIssueCreateHappyPath:
         assert "category: rule-violation" in content
         assert "claude_session_id: test-session-123" in content
 
-    def test_content_sections_present(self, tmp_path):
-        _invoke_create(tmp_path, args=["--session-id", "test-session-123"])
-        active_dir = tmp_path / ".hitl" / "issues" / "active"
-        content = list(active_dir.glob("*.md"))[0].read_text()
-
         assert "# Test issue" in content
         assert "## 5 Whys Analysis" in content
         assert "## Context (Last 5 Messages)" in content
         assert "## Suggested improvement" in content
         assert "## Resolution" in content
 
-    def test_stdout_contains_absolute_path(self, tmp_path):
-        result = _invoke_create(tmp_path, args=["--session-id", "test-session-123"])
         output = result.output.strip()
         assert output.startswith("/")
         assert output.endswith(".md")

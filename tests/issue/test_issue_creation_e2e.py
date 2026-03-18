@@ -78,6 +78,12 @@ def test_claude_issue_report_creates_valid_issue(tmp_path):
         f"category '{frontmatter.get('category')}' not in {VALID_CATEGORIES}"
     )
 
+    # Assert: session ID injected by PreToolUse hook (not the default "unknown")
+    assert frontmatter.get("claude_session_id") != "unknown", (
+        "claude_session_id should not be 'unknown' — "
+        "the issue-session-injector hook should inject the session ID passed via --session-id"
+    )
+
     # Assert: required sections
     assert "## 5 Whys Analysis" in content
     assert "## Context (Last 5 Messages)" in content

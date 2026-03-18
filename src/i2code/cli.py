@@ -10,6 +10,7 @@ from i2code.design_cmd.cli import design
 from i2code.go_cmd.cli import go_cmd
 from i2code.idea_cmd.cli import idea
 from i2code.implement.cli import implement_cmd, scaffold_cmd
+from i2code.issue.issue_cli import issue
 from i2code.improve.cli import improve
 from i2code.plan.cli import plan
 from i2code.setup_cmd.cli import setup_group
@@ -45,4 +46,5 @@ main.add_command(scaffold_cmd)
 main.add_command(setup_group)
 main.add_command(tracking)
 main.add_command(go_cmd)
+main.add_command(issue)
 main.add_command(completion)

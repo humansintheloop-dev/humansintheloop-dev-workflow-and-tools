@@ -10,7 +10,6 @@
   "license": "Apache License, Version 2.0",
   "keywords": ["workflow", "planning", "implementation", "tdd", "steel-thread"],
   "commands": [
-    "./commands/claude-issue-report.md",
     "./commands/commit-changes.md",
     "./commands/commit-staged-changes.md",
     "./commands/precommit-check.md",
@@ -34,7 +33,8 @@
     "./skills/find-usage",
     "./skills/git-conflict-resolution",
     "./skills/write-idea",
-    "./skills/test-output-to-logfile"
+    "./skills/test-output-to-logfile",
+    "./skills/claude-issue-report"
   ],
   "hooks": {
     "PreToolUse": [
@@ -52,6 +52,15 @@
           {
             "type": "command",
             "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/session-recorder.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/issue-session-injector.js"
           }
         ]
       }
@@ -82,10 +91,6 @@
           {
             "type": "command",
             "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/session-recorder.js"
-          },
-          {
-            "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/issue-session-tagger.js"
           }
         ]
       }

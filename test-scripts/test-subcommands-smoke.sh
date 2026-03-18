@@ -262,6 +262,23 @@ echo "--- i2code tracking setup --help exits 0 ---"
 uv run i2code tracking setup --help
 echo "PASS: tracking setup --help exits 0"
 
+# --- issue --help lists create ---
+echo ""
+echo "--- i2code issue --help lists create ---"
+OUTPUT=$(uv run i2code issue --help 2>&1)
+echo "$OUTPUT"
+if [[ "$OUTPUT" != *"create"* ]]; then
+    echo "FAIL: issue --help does not list create"
+    exit 1
+fi
+echo "PASS: create listed in issue --help"
+
+# --- issue create --help exits 0 ---
+echo ""
+echo "--- i2code issue create --help exits 0 ---"
+uv run i2code issue create --help
+echo "PASS: issue create --help exits 0"
+
 # --- manage-tracking is NOT listed in i2code --help ---
 echo ""
 echo "--- i2code --help does NOT list manage-tracking ---"

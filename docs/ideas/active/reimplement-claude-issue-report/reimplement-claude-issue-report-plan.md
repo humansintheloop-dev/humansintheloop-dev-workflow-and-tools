@@ -71,17 +71,17 @@ Adds error handling for all invalid input scenarios. Each error case produces a 
 
 Implement using TDD.
 
-- [ ] **Task 2.1: CLI rejects invalid input with descriptive error messages**
+- [x] **Task 2.1: CLI rejects invalid input with descriptive error messages**
   - TaskType: OUTCOME
   - Entrypoint: `echo '{"description":"test"}' | uv run i2code issue create` (missing required fields)
   - Observable: CLI exits with code 1 and prints descriptive error to stderr for each case: missing required field (`description`, `category`, `analysis`, `context`, `suggestion`), invalid category value, malformed JSON, and missing `.hitl/issues/active/` directory (mentioning `i2code tracking setup`)
   - Evidence: Pytest unit tests in `tests/issue/test_create.py` using `CliRunner`, asserting exit code 1 and stderr content for each error case. Run via `./test-scripts/test-unit.sh`.
   - Steps:
-    - [ ] Add test: JSON missing `description` field → exit 1, stderr mentions missing field
-    - [ ] Add test: JSON with `category: "foo"` → exit 1, stderr lists valid categories (`rule-violation`, `improvement`, `confusion`)
-    - [ ] Add test: malformed JSON on stdin → exit 1, stderr mentions invalid JSON
-    - [ ] Add test: `.hitl/issues/active/` directory doesn't exist → exit 1, stderr mentions `i2code tracking setup`
-    - [ ] Implement validation logic in `src/i2code/issue/create.py` to handle all error cases
+    - [x] Add test: JSON missing `description` field → exit 1, stderr mentions missing field
+    - [x] Add test: JSON with `category: "foo"` → exit 1, stderr lists valid categories (`rule-violation`, `improvement`, `confusion`)
+    - [x] Add test: malformed JSON on stdin → exit 1, stderr mentions invalid JSON
+    - [x] Add test: `.hitl/issues/active/` directory doesn't exist → exit 1, stderr mentions `i2code tracking setup`
+    - [x] Implement validation logic in `src/i2code/issue/create.py` to handle all error cases
 
 ## Steel Thread 3: PreToolUse Hook Injects Session ID
 
@@ -155,3 +155,21 @@ Added test for missing --session-id defaulting to unknown
 
 ### 2026-03-18 16:19 - mark-task-complete
 All steps complete, 7 tests pass, full suite passes (1357 tests)
+
+### 2026-03-18 16:35 - mark-step-complete
+Test: missing description field exits with error
+
+### 2026-03-18 16:35 - mark-step-complete
+Test: invalid category lists valid values
+
+### 2026-03-18 16:35 - mark-step-complete
+Test: malformed JSON exits with error
+
+### 2026-03-18 16:35 - mark-step-complete
+Test: missing active directory mentions i2code tracking setup
+
+### 2026-03-18 16:35 - mark-step-complete
+Wrapped json.JSONDecodeError with descriptive Invalid JSON message
+
+### 2026-03-18 16:35 - mark-task-complete
+All 8 validation tests pass, 1365 total tests pass

@@ -98,3 +98,70 @@ class TestIssueCreateMissingSessionId:
         active_dir = tmp_path / ".hitl" / "issues" / "active"
         content = list(active_dir.glob("*.md"))[0].read_text()
         assert "claude_session_id: unknown" in content
+
+
+@pytest.mark.unit
+class TestIssueCreateValidation:
+
+    def test_missing_description_field_exits_with_error(self, tmp_path):
+        data = {k: v for k, v in VALID_INPUT.items() if k != "description"}
+        result = _invoke_create(tmp_path, input_data=data)
+        assert result.exit_code == 1
+        assert "description" in result.output.lower()
+
+    def test_missing_category_field_exits_with_error(self, tmp_path):
+        data = {k: v for k, v in VALID_INPUT.items() if k != "category"}
+        result = _invoke_create(tmp_path, input_data=data)
+        assert result.exit_code == 1
+        assert "category" in result.output.lower()
+
+    def test_missing_analysis_field_exits_with_error(self, tmp_path):
+        data = {k: v for k, v in VALID_INPUT.items() if k != "analysis"}
+        result = _invoke_create(tmp_path, input_data=data)
+        assert result.exit_code == 1
+        assert "analysis" in result.output.lower()
+
+    def test_missing_context_field_exits_with_error(self, tmp_path):
+        data = {k: v for k, v in VALID_INPUT.items() if k != "context"}
+        result = _invoke_create(tmp_path, input_data=data)
+        assert result.exit_code == 1
+        assert "context" in result.output.lower()
+
+    def test_missing_suggestion_field_exits_with_error(self, tmp_path):
+        data = {k: v for k, v in VALID_INPUT.items() if k != "suggestion"}
+        result = _invoke_create(tmp_path, input_data=data)
+        assert result.exit_code == 1
+        assert "suggestion" in result.output.lower()
+
+    def test_invalid_category_exits_with_error_listing_valid_values(self, tmp_path):
+        data = {**VALID_INPUT, "category": "foo"}
+        result = _invoke_create(tmp_path, input_data=data)
+        assert result.exit_code == 1
+        assert "rule-violation" in result.output
+        assert "improvement" in result.output
+        assert "confusion" in result.output
+
+    def test_malformed_json_exits_with_error(self, tmp_path):
+        active_dir = tmp_path / ".hitl" / "issues" / "active"
+        active_dir.mkdir(parents=True, exist_ok=True)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            ["issue", "create"],
+            input="not valid json{{{",
+            env={"I2CODE_PROJECT_ROOT": str(tmp_path)},
+        )
+        assert result.exit_code == 1
+        assert "invalid json" in result.output.lower()
+
+    def test_missing_active_directory_exits_with_error(self, tmp_path):
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            ["issue", "create"],
+            input=json.dumps(VALID_INPUT),
+            env={"I2CODE_PROJECT_ROOT": str(tmp_path)},
+        )
+        assert result.exit_code == 1
+        assert "i2code tracking setup" in result.output.lower()

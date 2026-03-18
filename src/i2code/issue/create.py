@@ -33,6 +33,32 @@ claude_session_id: {session_id}
 """
 
 
+def _parse_and_validate(json_str):
+    """Parse JSON string and validate required fields and category.
+
+    Returns:
+        Parsed dict with validated issue data.
+
+    Raises:
+        ValueError: On invalid JSON, missing fields, or invalid category.
+    """
+    try:
+        data = json.loads(json_str)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON: {e}") from e
+
+    for field in REQUIRED_FIELDS:
+        if field not in data:
+            raise ValueError(f"Missing required field: {field}")
+
+    if data["category"] not in VALID_CATEGORIES:
+        raise ValueError(
+            f"Invalid category '{data['category']}'. "
+            f"Must be one of: {', '.join(VALID_CATEGORIES)}"
+        )
+    return data
+
+
 def create_issue(json_str, session_id, target_dir):
     """Parse JSON input and write an issue markdown file.
 
@@ -48,17 +74,7 @@ def create_issue(json_str, session_id, target_dir):
         ValueError: On invalid input.
         FileNotFoundError: If target_dir does not exist.
     """
-    data = json.loads(json_str)
-
-    for field in REQUIRED_FIELDS:
-        if field not in data:
-            raise ValueError(f"Missing required field: {field}")
-
-    if data["category"] not in VALID_CATEGORIES:
-        raise ValueError(
-            f"Invalid category '{data['category']}'. "
-            f"Must be one of: {', '.join(VALID_CATEGORIES)}"
-        )
+    data = _parse_and_validate(json_str)
 
     target = Path(target_dir)
     if not target.is_dir():

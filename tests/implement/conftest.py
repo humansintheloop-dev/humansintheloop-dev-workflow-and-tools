@@ -34,11 +34,16 @@ def create_github_repo(repo_name):
         RuntimeError: If repository creation fails
     """
     repo_full_name = f"{os.environ.get('GH_TEST_ORG', 'humansintheloop-test-org')}/{repo_name}"
+    
+    print(f"\n\nCreating {repo_full_name}\n")
+
     result = subprocess.run(
         ["gh", "repo", "create", repo_full_name, "--private"],
         capture_output=True,
         text=True
     )
+
+    print(f"\n\nCreated {repo_full_name}\n")
 
     if result.returncode != 0:
         raise RuntimeError(f"Failed to create GitHub repo: {result.stderr}")

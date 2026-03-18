@@ -48,15 +48,20 @@ def github_repo_with_initial_commit():
         repo.index.commit("Initial commit with source file")
 
         repo_full_name = create_github_repo(repo_name)
+
+
         subprocess.run(
             ["git", "remote", "add", "origin",
-             f"https://github.com/{repo_full_name}.git"],
+             f"git@github.com:{repo_full_name}.git"],
             cwd=tmpdir, capture_output=True, text=True, check=True,
         )
+
+        print(f"\n\nPushing {repo_full_name}\n")
         subprocess.run(
             ["git", "push", "-u", "origin", "main"],
             cwd=tmpdir, capture_output=True, text=True, check=True,
         )
+        print(f"\n\nPushed {repo_full_name}\n")
 
         yield tmpdir, repo, repo_full_name
 

@@ -1,5 +1,7 @@
 """Unit tests for ImplementOpts validation."""
 
+from dataclasses import fields
+
 import click
 import pytest
 
@@ -49,6 +51,84 @@ class TestValidateTrunkOptions:
             address_review_comments=True,
         )
         opts.validate_trunk_options()  # should not raise
+
+
+@pytest.mark.unit
+class TestInnerCliFlags:
+    """inner_cli_flags() returns CLI args for flags passed to the inner i2code command."""
+
+    def test_includes_bool_flag_when_set(self):
+        opts = ImplementOpts(idea_directory="/tmp", cleanup=True)
+        flags = opts.inner_cli_flags()
+        assert "--cleanup" in flags
+
+    def test_excludes_bool_flag_when_unset(self):
+        opts = ImplementOpts(idea_directory="/tmp")
+        flags = opts.inner_cli_flags()
+        assert "--cleanup" not in flags
+
+    def test_includes_value_flag_with_non_default_value(self):
+        opts = ImplementOpts(idea_directory="/tmp", ci_fix_retries=5)
+        flags = opts.inner_cli_flags()
+        assert "--ci-fix-retries" in flags
+        idx = flags.index("--ci-fix-retries")
+        assert flags[idx + 1] == "5"
+
+    def test_excludes_value_flag_with_default_value(self):
+        opts = ImplementOpts(idea_directory="/tmp")
+        flags = opts.inner_cli_flags()
+        assert "--ci-fix-retries" not in flags
+
+    def test_includes_address_review_comments(self):
+        opts = ImplementOpts(idea_directory="/tmp", address_review_comments=True)
+        flags = opts.inner_cli_flags()
+        assert "--address-review-comments" in flags
+
+    def test_returns_all_set_flags(self):
+        opts = ImplementOpts(
+            idea_directory="/tmp",
+            cleanup=True,
+            non_interactive=True,
+            mock_claude="/mock.sh",
+            extra_prompt="extra text",
+            ci_fix_retries=5,
+            ci_timeout=900,
+        )
+        flags = opts.inner_cli_flags()
+        assert "--cleanup" in flags
+        assert "--non-interactive" in flags
+        assert "--mock-claude" in flags
+        assert "/mock.sh" in flags
+        assert "--extra-prompt" in flags
+        assert "extra text" in flags
+        assert "--ci-fix-retries" in flags
+        assert "5" in flags
+        assert "--ci-timeout" in flags
+        assert "900" in flags
+
+
+@pytest.mark.unit
+class TestInnerFlagExhaustiveness:
+    """Every dataclass field must be in _INNER_FORWARDED or _INNER_IGNORED."""
+
+    def test_every_field_is_categorized(self):
+        all_categorized = ImplementOpts._INNER_FORWARDED | ImplementOpts._INNER_IGNORED
+        all_fields = {f.name for f in fields(ImplementOpts)}
+        uncategorized = all_fields - all_categorized
+        assert uncategorized == set(), (
+            f"New field(s) {uncategorized} must be added to "
+            f"_INNER_FORWARDED or _INNER_IGNORED"
+        )
+
+    def test_forwarded_and_ignored_are_disjoint(self):
+        overlap = ImplementOpts._INNER_FORWARDED & ImplementOpts._INNER_IGNORED
+        assert overlap == set(), (
+            f"Field(s) {overlap} appear in both _INNER_FORWARDED and _INNER_IGNORED"
+        )
+
+
+@pytest.mark.unit
+class TestValidateTrunkOptionsErrorMessage:
 
     def test_error_message_lists_all_incompatible_flags(self):
         opts = ImplementOpts(

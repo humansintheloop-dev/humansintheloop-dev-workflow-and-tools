@@ -1,6 +1,6 @@
 """Options dataclass for the implement command."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 import click
 
@@ -29,6 +29,31 @@ class ImplementOpts:
     skip_scaffolding: bool = False
     debug_claude: bool = False
 
+    _INNER_FORWARDED = {
+        "cleanup",
+        "setup_only",
+        "non_interactive",
+        "skip_ci_wait",
+        "debug_claude",
+        "address_review_comments",
+        "mock_claude",
+        "extra_prompt",
+        "ci_fix_retries",
+        "ci_timeout",
+    }
+
+    _INNER_IGNORED = {
+        "idea_directory",
+        "isolate",
+        "isolation_type",
+        "isolated",
+        "shell",
+        "trunk",
+        "dry_run",
+        "ignore_uncommitted_idea_changes",
+        "skip_scaffolding",
+    }
+
     _TRUNK_INCOMPATIBLE = [
         ("cleanup", "--cleanup"),
         ("setup_only", "--setup-only"),
@@ -52,3 +77,19 @@ class ImplementOpts:
             raise click.UsageError(
                 f"--trunk cannot be combined with: {', '.join(incompatible)}"
             )
+
+    def inner_cli_flags(self):
+        """Return CLI flags to pass to the inner i2code implement command."""
+        result = []
+        for f in fields(self):
+            if f.name not in self._INNER_FORWARDED:
+                continue
+            value = getattr(self, f.name)
+            if value == f.default:
+                continue
+            flag = "--" + f.name.replace("_", "-")
+            if f.type is bool:
+                result.append(flag)
+            else:
+                result.extend([flag, str(value)])
+        return result

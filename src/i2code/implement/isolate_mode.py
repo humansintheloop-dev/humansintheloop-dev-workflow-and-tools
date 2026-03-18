@@ -9,22 +9,6 @@ from pathlib import Path
 from i2code.implement.managed_subprocess import ManagedSubprocess
 
 
-_BOOL_FLAGS = [
-    ("cleanup", "--cleanup"),
-    ("setup_only", "--setup-only"),
-    ("non_interactive", "--non-interactive"),
-    ("skip_ci_wait", "--skip-ci-wait"),
-    ("debug_claude", "--debug-claude"),
-]
-
-_VALUE_FLAGS = [
-    ("mock_claude", "--mock-claude", None),
-    ("extra_prompt", "--extra-prompt", None),
-    ("ci_fix_retries", "--ci-fix-retries", 3),
-    ("ci_timeout", "--ci-timeout", 600),
-]
-
-
 def _find_i2code_src_dir():
     """Return the i2code source directory if running from an editable install."""
     try:
@@ -37,15 +21,6 @@ def _find_i2code_src_dir():
     except OSError:
         pass
     return None
-
-
-def _collect_value_flags(options):
-    result = []
-    for attr, flag, default in _VALUE_FLAGS:
-        value = getattr(options, attr)
-        if value != default:
-            result.extend([flag, str(value)])
-    return result
 
 
 @dataclass
@@ -162,8 +137,7 @@ class IsolateMode:
             ".", os.path.relpath(self._project.directory, clone_dir),
         )
         args = ["i2code", "--with-sdkman", "implement", "--isolated", rel_idea_dir]
-        args.extend(flag for attr, flag in _BOOL_FLAGS if getattr(self._options, attr))
-        args.extend(_collect_value_flags(self._options))
+        args.extend(self._options.inner_cli_flags())
         return args
 
     def _find_env_file(self):

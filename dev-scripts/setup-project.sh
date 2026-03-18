@@ -5,6 +5,7 @@ echo setting up project in "$PWD"
 pre-commit install
 
 if command -v setup-codescene-mcp.sh > /dev/null 2>&1; then
+    echo RUNNING setup-codescene-mcp.sh
     setup-codescene-mcp.sh
 else
     echo setup-codescene-mcp.sh NOT FOUND

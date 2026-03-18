@@ -44,18 +44,18 @@ Creates the core CLI command that reads JSON from stdin and writes a correctly f
 
 Implement using TDD.
 
-- [ ] **Task 1.1: `i2code issue create` accepts JSON on stdin and creates a correctly formatted issue file**
+- [x] **Task 1.1: `i2code issue create` accepts JSON on stdin and creates a correctly formatted issue file**
   - TaskType: OUTCOME
   - Entrypoint: `echo '{"description":"Test issue","category":"rule-violation","analysis":"## 5 Whys Analysis\n\n1. Why?","context":"## Context (Last 5 Messages)\n\nUser: test","suggestion":"Add a rule"}' | uv run i2code issue create --session-id test-session-123`
   - Observable: A markdown file is created in `.hitl/issues/active/` with filename `YYYY-MM-DD-HH-MM-SS.md`, containing correct YAML frontmatter (`id`, `created`, `status: active`, `category: rule-violation`, `claude_session_id: test-session-123`) and all content sections (`# Test issue`, `## 5 Whys Analysis`, `## Context`, `## Suggested improvement`, `## Resolution`). The absolute path to the file is printed to stdout.
   - Evidence: Pytest unit tests in `tests/issue/` using Click's `CliRunner` with `input=` for stdin, writing to `tmp_path`, asserting file content, frontmatter fields, and stdout output. Run via `./test-scripts/test-unit.sh`.
   - Steps:
-    - [ ] Create `tests/issue/__init__.py` and `tests/issue/test_create.py` with a happy-path test: invoke `create` via `CliRunner` with valid JSON stdin and `--session-id`, assert exit code 0, file exists in target dir, frontmatter has correct fields, content sections present, stdout contains absolute path
-    - [ ] Create `src/i2code/issue/__init__.py` (empty package init)
-    - [ ] Create `src/i2code/issue/create.py` with issue creation logic: parse JSON from stdin, validate required fields, generate timestamp-based ID, render markdown template, write file to `.hitl/issues/active/`, return absolute path
-    - [ ] Create `src/i2code/issue/cli.py` with Click group `issue` and `create` subcommand that reads stdin, accepts optional `--session-id`, calls creation logic, prints path to stdout
-    - [ ] Modify `src/i2code/cli.py` to import and register the `issue` command group via `main.add_command(issue)`
-    - [ ] Add test for missing `--session-id` flag: file is created with `claude_session_id: unknown`
+    - [x] Create `tests/issue/__init__.py` and `tests/issue/test_create.py` with a happy-path test: invoke `create` via `CliRunner` with valid JSON stdin and `--session-id`, assert exit code 0, file exists in target dir, frontmatter has correct fields, content sections present, stdout contains absolute path
+    - [x] Create `src/i2code/issue/__init__.py` (empty package init)
+    - [x] Create `src/i2code/issue/create.py` with issue creation logic: parse JSON from stdin, validate required fields, generate timestamp-based ID, render markdown template, write file to `.hitl/issues/active/`, return absolute path
+    - [x] Create `src/i2code/issue/cli.py` with Click group `issue` and `create` subcommand that reads stdin, accepts optional `--session-id`, calls creation logic, prints path to stdout
+    - [x] Modify `src/i2code/cli.py` to import and register the `issue` command group via `main.add_command(issue)`
+    - [x] Add test for missing `--session-id` flag: file is created with `claude_session_id: unknown`
 
 - [ ] **Task 1.2: `i2code issue create` smoke test validates CLI is registered and callable**
   - TaskType: INFRA
@@ -131,3 +131,27 @@ Creates the skill, updates plugin configuration, and removes the old slash comma
   - Steps:
     - [ ] Create `tests/issue/test_e2e.py` with `@pytest.mark.integration_claude` marker
     - [ ] Test sets up temp git repo with `.hitl/issues/active/` directory, runs `claude -p` subprocess, asserts file creation and content per spec section T4
+
+---
+
+## Change History
+### 2026-03-18 16:19 - mark-step-complete
+Created tests/issue/__init__.py and tests/issue/test_create.py with 7 tests
+
+### 2026-03-18 16:19 - mark-step-complete
+Created empty src/i2code/issue/__init__.py
+
+### 2026-03-18 16:19 - mark-step-complete
+Created src/i2code/issue/create.py with JSON parsing, validation, template rendering, and file writing
+
+### 2026-03-18 16:19 - mark-step-complete
+Created src/i2code/issue/cli.py with Click group and create subcommand
+
+### 2026-03-18 16:19 - mark-step-complete
+Registered issue command group in src/i2code/cli.py
+
+### 2026-03-18 16:19 - mark-step-complete
+Added test for missing --session-id defaulting to unknown
+
+### 2026-03-18 16:19 - mark-task-complete
+All steps complete, 7 tests pass, full suite passes (1357 tests)

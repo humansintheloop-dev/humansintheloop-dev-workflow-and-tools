@@ -8,7 +8,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 echo "=== Plugin JavaScript Tests ==="
 
 failed=0
-for test_file in "$PROJECT_ROOT"/hooks/*.test.js; do
+for test_file in "$PROJECT_ROOT"/claude-code-plugins/idea-to-code/hooks/*.test.js; do
     echo ""
     echo "--- Running $(basename "$test_file") ---"
     if node "$test_file"; then

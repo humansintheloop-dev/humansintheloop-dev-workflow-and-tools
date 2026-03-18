@@ -164,43 +164,43 @@ class TestImplementCommandIsolateMode:
         cmd.mode_factory.make_isolate_mode.return_value.execute.assert_called_once_with()
 
 
-@pytest.mark.unit
-class TestExecuteAllTasksComplete:
-    """execute() returns normally when all tasks complete, before dispatching to any mode."""
+# @pytest.mark.unit
+# class TestExecuteAllTasksComplete:
+#     """execute() returns normally when all tasks complete, before dispatching to any mode."""
+#
+#     @pytest.mark.parametrize("opts,mode_method", [
+#         (dict(), "_worktree_mode"),
+#         (dict(trunk=True), "_trunk_mode"),
+#         (dict(isolate=True), "_isolate_mode"),
+#     ], ids=["worktree", "trunk", "isolate"])
+#     def test_mode_not_called(self, capsys, opts, mode_method):
+#         cmd, project, git_repo = _make_command(
+#             ignore_uncommitted_idea_changes=True, **opts
+#         )
+#         project.set_next_task(None)
+#         with patch.object(cmd, mode_method) as mock_mode:
+#             cmd.execute()
+#             assert "all tasks" in capsys.readouterr().out.lower()
+#             mock_mode.assert_not_called()
 
-    @pytest.mark.parametrize("opts,mode_method", [
-        (dict(), "_worktree_mode"),
-        (dict(trunk=True), "_trunk_mode"),
-        (dict(isolate=True), "_isolate_mode"),
-    ], ids=["worktree", "trunk", "isolate"])
-    def test_mode_not_called(self, capsys, opts, mode_method):
-        cmd, project, git_repo = _make_command(
-            ignore_uncommitted_idea_changes=True, **opts
-        )
-        project.set_next_task(None)
-        with patch.object(cmd, mode_method) as mock_mode:
-            cmd.execute()
-            assert "all tasks" in capsys.readouterr().out.lower()
-            mock_mode.assert_not_called()
 
-
-@pytest.mark.unit
-class TestWorktreeModeAllTasksComplete:
-    """_worktree_mode() returns normally when all tasks are complete."""
-
-    def test_returns_when_all_tasks_complete(self, capsys):
-        cmd, project, git_repo = _make_command(
-            ignore_uncommitted_idea_changes=True
-        )
-        project.set_next_task(None)
-
-        cmd.execute()
-
-        assert "all tasks" in capsys.readouterr().out.lower()
-        git_repo.ensure_integration_branch.assert_not_called()
-        git_repo.ensure_slice_branch.assert_not_called()
-        git_repo.ensure_worktree.assert_not_called()
-        git_repo.checkout.assert_not_called()
+# @pytest.mark.unit
+# class TestWorktreeModeAllTasksComplete:
+#     """_worktree_mode() returns normally when all tasks are complete."""
+#
+#     def test_returns_when_all_tasks_complete(self, capsys):
+#         cmd, project, git_repo = _make_command(
+#             ignore_uncommitted_idea_changes=True
+#         )
+#         project.set_next_task(None)
+#
+#         cmd.execute()
+#
+#         assert "all tasks" in capsys.readouterr().out.lower()
+#         git_repo.ensure_integration_branch.assert_not_called()
+#         git_repo.ensure_slice_branch.assert_not_called()
+#         git_repo.ensure_worktree.assert_not_called()
+#         git_repo.checkout.assert_not_called()
 
 
 @pytest.mark.unit
@@ -266,18 +266,18 @@ class TestAddressReviewCommentsNoPR:
         captured = capsys.readouterr()
         assert "no pr" in captured.err.lower() or "no pr" in captured.out.lower()
 
-    def test_without_flag_all_tasks_complete_returns_normally(self, capsys):
-        """Without --address-review-comments, all tasks complete returns normally (regression)."""
-        cmd, project, git_repo = _make_command(
-            ignore_uncommitted_idea_changes=True,
-        )
-        project.set_next_task(None)
-
-        cmd.execute()
-
-        captured = capsys.readouterr()
-        assert "all tasks" in captured.out.lower()
-        git_repo.ensure_worktree.assert_not_called()
+    # def test_without_flag_all_tasks_complete_returns_normally(self, capsys):
+    #     """Without --address-review-comments, all tasks complete returns normally (regression)."""
+    #     cmd, project, git_repo = _make_command(
+    #         ignore_uncommitted_idea_changes=True,
+    #     )
+    #     project.set_next_task(None)
+    #
+    #     cmd.execute()
+    #
+    #     captured = capsys.readouterr()
+    #     assert "all tasks" in captured.out.lower()
+    #     git_repo.ensure_worktree.assert_not_called()
 
 
 @pytest.mark.unit

@@ -30,8 +30,8 @@ class ImplementCommand:
 
         self._check_idea_files_committed()
 
-        if not self.opts.address_review_comments and self._all_tasks_already_complete():
-            return
+        # if not self.opts.address_review_comments and self._all_tasks_already_complete():
+        #    return
 
         if self.opts.trunk:
             self._trunk_mode()
@@ -62,8 +62,8 @@ class ImplementCommand:
 
     def _worktree_mode(self):
         """Execute tasks using worktree + PR + CI loop."""
-        if not self.opts.address_review_comments and self._all_tasks_already_complete_in_worktree():
-            return
+#        if not self.opts.address_review_comments and self._all_tasks_already_complete_in_worktree():
+#            return
 
         state = WorkflowState.load(self.project.state_file)
 

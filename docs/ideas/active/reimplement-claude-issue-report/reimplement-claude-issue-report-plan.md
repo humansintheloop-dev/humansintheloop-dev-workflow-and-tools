@@ -57,13 +57,13 @@ Implement using TDD.
     - [x] Modify `src/i2code/cli.py` to import and register the `issue` command group via `main.add_command(issue)`
     - [x] Add test for missing `--session-id` flag: file is created with `claude_session_id: unknown`
 
-- [ ] **Task 1.2: `i2code issue create` smoke test validates CLI is registered and callable**
+- [x] **Task 1.2: `i2code issue create` smoke test validates CLI is registered and callable**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-subcommands-smoke.sh`
   - Observable: `uv run i2code issue --help` lists `create`, and `uv run i2code issue create --help` exits 0
   - Evidence: `./test-scripts/test-subcommands-smoke.sh` passes with the new smoke test assertions. Run via `./test-scripts/test-end-to-end.sh`.
   - Steps:
-    - [ ] Add `i2code issue --help` and `i2code issue create --help` assertions to `test-scripts/test-subcommands-smoke.sh`, following the existing pattern
+    - [x] Add `i2code issue --help` and `i2code issue create --help` assertions to `test-scripts/test-subcommands-smoke.sh`, following the existing pattern
 
 ## Steel Thread 2: CLI Input Validation and Error Handling
 

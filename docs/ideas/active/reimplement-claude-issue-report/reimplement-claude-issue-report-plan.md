@@ -102,15 +102,15 @@ Implement using TDD.
 
 Creates the skill, updates plugin configuration, and removes the old slash command and PostToolUse hook.
 
-- [ ] **Task 4.1: Create `claude-issue-report` skill definition**
+- [x] **Task 4.1: Create `claude-issue-report` skill definition**
   - TaskType: OUTCOME
   - Entrypoint: Invoke `/claude-issue-report` in Claude Code
   - Observable: Claude Code loads the skill from `claude-code-plugins/idea-to-code/skills/claude-issue-report/SKILL.md`, which instructs Claude to perform 5 whys analysis and pipe JSON to `i2code issue create`
   - Evidence: Skill file exists with correct frontmatter (`name: claude-issue-report`, `description`, `user-invokable: true`) and contains instructions for: extracting description, identifying persona, performing 5 whys analysis, extracting last 5 messages, suggesting improvement, piping JSON to CLI, and reporting the file path. Verified by inspection and by the E2E test in Task 4.3.
   - Steps:
-    - [ ] Create `claude-code-plugins/idea-to-code/skills/claude-issue-report/SKILL.md` with frontmatter and step-by-step instructions matching the spec's C1 section. Include auto-suggest guidance and post-filing behavior.
-    - [ ] Reference the JSON schema from the spec: `description`, `category`, `analysis`, `context`, `suggestion`
-    - [ ] Include the invocation pattern: `echo '<json>' | i2code issue create`
+    - [x] Create `claude-code-plugins/idea-to-code/skills/claude-issue-report/SKILL.md` with frontmatter and step-by-step instructions matching the spec's C1 section. Include auto-suggest guidance and post-filing behavior.
+    - [x] Reference the JSON schema from the spec: `description`, `category`, `analysis`, `context`, `suggestion`
+    - [x] Include the invocation pattern: `echo '<json>' | i2code issue create`
 
 - [ ] **Task 4.2: Update `plugin.json` and delete old artifacts**
   - TaskType: INFRA

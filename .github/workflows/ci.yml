@@ -64,10 +64,12 @@ jobs:
       - name: Configure git to use gh for authentication
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: gh auth setup-git
+        run: |
+          gh auth setup-git
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
 
       - name: Run integration_gh tests
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GH_TEST_ORG: ${{ secrets.GH_TEST_ORG }}
-        run: uv run --python 3.12 python3 -m pytest tests/ -v -m integration_gh
+        run: uv run --python 3.12 python3 -m pytest tests/ -v -m integration_gh -s

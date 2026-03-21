@@ -4,6 +4,7 @@ import sys
 
 from dotenv import load_dotenv
 
+from i2code.implement.timing import Timer, timed
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import validate_idea_files_committed
 from i2code.implement.worktree_setup import ProjectSetup
@@ -20,7 +21,8 @@ class ImplementCommand:
 
     def execute(self):
         """Implement a development plan using Git worktrees and GitHub Draft PRs."""
-        self._validate_and_apply_defaults()
+        with timed("validate"):
+            self._validate_and_apply_defaults()
         if not self.opts.isolate:
             load_dotenv(".env.local")
 
@@ -28,7 +30,8 @@ class ImplementCommand:
             self._print_dry_run()
             return
 
-        self._check_idea_files_committed()
+        with timed("check_committed"):
+            self._check_idea_files_committed()
 
         # if not self.opts.address_review_comments and self._all_tasks_already_complete():
         #    return
@@ -65,9 +68,13 @@ class ImplementCommand:
 #        if not self.opts.address_review_comments and self._all_tasks_already_complete_in_worktree():
 #            return
 
-        state = WorkflowState.load(self.project.state_file)
+        t_total = Timer.start()
 
-        idea_branch = self.git_repo.ensure_idea_branch(self.project.name)
+        with timed("load_state"):
+            state = WorkflowState.load(self.project.state_file)
+
+        with timed("ensure_idea_branch"):
+            idea_branch = self.git_repo.ensure_idea_branch(self.project.name)
         print(f"Idea branch: {idea_branch}")
 
         if self.opts.isolated:
@@ -75,7 +82,8 @@ class ImplementCommand:
             ProjectSetup().setup_worktree(self.git_repo)
             work_project = self.project
         else:
-            self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
+            with timed("ensure_worktree"):
+                self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
             print(f"Worktree: {self.git_repo.working_tree_dir}")
             ProjectSetup().setup_worktree(self.git_repo)
             work_project = self.project.worktree_idea_project(
@@ -88,7 +96,8 @@ class ImplementCommand:
             print("Setup complete. Exiting (--setup-only mode).")
             return
 
-        existing_pr = self.git_repo.gh_client.find_pr(idea_branch)
+        with timed("find_pr"):
+            existing_pr = self.git_repo.gh_client.find_pr(idea_branch)
         if existing_pr:
             self.git_repo.pr_number = existing_pr
             print(f"Reusing existing PR #{existing_pr}")
@@ -100,12 +109,14 @@ class ImplementCommand:
             )
             sys.exit(1)
 
-        worktree_mode = self.mode_factory.make_worktree_mode(
-            git_repo=self.git_repo,
-            state=state,
-            work_project=work_project,
-        )
-        worktree_mode.execute()
+        with timed("worktree_mode.execute"):
+            worktree_mode = self.mode_factory.make_worktree_mode(
+                git_repo=self.git_repo,
+                state=state,
+                work_project=work_project,
+            )
+            worktree_mode.execute()
+        t_total.print("_worktree_mode total")
 
     def _validate_and_apply_defaults(self):
         self.project.validate()

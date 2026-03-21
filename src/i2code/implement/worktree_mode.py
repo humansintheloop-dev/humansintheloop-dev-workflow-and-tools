@@ -14,6 +14,7 @@ from i2code.implement.claude_runner import (
 )
 from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 from i2code.implement.pr_helpers import is_pr_complete
+from i2code.implement.timing import Timer, timed
 
 REVIEW_POLL_INTERVAL_SECONDS = 30
 
@@ -61,18 +62,27 @@ class WorktreeMode:
 
     def execute(self):
         """Run the worktree task loop until all tasks are complete."""
-        self._loop_steps.commit_recovery.commit_if_needed()
+        with timed("commit_recovery"):
+            self._loop_steps.commit_recovery.commit_if_needed()
 
-        if self._git_repo.branch_has_been_pushed() and self._git_repo.has_unpushed_commits():
+        with timed("branch_has_been_pushed"):
+            pushed = self._git_repo.branch_has_been_pushed()
+        if pushed and self._git_repo.has_unpushed_commits():
             self._push_and_ensure_pr()
             self._loop_steps.ci_monitor.wait_for_workflow_completion(self._git_repo.branch, self._git_repo.head_sha)
 
         while True:
+            t = Timer.start()
             if self._loop_steps.build_fixer.check_and_fix_ci():
+                t.print("check_and_fix_ci (fix)")
                 continue
+            t.print("check_and_fix_ci")
 
+            t = Timer.start()
             if self._loop_steps.review_processor.process_feedback():
+                t.print("process_feedback (acted)")
                 continue
+            t.print("process_feedback")
 
             next_task = self._work_project.get_next_task()
             if next_task is None:
@@ -159,14 +169,16 @@ class WorktreeMode:
         """Push changes and create a Draft PR if one doesn't exist."""
         print("Pushing changes...")
 
-        if not self._git_repo.push():
-            print("Error: Could not push commit to branch", file=sys.stderr)
-            sys.exit(1)
+        with timed("push"):
+            if not self._git_repo.push():
+                print("Error: Could not push commit to branch", file=sys.stderr)
+                sys.exit(1)
 
         if self._git_repo.pr_number is None:
-            self._git_repo.ensure_pr(
-                self._work_project.directory, self._work_project.name,
-            )
+            with timed("ensure_pr"):
+                self._git_repo.ensure_pr(
+                    self._work_project.directory, self._work_project.name,
+                )
             pr_url = self._git_repo.gh_client.get_pr_url(self._git_repo.pr_number)
             print(f"Created Draft PR #{self._git_repo.pr_number}: {pr_url}")
 
@@ -174,7 +186,8 @@ class WorktreeMode:
         """Print completion message with PR URL if available."""
         print("All tasks completed!")
         if self._git_repo.pr_number:
-            self._git_repo.gh_client.mark_pr_ready(self._git_repo.pr_number)
+            with timed("mark_pr_ready"):
+                self._git_repo.gh_client.mark_pr_ready(self._git_repo.pr_number)
             print("PR marked ready for review")
             pr_url = self._git_repo.gh_client.get_pr_url(self._git_repo.pr_number)
             if pr_url:

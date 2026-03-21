@@ -8,6 +8,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
+import time
 import uuid
 from dataclasses import dataclass
 
@@ -140,9 +141,9 @@ class TestTaskDetectionAndExecution:
             self.repo.tmpdir, self.repo.idea_name
         )
 
-        self._assert_setup_only_creates_no_pr()
+        self._timed("setup_only", self._assert_setup_only_creates_no_pr)
 
-        result = self._run_implement()
+        result = self._timed("implement_run_1", self._run_implement)
 
         self._assert_tasks_committed_in_order(["Task 1.1", "Task 1.2", "Task 1.3"])
         self._assert_all_tasks_completed(expected_count=3)
@@ -153,22 +154,33 @@ class TestTaskDetectionAndExecution:
 
         self._add_task_to_plan(after_task=3)
 
-        result2 = self._run_implement()
+        result2 = self._timed("implement_run_2", self._run_implement)
         self._assert_all_tasks_completed(expected_count=4)
         assert "All tasks completed!" in result2.stdout
 
         self._assert_pr_reused(pr["number"])
 
         head_before = self._get_head_sha()
-        result3 = self._run_implement()
+        result3 = self._timed("implement_run_3", self._run_implement)
         assert "All tasks completed!" in result3.stdout
         assert self._get_head_sha() == head_before, \
             "Expected no new commits when all tasks complete"
 
-        self._add_pr_comments(pr["number"])
-        self._assert_fetch_pr_comments(pr["number"])
-        self._assert_new_feedback_filtering(pr["number"])
-        self._assert_state_tracks_processed_comments(pr["number"])
+        self._timed("add_pr_comments", lambda: self._add_pr_comments(pr["number"]))
+        self._timed("fetch_pr_comments", lambda: self._assert_fetch_pr_comments(pr["number"]))
+        self._timed("feedback_filtering", lambda: self._assert_new_feedback_filtering(pr["number"]))
+        self._timed("state_tracks_comments", lambda: self._assert_state_tracks_processed_comments(pr["number"]))
+
+    def _timed(self, label, fn):
+        start = time.monotonic()
+        result = fn()
+        elapsed = time.monotonic() - start
+        print(f"  [{elapsed:.1f}s] {label}")
+        stdout = getattr(result, 'stdout', None) or ''
+        for line in stdout.splitlines():
+            if '[timing]' in line:
+                print(f"    {line.strip()}")
+        return result
 
     def _get_head_sha(self):
         return Repo(self.repo.worktree_path).head.commit.hexsha

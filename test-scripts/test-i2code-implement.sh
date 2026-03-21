@@ -27,6 +27,7 @@
 #   --isolate             Run inside an isolarium VM
 #   --isolation-type TYPE Isolation environment type (passed as --isolation-type)
 #   --skip-scaffolding    Skip the scaffolding step
+#   --repo                Treat source-repo-path as a GitHub owner/repo (cloned automatically)
 #   --debug-claude        Show full Claude output instead of progress dots
 #   -h, --help            Show this help message
 #
@@ -56,6 +57,7 @@ ISOLATION_TYPE=""
 SKIP_SCAFFOLDING=false
 DEBUG_CLAUDE=false
 SOURCE_REPO_PATH=""
+SOURCE_IS_REMOTE=false
 REF="HEAD"
 
 # Discovered at runtime
@@ -129,6 +131,13 @@ cleanup() {
         fi
     fi
 
+    # Flush tee by closing the pipe and waiting for it to finish
+    if [ -n "${TEE_PID:-}" ]; then
+        exec >&- 2>&-
+        wait "$TEE_PID" 2>/dev/null || true
+        rm -f "${TEE_FIFO:-}"
+    fi
+
     exit $exit_code
 }
 
@@ -176,6 +185,10 @@ parse_args() {
                 ;;
             --skip-scaffolding)
                 SKIP_SCAFFOLDING=true
+                shift
+                ;;
+            --repo)
+                SOURCE_IS_REMOTE=true
                 shift
                 ;;
             --debug-claude)
@@ -229,15 +242,17 @@ check_prerequisites() {
         exit 1
     fi
 
-    # Validate source repo path
-    if [ ! -d "$SOURCE_REPO_PATH" ]; then
-        log_error "Source repo path does not exist: $SOURCE_REPO_PATH"
-        exit 1
-    fi
+    # Validate source repo path (skip for remote repos)
+    if [ "$SOURCE_IS_REMOTE" = false ]; then
+        if [ ! -d "$SOURCE_REPO_PATH" ]; then
+            log_error "Source repo path does not exist: $SOURCE_REPO_PATH"
+            exit 1
+        fi
 
-    if [ ! -d "$SOURCE_REPO_PATH/.git" ]; then
-        log_error "Source repo path is not a git repository: $SOURCE_REPO_PATH"
-        exit 1
+        if [ ! -d "$SOURCE_REPO_PATH/.git" ]; then
+            log_error "Source repo path is not a git repository: $SOURCE_REPO_PATH"
+            exit 1
+        fi
     fi
 
     if ! command -v i2code &> /dev/null; then
@@ -285,34 +300,46 @@ verify_pristine() {
     log_success "Source repo is clean at '$REF'"
 }
 
-clone_repository() {
-    log_info "Archiving source repository at ref '$REF'..."
-
-    local source_abs
-    source_abs="$(cd "$SOURCE_REPO_PATH" && pwd)"
-    local source_basename
-    source_basename="$(basename "$source_abs")"
-    local source_parent
-    source_parent="$(dirname "$source_abs")"
-
+compute_clone_dir() {
     local timestamp
     timestamp=$(date +%Y%m%d%H%M%S)
     local isolation_segment=""
     if [ -n "$ISOLATION_TYPE" ]; then
         isolation_segment="-${ISOLATION_TYPE}"
     fi
-    local clone_name="${source_basename}-cl${isolation_segment}-${timestamp}"
 
-    CLONE_DIR="${source_parent}/${clone_name}"
+    local clone_base="$HOME/TempTestSrc"
+    mkdir -p "$clone_base"
 
-    mkdir -p "$CLONE_DIR"
-    git -C "$SOURCE_REPO_PATH" archive "$REF" | tar xf - -C "$CLONE_DIR"
-    cd "$CLONE_DIR"
-    git init
-    git add .
-    git commit -m "Initial commit from $REF"
+    if [ "$SOURCE_IS_REMOTE" = true ]; then
+        local repo_basename
+        repo_basename="$(echo "$SOURCE_REPO_PATH" | tr '/' '-')"
+        local clone_name="${repo_basename}-cl${isolation_segment}-${timestamp}"
+        CLONE_DIR="${clone_base}/${clone_name}"
+    else
+        local source_basename
+        source_basename="$(basename "$(cd "$SOURCE_REPO_PATH" && pwd)")"
+        local clone_name="${source_basename}-cl${isolation_segment}-${timestamp}"
+        CLONE_DIR="${clone_base}/${clone_name}"
+    fi
+}
 
-    log_success "Created repo from archive: $CLONE_DIR"
+clone_repository() {
+    if [ "$SOURCE_IS_REMOTE" = true ]; then
+        log_info "Cloning $SOURCE_REPO_PATH at ref '$REF' to $CLONE_DIR..."
+        gh repo clone "$SOURCE_REPO_PATH" "$CLONE_DIR" -- --branch "$REF" --single-branch
+        cd "$CLONE_DIR"
+    else
+        log_info "Archiving $SOURCE_REPO_PATH at ref '$REF' to $CLONE_DIR..."
+        mkdir -p "$CLONE_DIR"
+        git -C "$SOURCE_REPO_PATH" archive "$REF" | tar xf - -C "$CLONE_DIR"
+        cd "$CLONE_DIR"
+        git init
+        git add .
+        git commit -m "Initial commit from $REF"
+    fi
+
+    log_success "Created repo: $CLONE_DIR"
 }
 
 discover_idea() {
@@ -376,7 +403,7 @@ create_github_repo() {
 
     cd "$CLONE_DIR"
 
-    # Remove origin pointing to local source repo
+    # Remove any existing origin (from local archive or remote clone)
     git remote remove origin 2>/dev/null || true
 
     if ! gh repo create "$GH_TEST_ORG/$repo_name" --private --source . --push; then
@@ -510,16 +537,21 @@ setup_logging() {
     local log_file="$log_dir/${repo_dir}-${REF}${isolation_segment}-${timestamp}.log"
 
     log_info "Logging output to $log_file"
-    exec > >(tee "$log_file") 2>&1
+    TEE_FIFO=$(mktemp -u)
+    mkfifo "$TEE_FIFO"
+    tee "$log_file" < "$TEE_FIFO" &
+    TEE_PID=$!
+    exec > "$TEE_FIFO" 2>&1
 }
 
 main() {
     parse_args "$@"
     setup_logging
+    compute_clone_dir
 
     echo ""
     echo "========================================="
-    echo "  i2code implement E2E Test"
+    echo "  i2code implement E2E Test${ISOLATION_TYPE:+ ($ISOLATION_TYPE)}"
     echo "========================================="
     echo ""
 
@@ -527,25 +559,30 @@ main() {
         log_warning "DRY RUN MODE - Commands will not be executed"
         echo ""
         echo "Source repo: $SOURCE_REPO_PATH"
+        echo "Clone dir:   $CLONE_DIR"
         echo "GitHub org:  $GH_TEST_ORG"
         echo ""
         echo "Ref:         $REF"
         echo ""
         echo "Would execute:"
-        echo "  1. Archive $SOURCE_REPO_PATH at ref '$REF' to sibling directory"
+        if [ "$SOURCE_IS_REMOTE" = true ]; then
+        echo "  1. Clone $SOURCE_REPO_PATH at ref '$REF' to $CLONE_DIR"
+        else
+        echo "  1. Archive $SOURCE_REPO_PATH at ref '$REF' to $CLONE_DIR"
+        fi
         echo "  2. Discover idea in docs/features/"
         echo "  3. Copy CLAUDE.md and settings.local.json"
         echo "  4. Commit config files"
-        echo "  5. Create GitHub repository under $GH_TEST_ORG"
+        echo "  5. Create GitHub repository $GH_TEST_ORG/$(basename "$CLONE_DIR")"
         echo "  6. Run i2code implement"
         if [ -n "$EXTRA_PROMPT" ]; then
         echo "     with extra prompt: $EXTRA_PROMPT"
         fi
         echo "  7. Verify results"
         if [ "$CLEANUP_ON_EXIT" = true ]; then
-        echo "  8. Clean up (delete GitHub repo and cloned directory)"
+        echo "  8. Clean up (delete $GH_TEST_ORG/$(basename "$CLONE_DIR") and $CLONE_DIR)"
         else
-        echo "  8. Keep GitHub repo and cloned directory (--keep-repo)"
+        echo "  8. Keep $GH_TEST_ORG/$(basename "$CLONE_DIR") and $CLONE_DIR (--keep-repo)"
         fi
         echo ""
         exit 0
@@ -563,7 +600,9 @@ main() {
     fi
 
     check_prerequisites
-    verify_pristine
+    if [ "$SOURCE_IS_REMOTE" = false ]; then
+        verify_pristine
+    fi
     clone_repository
     discover_idea
     copy_config_files

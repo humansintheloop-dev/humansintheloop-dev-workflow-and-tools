@@ -60,12 +60,19 @@ def parse_log(logfile):
     current_json_lines = []
     post_result_lines = []
     seen_result = False
+    pending_retry_reason = None
+    current_isolation_type = None
 
     with open(logfile, 'r') as f:
         lines = f.readlines()
 
     for i, line in enumerate(lines, 1):
         stripped = line.rstrip('\n')
+
+        # Track isolation type from Command: lines
+        iso_match = re.search(r'--isolation-type\s+(\S+)', stripped)
+        if iso_match:
+            current_isolation_type = iso_match.group(1)
 
         attempt_match = re.match(r'Running Claude \(attempt (\d+)/(\d+)\)\.\.\.', stripped)
         if attempt_match:
@@ -83,11 +90,19 @@ def parse_log(logfile):
                 'post_result_lines': [],
                 'result': None,
                 'harness_error': None,
+                'retry_reason': pending_retry_reason,
+                'isolation_type': current_isolation_type,
             }
+            pending_retry_reason = None
             current_json_lines = []
             post_result_lines = []
             seen_result = False
             continue
+
+        # Capture Error: lines between attempts as retry reasons
+        error_match = re.match(r'Error:\s*(.*)', stripped)
+        if error_match and seen_result:
+            pending_retry_reason = error_match.group(1).strip()
 
         if current_invocation and stripped.startswith('Running Claude (cwd='):
             current_invocation['command'] = stripped
@@ -162,6 +177,13 @@ def finalize_invocation(invocation):
         m = re.match(r'Permission denied for (\d+) action', stripped)
         if m:
             harness_error['permission_denied_count'] = int(m.group(1))
+    # Detect harness-level task errors (e.g., "Error: Task was not marked complete")
+    for line in post_lines:
+        stripped = line.strip()
+        m = re.match(r'Error:\s+(Task .+)', stripped)
+        if m:
+            harness_error['failed'] = True
+            harness_error['task_error'] = m.group(1)
     harness_error['lines'] = harness_error_lines
     invocation['harness_error'] = harness_error
 
@@ -276,14 +298,17 @@ def determine_outcome(invocation):
 
         # Build a reason from multiple sources
         reasons = []
+        task_error = harness.get('task_error', '')
+        if task_error:
+            reasons.append(task_error)
         if head_before and head_after and head_before == head_after:
             reasons.append(f"HEAD unchanged ({head_before[:7]}) — no commit was made")
         if claude_error:
             reasons.append(f"Harness error: {claude_error}")
         if claude_claimed_failure:
             reasons.append(f"Claude reported: {claude_failure_reason}")
-        elif claude_claimed_success:
-            reasons.append(f"Claude claimed SUCCESS but harness rejected it (HEAD unchanged)")
+        elif claude_claimed_success and not task_error:
+            reasons.append(f"Claude claimed SUCCESS but harness rejected it")
 
         return 'failure', '; '.join(reasons) if reasons else 'Task execution failed (harness)'
 
@@ -306,33 +331,58 @@ def generate_markdown(logfile, invocations):
     lines.append(f"")
     lines.append(f"**Log file:** `{basename}`  ")
     lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  ")
+    retries = [inv for inv in invocations if inv.get('retry_reason')]
     lines.append(f"**Total invocations:** {len(invocations)}")
+    if retries:
+        lines.append(f"  ")
+        lines.append(f"**Retries:** {len(retries)}")
     lines.append(f"")
 
     # Summary table
     lines.append("## Summary")
     lines.append("")
-    lines.append("| # | Attempt | Outcome | Duration | Cost | Turns |")
-    lines.append("|---|---------|---------|----------|------|-------|")
-    for inv in invocations:
+    has_isolation = any(inv.get('isolation_type') for inv in invocations)
+    if has_isolation:
+        lines.append("| # | Isolation | Attempt | Outcome | Duration | Cost | Turns | Retry Reason |")
+        lines.append("|---|-----------|---------|---------|----------|------|-------|--------------|")
+    else:
+        lines.append("| # | Attempt | Outcome | Duration | Cost | Turns | Retry Reason |")
+        lines.append("|---|---------|---------|----------|------|-------|--------------|")
+    for idx, inv in enumerate(invocations, 1):
         result = inv.get('result', {}) or {}
         outcome, _ = determine_outcome(inv)
         icon = {'success': 'PASS', 'failure': 'FAIL', 'error': 'ERROR', 'unknown': '?'}[outcome]
         duration = format_duration(result.get('duration_ms'))
         cost = format_cost(result.get('total_cost_usd'))
         turns = result.get('num_turns', '?')
-        lines.append(f"| {inv['attempt']} | {inv['attempt']}/{inv['max_attempts']} | {icon} | {duration} | {cost} | {turns} |")
+        retry = inv.get('retry_reason', '') or ''
+        iso = inv.get('isolation_type', '') or ''
+        if has_isolation:
+            lines.append(f"| {idx} | {iso} | {inv['attempt']}/{inv['max_attempts']} | {icon} | {duration} | {cost} | {turns} | {retry} |")
+        else:
+            lines.append(f"| {idx} | {inv['attempt']}/{inv['max_attempts']} | {icon} | {duration} | {cost} | {turns} | {retry} |")
     lines.append("")
 
+    # Retry summary
+    if retries:
+        lines.append("## Retries")
+        lines.append("")
+        for idx, inv in enumerate(invocations, 1):
+            if inv.get('retry_reason'):
+                lines.append(f"- **Invocation {idx}** (attempt {inv['attempt']}/{inv['max_attempts']}): {inv['retry_reason']}")
+        lines.append("")
+
     # Detailed sections
-    for inv in invocations:
+    for idx, inv in enumerate(invocations, 1):
         result = inv.get('result', {}) or {}
         outcome, outcome_detail = determine_outcome(inv)
         icon = {'success': 'PASS', 'failure': 'FAIL', 'error': 'ERROR', 'unknown': '?'}[outcome]
 
         lines.append(f"---")
         lines.append(f"")
-        lines.append(f"## Invocation {inv['attempt']}/{inv['max_attempts']} — {icon}")
+        retry_tag = " (RETRY)" if inv.get('retry_reason') else ""
+        iso_tag = f" [{inv['isolation_type']}]" if inv.get('isolation_type') else ""
+        lines.append(f"## Invocation {idx}{iso_tag} — attempt {inv['attempt']}/{inv['max_attempts']} — {icon}{retry_tag}")
         lines.append(f"")
 
         # Metadata
@@ -343,6 +393,8 @@ def generate_markdown(logfile, invocations):
         lines.append(f"**Cost:** {format_cost(result.get('total_cost_usd'))}  ")
         lines.append(f"**Turns:** {result.get('num_turns', '?')}  ")
         lines.append(f"**Stop reason:** {result.get('stop_reason', '?')}  ")
+        if inv.get('retry_reason'):
+            lines.append(f"**Retry reason:** {inv['retry_reason']}  ")
         lines.append(f"")
 
         # Token usage
@@ -439,12 +491,15 @@ def main():
     with open(output_file, 'w') as f:
         f.write(markdown)
 
-    print(f"Analyzed {len(invocations)} Claude invocation(s)")
+    retries = [inv for inv in invocations if inv.get('retry_reason')]
+    print(f"Analyzed {len(invocations)} Claude invocation(s){f', {len(retries)} retry(ies)' if retries else ''}")
     for inv in invocations:
         outcome, detail = determine_outcome(inv)
         result = inv.get('result', {}) or {}
-        print(f"  Attempt {inv['attempt']}/{inv['max_attempts']}: {outcome.upper()} "
-              f"({format_duration(result.get('duration_ms'))}, {format_cost(result.get('total_cost_usd'))})")
+        retry_suffix = f" [RETRY: {inv['retry_reason']}]" if inv.get('retry_reason') else ""
+        iso_prefix = f"[{inv['isolation_type']}] " if inv.get('isolation_type') else ""
+        print(f"  {iso_prefix}Attempt {inv['attempt']}/{inv['max_attempts']}: {outcome.upper()} "
+              f"({format_duration(result.get('duration_ms'))}, {format_cost(result.get('total_cost_usd'))}){retry_suffix}")
     print(f"Output written to {output_file}")
 
 

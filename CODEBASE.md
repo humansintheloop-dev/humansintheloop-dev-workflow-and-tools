@@ -27,7 +27,7 @@ Pytest tests use these markers (`@pytest.mark.*`):
 | `unit` | Pure unit tests (vast majority) |
 | `integration` | Integration tests hitting real local systems |
 | `integration_gh` | Integration tests that call the GitHub API |
-| `manual` | Tests requiring manual/human intervention |
+| `integration_claude` | Integration tests requiring real Claude API calls |
 
 ## 2. Claude Code Plugin
 

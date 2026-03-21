@@ -18,7 +18,7 @@ from i2code.implement.pull_request_review_processor import PullRequestReviewProc
 FIXTURE_FILE = os.path.join(os.path.dirname(__file__), "fixtures", "pr6_feedback.json")
 
 
-@pytest.mark.manual
+@pytest.mark.integration_claude
 def test_real_claude_triage_pr6(tmp_path):
     """Run real Claude triage on PR #6 feedback, print prompt and response."""
     assert os.path.exists(FIXTURE_FILE), (

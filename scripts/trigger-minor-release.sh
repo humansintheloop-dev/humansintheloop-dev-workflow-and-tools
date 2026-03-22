@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-args=()
-if [ "${1:-}" = "--dry-run" ]; then
-  args+=(-f dry-run=true)
+args=(-f release=true)
+if [ -n "${1:-}" ]; then
+  args+=(-f "version=$1")
 fi
 
-gh workflow run make-minor-release.yml ${args[@]+"${args[@]}"}
-echo "Triggered make-minor-release workflow"
+gh workflow run ci.yml "${args[@]}"
+echo "Triggered CI workflow with release"
 echo "Watch with: gh run watch"

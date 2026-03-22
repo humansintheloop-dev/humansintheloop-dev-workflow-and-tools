@@ -1,0 +1,29 @@
+# Usage: gh workflow run make-minor-release.yml [-f dry-run=true]
+name: Make Minor Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Show what would happen without creating a tag'
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Make minor release
+        run: |
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            ./scripts/make-minor-release.sh --dry-run
+          else
+            ./scripts/make-minor-release.sh
+          fi

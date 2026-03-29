@@ -11,27 +11,64 @@ When a CI build fails, follow a two-phase approach: gather evidence first, then 
 
 Collect all available information before drawing any conclusions.
 
+### Step 0: Detect CI system
+
+Check which CI system the project uses:
+- `.github/workflows/*.yml` → GitHub Actions
+- `.circleci/config.yml` → CircleCI
+
+For CircleCI, extract the org and repo from `git remote get-url origin` to construct API URLs.
+
 ### Step 1: Identify the failed run
 
+**GitHub Actions:**
 ```bash
 gh run list --branch <branch> --limit 5
 ```
 
+**CircleCI:**
+Use the CircleCI API via WebFetch:
+```
+WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>?filter=failed&limit=5&branch=<branch>
+```
+Extract the repo org/name from `git remote get-url origin`.
+
 ### Step 2: Get the failed job summary
 
+**GitHub Actions:**
 ```bash
 gh run view <run-id> --log-failed 2>&1 | grep -i "FAILED\|error\|Exception" | head -30
 ```
 
 This gives you the failing task/test name and a high-level error.
 
+**CircleCI:**
+First get the build steps:
+```
+WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>?include=steps
+```
+Then fetch the output for the failed step index:
+```
+WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>/output/<step-index>/0
+```
+
 ### Step 3: Download test artifacts
 
-Check the workflow definition (`.github/workflows/*.yml`) for uploaded artifacts — test results are often saved via `actions/upload-artifact`. If artifacts are available:
+Check the workflow definition for uploaded artifacts.
+
+**GitHub Actions:**
+Test results are often saved via `actions/upload-artifact`. If artifacts are available:
 
 ```bash
 gh run download <run-id> --name <artifact-name> --dir test-reports
 ```
+
+**CircleCI:**
+List artifacts:
+```
+WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>/artifacts
+```
+Then fetch specific artifact URLs from the response.
 
 ### Step 4: Read the TEST-*.xml files
 
@@ -96,6 +133,7 @@ Read the full chain — the root cause is at the bottom.
 - **Don't implement fixes without understanding**: If you can't explain exactly why the fix works, you don't understand the problem
 - **Don't search JAR files or external libraries** when the error is in your project code
 - **Don't launch research agents** when a targeted `grep` or `read` of the test XML will give you the answer
+- **CircleCI orb parameters**: When a build fails due to wrong JVM/tool version, check the orb's parameters (e.g., `java_version_to_install`, `machine_image`). Compare with other upgraded projects that use the same orb.
 
 ## Verification Steps
 

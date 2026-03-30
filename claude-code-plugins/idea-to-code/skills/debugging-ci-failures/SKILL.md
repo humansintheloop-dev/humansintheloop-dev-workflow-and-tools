@@ -1,17 +1,17 @@
 ---
 name: debugging-ci-failures
-description: Guidelines for diagnosing and fixing CI build failures. Claude should use this skill when investigating why a CI build failed.
+description: Guidelines for watching CI builds and diagnosing failures. Claude should use this skill when watching a CI build or investigating why a CI build failed.
 ---
 
-# Debugging CI Build Failures
+# Watching and Debugging CI Builds
 
-When a CI build fails, follow a two-phase approach: gather evidence first, then analyze.
+This skill covers two scenarios: watching a CI build to completion after a push, and diagnosing failures when a build fails. Start with Phase 0 to monitor the build. If it succeeds, you're done. If it fails, continue to Phase 1 to gather evidence and Phase 2 to analyze and fix.
 
-## Phase 1: Gather Evidence
+## Phase 0: Watch a Running Build
 
-Collect all available information before drawing any conclusions.
+When asked to watch a CI build after a push, actively poll until the build completes.
 
-### Step 0: Detect CI system
+### Detect CI system
 
 Check which CI system the project uses:
 - `.github/workflows/*.yml` → GitHub Actions
@@ -19,21 +19,47 @@ Check which CI system the project uses:
 
 For CircleCI, extract the org and repo from `git remote get-url origin` to construct API URLs.
 
-### Step 1: Identify the failed run
+### GitHub Actions: Watch a build
 
-**GitHub Actions:**
+Poll using the `gh` CLI (no caching issues):
 ```bash
-gh run list --branch <branch> --limit 5
+gh run list --branch <branch> --limit 1 --json status,conclusion,databaseId,name
 ```
 
-**CircleCI:**
-Use the CircleCI API via WebFetch:
+Then poll the specific run until it completes:
+```bash
+gh run view <run-id> --json status,conclusion,jobs
 ```
-WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>?filter=failed&limit=5&branch=<branch>
-```
-Extract the repo org/name from `git remote get-url origin`.
 
-### Step 2: Get the failed job summary
+Repeat every 10-15 seconds until `status` is `completed`. Then check `conclusion` for `success` or `failure`.
+
+### CircleCI: Watch a build
+
+**IMPORTANT:** The WebFetch tool has a 15-minute cache. To get fresh data on each poll, append a unique query parameter (e.g., `&_ts=1`, `&_ts=2`, incrementing each time).
+
+1. Find the latest build:
+```
+WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>?limit=1&branch=<branch>&_ts=1
+```
+Extract the `build_num`.
+
+2. Poll the build status, incrementing `_ts` each time:
+```
+WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>?_ts=<N>
+```
+Ask for the `status`, `outcome`, and `stop_time` fields.
+
+3. Repeat every 10-15 seconds until `status` is no longer `running`.
+
+4. Report the final result: `success` or `failed`.
+
+If the build failed, proceed to Phase 1 below.
+
+## Phase 1: Gather Evidence (only if the build failed)
+
+Collect all available information before drawing any conclusions.
+
+### Step 1: Get the failed job summary
 
 **GitHub Actions:**
 ```bash
@@ -52,7 +78,7 @@ Then fetch the output for the failed step index:
 WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>/output/<step-index>/0
 ```
 
-### Step 3: Download test artifacts
+### Step 2: Download test artifacts
 
 Check the workflow definition for uploaded artifacts.
 
@@ -70,7 +96,7 @@ WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>/
 ```
 Then fetch specific artifact URLs from the response.
 
-### Step 4: Read the TEST-*.xml files
+### Step 3: Read the TEST-*.xml files
 
 Find and read the relevant `TEST-*.xml` file for the failing test. These files contain:
 - The full stack trace (not truncated like CI logs)

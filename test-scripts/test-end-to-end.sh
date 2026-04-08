@@ -21,6 +21,10 @@ echo "--- Subcommand smoke tests ---"
 "$SCRIPT_DIR/test-integration-gh.sh"
 
 echo ""
+echo "--- Wheel contents test ---"
+"$SCRIPT_DIR/test-wheel-contents.sh"
+
+echo ""
 "$SCRIPT_DIR/test-verify-all-tests-have-markers.sh"
 
 echo ""

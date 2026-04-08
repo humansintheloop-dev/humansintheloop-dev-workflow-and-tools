@@ -9,6 +9,7 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 import uuid
 from dataclasses import dataclass
 
@@ -190,6 +191,23 @@ def _resolve_review_thread(pr, comment_id):
     assert result.returncode == 0, f"Resolve mutation failed: {result.stderr}"
 
 
+def _poll_for_resolved_comment(pr, expected_id):
+    """Poll until GitHub's GraphQL API reflects the resolved thread."""
+    owner, repo_name = pr.repo_full_name.split("/")
+    gh_client = GitHubClient()
+    deadline = time.monotonic() + 30
+    while True:
+        resolved_ids = gh_client.get_resolved_review_comment_ids(owner, repo_name, pr.pr_number)
+        if expected_id in resolved_ids:
+            return resolved_ids
+        if time.monotonic() >= deadline:
+            raise AssertionError(
+                f"Timed out waiting for comment {expected_id} to appear in resolved IDs "
+                f"(got {resolved_ids})"
+            )
+        time.sleep(3)
+
+
 def _fetch_review_comments(pr):
     """Fetch all review comments for a PR."""
     return _gh_api(f"repos/{pr.repo_full_name}/pulls/{pr.pr_number}/comments", "--jq", ".")
@@ -259,9 +277,7 @@ class TestPrFeedbackFiltering:
 
         _resolve_review_thread(pr, comment_a_id)
 
-        owner, repo_name = pr.repo_full_name.split("/")
-        gh_client = GitHubClient()
-        resolved_ids = gh_client.get_resolved_review_comment_ids(owner, repo_name, pr.pr_number)
+        resolved_ids = _poll_for_resolved_comment(pr, comment_a_id)
 
         assert comment_a_id in resolved_ids
         assert comment_b_id not in resolved_ids

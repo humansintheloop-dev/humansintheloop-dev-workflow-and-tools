@@ -2,6 +2,7 @@
 
 import click
 
+from i2code.config_files import default_config_dir
 from i2code.implement.claude_runner import ClaudeRunner
 from i2code.improve.analyze_sessions import analyze_sessions
 from i2code.improve.review_issues import review_issues
@@ -45,8 +46,9 @@ def review_issues_cmd(tracking_dir, project):
 
 @improve.command("update-claude-files")
 @click.argument("project_dir")
-@click.option("--config-dir", required=True, help="Path to the config-files directory.")
+@click.option("--config-dir", default=None, help="Path to the config-files directory.")
 def update_claude_files_cmd(project_dir, config_dir):
     """Review project Claude files and update config-files templates."""
+    config_dir = config_dir or default_config_dir()
     claude_runner = ClaudeRunner()
     update_claude_files(project_dir, config_dir, claude_runner, render_template)

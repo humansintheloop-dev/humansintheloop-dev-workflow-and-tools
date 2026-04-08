@@ -64,67 +64,94 @@ Existing tests are in:
 
 ---
 
-- [ ] **Task 1.1: `default_config_dir()` returns the package directory path**
+- [x] **Task 1.1: `default_config_dir()` returns the package directory path**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python -m pytest tests/config_files/ -v -m unit`
   - Observable: `default_config_dir()` returns a string path to a directory containing `CLAUDE.md` and `settings.local.json`
   - Evidence: Unit test imports `default_config_dir`, calls it, asserts the returned path is a directory containing both files
   - Steps:
-    - [ ] Create `tests/config_files/__init__.py`
-    - [ ] Create `tests/config_files/test_default_config_dir.py` with a test that imports `default_config_dir` from `i2code.config_files` and asserts: (1) return type is `str`, (2) the path is a directory, (3) it contains `CLAUDE.md`, (4) it contains `settings.local.json`
-    - [ ] Create `src/i2code/config_files/__init__.py` with `default_config_dir()` using `importlib.resources.files('i2code.config_files')`
-    - [ ] Copy `config-files/CLAUDE.md` to `src/i2code/config_files/CLAUDE.md`
-    - [ ] Copy `config-files/settings.local.json` to `src/i2code/config_files/settings.local.json`
-    - [ ] Verify tests pass
+    - [x] Create `tests/config_files/__init__.py`
+    - [x] Create `tests/config_files/test_default_config_dir.py` with a test that imports `default_config_dir` from `i2code.config_files` and asserts: (1) return type is `str`, (2) the path is a directory, (3) it contains `CLAUDE.md`, (4) it contains `settings.local.json`
+    - [x] Create `src/i2code/config_files/__init__.py` with `default_config_dir()` using `importlib.resources.files('i2code.config_files')`
+    - [x] Copy `config-files/CLAUDE.md` to `src/i2code/config_files/CLAUDE.md`
+    - [x] Copy `config-files/settings.local.json` to `src/i2code/config_files/settings.local.json`
+    - [x] Verify tests pass
 
-- [ ] **Task 1.2: `setup claude-files` works without `--config-dir`**
+- [x] **Task 1.2: `setup claude-files` works without `--config-dir`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python -m pytest tests/setup-cmd/test_setup_cli.py -v -m unit`
   - Observable: `i2code setup claude-files` succeeds without `--config-dir`, using the bundled templates; explicit `--config-dir` still overrides the default
   - Evidence: CLI tests verify (1) command succeeds without `--config-dir`, (2) `setup_claude_files` is called with the `default_config_dir()` path, (3) explicit `--config-dir` passes the provided path instead
   - Steps:
-    - [ ] Update `tests/setup-cmd/test_setup_cli.py`: change `test_requires_config_dir_option` in `TestClaudeFilesCommandRegistered` to assert exit code 0 (no longer required). Add test that invocation without `--config-dir` passes `default_config_dir()` result to `setup_claude_files`. Add test that explicit `--config-dir` overrides the default.
-    - [ ] Update `src/i2code/setup_cmd/cli.py:17`: change `--config-dir` from `required=True` to `default=None`. Add import of `default_config_dir` from `i2code.config_files`. In `claude_files_cmd`, resolve `config_dir = config_dir or default_config_dir()`
-    - [ ] Verify tests pass
+    - [x] Update `tests/setup-cmd/test_setup_cli.py`: change `test_requires_config_dir_option` in `TestClaudeFilesCommandRegistered` to assert exit code 0 (no longer required). Add test that invocation without `--config-dir` passes `default_config_dir()` result to `setup_claude_files`. Add test that explicit `--config-dir` overrides the default.
+    - [x] Update `src/i2code/setup_cmd/cli.py:17`: change `--config-dir` from `required=True` to `default=None`. Add import of `default_config_dir` from `i2code.config_files`. In `claude_files_cmd`, resolve `config_dir = config_dir or default_config_dir()`
+    - [x] Verify tests pass
 
-- [ ] **Task 1.3: `setup update-project` works without `--config-dir` and defaults `project_dir` to `.`**
+- [x] **Task 1.3: `setup update-project` works without `--config-dir` and defaults `project_dir` to `.`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python -m pytest tests/setup-cmd/test_setup_cli.py -v -m unit`
   - Observable: `i2code setup update-project` succeeds without `--config-dir` (uses bundled default) and without `PROJECT_DIR` (defaults to `.`); explicit args still override defaults
   - Evidence: CLI tests verify (1) command succeeds with no args, (2) `update_project` receives `.` and `default_config_dir()` path, (3) explicit `PROJECT_DIR` and `--config-dir` override defaults
   - Steps:
-    - [ ] Update `tests/setup-cmd/test_setup_cli.py`: change `test_requires_config_dir_option` in `TestUpdateProjectCommandRegistered` to assert exit code 0. Change `test_requires_project_dir_argument` to assert exit code 0 (default `.`). Add test for invocation without any args passing `.` and `default_config_dir()` to `update_project`. Add test for explicit args overriding defaults.
-    - [ ] Update `src/i2code/setup_cmd/cli.py:24-25`: change `project_dir` from `@click.argument("project_dir")` to `@click.argument("project_dir", default=".")`. Change `--config-dir` from `required=True` to `default=None`. Resolve `config_dir = config_dir or default_config_dir()`
-    - [ ] Verify tests pass
+    - [x] Update `tests/setup-cmd/test_setup_cli.py`: change `test_requires_config_dir_option` in `TestUpdateProjectCommandRegistered` to assert exit code 0. Change `test_requires_project_dir_argument` to assert exit code 0 (default `.`). Add test for invocation without any args passing `.` and `default_config_dir()` to `update_project`. Add test for explicit args overriding defaults.
+    - [x] Update `src/i2code/setup_cmd/cli.py:24-25`: change `project_dir` from `@click.argument("project_dir")` to `@click.argument("project_dir", default=".")`. Change `--config-dir` from `required=True` to `default=None`. Resolve `config_dir = config_dir or default_config_dir()`
+    - [x] Verify tests pass
 
-- [ ] **Task 1.4: `improve update-claude-files` works without `--config-dir`**
+- [x] **Task 1.4: `improve update-claude-files` works without `--config-dir`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python -m pytest tests/improve/test_improve_cli.py -v -m unit`
   - Observable: `i2code improve update-claude-files PROJECT_DIR` succeeds without `--config-dir`, using bundled templates; `PROJECT_DIR` remains required; explicit `--config-dir` overrides
   - Evidence: CLI tests verify (1) command succeeds with only `PROJECT_DIR`, (2) `update_claude_files` receives `default_config_dir()` path, (3) `PROJECT_DIR` is still required, (4) explicit `--config-dir` overrides
   - Steps:
-    - [ ] Update `tests/improve/test_improve_cli.py`: change `test_requires_config_dir_option` in `TestUpdateClaudeFilesCommandRegistered` to assert exit code 0. Add test for invocation without `--config-dir` passing `default_config_dir()` to `update_claude_files`. Update `_invoke_update` helper to support calls without `--config-dir`. Verify `PROJECT_DIR` still required (existing test).
-    - [ ] Update `src/i2code/improve/cli.py:48`: change `--config-dir` from `required=True` to `default=None`. Add import of `default_config_dir` from `i2code.config_files`. In `update_claude_files_cmd`, resolve `config_dir = config_dir or default_config_dir()`
-    - [ ] Verify tests pass
+    - [x] Update `tests/improve/test_improve_cli.py`: change `test_requires_config_dir_option` in `TestUpdateClaudeFilesCommandRegistered` to assert exit code 0. Add test for invocation without `--config-dir` passing `default_config_dir()` to `update_claude_files`. Update `_invoke_update` helper to support calls without `--config-dir`. Verify `PROJECT_DIR` still required (existing test).
+    - [x] Update `src/i2code/improve/cli.py:48`: change `--config-dir` from `required=True` to `default=None`. Add import of `default_config_dir` from `i2code.config_files`. In `update_claude_files_cmd`, resolve `config_dir = config_dir or default_config_dir()`
+    - [x] Verify tests pass
 
-- [ ] **Task 1.5: Remove CLAUDE.md and settings.local.json from `config-files/`**
+- [x] **Task 1.5: Remove CLAUDE.md and settings.local.json from `config-files/`**
   - TaskType: REFACTOR
   - Entrypoint: `uv run python -m pytest tests/ -v -m unit`
   - Observable: No behavior change — all commands use bundled templates by default; `config-files/` retains only `git-hooks/`
   - Evidence: All existing unit tests pass; `config-files/CLAUDE.md` and `config-files/settings.local.json` no longer exist
   - Steps:
-    - [ ] Delete `config-files/CLAUDE.md`
-    - [ ] Delete `config-files/settings.local.json`
-    - [ ] Verify all unit tests pass
-    - [ ] Run `./test-scripts/test-end-to-end.sh` to confirm smoke tests pass
+    - [x] Delete `config-files/CLAUDE.md`
+    - [x] Delete `config-files/settings.local.json`
+    - [x] Verify all unit tests pass
+    - [x] Run `./test-scripts/test-end-to-end.sh` to confirm smoke tests pass
 
-- [ ] **Task 1.6: Ensure non-Python files are included in wheel builds**
+- [x] **Task 1.6: Ensure non-Python files are included in wheel builds**
   - TaskType: INFRA
   - Entrypoint: `uv build`
   - Observable: The built wheel contains `i2code/config_files/CLAUDE.md` and `i2code/config_files/settings.local.json`
   - Evidence: `uv build` succeeds and inspecting the wheel (via `unzip -l`) shows both files present
   - Steps:
-    - [ ] Check if `pyproject.toml` already includes non-Python files via `[tool.hatch.build]` configuration. If not, add the necessary configuration to include `*.md` and `*.json` files in `src/i2code/config_files/`
-    - [ ] Run `uv build` and verify the wheel contents include both config files
-    - [ ] Create `test-scripts/test-wheel-contents.sh` that builds the wheel and asserts both config files are present
-    - [ ] Add `test-scripts/test-wheel-contents.sh` to `test-scripts/test-end-to-end.sh`
+    - [x] Check if `pyproject.toml` already includes non-Python files via `[tool.hatch.build]` configuration. If not, add the necessary configuration to include `*.md` and `*.json` files in `src/i2code/config_files/`
+    - [x] Run `uv build` and verify the wheel contents include both config files
+    - [x] Create `test-scripts/test-wheel-contents.sh` that builds the wheel and asserts both config files are present
+    - [x] Add `test-scripts/test-wheel-contents.sh` to `test-scripts/test-end-to-end.sh`
+
+---
+
+## Change History
+### 2026-04-08 20:17 - mark-step-complete
+Updated tests: changed test_requires_config_dir_option and test_requires_project_dir_argument to assert exit code 0, added tests for default args and explicit overrides
+
+### 2026-04-08 20:17 - mark-step-complete
+Changed project_dir to default='.', config-dir to default=None with fallback to default_config_dir()
+
+### 2026-04-08 20:17 - mark-step-complete
+All 17 CLI tests pass, 1361 unit tests pass, pyright clean
+
+### 2026-04-08 20:40 - mark-step-complete
+Verified pyproject.toml already includes non-Python files via hatchling VCS-based inclusion - no changes needed
+
+### 2026-04-08 20:40 - mark-step-complete
+uv build succeeds and unzip -l shows both CLAUDE.md and settings.local.json in wheel
+
+### 2026-04-08 20:40 - mark-step-complete
+Created test-scripts/test-wheel-contents.sh that builds wheel and asserts both config files present
+
+### 2026-04-08 20:41 - mark-step-complete
+Added test-wheel-contents.sh to test-end-to-end.sh
+
+### 2026-04-08 20:41 - mark-task-complete
+Wheel build verified to include both config files; test script created and added to e2e suite

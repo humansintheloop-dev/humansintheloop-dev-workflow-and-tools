@@ -70,6 +70,7 @@ def github_repo_for_isolate():
     """Create a GitHub repo with a simple plan for isolate mode testing."""
     repo_name = f"test-tmp-isolate-{uuid.uuid4().hex[:8]}"
     repo_full_name = create_github_repo(repo_name)
+    idea_name = "isolate-test"
 
     try:
         tmpdir = tempfile.mkdtemp()
@@ -88,8 +89,6 @@ def github_repo_for_isolate():
             f.write(f"# {repo_name}")
         repo.index.add(["README.md"])
         repo.index.commit("Initial commit")
-
-        idea_name = "isolate-test"
         idea_dir = os.path.join(tmpdir, idea_name)
         os.makedirs(idea_dir)
 

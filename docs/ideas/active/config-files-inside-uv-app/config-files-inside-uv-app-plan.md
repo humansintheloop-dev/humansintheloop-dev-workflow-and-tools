@@ -118,16 +118,16 @@ Existing tests are in:
     - [x] Verify all unit tests pass
     - [x] Run `./test-scripts/test-end-to-end.sh` to confirm smoke tests pass
 
-- [ ] **Task 1.6: Ensure non-Python files are included in wheel builds**
+- [x] **Task 1.6: Ensure non-Python files are included in wheel builds**
   - TaskType: INFRA
   - Entrypoint: `uv build`
   - Observable: The built wheel contains `i2code/config_files/CLAUDE.md` and `i2code/config_files/settings.local.json`
   - Evidence: `uv build` succeeds and inspecting the wheel (via `unzip -l`) shows both files present
   - Steps:
-    - [ ] Check if `pyproject.toml` already includes non-Python files via `[tool.hatch.build]` configuration. If not, add the necessary configuration to include `*.md` and `*.json` files in `src/i2code/config_files/`
-    - [ ] Run `uv build` and verify the wheel contents include both config files
-    - [ ] Create `test-scripts/test-wheel-contents.sh` that builds the wheel and asserts both config files are present
-    - [ ] Add `test-scripts/test-wheel-contents.sh` to `test-scripts/test-end-to-end.sh`
+    - [x] Check if `pyproject.toml` already includes non-Python files via `[tool.hatch.build]` configuration. If not, add the necessary configuration to include `*.md` and `*.json` files in `src/i2code/config_files/`
+    - [x] Run `uv build` and verify the wheel contents include both config files
+    - [x] Create `test-scripts/test-wheel-contents.sh` that builds the wheel and asserts both config files are present
+    - [x] Add `test-scripts/test-wheel-contents.sh` to `test-scripts/test-end-to-end.sh`
 
 ---
 
@@ -140,3 +140,18 @@ Changed project_dir to default='.', config-dir to default=None with fallback to 
 
 ### 2026-04-08 20:17 - mark-step-complete
 All 17 CLI tests pass, 1361 unit tests pass, pyright clean
+
+### 2026-04-08 20:40 - mark-step-complete
+Verified pyproject.toml already includes non-Python files via hatchling VCS-based inclusion - no changes needed
+
+### 2026-04-08 20:40 - mark-step-complete
+uv build succeeds and unzip -l shows both CLAUDE.md and settings.local.json in wheel
+
+### 2026-04-08 20:40 - mark-step-complete
+Created test-scripts/test-wheel-contents.sh that builds wheel and asserts both config files present
+
+### 2026-04-08 20:41 - mark-step-complete
+Added test-wheel-contents.sh to test-end-to-end.sh
+
+### 2026-04-08 20:41 - mark-task-complete
+Wheel build verified to include both config files; test script created and added to e2e suite

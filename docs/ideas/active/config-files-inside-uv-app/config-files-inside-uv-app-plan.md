@@ -77,15 +77,15 @@ Existing tests are in:
     - [x] Copy `config-files/settings.local.json` to `src/i2code/config_files/settings.local.json`
     - [x] Verify tests pass
 
-- [ ] **Task 1.2: `setup claude-files` works without `--config-dir`**
+- [x] **Task 1.2: `setup claude-files` works without `--config-dir`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python -m pytest tests/setup-cmd/test_setup_cli.py -v -m unit`
   - Observable: `i2code setup claude-files` succeeds without `--config-dir`, using the bundled templates; explicit `--config-dir` still overrides the default
   - Evidence: CLI tests verify (1) command succeeds without `--config-dir`, (2) `setup_claude_files` is called with the `default_config_dir()` path, (3) explicit `--config-dir` passes the provided path instead
   - Steps:
-    - [ ] Update `tests/setup-cmd/test_setup_cli.py`: change `test_requires_config_dir_option` in `TestClaudeFilesCommandRegistered` to assert exit code 0 (no longer required). Add test that invocation without `--config-dir` passes `default_config_dir()` result to `setup_claude_files`. Add test that explicit `--config-dir` overrides the default.
-    - [ ] Update `src/i2code/setup_cmd/cli.py:17`: change `--config-dir` from `required=True` to `default=None`. Add import of `default_config_dir` from `i2code.config_files`. In `claude_files_cmd`, resolve `config_dir = config_dir or default_config_dir()`
-    - [ ] Verify tests pass
+    - [x] Update `tests/setup-cmd/test_setup_cli.py`: change `test_requires_config_dir_option` in `TestClaudeFilesCommandRegistered` to assert exit code 0 (no longer required). Add test that invocation without `--config-dir` passes `default_config_dir()` result to `setup_claude_files`. Add test that explicit `--config-dir` overrides the default.
+    - [x] Update `src/i2code/setup_cmd/cli.py:17`: change `--config-dir` from `required=True` to `default=None`. Add import of `default_config_dir` from `i2code.config_files`. In `claude_files_cmd`, resolve `config_dir = config_dir or default_config_dir()`
+    - [x] Verify tests pass
 
 - [ ] **Task 1.3: `setup update-project` works without `--config-dir` and defaults `project_dir` to `.`**
   - TaskType: OUTCOME

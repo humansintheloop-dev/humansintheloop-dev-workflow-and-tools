@@ -107,16 +107,16 @@ Existing tests are in:
     - [x] Update `src/i2code/improve/cli.py:48`: change `--config-dir` from `required=True` to `default=None`. Add import of `default_config_dir` from `i2code.config_files`. In `update_claude_files_cmd`, resolve `config_dir = config_dir or default_config_dir()`
     - [x] Verify tests pass
 
-- [ ] **Task 1.5: Remove CLAUDE.md and settings.local.json from `config-files/`**
+- [x] **Task 1.5: Remove CLAUDE.md and settings.local.json from `config-files/`**
   - TaskType: REFACTOR
   - Entrypoint: `uv run python -m pytest tests/ -v -m unit`
   - Observable: No behavior change — all commands use bundled templates by default; `config-files/` retains only `git-hooks/`
   - Evidence: All existing unit tests pass; `config-files/CLAUDE.md` and `config-files/settings.local.json` no longer exist
   - Steps:
-    - [ ] Delete `config-files/CLAUDE.md`
-    - [ ] Delete `config-files/settings.local.json`
-    - [ ] Verify all unit tests pass
-    - [ ] Run `./test-scripts/test-end-to-end.sh` to confirm smoke tests pass
+    - [x] Delete `config-files/CLAUDE.md`
+    - [x] Delete `config-files/settings.local.json`
+    - [x] Verify all unit tests pass
+    - [x] Run `./test-scripts/test-end-to-end.sh` to confirm smoke tests pass
 
 - [ ] **Task 1.6: Ensure non-Python files are included in wheel builds**
   - TaskType: INFRA

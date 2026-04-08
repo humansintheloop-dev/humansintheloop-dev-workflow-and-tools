@@ -23,9 +23,10 @@ def claude_files_cmd(config_dir):
 
 
 @setup_group.command("update-project")
-@click.argument("project_dir")
-@click.option("--config-dir", required=True, help="Path to the config-files directory.")
+@click.argument("project_dir", default=".")
+@click.option("--config-dir", default=None, help="Path to the config-files directory.")
 def update_project_cmd(project_dir, config_dir):
     """Push template updates into a project's Claude files."""
+    config_dir = config_dir or default_config_dir()
     claude_runner = ClaudeRunner()
     update_project(project_dir, config_dir, claude_runner, render_template)

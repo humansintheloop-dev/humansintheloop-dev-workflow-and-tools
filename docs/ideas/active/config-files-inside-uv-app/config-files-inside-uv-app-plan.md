@@ -64,18 +64,18 @@ Existing tests are in:
 
 ---
 
-- [ ] **Task 1.1: `default_config_dir()` returns the package directory path**
+- [x] **Task 1.1: `default_config_dir()` returns the package directory path**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python -m pytest tests/config_files/ -v -m unit`
   - Observable: `default_config_dir()` returns a string path to a directory containing `CLAUDE.md` and `settings.local.json`
   - Evidence: Unit test imports `default_config_dir`, calls it, asserts the returned path is a directory containing both files
   - Steps:
-    - [ ] Create `tests/config_files/__init__.py`
-    - [ ] Create `tests/config_files/test_default_config_dir.py` with a test that imports `default_config_dir` from `i2code.config_files` and asserts: (1) return type is `str`, (2) the path is a directory, (3) it contains `CLAUDE.md`, (4) it contains `settings.local.json`
-    - [ ] Create `src/i2code/config_files/__init__.py` with `default_config_dir()` using `importlib.resources.files('i2code.config_files')`
-    - [ ] Copy `config-files/CLAUDE.md` to `src/i2code/config_files/CLAUDE.md`
-    - [ ] Copy `config-files/settings.local.json` to `src/i2code/config_files/settings.local.json`
-    - [ ] Verify tests pass
+    - [x] Create `tests/config_files/__init__.py`
+    - [x] Create `tests/config_files/test_default_config_dir.py` with a test that imports `default_config_dir` from `i2code.config_files` and asserts: (1) return type is `str`, (2) the path is a directory, (3) it contains `CLAUDE.md`, (4) it contains `settings.local.json`
+    - [x] Create `src/i2code/config_files/__init__.py` with `default_config_dir()` using `importlib.resources.files('i2code.config_files')`
+    - [x] Copy `config-files/CLAUDE.md` to `src/i2code/config_files/CLAUDE.md`
+    - [x] Copy `config-files/settings.local.json` to `src/i2code/config_files/settings.local.json`
+    - [x] Verify tests pass
 
 - [ ] **Task 1.2: `setup claude-files` works without `--config-dir`**
   - TaskType: OUTCOME

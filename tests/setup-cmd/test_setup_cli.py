@@ -88,13 +88,21 @@ class TestUpdateProjectCommandRegistered:
         assert result.exit_code == 0
         assert "project_dir" in result.output.lower()
 
-    def test_requires_project_dir_argument(self):
-        result = CliRunner().invoke(main, ["setup", "update-project"])
-        assert result.exit_code != 0
+    def test_succeeds_without_project_dir(self):
+        with patch("i2code.setup_cmd.cli.update_project") as mock_fn, \
+             patch("i2code.setup_cmd.cli.ClaudeRunner"), \
+             patch("i2code.setup_cmd.cli.render_template"):
+            mock_fn.return_value = MagicMock(returncode=0)
+            result = CliRunner().invoke(main, ["setup", "update-project"])
+            assert result.exit_code == 0
 
-    def test_requires_config_dir_option(self):
-        result = CliRunner().invoke(main, ["setup", "update-project", "/tmp/proj"])
-        assert result.exit_code != 0
+    def test_succeeds_without_config_dir(self):
+        with patch("i2code.setup_cmd.cli.update_project") as mock_fn, \
+             patch("i2code.setup_cmd.cli.ClaudeRunner"), \
+             patch("i2code.setup_cmd.cli.render_template"):
+            mock_fn.return_value = MagicMock(returncode=0)
+            result = CliRunner().invoke(main, ["setup", "update-project", "/tmp/proj"])
+            assert result.exit_code == 0
 
 
 @pytest.mark.unit
@@ -117,3 +125,23 @@ class TestUpdateProjectCommandInvocation:
     def test_passes_render_template(self, tmp_path):
         _, mock_fn, _, mock_renderer = _invoke_update_project(tmp_path)
         assert mock_fn.call_args[0][3] is mock_renderer
+
+    def test_without_args_uses_dot_and_default_config_dir(self):
+        with patch("i2code.setup_cmd.cli.update_project") as mock_fn, \
+             patch("i2code.setup_cmd.cli.ClaudeRunner"), \
+             patch("i2code.setup_cmd.cli.render_template"), \
+             patch("i2code.setup_cmd.cli.default_config_dir", return_value="/bundled/path"):
+            mock_fn.return_value = MagicMock(returncode=0)
+            CliRunner().invoke(main, ["setup", "update-project"])
+            assert mock_fn.call_args[0][0] == "."
+            assert mock_fn.call_args[0][1] == "/bundled/path"
+
+    def test_explicit_args_override_defaults(self, tmp_path):
+        with patch("i2code.setup_cmd.cli.update_project") as mock_fn, \
+             patch("i2code.setup_cmd.cli.ClaudeRunner"), \
+             patch("i2code.setup_cmd.cli.render_template"), \
+             patch("i2code.setup_cmd.cli.default_config_dir", return_value="/bundled/path"):
+            mock_fn.return_value = MagicMock(returncode=0)
+            CliRunner().invoke(main, ["setup", "update-project", str(tmp_path), "--config-dir", "/explicit/config"])
+            assert mock_fn.call_args[0][0] == str(tmp_path)
+            assert mock_fn.call_args[0][1] == "/explicit/config"

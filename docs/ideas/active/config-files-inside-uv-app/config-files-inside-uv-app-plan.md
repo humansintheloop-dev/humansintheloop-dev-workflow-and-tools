@@ -87,15 +87,15 @@ Existing tests are in:
     - [x] Update `src/i2code/setup_cmd/cli.py:17`: change `--config-dir` from `required=True` to `default=None`. Add import of `default_config_dir` from `i2code.config_files`. In `claude_files_cmd`, resolve `config_dir = config_dir or default_config_dir()`
     - [x] Verify tests pass
 
-- [ ] **Task 1.3: `setup update-project` works without `--config-dir` and defaults `project_dir` to `.`**
+- [x] **Task 1.3: `setup update-project` works without `--config-dir` and defaults `project_dir` to `.`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python -m pytest tests/setup-cmd/test_setup_cli.py -v -m unit`
   - Observable: `i2code setup update-project` succeeds without `--config-dir` (uses bundled default) and without `PROJECT_DIR` (defaults to `.`); explicit args still override defaults
   - Evidence: CLI tests verify (1) command succeeds with no args, (2) `update_project` receives `.` and `default_config_dir()` path, (3) explicit `PROJECT_DIR` and `--config-dir` override defaults
   - Steps:
-    - [ ] Update `tests/setup-cmd/test_setup_cli.py`: change `test_requires_config_dir_option` in `TestUpdateProjectCommandRegistered` to assert exit code 0. Change `test_requires_project_dir_argument` to assert exit code 0 (default `.`). Add test for invocation without any args passing `.` and `default_config_dir()` to `update_project`. Add test for explicit args overriding defaults.
-    - [ ] Update `src/i2code/setup_cmd/cli.py:24-25`: change `project_dir` from `@click.argument("project_dir")` to `@click.argument("project_dir", default=".")`. Change `--config-dir` from `required=True` to `default=None`. Resolve `config_dir = config_dir or default_config_dir()`
-    - [ ] Verify tests pass
+    - [x] Update `tests/setup-cmd/test_setup_cli.py`: change `test_requires_config_dir_option` in `TestUpdateProjectCommandRegistered` to assert exit code 0. Change `test_requires_project_dir_argument` to assert exit code 0 (default `.`). Add test for invocation without any args passing `.` and `default_config_dir()` to `update_project`. Add test for explicit args overriding defaults.
+    - [x] Update `src/i2code/setup_cmd/cli.py:24-25`: change `project_dir` from `@click.argument("project_dir")` to `@click.argument("project_dir", default=".")`. Change `--config-dir` from `required=True` to `default=None`. Resolve `config_dir = config_dir or default_config_dir()`
+    - [x] Verify tests pass
 
 - [ ] **Task 1.4: `improve update-claude-files` works without `--config-dir`**
   - TaskType: OUTCOME
@@ -128,3 +128,15 @@ Existing tests are in:
     - [ ] Run `uv build` and verify the wheel contents include both config files
     - [ ] Create `test-scripts/test-wheel-contents.sh` that builds the wheel and asserts both config files are present
     - [ ] Add `test-scripts/test-wheel-contents.sh` to `test-scripts/test-end-to-end.sh`
+
+---
+
+## Change History
+### 2026-04-08 20:17 - mark-step-complete
+Updated tests: changed test_requires_config_dir_option and test_requires_project_dir_argument to assert exit code 0, added tests for default args and explicit overrides
+
+### 2026-04-08 20:17 - mark-step-complete
+Changed project_dir to default='.', config-dir to default=None with fallback to default_config_dir()
+
+### 2026-04-08 20:17 - mark-step-complete
+All 17 CLI tests pass, 1361 unit tests pass, pyright clean

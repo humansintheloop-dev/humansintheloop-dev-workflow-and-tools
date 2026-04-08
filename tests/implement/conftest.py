@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 from contextlib import contextmanager
 
 import pytest
@@ -48,7 +49,29 @@ def create_github_repo(repo_name):
     if result.returncode != 0:
         raise RuntimeError(f"Failed to create GitHub repo: {result.stderr}")
 
+    _wait_for_repo_accessible(repo_full_name)
+
     return repo_full_name
+
+
+def _wait_for_repo_accessible(repo_full_name, max_attempts=10, delay=2):
+    """Poll until the GitHub repo is accessible via the API.
+
+    Newly created repos may not be immediately cloneable due to
+    GitHub API propagation delay.
+    """
+    for attempt in range(max_attempts):
+        result = subprocess.run(
+            ["gh", "api", f"repos/{repo_full_name}", "--silent"],
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return
+        time.sleep(delay)
+
+    raise RuntimeError(
+        f"Repo {repo_full_name} not accessible after {max_attempts * delay}s"
+    )
 
 
 def delete_github_repo(repo_full_name):

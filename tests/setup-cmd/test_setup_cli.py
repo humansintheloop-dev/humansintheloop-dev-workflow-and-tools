@@ -45,9 +45,10 @@ class TestClaudeFilesCommandRegistered:
         assert result.exit_code == 0
         assert "config-dir" in result.output.lower()
 
-    def test_requires_config_dir_option(self):
-        result = CliRunner().invoke(main, ["setup", "claude-files"])
-        assert result.exit_code != 0
+    def test_succeeds_without_config_dir(self):
+        with patch("i2code.setup_cmd.cli.setup_claude_files"):
+            result = CliRunner().invoke(main, ["setup", "claude-files"])
+            assert result.exit_code == 0
 
 
 @pytest.mark.unit
@@ -61,6 +62,18 @@ class TestClaudeFilesCommandInvocation:
     def test_passes_config_dir(self, tmp_path):
         _, mock_fn = _invoke_claude_files(tmp_path)
         assert mock_fn.call_args[0][0] == str(tmp_path)
+
+    def test_without_config_dir_uses_default(self):
+        with patch("i2code.setup_cmd.cli.setup_claude_files") as mock_fn, \
+             patch("i2code.setup_cmd.cli.default_config_dir", return_value="/bundled/path"):
+            CliRunner().invoke(main, ["setup", "claude-files"])
+            mock_fn.assert_called_once_with("/bundled/path")
+
+    def test_explicit_config_dir_overrides_default(self, tmp_path):
+        with patch("i2code.setup_cmd.cli.setup_claude_files") as mock_fn, \
+             patch("i2code.setup_cmd.cli.default_config_dir", return_value="/bundled/path"):
+            CliRunner().invoke(main, ["setup", "claude-files", "--config-dir", str(tmp_path)])
+            mock_fn.assert_called_once_with(str(tmp_path))
 
 
 @pytest.mark.unit

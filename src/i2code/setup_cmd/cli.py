@@ -2,6 +2,7 @@
 
 import click
 
+from i2code.config_files import default_config_dir
 from i2code.implement.claude_runner import ClaudeRunner
 from i2code.setup_cmd.claude_files import setup_claude_files
 from i2code.setup_cmd.update_project import update_project
@@ -14,9 +15,10 @@ def setup_group():
 
 
 @setup_group.command("claude-files")
-@click.option("--config-dir", required=True, help="Path to the config-files directory.")
+@click.option("--config-dir", default=None, help="Path to the config-files directory.")
 def claude_files_cmd(config_dir):
     """Copy Claude configuration files into a project."""
+    config_dir = config_dir or default_config_dir()
     setup_claude_files(config_dir)
 
 

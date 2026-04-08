@@ -143,15 +143,22 @@ class TestUpdateClaudeFilesCommandRegistered:
     def test_requires_project_dir_argument(self):
         assert _invoke_improve("update-claude-files").exit_code != 0
 
-    def test_requires_config_dir_option(self):
-        assert _invoke_improve("update-claude-files", "/tmp/proj").exit_code != 0
+    def test_succeeds_without_config_dir(self):
+        with patch("i2code.improve.cli.update_claude_files") as mock_fn, \
+             patch("i2code.improve.cli.ClaudeRunner"), \
+             patch("i2code.improve.cli.render_template"):
+            mock_fn.return_value = MagicMock(returncode=0)
+            result = _invoke_improve("update-claude-files", "/tmp/proj")
+            assert result.exit_code == 0
 
 
 @pytest.mark.unit
 class TestUpdateClaudeFilesCommandInvocation:
 
-    def _invoke_update(self, tmp_path, extra_args=None):
-        cli_args = ["update-claude-files", str(tmp_path), "--config-dir", "/tmp/config"]
+    def _invoke_update(self, tmp_path, extra_args=None, include_config_dir=True):
+        cli_args = ["update-claude-files", str(tmp_path)]
+        if include_config_dir:
+            cli_args.extend(["--config-dir", "/tmp/config"])
         if extra_args:
             cli_args.extend(extra_args)
         return _invoke_with_mocks("update_claude_files", cli_args)
@@ -169,3 +176,23 @@ class TestUpdateClaudeFilesCommandInvocation:
     def test_passes_claude_runner(self, tmp_path):
         _, mock_fn, mock_runner = self._invoke_update(tmp_path)
         assert mock_fn.call_args[0][2] is mock_runner
+
+    def test_without_config_dir_uses_default(self, tmp_path):
+        with patch("i2code.improve.cli.update_claude_files") as mock_fn, \
+             patch("i2code.improve.cli.ClaudeRunner") as mock_runner_cls, \
+             patch("i2code.improve.cli.default_config_dir", return_value="/bundled/path"):
+            mock_runner = MagicMock()
+            mock_runner_cls.return_value = mock_runner
+            mock_fn.return_value = MagicMock(returncode=0)
+            CliRunner().invoke(main, ["improve", "update-claude-files", str(tmp_path)])
+            assert mock_fn.call_args[0][1] == "/bundled/path"
+
+    def test_explicit_config_dir_overrides_default(self, tmp_path):
+        with patch("i2code.improve.cli.update_claude_files") as mock_fn, \
+             patch("i2code.improve.cli.ClaudeRunner") as mock_runner_cls, \
+             patch("i2code.improve.cli.default_config_dir", return_value="/bundled/path"):
+            mock_runner = MagicMock()
+            mock_runner_cls.return_value = mock_runner
+            mock_fn.return_value = MagicMock(returncode=0)
+            CliRunner().invoke(main, ["improve", "update-claude-files", str(tmp_path), "--config-dir", "/explicit/path"])
+            assert mock_fn.call_args[0][1] == "/explicit/path"

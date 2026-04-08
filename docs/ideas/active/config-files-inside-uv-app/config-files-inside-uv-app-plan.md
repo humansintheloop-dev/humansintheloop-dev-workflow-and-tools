@@ -97,15 +97,15 @@ Existing tests are in:
     - [x] Update `src/i2code/setup_cmd/cli.py:24-25`: change `project_dir` from `@click.argument("project_dir")` to `@click.argument("project_dir", default=".")`. Change `--config-dir` from `required=True` to `default=None`. Resolve `config_dir = config_dir or default_config_dir()`
     - [x] Verify tests pass
 
-- [ ] **Task 1.4: `improve update-claude-files` works without `--config-dir`**
+- [x] **Task 1.4: `improve update-claude-files` works without `--config-dir`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python -m pytest tests/improve/test_improve_cli.py -v -m unit`
   - Observable: `i2code improve update-claude-files PROJECT_DIR` succeeds without `--config-dir`, using bundled templates; `PROJECT_DIR` remains required; explicit `--config-dir` overrides
   - Evidence: CLI tests verify (1) command succeeds with only `PROJECT_DIR`, (2) `update_claude_files` receives `default_config_dir()` path, (3) `PROJECT_DIR` is still required, (4) explicit `--config-dir` overrides
   - Steps:
-    - [ ] Update `tests/improve/test_improve_cli.py`: change `test_requires_config_dir_option` in `TestUpdateClaudeFilesCommandRegistered` to assert exit code 0. Add test for invocation without `--config-dir` passing `default_config_dir()` to `update_claude_files`. Update `_invoke_update` helper to support calls without `--config-dir`. Verify `PROJECT_DIR` still required (existing test).
-    - [ ] Update `src/i2code/improve/cli.py:48`: change `--config-dir` from `required=True` to `default=None`. Add import of `default_config_dir` from `i2code.config_files`. In `update_claude_files_cmd`, resolve `config_dir = config_dir or default_config_dir()`
-    - [ ] Verify tests pass
+    - [x] Update `tests/improve/test_improve_cli.py`: change `test_requires_config_dir_option` in `TestUpdateClaudeFilesCommandRegistered` to assert exit code 0. Add test for invocation without `--config-dir` passing `default_config_dir()` to `update_claude_files`. Update `_invoke_update` helper to support calls without `--config-dir`. Verify `PROJECT_DIR` still required (existing test).
+    - [x] Update `src/i2code/improve/cli.py:48`: change `--config-dir` from `required=True` to `default=None`. Add import of `default_config_dir` from `i2code.config_files`. In `update_claude_files_cmd`, resolve `config_dir = config_dir or default_config_dir()`
+    - [x] Verify tests pass
 
 - [ ] **Task 1.5: Remove CLAUDE.md and settings.local.json from `config-files/`**
   - TaskType: REFACTOR

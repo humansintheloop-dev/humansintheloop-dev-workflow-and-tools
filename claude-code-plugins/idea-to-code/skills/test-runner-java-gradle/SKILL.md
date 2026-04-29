@@ -1,6 +1,6 @@
 ---
 name: test-runner-java-gradle
-description: a definition of tests and testing in a Java project using Gradle and JUnit 5
+description: a definition of tests and testing in a Java project using Gradle and JUnit 5. Advice on using Gradle to run tests.
 ---
 
 # Skill: Project Test Runner (Java + Gradle, macOS, JUnit 5 Only)
@@ -87,7 +87,7 @@ Tests are run incrementally, progressing from fast/isolated to slow/integrated:
 
 4. **Before commit/PR**: Run all tests
    ```
-   ./gradlew check
+   ./gradlew build
    ```
 
 This progression provides fast feedback during development while ensuring full coverage before committing.
@@ -99,7 +99,7 @@ This progression provides fast feedback during development while ensuring full c
 ./gradlew integrationTest   # Integration tests only
 ./gradlew componentTest     # Component tests only
 ./gradlew endToEndTest      # End-to-end tests only
-./gradlew check             # All test types in order
+./gradlew build             # All test types in order
 ```
 
 All commands must be run from the project root (the directory containing `gradlew`).

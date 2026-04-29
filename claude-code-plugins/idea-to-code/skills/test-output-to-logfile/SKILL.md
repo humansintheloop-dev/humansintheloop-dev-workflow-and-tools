@@ -1,6 +1,6 @@
 ---
 name: test-output-to-logfile
-description: When running test scripts or long-running commands that produce verbose output, redirect output to a log file under logs/ to avoid truncation in the Bash tool. Claude should use this skill when running test scripts, end-to-end tests, or any command likely to produce large output.
+description: When running test scripts or long-running commands that produce verbose output, redirect output to a log file under logs/ to avoid truncation in the Bash tool. Claude should use this skill when running test scripts, end-to-end tests, or any command likely to produce large output. NOTE: This skill does not apply to Gradle because test output is written to TEST*.xml files.
 ---
 
 # Redirect verbose command output to log files

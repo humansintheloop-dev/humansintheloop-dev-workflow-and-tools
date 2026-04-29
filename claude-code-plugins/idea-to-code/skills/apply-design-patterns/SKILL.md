@@ -11,6 +11,8 @@ Before implementing or refactoring, consult the design pattern catalog to see if
 
 1. **Read the catalog index** — `design-pattern-catalog/index.md` lists all documented patterns with a short description of the problem each one solves.
 
+IMPORTANT: design pattern catalog is a project subdirectory. NOT part of this skill. If it doesn't exist, just skip it.
+
 2. **Check for a matching pattern** — if the task involves a problem described in the index, read the full pattern entry.
 
 3. **Follow the pattern** — use the reference implementation and testing strategies documented in the entry. Do not invent a new approach when a cataloged pattern exists.

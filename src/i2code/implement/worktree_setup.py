@@ -3,7 +3,7 @@
 import os
 import subprocess
 
-from i2code.implement.claude_permissions import setup_claude_settings_local_json
+from i2code.claude.permissions import setup_claude_settings_local_json
 
 
 class ProjectSetup:

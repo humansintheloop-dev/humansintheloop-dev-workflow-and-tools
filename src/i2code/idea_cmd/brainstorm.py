@@ -6,7 +6,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from i2code.claude_cmd import build_allowed_tools_flag
+from i2code.claude.permissions import build_allowed_tools_flag
 from i2code.idea.metadata import write_metadata
 from i2code.implement.claude_runner import ClaudeResult
 from i2code.implement.idea_project import IdeaProject

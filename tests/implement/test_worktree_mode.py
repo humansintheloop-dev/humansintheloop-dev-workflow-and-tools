@@ -402,8 +402,8 @@ class TestWorktreeModeNonInteractive:
             assert "--allowedTools" in cmd
             tools_index = cmd.index("--allowedTools")
             tools_value = cmd[tools_index + 1]
-            assert f"Edit(/{tmpdir}/)" in tools_value
-            assert f"Write(/{tmpdir}/)" in tools_value
+            assert f"Edit(/{tmpdir}/**)" in tools_value
+            assert f"Write(/{tmpdir}/**)" in tools_value
 
     def test_non_interactive_exits_without_success_tag(self):
         with tempfile.TemporaryDirectory() as tmpdir:

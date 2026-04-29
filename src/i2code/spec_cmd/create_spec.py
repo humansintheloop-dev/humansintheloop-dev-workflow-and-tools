@@ -1,6 +1,6 @@
 """Create specification from an idea via Claude."""
 
-from i2code.claude_cmd import build_allowed_tools_flag
+from i2code.claude.permissions import build_allowed_tools_flag
 from i2code.implement.claude_runner import ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 from i2code.session_manager import build_session_args

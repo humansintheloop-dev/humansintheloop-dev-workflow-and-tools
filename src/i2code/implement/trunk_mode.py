@@ -2,7 +2,7 @@
 
 import sys
 
-from i2code.implement.claude_permissions import calculate_claude_permissions
+from i2code.claude.permissions import calculate_claude_permissions
 from i2code.implement.claude_runner import (
     check_claude_success,
     print_task_failure_diagnostics,

@@ -1,8 +1,9 @@
-"""Claude permissions and settings setup for worktrees."""
+"""Claude Code permissions: allowed tools, settings setup, and worktree permissions."""
 
 import json
 import os
 import shutil
+from pathlib import Path
 from typing import List
 
 
@@ -22,11 +23,32 @@ DENIED_PERMISSIONS = [
 ]
 
 
+def _resolve_path(path: str) -> str:
+    """Resolve a path to an absolute filesystem path."""
+    return str(Path(path).resolve())
+
+
+def build_allowed_tools_flag(repo_root: str, idea_dir: str) -> str:
+    """Build the --allowedTools flag value for claude CLI.
+
+    Returns a comma-separated string granting Read access to the repo root
+    and Write/Edit access to the idea directory.
+    Uses / prefix for absolute paths per Claude Code permission syntax.
+    """
+    repo = _resolve_path(repo_root)
+    idea = _resolve_path(idea_dir)
+    return (
+        f"Read(/{repo}/**),"
+        f"Write(/{idea}/**),"
+        f"Edit(/{idea}/**)"
+    )
+
+
 def calculate_claude_permissions(repo_root: str) -> List[str]:
     """Calculate the full list of Claude permissions for a repo root."""
     return REQUIRED_PERMISSIONS + [
-        f"Write(/{repo_root}/)",
-        f"Edit(/{repo_root}/)",
+        f"Write(/{repo_root}/**)",
+        f"Edit(/{repo_root}/**)",
         f"Bash(rm {repo_root}/*)",
     ]
 

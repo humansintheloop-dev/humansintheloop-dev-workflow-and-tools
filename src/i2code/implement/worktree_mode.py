@@ -4,7 +4,7 @@ import sys
 import time
 from dataclasses import dataclass
 
-from i2code.implement.claude_permissions import calculate_claude_permissions
+from i2code.claude.permissions import calculate_claude_permissions
 from i2code.implement.git_setup import (
     has_ci_workflow_files,
 )

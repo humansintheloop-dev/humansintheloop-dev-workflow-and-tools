@@ -3,7 +3,7 @@
 import os
 import tempfile
 import pytest
-from i2code.implement.claude_permissions import (
+from i2code.claude.permissions import (
     calculate_claude_permissions,
     copy_source_settings,
     REQUIRED_PERMISSIONS,
@@ -23,8 +23,8 @@ class TestCalculateClaudePermissions:
     def test_includes_write_and_edit_for_repo_root(self):
         perms = calculate_claude_permissions("/fake/repo")
 
-        assert "Write(//fake/repo/)" in perms
-        assert "Edit(//fake/repo/)" in perms
+        assert "Write(//fake/repo/**)" in perms
+        assert "Edit(//fake/repo/**)" in perms
 
 
 def _write_settings(path, content):

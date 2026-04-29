@@ -4,7 +4,7 @@ import sys
 from dataclasses import dataclass
 from typing import Callable
 
-from i2code.claude_cmd import build_allowed_tools_flag
+from i2code.claude.permissions import build_allowed_tools_flag
 from i2code.implement.claude_runner import ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 

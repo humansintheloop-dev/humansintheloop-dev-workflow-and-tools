@@ -9,7 +9,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { isGitDashC, isCdAndGit, isGitCommitHeredoc, isPythonMPytest, isBarePytest, isBashPrefixedScript, handlePreToolUse, GIT_DASH_C_MESSAGE, CD_AND_GIT_MESSAGE, GIT_COMMIT_HEREDOC_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE, BASH_PREFIXED_SCRIPT_MESSAGE } = require('./enforce-bash-conventions.js');
+const { isGitDashC, isCdAndGit, isGitCommitHeredoc, isPythonMPytest, isBarePytest, isBashPrefixedScript, isGradlewPipedToTail, handlePreToolUse, GIT_DASH_C_MESSAGE, CD_AND_GIT_MESSAGE, GIT_COMMIT_HEREDOC_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE, BASH_PREFIXED_SCRIPT_MESSAGE, GRADLEW_PIPED_TO_TAIL_MESSAGE } = require('./enforce-bash-conventions.js');
 
 // Test suite
 const tests = [];
@@ -282,6 +282,49 @@ test('blocks Bash tool with bare pytest and flags', () => {
   });
   assert.strictEqual(result.blocked, true);
   assert.strictEqual(result.message, BARE_PYTEST_MESSAGE);
+});
+
+// --- Tests for isGradlewPipedToTail ---
+
+test('detects ./gradlew piped to tail', () => {
+  assert.strictEqual(isGradlewPipedToTail('./gradlew :customer-management:customer-management-domain:check --no-daemon 2>&1 | tail -5'), true);
+});
+
+test('detects ./gradlew piped to tail -n', () => {
+  assert.strictEqual(isGradlewPipedToTail('./gradlew test | tail -n 20'), true);
+});
+
+test('detects gradlew piped to tail without ./', () => {
+  assert.strictEqual(isGradlewPipedToTail('gradlew build | tail -10'), true);
+});
+
+test('allows ./gradlew without tail', () => {
+  assert.strictEqual(isGradlewPipedToTail('./gradlew test'), false);
+});
+
+test('allows tail without gradlew', () => {
+  assert.strictEqual(isGradlewPipedToTail('cat build.log | tail -5'), false);
+});
+
+test('allows non-gradlew commands', () => {
+  assert.strictEqual(isGradlewPipedToTail('npm test'), false);
+});
+
+test('blocks Bash tool with gradlew piped to tail', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: './gradlew :customer-management:customer-management-domain:check --no-daemon 2>&1 | tail -5' }
+  });
+  assert.strictEqual(result.blocked, true);
+  assert.strictEqual(result.message, GRADLEW_PIPED_TO_TAIL_MESSAGE);
+});
+
+test('allows Bash tool with gradlew without tail', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: './gradlew :customer-management:customer-management-domain:check --no-daemon' }
+  });
+  assert.strictEqual(result.blocked, false);
 });
 
 // --- Tests for isBashPrefixedScript ---

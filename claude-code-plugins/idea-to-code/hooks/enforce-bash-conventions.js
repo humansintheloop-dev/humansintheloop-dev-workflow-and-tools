@@ -109,6 +109,19 @@ function isBashPrefixedScript(command, fsModule) {
 const BASH_PREFIXED_SCRIPT_MESSAGE =
   'Do not prefix scripts with `bash` or `sh` - run them directly: `./script.sh`';
 
+/**
+ * Checks whether a Bash command pipes gradlew output to tail.
+ * @param {string} command - The shell command to inspect
+ * @returns {boolean} True if the command pipes gradlew to tail
+ */
+function isGradlewPipedToTail(command) {
+  return /\.?\/?\bgradlew\b.*\|\s*tail\b/.test(command);
+}
+
+const GRADLEW_PIPED_TO_TAIL_MESSAGE =
+  'Do not pipe gradlew output to `tail` - it discards useful output. ' +
+  'Verbose test results are in TEST*.xml files. Run gradlew directly without `| tail`';
+
 const BASH_RULES = [
   { test: isGitCommitHeredoc, message: GIT_COMMIT_HEREDOC_MESSAGE },
   { test: isGitDashC, message: GIT_DASH_C_MESSAGE },
@@ -116,6 +129,7 @@ const BASH_RULES = [
   { test: isPythonMPytest, message: PYTHON_M_PYTEST_MESSAGE },
   { test: isBarePytest, message: BARE_PYTEST_MESSAGE },
   { test: isBashPrefixedScript, message: BASH_PREFIXED_SCRIPT_MESSAGE },
+  { test: isGradlewPipedToTail, message: GRADLEW_PIPED_TO_TAIL_MESSAGE },
 ];
 
 /**
@@ -176,13 +190,15 @@ module.exports = {
   isPythonMPytest,
   isBarePytest,
   isBashPrefixedScript,
+  isGradlewPipedToTail,
   handlePreToolUse,
   GIT_DASH_C_MESSAGE,
   CD_AND_GIT_MESSAGE,
   GIT_COMMIT_HEREDOC_MESSAGE,
   PYTHON_M_PYTEST_MESSAGE,
   BARE_PYTEST_MESSAGE,
-  BASH_PREFIXED_SCRIPT_MESSAGE
+  BASH_PREFIXED_SCRIPT_MESSAGE,
+  GRADLEW_PIPED_TO_TAIL_MESSAGE
 };
 
 // Main entry point when run as a script

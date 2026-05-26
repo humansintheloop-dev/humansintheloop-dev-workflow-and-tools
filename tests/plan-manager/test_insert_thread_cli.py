@@ -113,6 +113,30 @@ class TestInsertThreadBeforeCli:
         assert result.exit_code == 1
         assert "thread 99 does not exist" in result.output
 
+    def test_inserts_thread_using_tasks_file(self, tmp_path):
+        result, updated = _invoke_thread_cmd(
+            insert_thread_before_cmd, tmp_path / "plan.md", ("--before", "2"), tasks_source="file",
+        )
+        assert result.exit_code == 0
+        assert "Steel Thread 1: First Thread" in updated
+        assert "Steel Thread 2: New Thread" in updated
+        assert "Steel Thread 3: Second Thread" in updated
+        assert "Task 2.1: New task" in updated
+
+    def test_error_when_both_tasks_and_tasks_file_provided(self, tmp_path):
+        result, _ = _invoke_thread_cmd(
+            insert_thread_before_cmd, tmp_path / "plan.md", ("--before", "2"), tasks_source="both",
+        )
+        assert result.exit_code == 1
+        assert "insert-thread-before: --tasks and --tasks-file are mutually exclusive" in result.output
+
+    def test_error_when_neither_tasks_nor_tasks_file_provided(self, tmp_path):
+        result, _ = _invoke_thread_cmd(
+            insert_thread_before_cmd, tmp_path / "plan.md", ("--before", "2"), tasks_source="neither",
+        )
+        assert result.exit_code == 1
+        assert "insert-thread-before: either --tasks or --tasks-file is required" in result.output
+
 
 class TestInsertThreadAfterCli:
 

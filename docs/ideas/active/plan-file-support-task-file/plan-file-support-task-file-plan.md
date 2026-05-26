@@ -194,17 +194,17 @@ Introduces the new `--task-file` option for single-task commands. This is the pr
 
 ## Steel Thread 7: `--task-file` on `replace-task` (US-2.3)
 
-- [ ] **Task 7.1: `replace-task --task-file` replaces a task using JSON from a file**
+- [x] **Task 7.1: `replace-task --task-file` replaces a task using JSON from a file**
   - TaskType: OUTCOME
   - Entrypoint: `i2code plan replace-task <plan> --thread <t> --task <n> --task-file <path> --rationale <r>`
   - Observable: With `--task-file` supplying a complete task JSON object, task `n` in thread `t` is replaced with the file-defined task and re-set to incomplete; exit code 0. Mutual-exclusivity, missing-field, and invalid-JSON errors are produced with the prefix `"replace-task:"` and the same message bodies as the insert-task commands.
   - Evidence: New tests in `tests/plan-manager/test_replace_task_cli.py` cover the file-based path and the same four error cases. Tests pass via `uv run --python 3.12 python3 -m pytest tests/plan-manager/test_replace_task_cli.py -v`.
   - Steps:
-    - [ ] Add helper and tests to `tests/plan-manager/test_replace_task_cli.py` mirroring Steel Thread 5's structure, using `task="2"` (the incomplete task in `PLAN_WITH_THREE_TASKS`).
-    - [ ] Include an assertion that the replaced task is rendered as incomplete (`- [ ] **Task 1.2: ...`).
-    - [ ] Run the test file; confirm the new tests fail.
-    - [ ] Update `replace_task_cmd` (`src/i2code/plan/task_cli.py:150`) to call `_resolve_task_spec("replace-task", **kwargs)`.
-    - [ ] Re-run the test file and confirm all tests pass.
+    - [x] Add helper and tests to `tests/plan-manager/test_replace_task_cli.py` mirroring Steel Thread 5's structure, using `task="2"` (the incomplete task in `PLAN_WITH_THREE_TASKS`).
+    - [x] Include an assertion that the replaced task is rendered as incomplete (`- [ ] **Task 1.2: ...`).
+    - [x] Run the test file; confirm the new tests fail.
+    - [x] Update `replace_task_cmd` (`src/i2code/plan/task_cli.py:150`) to call `_resolve_task_spec("replace-task", **kwargs)`.
+    - [x] Re-run the test file and confirm all tests pass.
 
 ---
 
@@ -239,3 +239,6 @@ insert-task-after --task-file works; _resolve_task_spec helper handles file/indi
 
 ### 2026-05-26 10:43 - mark-task-complete
 insert-task-before --task-file works; uses _resolve_task_spec helper from Steel Thread 5
+
+### 2026-05-26 10:48 - mark-task-complete
+replace-task --task-file works via _resolve_task_spec; tests cover file path, mutex, missing-field, and invalid-JSON errors

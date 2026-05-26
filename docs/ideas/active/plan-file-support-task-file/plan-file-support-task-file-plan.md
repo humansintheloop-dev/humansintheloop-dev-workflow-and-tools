@@ -153,27 +153,27 @@ Applies the same shared infrastructure to `insert-thread-before`. Because Steel 
 
 Introduces the new `--task-file` option for single-task commands. This is the primary user story for single-task file input. Implementation adds a shared helper (`_resolve_task_spec`) so the same logic applies cleanly to `insert-task-before` and `replace-task` in subsequent threads.
 
-- [ ] **Task 5.1: `insert-task-after --task-file` inserts a task using JSON from a file**
+- [x] **Task 5.1: `insert-task-after --task-file` inserts a task using JSON from a file**
   - TaskType: OUTCOME
   - Entrypoint: `i2code plan insert-task-after <plan> --thread <t> --after <n> --task-file <path> --rationale <r>`
   - Observable: When `--task-file` points to a JSON object containing all six required fields (`title`, `task_type`, `entrypoint`, `observable`, `evidence`, `steps`), a new task is inserted after task `n` in thread `t`, populated from the file; exit code 0. Mutual-exclusivity errors: providing both `--task-file` and any individual task option exits 1 with stderr `"insert-task-after: --task-file and individual task options are mutually exclusive"`. Providing neither `--task-file` nor all individual options exits 1 with stderr `"insert-task-after: either --task-file or all individual task options are required"`. A `--task-file` JSON missing a required field exits 1 with stderr `"insert-task-after: --task-file JSON is missing required field: <name>"`. An invalid-JSON file exits 1 with stderr `"insert-task-after: --task-file is not valid JSON: <error>"`.
   - Evidence: New pytest tests in `tests/plan-manager/test_insert_task_after_cli.py` cover: (a) successful insert via `--task-file`, (b) mixing `--task-file` with an individual option, (c) providing no options at all, (d) missing required field in JSON, (e) invalid JSON file. Tests pass via `uv run --python 3.12 python3 -m pytest tests/plan-manager/test_insert_task_after_cli.py -v`.
   - Steps:
-    - [ ] In `tests/plan-manager/test_insert_task_after_cli.py`, add a helper `_invoke_insert_after_with_task_file` that writes a JSON object containing all six fields to `tmp_path / "task.json"` and invokes the command with `--task-file` (and no individual options).
-    - [ ] Add `test_inserts_using_task_file` asserting the inserted task title and step content appear in the updated plan and exit code is 0.
-    - [ ] Add `test_error_when_task_file_combined_with_individual_option` that passes both `--task-file` and `--title`, asserting exit 1 and the exact mutual-exclusivity message.
-    - [ ] Add `test_error_when_no_options_provided` that omits both `--task-file` and all individual options, asserting exit 1 and the "either ... or ..." message.
-    - [ ] Add `test_error_when_task_file_missing_required_field` that writes JSON omitting `evidence`, asserting exit 1 and the missing-field message naming `evidence`.
-    - [ ] Add `test_error_when_task_file_invalid_json` that writes `"not-json"` to the file, asserting exit 1 and the "not valid JSON" message.
-    - [ ] Run the test file and confirm the new tests fail (no `--task-file` yet).
-    - [ ] In `src/i2code/plan/task_cli.py`, change each option in `_task_spec_options` (`task_cli.py:12-23`) to `required=False, default=None`, and add `click.option("--task-file", default=None, type=click.Path(exists=True), help="Path to JSON file containing a task object")`.
-    - [ ] In `src/i2code/plan/task_cli.py`, add a new helper `_resolve_task_spec(command_name, **kwargs)` that:
+    - [x] In `tests/plan-manager/test_insert_task_after_cli.py`, add a helper `_invoke_insert_after_with_task_file` that writes a JSON object containing all six fields to `tmp_path / "task.json"` and invokes the command with `--task-file` (and no individual options).
+    - [x] Add `test_inserts_using_task_file` asserting the inserted task title and step content appear in the updated plan and exit code is 0.
+    - [x] Add `test_error_when_task_file_combined_with_individual_option` that passes both `--task-file` and `--title`, asserting exit 1 and the exact mutual-exclusivity message.
+    - [x] Add `test_error_when_no_options_provided` that omits both `--task-file` and all individual options, asserting exit 1 and the "either ... or ..." message.
+    - [x] Add `test_error_when_task_file_missing_required_field` that writes JSON omitting `evidence`, asserting exit 1 and the missing-field message naming `evidence`.
+    - [x] Add `test_error_when_task_file_invalid_json` that writes `"not-json"` to the file, asserting exit 1 and the "not valid JSON" message.
+    - [x] Run the test file and confirm the new tests fail (no `--task-file` yet).
+    - [x] In `src/i2code/plan/task_cli.py`, change each option in `_task_spec_options` (`task_cli.py:12-23`) to `required=False, default=None`, and add `click.option("--task-file", default=None, type=click.Path(exists=True), help="Path to JSON file containing a task object")`.
+    - [x] In `src/i2code/plan/task_cli.py`, add a new helper `_resolve_task_spec(command_name, **kwargs)` that:
       - exits 1 with the mutual-exclusivity message if `kwargs["task_file"]` is set AND any of `title`/`task_type`/`entrypoint`/`observable`/`evidence`/`steps` is set;
       - exits 1 with the "either ... or ..." message if no `task_file` AND any of the six individual fields is None;
       - when `task_file` is set, reads and parses the JSON object, exits 1 with the invalid-JSON message on `JSONDecodeError`, exits 1 with the missing-required-field message if any of the six keys is absent, and constructs a `Task` via `Task.create(...)` using `TaskMetadata(...)`;
       - when individual fields are set, behaves identically to the existing `_parse_task_spec` (steps JSON parsed with the same `_parse_task_spec` error message).
-    - [ ] Update `insert_task_after_cmd` (`src/i2code/plan/task_cli.py:121`) to call `_resolve_task_spec("insert-task-after", **kwargs)` instead of `_parse_task_spec(...)`.
-    - [ ] Re-run the test file and confirm all tests (new and pre-existing) pass.
+    - [x] Update `insert_task_after_cmd` (`src/i2code/plan/task_cli.py:121`) to call `_resolve_task_spec("insert-task-after", **kwargs)` instead of `_parse_task_spec(...)`.
+    - [x] Re-run the test file and confirm all tests (new and pre-existing) pass.
 
 ---
 
@@ -233,3 +233,6 @@ insert-thread-after --tasks-file works; mutual-exclusivity errors raised; insert
 
 ### 2026-05-26 10:20 - mark-task-complete
 insert-thread-before --tasks-file tests added; production already wired via shared decorator
+
+### 2026-05-26 10:35 - mark-task-complete
+insert-task-after --task-file works; _resolve_task_spec helper handles file/individual options with mutex, missing-field, and invalid-JSON errors

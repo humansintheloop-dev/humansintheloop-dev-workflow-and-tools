@@ -81,15 +81,15 @@ The full end-to-end CI script is `./test-scripts/test-end-to-end.sh`; use it bef
 
 Establishes the baseline. The project already has a working build, CI workflow (`.github/workflows/ci.yml`), and test infrastructure (`test-scripts/test-end-to-end.sh`); no infrastructure work is needed beyond confirming everything passes before changes begin.
 
-- [ ] **Task 1.1: Existing test suite passes on a clean checkout**
+- [x] **Task 1.1: Existing test suite passes on a clean checkout**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: Script exits with code 0; all `tests/plan-manager/` tests pass.
   - Evidence: `./test-scripts/test-end-to-end.sh` runs the full pytest suite (including `tests/plan-manager/`) and exits 0.
   - Steps:
-    - [ ] Run `./test-scripts/test-end-to-end.sh` from the project root.
-    - [ ] Confirm exit code 0 and that no plan-manager tests fail.
-    - [ ] If anything fails, STOP — diagnose and report before continuing.
+    - [x] Run `./test-scripts/test-end-to-end.sh` from the project root.
+    - [x] Confirm exit code 0 and that no plan-manager tests fail.
+    - [x] If anything fails, STOP — diagnose and report before continuing.
 
 ---
 
@@ -221,3 +221,9 @@ Validates the full system end-to-end after all five commands gain file-based inp
     - [ ] Run `./test-scripts/test-end-to-end.sh` from the project root; confirm exit code 0.
     - [ ] Check `README.md` for plan-CLI documentation. If `--tasks-file` is documented anywhere, ensure all three thread commands and all three task commands appear with the appropriate file option; otherwise no README change is needed.
     - [ ] If any production code was changed in a way that requires CodeScene review, run the `pre_commit_code_health_safeguard` MCP tool on changed files before committing.
+
+---
+
+## Change History
+### 2026-05-26 09:50 - mark-task-complete
+Existing test suite passes on clean checkout - test-end-to-end.sh exits 0, all plan-manager tests pass

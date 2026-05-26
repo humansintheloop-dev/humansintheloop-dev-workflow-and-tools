@@ -190,7 +190,7 @@ def delete_task_cmd(plan_file, thread, task, rationale):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def replace_task_cmd(plan_file, thread, task, rationale, **kwargs):
     """Replace a task's content in place within a thread."""
-    new_task = _parse_task_spec("replace-task", **kwargs)
+    new_task = _resolve_task_spec("replace-task", **kwargs)
     with with_error_handling():
         with with_plan_file_update(plan_file, "replace-task", rationale) as domain_plan:
             domain_plan.replace_task(thread, task, new_task)

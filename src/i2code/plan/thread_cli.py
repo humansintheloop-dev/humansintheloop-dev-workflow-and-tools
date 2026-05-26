@@ -87,19 +87,15 @@ def delete_thread_cmd(plan_file, thread, rationale):
     click.echo(f"Deleted thread {thread}")
 
 
-# @codescene(disable:"Excess Number of Function Arguments")
 @click.command("replace-thread")
 @click.argument("plan_file")
 @click.option("--thread", required=True, type=int, help="Thread number to replace")
-@click.option("--title", required=True, help="New thread title")
-@click.option("--introduction", required=True, help="New thread introduction text")
-@click.option("--tasks", default=None, help="JSON array of task objects")
-@click.option("--tasks-file", default=None, type=click.Path(exists=True), help="Path to JSON file containing task objects")
+@_thread_spec_options
 @click.option("--rationale", required=True, help="Rationale for change history")
-def replace_thread_cmd(plan_file, thread, title, introduction, tasks, tasks_file, rationale):
+def replace_thread_cmd(plan_file, thread, rationale, **kwargs):
     """Replace a thread's entire content in place."""
-    tasks_json = _resolve_tasks_json("replace-thread", tasks, tasks_file)
-    new_thread = _parse_thread("replace-thread", title=title, introduction=introduction, tasks=tasks_json)
+    tasks_json = _resolve_tasks_json("replace-thread", kwargs.pop("tasks"), kwargs.pop("tasks_file"))
+    new_thread = _parse_thread("replace-thread", title=kwargs["title"], introduction=kwargs["introduction"], tasks=tasks_json)
     with with_error_handling():
         with with_plan_file_update(plan_file, "replace-thread", rationale) as domain_plan:
             domain_plan.replace_thread(thread, new_thread)

@@ -118,17 +118,17 @@ Implements the primary user story: a coding agent writes a JSON array of tasks t
 
 Applies the same shared infrastructure to `insert-thread-before`. Because Steel Thread 2 already updated `_thread_spec_options`, the option appears automatically on `insert-thread-before`; this thread verifies the behaviour and locks in tests for the mutual-exclusivity errors.
 
-- [ ] **Task 3.1: `insert-thread-before --tasks-file` inserts a thread using JSON from a file**
+- [x] **Task 3.1: `insert-thread-before --tasks-file` inserts a thread using JSON from a file**
   - TaskType: OUTCOME
   - Entrypoint: `i2code plan insert-thread-before <plan> --before <n> --title <t> --introduction <i> --tasks-file <path> --rationale <r>`
   - Observable: When `--tasks-file` is supplied, a new thread is inserted before thread `n` using tasks parsed from the file; exit code 0. Conflicting options produce the same mutual-exclusivity errors as `insert-thread-after`, prefixed with `"insert-thread-before:"`.
   - Evidence: New pytest tests in `tests/plan-manager/test_insert_thread_cli.py` exercise the file-based path and both error cases for `insert_thread_before_cmd`; the test file passes via `uv run --python 3.12 python3 -m pytest tests/plan-manager/test_insert_thread_cli.py -v`.
   - Steps:
-    - [ ] Add `test_inserts_thread_using_tasks_file` to `TestInsertThreadBeforeCli` mirroring the `insert-thread-after` test, with `("--before", "2")` positioning.
-    - [ ] Add `test_error_when_both_tasks_and_tasks_file_provided` for `insert_thread_before_cmd`, asserting `"insert-thread-before: --tasks and --tasks-file are mutually exclusive"`.
-    - [ ] Add `test_error_when_neither_tasks_nor_tasks_file_provided` for `insert_thread_before_cmd`, asserting `"insert-thread-before: either --tasks or --tasks-file is required"`.
-    - [ ] Run the new tests; confirm they pass without further production changes (decorator change from Steel Thread 2 already covers this command).
-    - [ ] In `insert_thread_before_cmd` (`src/i2code/plan/thread_cli.py:52`), call `_resolve_tasks_json("insert-thread-before", kwargs.pop("tasks"), kwargs.pop("tasks_file"))` and confirm tests still pass.
+    - [x] Add `test_inserts_thread_using_tasks_file` to `TestInsertThreadBeforeCli` mirroring the `insert-thread-after` test, with `("--before", "2")` positioning.
+    - [x] Add `test_error_when_both_tasks_and_tasks_file_provided` for `insert_thread_before_cmd`, asserting `"insert-thread-before: --tasks and --tasks-file are mutually exclusive"`.
+    - [x] Add `test_error_when_neither_tasks_nor_tasks_file_provided` for `insert_thread_before_cmd`, asserting `"insert-thread-before: either --tasks or --tasks-file is required"`.
+    - [x] Run the new tests; confirm they pass without further production changes (decorator change from Steel Thread 2 already covers this command).
+    - [x] In `insert_thread_before_cmd` (`src/i2code/plan/thread_cli.py:52`), call `_resolve_tasks_json("insert-thread-before", kwargs.pop("tasks"), kwargs.pop("tasks_file"))` and confirm tests still pass.
 
 ---
 
@@ -230,3 +230,6 @@ Existing test suite passes on clean checkout - test-end-to-end.sh exits 0, all p
 
 ### 2026-05-26 10:15 - mark-task-complete
 insert-thread-after --tasks-file works; mutual-exclusivity errors raised; insert-thread-before updated for shared decorator
+
+### 2026-05-26 10:20 - mark-task-complete
+insert-thread-before --tasks-file tests added; production already wired via shared decorator

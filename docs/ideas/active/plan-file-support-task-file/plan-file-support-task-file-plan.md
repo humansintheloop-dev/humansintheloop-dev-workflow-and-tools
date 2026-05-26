@@ -136,16 +136,16 @@ Applies the same shared infrastructure to `insert-thread-before`. Because Steel 
 
 `replace_thread_cmd` currently defines its options inline (`src/i2code/plan/thread_cli.py:88-103`). With `--tasks-file` now in `_thread_spec_options`, `replace_thread_cmd` can use the shared decorator and `_resolve_tasks_json` directly. This is a structure-only change — existing tests must continue to pass unchanged.
 
-- [ ] **Task 4.1: `replace-thread` uses `_thread_spec_options` without behaviour change**
+- [x] **Task 4.1: `replace-thread` uses `_thread_spec_options` without behaviour change**
   - TaskType: REFACTOR
   - Entrypoint: `i2code plan replace-thread <plan> --thread <n> --title <t> --introduction <i> (--tasks <json> | --tasks-file <path>) --rationale <r>`
   - Observable: No behaviour change — all existing `replace-thread` behaviour, error messages, and option names are unchanged. The duplicated `--title`, `--introduction`, `--tasks`, `--tasks-file` option definitions in `replace_thread_cmd` are replaced by `@_thread_spec_options`.
   - Evidence: The pre-existing `tests/plan-manager/test_replace_thread_cli.py` suite continues to pass unchanged via `uv run --python 3.12 python3 -m pytest tests/plan-manager/test_replace_thread_cli.py -v`.
   - Steps:
-    - [ ] Run `tests/plan-manager/test_replace_thread_cli.py` and confirm it passes on the current code (baseline).
-    - [ ] In `src/i2code/plan/thread_cli.py`, replace the four inline `@click.option` lines on `replace_thread_cmd` (`thread_cli.py:91-94`) with `@_thread_spec_options`, change the signature to `(plan_file, thread, rationale, **kwargs)`, and call `_resolve_tasks_json("replace-thread", kwargs.pop("tasks"), kwargs.pop("tasks_file"))` followed by `_parse_thread("replace-thread", title=kwargs["title"], introduction=kwargs["introduction"], tasks=tasks_json)`.
-    - [ ] Re-run `tests/plan-manager/test_replace_thread_cli.py` and confirm all tests still pass.
-    - [ ] Run the full plan-manager test suite (`uv run --python 3.12 python3 -m pytest tests/plan-manager/ -v`) to confirm no regressions in other commands.
+    - [x] Run `tests/plan-manager/test_replace_thread_cli.py` and confirm it passes on the current code (baseline).
+    - [x] In `src/i2code/plan/thread_cli.py`, replace the four inline `@click.option` lines on `replace_thread_cmd` (`thread_cli.py:91-94`) with `@_thread_spec_options`, change the signature to `(plan_file, thread, rationale, **kwargs)`, and call `_resolve_tasks_json("replace-thread", kwargs.pop("tasks"), kwargs.pop("tasks_file"))` followed by `_parse_thread("replace-thread", title=kwargs["title"], introduction=kwargs["introduction"], tasks=tasks_json)`.
+    - [x] Re-run `tests/plan-manager/test_replace_thread_cli.py` and confirm all tests still pass.
+    - [x] Run the full plan-manager test suite (`uv run --python 3.12 python3 -m pytest tests/plan-manager/ -v`) to confirm no regressions in other commands.
 
 ---
 

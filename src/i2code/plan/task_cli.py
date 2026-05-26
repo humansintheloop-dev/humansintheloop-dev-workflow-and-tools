@@ -145,11 +145,11 @@ def mark_step_incomplete_cmd(plan_file, thread, task, step, rationale):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def insert_task_before_cmd(plan_file, thread, before, rationale, **kwargs):
     """Insert a task before a specified task within a thread."""
-    new_task = _parse_task_spec("insert-task-before", **kwargs)
+    new_task = _resolve_task_spec("insert-task-before", **kwargs)
     with with_error_handling():
         with with_plan_file_update(plan_file, "insert-task-before", rationale) as domain_plan:
             domain_plan.insert_task_before(thread, before, new_task)
-    click.echo(f"Inserted task '{kwargs['title']}' in thread {thread}")
+    click.echo(f"Inserted task '{new_task.title}' in thread {thread}")
 
 
 # @codescene(disable:"Excess Number of Function Arguments")

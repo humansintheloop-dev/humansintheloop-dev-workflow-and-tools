@@ -179,16 +179,16 @@ Introduces the new `--task-file` option for single-task commands. This is the pr
 
 ## Steel Thread 6: `--task-file` on `insert-task-before` (US-2.2)
 
-- [ ] **Task 6.1: `insert-task-before --task-file` inserts a task using JSON from a file**
+- [x] **Task 6.1: `insert-task-before --task-file` inserts a task using JSON from a file**
   - TaskType: OUTCOME
   - Entrypoint: `i2code plan insert-task-before <plan> --thread <t> --before <n> --task-file <path> --rationale <r>`
   - Observable: With `--task-file` supplying a complete task JSON object, a new task is inserted before task `n` in thread `t`; exit code 0. Mutual-exclusivity, missing-field, and invalid-JSON errors are produced with the prefix `"insert-task-before:"` and the same message bodies as `insert-task-after`.
   - Evidence: New tests in `tests/plan-manager/test_insert_task_before_cli.py` cover the file-based path and the same four error cases. Tests pass via `uv run --python 3.12 python3 -m pytest tests/plan-manager/test_insert_task_before_cli.py -v`.
   - Steps:
-    - [ ] Mirror the helper and test cases from Steel Thread 5 in `tests/plan-manager/test_insert_task_before_cli.py`, using `before="1"` positioning.
-    - [ ] Run the test file; confirm the new tests fail.
-    - [ ] Update `insert_task_before_cmd` (`src/i2code/plan/task_cli.py:105`) to call `_resolve_task_spec("insert-task-before", **kwargs)`.
-    - [ ] Re-run the test file and confirm all tests pass.
+    - [x] Mirror the helper and test cases from Steel Thread 5 in `tests/plan-manager/test_insert_task_before_cli.py`, using `before="1"` positioning.
+    - [x] Run the test file; confirm the new tests fail.
+    - [x] Update `insert_task_before_cmd` (`src/i2code/plan/task_cli.py:105`) to call `_resolve_task_spec("insert-task-before", **kwargs)`.
+    - [x] Re-run the test file and confirm all tests pass.
 
 ---
 
@@ -236,3 +236,6 @@ insert-thread-before --tasks-file tests added; production already wired via shar
 
 ### 2026-05-26 10:35 - mark-task-complete
 insert-task-after --task-file works; _resolve_task_spec helper handles file/individual options with mutex, missing-field, and invalid-JSON errors
+
+### 2026-05-26 10:43 - mark-task-complete
+insert-task-before --task-file works; uses _resolve_task_spec helper from Steel Thread 5

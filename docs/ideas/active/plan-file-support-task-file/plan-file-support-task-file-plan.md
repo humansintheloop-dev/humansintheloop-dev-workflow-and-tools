@@ -97,20 +97,20 @@ Establishes the baseline. The project already has a working build, CI workflow (
 
 Implements the primary user story: a coding agent writes a JSON array of tasks to a file and passes it via `--tasks-file` to `insert-thread-after`. This is the smallest behaviour change that proves the file-loading path end-to-end on an insert-thread command.
 
-- [ ] **Task 2.1: `insert-thread-after --tasks-file` inserts a thread using JSON from a file**
+- [x] **Task 2.1: `insert-thread-after --tasks-file` inserts a thread using JSON from a file**
   - TaskType: OUTCOME
   - Entrypoint: `i2code plan insert-thread-after <plan> --after <n> --title <t> --introduction <i> --tasks-file <path> --rationale <r>`
   - Observable: When `--tasks-file` points to a JSON array of task objects, the command inserts a new thread after thread `n` whose tasks are parsed from the file; the plan file is updated and exit code is 0. If both `--tasks` and `--tasks-file` are provided, command exits 1 with stderr `"insert-thread-after: --tasks and --tasks-file are mutually exclusive"`. If neither is provided, command exits 1 with stderr `"insert-thread-after: either --tasks or --tasks-file is required"`.
   - Evidence: New pytest tests in `tests/plan-manager/test_insert_thread_cli.py` invoke `insert_thread_after_cmd` via `CliRunner` with (a) a `--tasks-file`, (b) both options, (c) neither option, and assert plan content and exit codes. Tests run via `uv run --python 3.12 python3 -m pytest tests/plan-manager/test_insert_thread_cli.py -v` and pass.
   - Steps:
-    - [ ] In `tests/plan-manager/test_insert_thread_cli.py`, add a `tasks_source` parameter to `_invoke_thread_cmd` (mirroring `tests/plan-manager/test_replace_thread_cli.py:71`) so it can write `NEW_TASKS_JSON` to a temp file and pass `--tasks-file` instead of `--tasks`.
-    - [ ] Add `test_inserts_thread_using_tasks_file` to `TestInsertThreadAfterCli` that asserts the plan was updated and exit code is 0.
-    - [ ] Add `test_error_when_both_tasks_and_tasks_file_provided` that builds args containing both `--tasks` and `--tasks-file` and asserts exit 1 with the exact mutual-exclusivity message.
-    - [ ] Add `test_error_when_neither_tasks_nor_tasks_file_provided` that omits both and asserts exit 1 with the "either ... or ... is required" message.
-    - [ ] Run the test file — confirm the new tests fail (`--tasks-file` does not yet exist on `insert-thread-after`).
-    - [ ] In `src/i2code/plan/thread_cli.py:12-20`, update `_thread_spec_options` so `--tasks` becomes `required=False, default=None` and add `click.option("--tasks-file", default=None, type=click.Path(exists=True), help="Path to JSON file containing task objects")`.
-    - [ ] In `insert_thread_after_cmd` (`src/i2code/plan/thread_cli.py:66`), call `_resolve_tasks_json("insert-thread-after", kwargs.pop("tasks"), kwargs.pop("tasks_file"))` to obtain the JSON string before invoking `_parse_thread`.
-    - [ ] Re-run the test file and confirm all tests pass (including pre-existing tests for the inline `--tasks` path).
+    - [x] In `tests/plan-manager/test_insert_thread_cli.py`, add a `tasks_source` parameter to `_invoke_thread_cmd` (mirroring `tests/plan-manager/test_replace_thread_cli.py:71`) so it can write `NEW_TASKS_JSON` to a temp file and pass `--tasks-file` instead of `--tasks`.
+    - [x] Add `test_inserts_thread_using_tasks_file` to `TestInsertThreadAfterCli` that asserts the plan was updated and exit code is 0.
+    - [x] Add `test_error_when_both_tasks_and_tasks_file_provided` that builds args containing both `--tasks` and `--tasks-file` and asserts exit 1 with the exact mutual-exclusivity message.
+    - [x] Add `test_error_when_neither_tasks_nor_tasks_file_provided` that omits both and asserts exit 1 with the "either ... or ... is required" message.
+    - [x] Run the test file — confirm the new tests fail (`--tasks-file` does not yet exist on `insert-thread-after`).
+    - [x] In `src/i2code/plan/thread_cli.py:12-20`, update `_thread_spec_options` so `--tasks` becomes `required=False, default=None` and add `click.option("--tasks-file", default=None, type=click.Path(exists=True), help="Path to JSON file containing task objects")`.
+    - [x] In `insert_thread_after_cmd` (`src/i2code/plan/thread_cli.py:66`), call `_resolve_tasks_json("insert-thread-after", kwargs.pop("tasks"), kwargs.pop("tasks_file"))` to obtain the JSON string before invoking `_parse_thread`.
+    - [x] Re-run the test file and confirm all tests pass (including pre-existing tests for the inline `--tasks` path).
 
 ---
 
@@ -227,3 +227,6 @@ Validates the full system end-to-end after all five commands gain file-based inp
 ## Change History
 ### 2026-05-26 09:50 - mark-task-complete
 Existing test suite passes on clean checkout - test-end-to-end.sh exits 0, all plan-manager tests pass
+
+### 2026-05-26 10:15 - mark-task-complete
+insert-thread-after --tasks-file works; mutual-exclusivity errors raised; insert-thread-before updated for shared decorator

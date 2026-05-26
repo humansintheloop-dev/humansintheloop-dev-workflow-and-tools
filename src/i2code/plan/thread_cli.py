@@ -14,7 +14,8 @@ def _thread_spec_options(fn):
     for option in reversed([
         click.option("--title", required=True, help="Thread title"),
         click.option("--introduction", required=True, help="Thread introduction text"),
-        click.option("--tasks", required=True, help="JSON array of task objects"),
+        click.option("--tasks", required=False, default=None, help="JSON array of task objects"),
+        click.option("--tasks-file", default=None, type=click.Path(exists=True), help="Path to JSON file containing task objects"),
     ]):
         fn = option(fn)
     return fn
@@ -51,7 +52,8 @@ def _parse_thread(command_name, title, introduction, tasks):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def insert_thread_before_cmd(plan_file, before, rationale, **kwargs):
     """Insert a thread before a specified thread."""
-    new_thread = _parse_thread("insert-thread-before", **kwargs)
+    tasks_json = _resolve_tasks_json("insert-thread-before", kwargs.pop("tasks"), kwargs.pop("tasks_file"))
+    new_thread = _parse_thread("insert-thread-before", tasks=tasks_json, **kwargs)
     with with_error_handling():
         with with_plan_file_update(plan_file, "insert-thread-before", rationale) as domain_plan:
             domain_plan.insert_thread_before(before, new_thread)
@@ -65,7 +67,8 @@ def insert_thread_before_cmd(plan_file, before, rationale, **kwargs):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def insert_thread_after_cmd(plan_file, after, rationale, **kwargs):
     """Insert a thread after a specified thread."""
-    new_thread = _parse_thread("insert-thread-after", **kwargs)
+    tasks_json = _resolve_tasks_json("insert-thread-after", kwargs.pop("tasks"), kwargs.pop("tasks_file"))
+    new_thread = _parse_thread("insert-thread-after", tasks=tasks_json, **kwargs)
     with with_error_handling():
         with with_plan_file_update(plan_file, "insert-thread-after", rationale) as domain_plan:
             domain_plan.insert_thread_after(after, new_thread)

@@ -68,14 +68,24 @@ def _invoke_thread_cmd(cmd, plan_file, position_arg, **overrides):
     """Write plan, invoke thread command with defaults + overrides, return (result, updated_text).
 
     position_arg: e.g. ("--before", "1") or ("--after", "2")
+    overrides may include tasks_source: "inline" (default) passes --tasks; "file" writes
+        NEW_TASKS_JSON to a temp file and passes --tasks-file; "both" passes both;
+        "neither" omits both.
     """
+    tasks_source = overrides.pop("tasks_source", "inline")
     plan_file.write_text(PLAN_WITH_TWO_THREADS)
     d = {**_THREAD_DEFAULTS, **overrides}
     args = [
         str(plan_file), *position_arg,
         "--title", d["title"], "--introduction", d["introduction"],
-        "--tasks", d["tasks"], "--rationale", d["rationale"],
+        "--rationale", d["rationale"],
     ]
+    if tasks_source in ("inline", "both"):
+        args += ["--tasks", d["tasks"]]
+    if tasks_source in ("file", "both"):
+        tasks_file = plan_file.parent / "tasks.json"
+        tasks_file.write_text(d["tasks"])
+        args += ["--tasks-file", str(tasks_file)]
     result = CliRunner(catch_exceptions=False).invoke(cmd, args)
     return result, plan_file.read_text()
 
@@ -119,3 +129,27 @@ class TestInsertThreadAfterCli:
         )
         assert result.exit_code == 1
         assert "thread 99 does not exist" in result.output
+
+    def test_inserts_thread_using_tasks_file(self, tmp_path):
+        result, updated = _invoke_thread_cmd(
+            insert_thread_after_cmd, tmp_path / "plan.md", ("--after", "1"), tasks_source="file",
+        )
+        assert result.exit_code == 0
+        assert "Steel Thread 1: First Thread" in updated
+        assert "Steel Thread 2: New Thread" in updated
+        assert "Steel Thread 3: Second Thread" in updated
+        assert "Task 2.1: New task" in updated
+
+    def test_error_when_both_tasks_and_tasks_file_provided(self, tmp_path):
+        result, _ = _invoke_thread_cmd(
+            insert_thread_after_cmd, tmp_path / "plan.md", ("--after", "1"), tasks_source="both",
+        )
+        assert result.exit_code == 1
+        assert "insert-thread-after: --tasks and --tasks-file are mutually exclusive" in result.output
+
+    def test_error_when_neither_tasks_nor_tasks_file_provided(self, tmp_path):
+        result, _ = _invoke_thread_cmd(
+            insert_thread_after_cmd, tmp_path / "plan.md", ("--after", "1"), tasks_source="neither",
+        )
+        assert result.exit_code == 1
+        assert "insert-thread-after: either --tasks or --tasks-file is required" in result.output

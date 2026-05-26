@@ -212,15 +212,15 @@ Introduces the new `--task-file` option for single-task commands. This is the pr
 
 Validates the full system end-to-end after all five commands gain file-based input. Updates `README.md` and any CLI help text references if needed.
 
-- [ ] **Task 8.1: Full plan-manager test suite and end-to-end script pass; README mentions `--task-file`/`--tasks-file` consistently**
+- [x] **Task 8.1: Full plan-manager test suite and end-to-end script pass; README mentions `--task-file`/`--tasks-file` consistently**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `./test-scripts/test-end-to-end.sh` exits 0. `README.md` (if it documents the plan CLI) lists `--tasks-file` for all three thread-creation commands and `--task-file` for all three single-task commands; no stale references remain to "only `replace-thread` supports `--tasks-file`".
   - Evidence: `./test-scripts/test-end-to-end.sh` exits 0; `grep -n "tasks-file\|task-file" README.md` shows consistent coverage of all six commands (or, if `README.md` does not document these commands at all, confirm with `grep -L "i2code plan" README.md`).
   - Steps:
-    - [ ] Run `./test-scripts/test-end-to-end.sh` from the project root; confirm exit code 0.
-    - [ ] Check `README.md` for plan-CLI documentation. If `--tasks-file` is documented anywhere, ensure all three thread commands and all three task commands appear with the appropriate file option; otherwise no README change is needed.
-    - [ ] If any production code was changed in a way that requires CodeScene review, run the `pre_commit_code_health_safeguard` MCP tool on changed files before committing.
+    - [x] Run `./test-scripts/test-end-to-end.sh` from the project root; confirm exit code 0.
+    - [x] Check `README.md` for plan-CLI documentation. If `--tasks-file` is documented anywhere, ensure all three thread commands and all three task commands appear with the appropriate file option; otherwise no README change is needed.
+    - [x] If any production code was changed in a way that requires CodeScene review, run the `pre_commit_code_health_safeguard` MCP tool on changed files before committing.
 
 ---
 
@@ -242,3 +242,15 @@ insert-task-before --task-file works; uses _resolve_task_spec helper from Steel 
 
 ### 2026-05-26 10:48 - mark-task-complete
 replace-task --task-file works via _resolve_task_spec; tests cover file path, mutex, missing-field, and invalid-JSON errors
+
+### 2026-05-26 10:55 - mark-step-complete
+test-end-to-end.sh completed with exit code 0; all plan-manager tests, plugin JS tests, integration GH tests, wheel contents test, and marker verification passed.
+
+### 2026-05-26 10:55 - mark-step-complete
+No README.md exists at repo root (only README.adoc, which does not mention --tasks-file or --task-file); no README change is needed per task criteria.
+
+### 2026-05-26 10:55 - mark-step-complete
+No production code was changed in this task; only ran existing test scripts and verified documentation state.
+
+### 2026-05-26 10:55 - mark-task-complete
+End-to-end test suite passes (exit 0). README.md does not exist; README.adoc does not document --tasks-file/--task-file, so no documentation change required. No production code changes were made — task was a verification-only step.

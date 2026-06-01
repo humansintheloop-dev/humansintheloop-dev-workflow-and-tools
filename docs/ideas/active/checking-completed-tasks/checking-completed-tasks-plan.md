@@ -107,16 +107,16 @@ US-1.1 / Spec S2. Confirms that with `trunk=true, isolation_type=none` the resol
 
 US-1.5 / Spec S6. Confirms the "Plan has uncompleted tasks" banner still appears when the worktree's plan file has at least one unchecked box.
 
-- [ ] **Task 3.1: Orchestrator prints `Plan has uncompleted tasks` and re-enters the menu when the worktree plan still has unchecked tasks**
+- [x] **Task 3.1: Orchestrator prints `Plan has uncompleted tasks` and re-enters the menu when the worktree plan still has unchecked tasks**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/go-cmd/test_orchestrator_implement.py::TestPlanCompletionWorktree::test_worktree_mode_incomplete_plan_prints_uncompleted_banner -v`
   - Observable: With `trunk=false, isolation_type=none` and a worktree-sibling plan containing at least one `- [ ]` task, captured stderr contains `Plan has uncompleted tasks`, does NOT contain `Workflow Complete!`, and `Orchestrator.run()` returns normally without raising `SystemExit(0)` after the user selects `EXIT`.
   - Evidence: The pytest command above runs the new `test_worktree_mode_incomplete_plan_prints_uncompleted_banner` test. The test places an incomplete plan at the worktree sibling path, drives the orchestrator with choices `[IMPLEMENT_PLAN, EXIT]`, and asserts that `"Plan has uncompleted tasks" in result.output_displayed`, `"Workflow Complete!" not in result.output_displayed`, and `result.exit_code is None`. The test exits 0; reverting the worktree branch of `resolve_plan_text` so it reads the main-repo plan causes the test to fail because the worktree's unchecked plan is never consulted.
   - Steps:
-    - [ ] Add `test_worktree_mode_incomplete_plan_prints_uncompleted_banner` to `TestPlanCompletionWorktree`. Place an incomplete plan at the worktree sibling path, drive the orchestrator with choices `[IMPLEMENT_PLAN, EXIT]`, and assert the three conditions above.
-    - [ ] Confirm the test passes against the Steel Thread 1/2 resolver (no additional production change should be required; if the test fails, fix the resolver branch rather than the test).
-    - [ ] Delete the now-redundant `xfail` markers on the original `TestPlanCompletion` parametrized cases, and either delete those cases outright (their coverage is now provided by `TestPlanCompletionTrunk` + `TestPlanCompletionWorktree`) or rewrite them to call the worktree fixture. Pick deletion if `git grep` shows no docs or external references; rewrite is unnecessary churn given the new dedicated classes.
-    - [ ] Run `./test-scripts/test-unit.sh` and confirm green.
+    - [x] Add `test_worktree_mode_incomplete_plan_prints_uncompleted_banner` to `TestPlanCompletionWorktree`. Place an incomplete plan at the worktree sibling path, drive the orchestrator with choices `[IMPLEMENT_PLAN, EXIT]`, and assert the three conditions above.
+    - [x] Confirm the test passes against the Steel Thread 1/2 resolver (no additional production change should be required; if the test fails, fix the resolver branch rather than the test).
+    - [x] Delete the now-redundant `xfail` markers on the original `TestPlanCompletion` parametrized cases, and either delete those cases outright (their coverage is now provided by `TestPlanCompletionTrunk` + `TestPlanCompletionWorktree`) or rewrite them to call the worktree fixture. Pick deletion if `git grep` shows no docs or external references; rewrite is unnecessary churn given the new dedicated classes.
+    - [x] Run `./test-scripts/test-unit.sh` and confirm green.
 
 ---
 
@@ -232,3 +232,6 @@ ST1 T1.1: Introduced resolve_plan_text resolver and wired _check_plan_completion
 
 ### 2026-06-02 07:57 - mark-task-complete
 ST2 T2.1: Added TestPlanCompletionTrunk parametrized tests; extended resolve_plan_text with trunk and missing-config branches (both return main repo plan file text).
+
+### 2026-06-02 08:04 - mark-task-complete
+ST3 T3.1: Added incomplete-plan worktree test; deleted obsolete TestPlanCompletion class. All 1361 unit tests pass.

@@ -57,6 +57,28 @@ The implementation agent runs from the project root directory (the working direc
 
 ---
 
+## Analyze existing code BEFORE planning (CRITICAL)
+
+Before writing any plan, examine the existing codebase to understand what already exists:
+
+1. **Read project structure:** build configuration, module/package layout, existing source directories
+2. **Read existing source files:** identify which classes, functions, and tests already exist and what state they are in
+3. **Read existing infrastructure:** CI workflows, Dockerfiles, deployment configs, test scripts
+4. **Identify placeholder vs. real content:** skeleton-generated code often has boilerplate that needs to be fleshed out — not replaced from scratch
+
+**Plan tasks must reflect what actually exists:**
+- If a file exists with placeholder content → plan to **modify/flesh out** the file, not create it
+- If CI, Dockerfile, or build config already exists → do NOT plan to create them again
+- If Steel Thread 1 infrastructure (build, CI, deployment) already works → Steel Thread 1 should verify it builds, not recreate it
+- Use "flesh out", "update", "modify" language for existing files — reserve "create" for files that genuinely don't exist
+
+**Plan tasks must only cover what the idea/spec defines:**
+- Only plan work for adapters, events, entities, and operations that appear in the spec or referenced YAML files
+- Do NOT invent operations (e.g., `updateX`) or events (e.g., `XUpdated`) that are not defined in the source of truth
+- Do NOT plan work for adapter types the service does not have (e.g., no web-api adapter → no REST controller tasks)
+
+---
+
 ## General principles
 
 - Each steel thread is one very narrow end-to-end flow that delivers some value.
@@ -103,9 +125,11 @@ This keeps each task focused and makes it clear why each element exists.
 
 ## Task 1.1 Requirements (MANDATORY)
 
-Task 1.1 is special. It MUST include `.github/workflows/ci.yml` so that every commit after Task 1.1 is validated by CI.
+Task 1.1 is special. It MUST ensure CI exists so that every commit after Task 1.1 is validated.
 
 **WHY:** If CI is created in Task 1.2, Task 1.1's commit is unvalidated—this defeats the purpose of steel threads.
+
+**If the project already has a working build and CI** (e.g., generated from a skeleton/template), Task 1.1 should verify the existing build passes — not recreate infrastructure that already exists. In this case, Task 1.1 may be as simple as running the build and confirming all existing tests pass.
 
 ### For Java/Gradle Projects
 
@@ -348,6 +372,25 @@ Valid Evidence examples:
 - Task 1.1: init-ca.sh creates CA and .env file
 - Task 1.2: stepca service starts and becomes healthy
 ```
+
+---
+
+## No ambiguous alternatives in tasks or steps
+
+Tasks and steps MUST NOT contain "X or Y", "X (or Y)", or "X / Y" alternatives.
+Every decision must be resolved at plan-creation time so the coding agent has a
+single unambiguous action to take.
+
+- **Bad**: `Add re-export shim OR delete the old file if grep confirms no imports`
+- **Good**: `Delete the old file (grep confirms no remaining imports)`
+- **Bad**: `Write test in tests/foo/test_bar.py (or new tests/baz/test_bar.py)`
+- **Good**: `Write test in tests/baz/test_bar.py`
+- **Bad**: `Add function build_spec_prompt() (or similar) to prompt_builder.py`
+- **Good**: `Add function build_spec_prompt() to prompt_builder.py`
+
+If you cannot decide between alternatives without more information, investigate
+first (e.g., grep for imports, check existing file structure) and then commit
+to one option.
 
 ---
 

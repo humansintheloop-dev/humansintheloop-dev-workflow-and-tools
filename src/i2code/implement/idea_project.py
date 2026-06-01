@@ -71,6 +71,10 @@ class IdeaProject:
         return os.path.join(self._directory, f"{self._name}-metadata.yaml")
 
     @property
+    def broken_plan_file(self) -> str:
+        return os.path.join(self._directory, f"{self._name}-broken-plan.md")
+
+    @property
     def state_file(self) -> str:
         return os.path.join(self._directory, f"{self._name}-wt-state.json")
 

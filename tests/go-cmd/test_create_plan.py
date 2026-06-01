@@ -261,3 +261,14 @@ class TestCreatePlanRepairFails:
             with pytest.raises(SystemExit):
                 create_plan(project, runner, _fail_services())
             assert not os.path.isfile(project.plan_file)
+
+    def test_writes_broken_plan_when_repair_fails(self):
+        with TempIdeaProject("my-feature") as project:
+            _create_idea_and_spec(project)
+            runner = FakeClaudeRunner()
+            runner.set_results([_invalid_result(), _invalid_result()])
+            with pytest.raises(SystemExit):
+                create_plan(project, runner, _fail_services())
+            assert os.path.isfile(project.broken_plan_file)
+            with open(project.broken_plan_file) as f:
+                assert f.read() == INVALID_PLAN

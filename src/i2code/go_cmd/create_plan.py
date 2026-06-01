@@ -80,6 +80,8 @@ def create_plan(project: IdeaProject, claude_runner, services: PlanServices, *, 
         is_valid, errors = services.validator_fn(plan_text)
         if not is_valid:
             _print_validation_errors(errors)
+            _write_plan(project.broken_plan_file, plan_text)
+            print(f"Broken plan written to {project.broken_plan_file}", file=sys.stderr)
             print("Error: Plan still invalid after repair.", file=sys.stderr)
             sys.exit(1)
 

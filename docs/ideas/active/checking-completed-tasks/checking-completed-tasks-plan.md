@@ -89,17 +89,17 @@ Primary scenario (Spec S1 / US-1.2). Introduces the resolver helper and wires it
 
 US-1.1 / Spec S2. Confirms that with `trunk=true, isolation_type=none` the resolver returns the main repo's plan file unchanged, and the banner behaviour matches today's exactly.
 
-- [ ] **Task 2.1: Orchestrator prints `Workflow Complete!` when trunk-mode plan in the main repo is fully checked**
+- [x] **Task 2.1: Orchestrator prints `Workflow Complete!` when trunk-mode plan in the main repo is fully checked**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/go-cmd/test_orchestrator_implement.py::TestPlanCompletionTrunk -v`
   - Observable: With `trunk=true, isolation_type=none` and a fully-checked plan at `<idea-dir>/<idea>-plan.md` (the main repo path), stderr contains `Workflow Complete!`, no worktree sibling directory is read, and `Orchestrator.run()` raises `SystemExit(0)`. With an incomplete main-repo plan, stderr contains `Plan has uncompleted tasks` and no `SystemExit(0)` is raised.
   - Evidence: The pytest command above runs the new `TestPlanCompletionTrunk` class. The class contains parametrized cases for complete and incomplete trunk-mode plans, each asserting the exact banner string and exit semantics. The test exits 0; removing the trunk branch from `resolve_plan_text` (e.g., making it always look at the worktree path) causes both cases to fail because the main-repo plan is never read.
   - Steps:
-    - [ ] Add a `TestPlanCompletionTrunk` class to `tests/go-cmd/test_orchestrator_implement.py` with parametrized cases mirroring the existing two scenarios (complete / incomplete) but with `config_kwargs=dict(interactive=True, trunk=True, isolation_type="none")` and the plan placed at `project.plan_file` via `_setup_has_plan`.
-    - [ ] Run the new tests to confirm they fail in the "complete" case (the resolver currently has no trunk branch) and/or in the "incomplete" case as appropriate.
-    - [ ] Extend `resolve_plan_text` in `src/i2code/go_cmd/plan_completion.py` with the trunk branch: when `config is not None and config["trunk"] is True`, return `Path(project.plan_file).read_text(encoding="utf-8")`. Same return value when `config is None` (this anticipates Steel Thread 8 but is functionally identical for trunk).
-    - [ ] Remove the temporary `xfail` marker added in Task 1.1 from the existing `TestPlanCompletion` parametrized cases that exercised trunk-equivalent behaviour AND now passes under the new resolver. If those cases still target `trunk=false`, leave them xfailed for Steel Thread 3 to clean up.
-    - [ ] Run `./test-scripts/test-unit.sh` and confirm the new `TestPlanCompletionTrunk` tests pass alongside the rest of the suite.
+    - [x] Add a `TestPlanCompletionTrunk` class to `tests/go-cmd/test_orchestrator_implement.py` with parametrized cases mirroring the existing two scenarios (complete / incomplete) but with `config_kwargs=dict(interactive=True, trunk=True, isolation_type="none")` and the plan placed at `project.plan_file` via `_setup_has_plan`.
+    - [x] Run the new tests to confirm they fail in the "complete" case (the resolver currently has no trunk branch) and/or in the "incomplete" case as appropriate.
+    - [x] Extend `resolve_plan_text` in `src/i2code/go_cmd/plan_completion.py` with the trunk branch: when `config is not None and config["trunk"] is True`, return `Path(project.plan_file).read_text(encoding="utf-8")`. Same return value when `config is None` (this anticipates Steel Thread 8 but is functionally identical for trunk).
+    - [x] Remove the temporary `xfail` marker added in Task 1.1 from the existing `TestPlanCompletion` parametrized cases that exercised trunk-equivalent behaviour AND now passes under the new resolver. If those cases still target `trunk=false`, leave them xfailed for Steel Thread 3 to clean up.
+    - [x] Run `./test-scripts/test-unit.sh` and confirm the new `TestPlanCompletionTrunk` tests pass alongside the rest of the suite.
 
 ---
 
@@ -229,3 +229,6 @@ The command must exit 0. Print a Verification section in the commit message cont
 ## Change History
 ### 2026-06-02 07:50 - mark-task-complete
 ST1 T1.1: Introduced resolve_plan_text resolver and wired _check_plan_completion to it; worktree+PR mode now reads the worktree-sibling plan file.
+
+### 2026-06-02 07:57 - mark-task-complete
+ST2 T2.1: Added TestPlanCompletionTrunk parametrized tests; extended resolve_plan_text with trunk and missing-config branches (both return main repo plan file text).

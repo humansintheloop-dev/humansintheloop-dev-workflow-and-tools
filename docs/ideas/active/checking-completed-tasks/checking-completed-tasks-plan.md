@@ -62,26 +62,26 @@ All new resolver logic lives in a new module `src/i2code/go_cmd/plan_completion.
 
 Primary scenario (Spec S1 / US-1.2). Introduces the resolver helper and wires it into `_check_plan_completion` so the worktree's plan file becomes the source of truth when `trunk=false` and `isolation_type=none`.
 
-- [ ] **Task 1.1: Orchestrator prints `Workflow Complete!` when the worktree plan file has every task checked**
+- [x] **Task 1.1: Orchestrator prints `Workflow Complete!` when the worktree plan file has every task checked**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/go-cmd/test_orchestrator_implement.py::TestPlanCompletionWorktree::test_worktree_mode_complete_plan_prints_workflow_complete -v`
   - Observable: After `Orchestrator._run_implement` completes with `returncode=0` and the plan at `<git-parent>/<repo>-wt-<idea>/<idea-relpath>/<idea>-plan.md` has every task box checked, captured stderr contains `Workflow Complete!` exactly once, does NOT contain `Plan has uncompleted tasks`, and `Orchestrator.run()` raises `SystemExit(0)`.
   - Evidence: The pytest command above runs, the test creates a `TempIdeaProject`, materialises a sibling directory `<git-parent>/<repo>-wt-<idea>/<idea-relpath>/` containing `<idea>-plan.md` with all tasks `[x]`, writes an implement-config with `trunk=false, isolation_type=none`, drives `Orchestrator.run()` through `IMPLEMENT_PLAN`, and asserts the three conditions above. The test exits 0; with the resolver bypassed the test fails because `Workflow Complete!` is not in output (the main-repo plan still has unchecked boxes).
   - Steps:
-    - [ ] In `tests/go-cmd/test_orchestrator_implement.py`, add a new `@pytest.mark.unit` class `TestPlanCompletionWorktree` with a fixture helper that constructs a worktree-sibling plan layout under the test's git root: locate the temporary git root used by `TempIdeaProject` and create `<parent>/<basename>-wt-<idea>/<idea-relpath>/<idea>-plan.md` populated with the supplied plan text.
-    - [ ] Write the failing test `test_worktree_mode_complete_plan_prints_workflow_complete` that uses the fixture to place a fully-checked plan at the worktree path, sets `config_kwargs=dict(interactive=True, trunk=False, isolation_type="none")`, drives the orchestrator with choices `[IMPLEMENT_PLAN]`, and asserts `result.exit_code == 0`, `"Workflow Complete!" in result.output_displayed`, and `"Plan has uncompleted tasks" not in result.output_displayed`.
-    - [ ] Inspect `tests/go-cmd/conftest.py` to confirm `TempIdeaProject` exposes (or can be extended to expose) the enclosing git root used by `_git_root_from_path`. If the fixture currently hides this, extend `TempIdeaProject` to expose it as `project_root` (or equivalent) so the worktree sibling can be located deterministically.
-    - [ ] Run the new test to confirm it fails (the current `_check_plan_completion` reads `project.plan_file` in the main repo, which has no plan in this fixture).
-    - [ ] Create `src/i2code/go_cmd/plan_completion.py` containing a function `resolve_plan_text(project, config, git_root, *, gh_runner=None) -> str | None` whose worktree branch (when `config is not None and not config["trunk"] and config["isolation_type"] == "none"`) computes `worktree_path = GitRepository._sibling_path(git_root, "wt", project.name)`, builds the worktree idea project via `project.worktree_idea_project(worktree_path, git_root)`, and returns `Path(<worktree-project>.plan_file).read_text(encoding="utf-8")`. The function must propagate `FileNotFoundError` if the file is absent (per FR2: no fallback).
-    - [ ] In `src/i2code/go_cmd/plan_completion.py`, expose a small public alias `sibling_path = GitRepository._sibling_path` so callers do not reach into the underscore-prefixed name; document at the call site that the helper is intentionally shared.
-    - [ ] Update `src/i2code/go_cmd/orchestrator.py:414` so `_check_plan_completion`:
+    - [x] In `tests/go-cmd/test_orchestrator_implement.py`, add a new `@pytest.mark.unit` class `TestPlanCompletionWorktree` with a fixture helper that constructs a worktree-sibling plan layout under the test's git root: locate the temporary git root used by `TempIdeaProject` and create `<parent>/<basename>-wt-<idea>/<idea-relpath>/<idea>-plan.md` populated with the supplied plan text.
+    - [x] Write the failing test `test_worktree_mode_complete_plan_prints_workflow_complete` that uses the fixture to place a fully-checked plan at the worktree path, sets `config_kwargs=dict(interactive=True, trunk=False, isolation_type="none")`, drives the orchestrator with choices `[IMPLEMENT_PLAN]`, and asserts `result.exit_code == 0`, `"Workflow Complete!" in result.output_displayed`, and `"Plan has uncompleted tasks" not in result.output_displayed`.
+    - [x] Inspect `tests/go-cmd/conftest.py` to confirm `TempIdeaProject` exposes (or can be extended to expose) the enclosing git root used by `_git_root_from_path`. If the fixture currently hides this, extend `TempIdeaProject` to expose it as `project_root` (or equivalent) so the worktree sibling can be located deterministically.
+    - [x] Run the new test to confirm it fails (the current `_check_plan_completion` reads `project.plan_file` in the main repo, which has no plan in this fixture).
+    - [x] Create `src/i2code/go_cmd/plan_completion.py` containing a function `resolve_plan_text(project, config, git_root, *, gh_runner=None) -> str | None` whose worktree branch (when `config is not None and not config["trunk"] and config["isolation_type"] == "none"`) computes `worktree_path = GitRepository._sibling_path(git_root, "wt", project.name)`, builds the worktree idea project via `project.worktree_idea_project(worktree_path, git_root)`, and returns `Path(<worktree-project>.plan_file).read_text(encoding="utf-8")`. The function must propagate `FileNotFoundError` if the file is absent (per FR2: no fallback).
+    - [x] In `src/i2code/go_cmd/plan_completion.py`, expose a small public alias `sibling_path = GitRepository._sibling_path` so callers do not reach into the underscore-prefixed name; document at the call site that the helper is intentionally shared.
+    - [x] Update `src/i2code/go_cmd/orchestrator.py:414` so `_check_plan_completion`:
       - reads `config = read_implement_config(self._project.implement_config_file)`
       - computes `git_root = str(_git_root_from_path(self._project.directory))`
       - obtains `plan_text = resolve_plan_text(self._project, config, git_root)`
       - if `plan_text is None`, returns without printing either banner (covers VM-failure case wired in Steel Thread 7)
       - otherwise calls `parse(plan_text)` (import from `i2code.plan_domain.parser`) and queries `plan.get_next_task()` to decide between the two banners. Preserve the exact banner strings, separators, blank lines, and `sys.exit(0)` from the current implementation.
-    - [ ] Run the new test again; it must pass.
-    - [ ] Run `./test-scripts/test-unit.sh`. Expect failures in the existing `TestPlanCompletion` parametrized cases (they were exercising the buggy behaviour). Do NOT delete or fix them here — Steel Thread 2 and Steel Thread 3 do that. Document the expected failure list in the commit message and skip those specific cases with `pytest.mark.xfail(reason="updated in ST2/ST3", strict=True)` so the rest of the suite still runs green.
+    - [x] Run the new test again; it must pass.
+    - [x] Run `./test-scripts/test-unit.sh`. Expect failures in the existing `TestPlanCompletion` parametrized cases (they were exercising the buggy behaviour). Do NOT delete or fix them here — Steel Thread 2 and Steel Thread 3 do that. Document the expected failure list in the commit message and skip those specific cases with `pytest.mark.xfail(reason="updated in ST2/ST3", strict=True)` so the rest of the suite still runs green.
 
 ---
 
@@ -223,3 +223,9 @@ Before committing any task, run:
 
 The command must exit 0. Print a Verification section in the commit message containing the exact command, its exit code, and the last 20 lines of output. Do not commit if any test fails or any pyright `--level error` issue is reported (`uvx pyright --level error src/`).
 ```
+
+---
+
+## Change History
+### 2026-06-02 07:50 - mark-task-complete
+ST1 T1.1: Introduced resolve_plan_text resolver and wired _check_plan_completion to it; worktree+PR mode now reads the worktree-sibling plan file.

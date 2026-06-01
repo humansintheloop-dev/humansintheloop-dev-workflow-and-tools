@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 from contextlib import contextmanager
+from pathlib import Path
 from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -15,11 +16,24 @@ from i2code.implement.idea_project import IdeaProject
 
 @contextmanager
 def TempIdeaProject(name):
-    """Create a temporary IdeaProject with its directory on disk."""
+    """Create a temporary IdeaProject with its directory on disk.
+
+    The directory is laid out as `<tmpdir>/docs/ideas/active/<name>` so that
+    `_git_root_from_path` resolves the enclosing git root deterministically.
+    The git root is attached as `project_root` on the yielded IdeaProject
+    so tests can build sibling worktree/clone paths.
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
-        idea_dir = os.path.join(tmpdir, name)
+        # Resolve the tmpdir so that _git_root_from_path (which calls
+        # Path.resolve) produces the same prefix as project.directory —
+        # otherwise relpath produces a broken path on macOS where
+        # /var/folders is a symlink to /private/var/folders.
+        resolved_root = str(Path(tmpdir).resolve())
+        idea_dir = os.path.join(resolved_root, "docs", "ideas", "active", name)
         os.makedirs(idea_dir)
-        yield IdeaProject(idea_dir)
+        project = IdeaProject(idea_dir)
+        project.project_root = resolved_root  # type: ignore[attr-defined]
+        yield project
 
 
 def menu_config_by_label(choices):

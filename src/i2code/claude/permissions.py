@@ -28,6 +28,16 @@ def _resolve_path(path: str) -> str:
     return str(Path(path).resolve())
 
 
+def build_read_only_tools_flag(repo_root: str) -> str:
+    """Build the --allowedTools flag value granting only Read access.
+
+    Used for batch-mode commands where Claude should output to stdout
+    rather than writing files directly.
+    """
+    repo = _resolve_path(repo_root)
+    return f"Read(/{repo}/**)"
+
+
 def build_allowed_tools_flag(repo_root: str, idea_dir: str) -> str:
     """Build the --allowedTools flag value for claude CLI.
 

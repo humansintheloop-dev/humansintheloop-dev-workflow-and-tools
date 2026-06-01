@@ -4,7 +4,7 @@ import sys
 from dataclasses import dataclass
 from typing import Callable
 
-from i2code.claude.permissions import build_allowed_tools_flag
+from i2code.claude.permissions import build_read_only_tools_flag
 from i2code.implement.claude_runner import ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 
@@ -21,7 +21,7 @@ def _generate_plan(project, claude_runner, rendered_prompt, *, repo_root=None):
     """Invoke Claude in batch mode to generate the plan."""
     cmd = ["claude"]
     if repo_root is not None:
-        allowed_tools = build_allowed_tools_flag(repo_root, project.directory)
+        allowed_tools = build_read_only_tools_flag(repo_root)
         cmd += ["--allowedTools", allowed_tools]
     cmd += ["-p", rendered_prompt]
     cwd = repo_root if repo_root is not None else project.directory

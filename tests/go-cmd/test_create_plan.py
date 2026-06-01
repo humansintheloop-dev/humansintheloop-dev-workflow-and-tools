@@ -209,7 +209,7 @@ class TestCreatePlanRepairOnValidationFailure:
 @pytest.mark.unit
 class TestCreatePlanAllowedTools:
 
-    def test_allowed_tools_included_when_repo_root_provided(self, tmp_path):
+    def test_allowed_tools_is_read_only_when_repo_root_provided(self, tmp_path):
         repo_root = str(tmp_path / "repo")
         os.makedirs(repo_root)
         idea_dir = str(tmp_path / "repo" / "docs" / "ideas" / "my-idea")
@@ -226,8 +226,8 @@ class TestCreatePlanAllowedTools:
         allowed_tools_idx = cmd.index("--allowedTools")
         allowed_tools_value = cmd[allowed_tools_idx + 1]
         assert f"Read(/{repo_root}/**)" in allowed_tools_value
-        assert f"Write(/{idea_dir}/**)" in allowed_tools_value
-        assert f"Edit(/{idea_dir}/**)" in allowed_tools_value
+        assert "Write" not in allowed_tools_value
+        assert "Edit" not in allowed_tools_value
         assert cwd == repo_root
 
     def test_standalone_no_allowed_tools(self):

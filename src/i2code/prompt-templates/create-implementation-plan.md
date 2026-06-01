@@ -9,7 +9,10 @@ Separate skills control TDD execution and task progression, so the plan does NOT
 to restate how to do TDD/BDD or how to mark tasks complete.
 It should note that the steps should be implemented using TDD.
 
-IMPORTANT: Output the plan to stdout in MARKDOWN format only. DO NOT WRITE A FILE
+IMPORTANT: Output the plan to stdout in MARKDOWN format only.
+DO NOT use the Write tool or Edit tool to create or modify any files.
+DO NOT ask for write permission. The calling program captures your stdout and writes the file itself.
+Your ONLY job is to output the plan text — nothing else.
 
 ---
 

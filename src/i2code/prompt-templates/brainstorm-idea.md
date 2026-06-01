@@ -40,6 +40,7 @@ Process:
   - Priorities and constraints
 - **Derive obvious conclusions** - Before asking a question, verify it cannot be derived from prior answers. If the answer follows logically from established decisions, state the conclusion and move on. Reserve questions for genuinely ambiguous or preference-based decisions.
 - Ask me one question at a time so we can develop a thorough, step-by-step understanding of the idea.
+- **After each answer, immediately append the Q&A to the discussion-file before asking the next question.** Do not batch discussion file updates — the file should always reflect the full conversation so far.
 - Each question should build on my previous answers.
 - Define sensible and easily changeable default assumptions so we can focus on the most important aspects.
 - When a question has discrete, enumerable answers, prefer formulating it as multi-choice with 2-4 options.

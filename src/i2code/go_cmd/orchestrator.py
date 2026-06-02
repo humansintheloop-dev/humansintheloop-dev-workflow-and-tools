@@ -19,7 +19,9 @@ from i2code.go_cmd.implement_config import (
     write_implement_config,
 )
 from i2code.go_cmd.menu import MenuConfig, get_user_choice
-from i2code.go_cmd.plan_completion import _default_gh_runner, resolve_plan_text
+from i2code.go_cmd.plan_completion import (
+    ResolverDeps, _default_gh_runner, resolve_plan_text,
+)
 from i2code.go_cmd.plan_validator import validate_plan
 from i2code.go_cmd.plugin_skills import list_plugin_skills
 from i2code.go_cmd.revise_plan import revise_plan
@@ -419,7 +421,10 @@ class Orchestrator:
         git_root = str(_git_root_from_path(self._project.directory))
         plan_text = resolve_plan_text(
             self._project, config, git_root,
-            gh_runner=self._deps.gh_runner,
+            ResolverDeps(
+                gh_runner=self._deps.gh_runner,
+                output=self._deps.output,
+            ),
         )
         if plan_text is None:
             return

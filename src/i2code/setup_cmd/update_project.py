@@ -28,6 +28,12 @@ class _Context(NamedTuple):
     template_renderer: object
 
 
+class _RenderSpec(NamedTuple):
+    previous_sha: str
+    config_diff: str
+    is_first_sync: str
+
+
 CLAUDE_MD_NAME = "CLAUDE.md"
 SETTINGS_RELPATH = os.path.join(".claude", "settings.local.json")
 SETTINGS_TEMPLATE_NAME = "settings.local.json"
@@ -119,24 +125,41 @@ def _process_file(spec, ctx):
     if diff == "":
         spec.write_sha(spec.project_path, current_sha)
         return
+    render = _RenderSpec(
+        previous_sha=previous_sha, config_diff=diff, is_first_sync="false",
+    )
+    _render_and_advance_sha(spec, ctx, current_sha, render)
+
+
+def _build_variables(spec, ctx, current_sha, render):
+    return {
+        "PROJECT_DIR": ctx.project_dir,
+        spec.project_var: spec.project_path,
+        spec.source_var: spec.source_path,
+        "CURRENT_SHA": current_sha,
+        "PREVIOUS_SHA": render.previous_sha,
+        "CONFIG_DIFF": render.config_diff,
+        "IS_FIRST_SYNC": render.is_first_sync,
+    }
+
+
+def _render_and_advance_sha(spec, ctx, current_sha, render):
+    variables = _build_variables(spec, ctx, current_sha, render)
+    prompt = ctx.template_renderer(spec.template_name, variables)
+    result = ctx.claude_runner.run_interactive(["claude", prompt], cwd=ctx.project_dir)
+    if result.returncode == 0:
+        spec.write_sha(spec.project_path, current_sha)
 
 
 def _run_first_sync(spec, current_sha, ctx):
     with open(spec.source_path) as f:
         template_content = f.read()
-    variables = {
-        "PROJECT_DIR": ctx.project_dir,
-        spec.project_var: spec.project_path,
-        spec.source_var: spec.source_path,
-        "CURRENT_SHA": current_sha,
-        "PREVIOUS_SHA": "",
-        "CONFIG_DIFF": FIRST_SYNC_PREAMBLE + template_content,
-        "IS_FIRST_SYNC": "true",
-    }
-    prompt = ctx.template_renderer(spec.template_name, variables)
-    result = ctx.claude_runner.run_interactive(["claude", prompt], cwd=ctx.project_dir)
-    if result.returncode == 0:
-        spec.write_sha(spec.project_path, current_sha)
+    render = _RenderSpec(
+        previous_sha="",
+        config_diff=FIRST_SYNC_PREAMBLE + template_content,
+        is_first_sync="true",
+    )
+    _render_and_advance_sha(spec, ctx, current_sha, render)
 
 
 def _config_file_relpath(config_file_path, repo_root):

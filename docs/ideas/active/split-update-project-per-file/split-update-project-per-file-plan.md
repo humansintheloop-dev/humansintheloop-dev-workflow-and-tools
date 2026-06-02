@@ -201,25 +201,25 @@ Implements CAP-3.2 (first-sync rendering with full template content) and CAP-3.5
 
 Implements CAP-3.3 (per-file Claude invocation scoped to the per-file diff with `IS_FIRST_SYNC=false`). After this thread, the primary end-to-end scenario S-1 invokes Claude twice in CLAUDE.md-then-settings order with the correct per-file diff content and rewrites both SHA markers on success.
 
-- [ ] **Task 5.1: `update_project` invokes Claude per file with `IS_FIRST_SYNC=false` and scoped per-file diff content**
+- [x] **Task 5.1: `update_project` invokes Claude per file with `IS_FIRST_SYNC=false` and scoped per-file diff content**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/setup-cmd/test_update_project.py -v`
   - Observable: For scenario S-1 (project CLAUDE.md has marker `AAA111`, settings has marker `BBB222`, CLAUDE.md current SHA `CCC333` with non-empty diff, settings current SHA `DDD444` with non-empty diff), `update_project(...)`: (a) makes exactly two `fake_renderer` calls in order — first `update-project-claude-md.md`, then `update-project-settings.md`; (b) each render call has `IS_FIRST_SYNC == "false"`, the correct per-file `PREVIOUS_SHA`/`CURRENT_SHA`, and `CONFIG_DIFF` equal to the per-file git diff text; (c) makes exactly two `fake_runner.run_interactive` calls in the same order; (d) after both Claude calls return 0, project CLAUDE.md ends with `<!-- claude-config-files-sha: CCC333 -->` and project settings allow list contains `Bash(i2code-config-files-sha DDD444)`.
   - Evidence: New tests `TestRoutineUpdate::test_two_renders_in_claude_md_then_settings_order`, `TestRoutineUpdate::test_each_render_has_per_file_diff_and_shas`, `TestRoutineUpdate::test_two_claude_invocations_in_order`, `TestRoutineUpdate::test_scenario_s1_both_markers_advanced` all pass.
   - Steps:
-    - [ ] Un-skip and rewrite the pre-existing `TestTemplateRendering` tests that were skipped in Task 2.1 by replacing them with the new `TestRoutineUpdate` class. Delete the old skipped tests
-    - [ ] Add a test class `TestRoutineUpdate` (`@pytest.mark.unit`)
-    - [ ] Write failing test `test_two_renders_in_claude_md_then_settings_order`: set up S-1 preconditions; mock CLAUDE.md diff `"diff-for-claude-md"` and settings diff `"diff-for-settings"`; assert `[call[0] for call in fake_renderer.calls] == ["update-project-claude-md.md", "update-project-settings.md"]`
-    - [ ] Write failing test `test_each_render_has_per_file_diff_and_shas`: assert `fake_renderer.calls[0][1]` contains `IS_FIRST_SYNC == "false"`, `PREVIOUS_SHA == "AAA111"`, `CURRENT_SHA == "CCC333"`, `CONFIG_DIFF == "diff-for-claude-md"`; assert `fake_renderer.calls[1][1]` contains `IS_FIRST_SYNC == "false"`, `PREVIOUS_SHA == "BBB222"`, `CURRENT_SHA == "DDD444"`, `CONFIG_DIFF == "diff-for-settings"`
-    - [ ] Write failing test `test_two_claude_invocations_in_order`: assert `len(fake_runner.calls) == 2` and both have method `"run_interactive"` with `cwd == project_dir`; the first command contains `template=update-project-claude-md.md` and the second contains `template=update-project-settings.md`
-    - [ ] Write failing test `test_scenario_s1_both_markers_advanced`: pre-set `fake_runner` to return `ClaudeResult(returncode=0)`; after the call, assert project CLAUDE.md's last line is `<!-- claude-config-files-sha: CCC333 -->` and the project settings JSON's `allow` contains exactly one `Bash(i2code-config-files-sha DDD444)` (and no leftover `BBB222` entry)
-    - [ ] Implement the non-empty-diff branch in `update_project()`: when previous SHA is non-empty and per-file diff is non-empty, render with `IS_FIRST_SYNC="false"` and `CONFIG_DIFF=<per-file diff text>`, invoke Claude, on success write the new per-file SHA marker
-    - [ ] Run all four new tests; ensure they pass
-    - [ ] Also confirm that scenario S-2 (only CLAUDE.md changed: CLAUDE.md non-empty diff, settings empty diff) works end-to-end — add a single regression test `TestRoutineUpdate::test_scenario_s2_only_claude_md_changed`: CLAUDE.md diff non-empty, settings diff empty; assert exactly one Claude invocation (for CLAUDE.md), both markers advanced to their respective current SHAs
-    - [ ] Run `uvx pyright --level error src/` — exit 0
-    - [ ] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
-    - [ ] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
-    - [ ] Commit via the commit-guidelines skill
+    - [x] Un-skip and rewrite the pre-existing `TestTemplateRendering` tests that were skipped in Task 2.1 by replacing them with the new `TestRoutineUpdate` class. Delete the old skipped tests
+    - [x] Add a test class `TestRoutineUpdate` (`@pytest.mark.unit`)
+    - [x] Write failing test `test_two_renders_in_claude_md_then_settings_order`: set up S-1 preconditions; mock CLAUDE.md diff `"diff-for-claude-md"` and settings diff `"diff-for-settings"`; assert `[call[0] for call in fake_renderer.calls] == ["update-project-claude-md.md", "update-project-settings.md"]`
+    - [x] Write failing test `test_each_render_has_per_file_diff_and_shas`: assert `fake_renderer.calls[0][1]` contains `IS_FIRST_SYNC == "false"`, `PREVIOUS_SHA == "AAA111"`, `CURRENT_SHA == "CCC333"`, `CONFIG_DIFF == "diff-for-claude-md"`; assert `fake_renderer.calls[1][1]` contains `IS_FIRST_SYNC == "false"`, `PREVIOUS_SHA == "BBB222"`, `CURRENT_SHA == "DDD444"`, `CONFIG_DIFF == "diff-for-settings"`
+    - [x] Write failing test `test_two_claude_invocations_in_order`: assert `len(fake_runner.calls) == 2` and both have method `"run_interactive"` with `cwd == project_dir`; the first command contains `template=update-project-claude-md.md` and the second contains `template=update-project-settings.md`
+    - [x] Write failing test `test_scenario_s1_both_markers_advanced`: pre-set `fake_runner` to return `ClaudeResult(returncode=0)`; after the call, assert project CLAUDE.md's last line is `<!-- claude-config-files-sha: CCC333 -->` and the project settings JSON's `allow` contains exactly one `Bash(i2code-config-files-sha DDD444)` (and no leftover `BBB222` entry)
+    - [x] Implement the non-empty-diff branch in `update_project()`: when previous SHA is non-empty and per-file diff is non-empty, render with `IS_FIRST_SYNC="false"` and `CONFIG_DIFF=<per-file diff text>`, invoke Claude, on success write the new per-file SHA marker
+    - [x] Run all four new tests; ensure they pass
+    - [x] Also confirm that scenario S-2 (only CLAUDE.md changed: CLAUDE.md non-empty diff, settings empty diff) works end-to-end — add a single regression test `TestRoutineUpdate::test_scenario_s2_only_claude_md_changed`: CLAUDE.md diff non-empty, settings diff empty; assert exactly one Claude invocation (for CLAUDE.md), both markers advanced to their respective current SHAs
+    - [x] Run `uvx pyright --level error src/` — exit 0
+    - [x] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
+    - [x] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
+    - [x] Commit via the commit-guidelines skill
 
 ---
 
@@ -334,3 +334,6 @@ TestFirstSyncClaudeMd 4/4 passing; pytest exit 0 (19 passed, 20 skipped); pyrigh
 
 ### 2026-06-02 16:25 - mark-task-complete
 TestFirstSyncSettings 3/3 passing; pytest exit 0 (22 passed, 12 skipped); pyright --level error exit 0; CodeScene 10.0 on both files; safeguard PASSED. Deleted Thread-3-superseded TestShaExtraction and TestGitOperations classes.
+
+### 2026-06-02 16:39 - mark-task-complete
+ST5 T5.1: routine update branch; pytest 27 passed; pyright 0 errors; CodeScene 10.0/10.0; safeguard PASSED

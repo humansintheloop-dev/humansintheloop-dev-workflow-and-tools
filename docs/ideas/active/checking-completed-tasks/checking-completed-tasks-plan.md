@@ -141,16 +141,16 @@ US-1.3 / Spec S4. The nono sandbox runs the agent on the host and edits the clon
 
 US-1.4 / Spec S3. Container mode bind-mounts the same `-cl-` sibling into Docker; the resolver branch is the same as nono.
 
-- [ ] **Task 5.1: Orchestrator prints `Workflow Complete!` when isolation=container and the host clone's plan file is fully checked**
+- [x] **Task 5.1: Orchestrator prints `Workflow Complete!` when isolation=container and the host clone's plan file is fully checked**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/go-cmd/test_orchestrator_implement.py::TestPlanCompletionContainer::test_container_mode_complete_plan_prints_workflow_complete -v`
   - Observable: With `trunk=false, isolation_type=container` and a fully-checked plan at the `-cl-` sibling, stderr contains `Workflow Complete!` and `Orchestrator.run()` raises `SystemExit(0)`. The resolver consults the same `-cl-` sibling path it uses for nono.
   - Evidence: The pytest command above runs the new `TestPlanCompletionContainer` class. The test verifies that switching `isolation_type` from `nono` to `container` yields identical resolver behaviour, by asserting the same `-cl-` plan-file path is read and the banner/exit are correct. Falling through to main-repo path would fail the assertion.
   - Steps:
-    - [ ] Add `TestPlanCompletionContainer` with the failing test in `tests/go-cmd/test_orchestrator_implement.py`, mirroring the nono setup but with `isolation_type="container"`.
-    - [ ] Run the test to confirm it fails.
-    - [ ] Extend the `isolation_type == "nono"` branch in `resolve_plan_text` to also accept `"container"`, e.g., `if config["isolation_type"] in ("nono", "container"):`.
-    - [ ] Run the test and confirm green via `./test-scripts/test-unit.sh`.
+    - [x] Add `TestPlanCompletionContainer` with the failing test in `tests/go-cmd/test_orchestrator_implement.py`, mirroring the nono setup but with `isolation_type="container"`.
+    - [x] Run the test to confirm it fails.
+    - [x] Extend the `isolation_type == "nono"` branch in `resolve_plan_text` to also accept `"container"`, e.g., `if config["isolation_type"] in ("nono", "container"):`.
+    - [x] Run the test and confirm green via `./test-scripts/test-unit.sh`.
 
 ---
 
@@ -238,3 +238,6 @@ ST3 T3.1: Added incomplete-plan worktree test; deleted obsolete TestPlanCompleti
 
 ### 2026-06-02 09:31 - mark-task-complete
 ST4 T4.1: Extended resolve_plan_text with nono branch reading host clone -cl- sibling; refactored sibling-mode tests with shared scenario helper to satisfy CodeScene.
+
+### 2026-06-02 12:07 - mark-task-complete
+ST5 T5.1: Extended host-clone resolver branch to accept isolation_type=container alongside nono; added TestPlanCompletionContainer covering the new branch.

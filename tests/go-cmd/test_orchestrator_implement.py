@@ -449,3 +449,17 @@ class TestPlanCompletionNono:
                     user_choices=[IMPLEMENT_PLAN], expect_complete=True,
                 ),
             )
+
+
+@pytest.mark.unit
+class TestPlanCompletionContainer:
+
+    def test_container_mode_complete_plan_prints_workflow_complete(self):
+        with TempIdeaProject("my-feature") as project:
+            _assert_sibling_mode_plan_completion(
+                project, _COMPLETE_PLAN,
+                _SiblingPlanScenario(
+                    suffix="cl", isolation_type="container",
+                    user_choices=[IMPLEMENT_PLAN], expect_complete=True,
+                ),
+            )

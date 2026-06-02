@@ -276,19 +276,19 @@ Closes out AC-7, AC-8, AC-11. After this thread, the legacy single-template file
 
 Code-quality cleanup pass. Reduces duplication between the CLAUDE.md and settings branches of `update_project()` after all behavior is implemented and tests pass.
 
-- [ ] **Task 8.1: Extract per-file processing into a single function parameterized by file-kind**
+- [x] **Task 8.1: Extract per-file processing into a single function parameterized by file-kind**
   - TaskType: REFACTOR
   - Entrypoint: `uv run pytest tests/setup-cmd/test_update_project.py -v`
   - Observable: No behavior change. All tests added in Steel Threads 2–7 still pass. The orchestrator body in `update_project()` shrinks: a single loop iterates over a list of two file descriptors (one for `CLAUDE.md`, one for `settings.local.json`), each carrying its source/destination paths, its template name, its SHA-reader, and its SHA-writer. The per-file branches (missing → copy; present, no marker → first-sync Claude; present, marker, empty diff → skip; present, marker, non-empty diff → diff Claude) are expressed once.
   - Evidence: Running `uv run pytest tests/setup-cmd/test_update_project.py -v` after the refactor exits 0 with the same test set as Steel Thread 7. `uvx pyright --level error src/` exits 0. CodeScene reports a score of 10.0 for `src/i2code/setup_cmd/update_project.py`.
   - Steps:
-    - [ ] Define a small dataclass or namedtuple `_FileSpec` with fields: `project_path`, `source_path`, `template_name`, `template_relpath`, `read_sha`, `write_sha`, `render_vars(project_path, source_path, prev_sha, curr_sha, diff, is_first_sync) -> dict` (the per-file variable-name mapping — `PROJECT_CLAUDE_MD` vs `PROJECT_SETTINGS`, `CONFIG_CLAUDE_MD` vs `CONFIG_SETTINGS`)
-    - [ ] Build the two file specs inside `update_project()` and iterate over them; on each iteration apply the four-branch routing
-    - [ ] Stop on first non-zero Claude exit (CAP-5.2)
-    - [ ] Run the existing test suite — all tests must still pass without modification (this is a refactor)
-    - [ ] Run `uvx pyright --level error src/` — exit 0
-    - [ ] Run CodeScene `pre_commit_code_health_safeguard`; iterate until score is 10.0 for the changed file
-    - [ ] Commit via the commit-guidelines skill
+    - [x] Define a small dataclass or namedtuple `_FileSpec` with fields: `project_path`, `source_path`, `template_name`, `template_relpath`, `read_sha`, `write_sha`, `render_vars(project_path, source_path, prev_sha, curr_sha, diff, is_first_sync) -> dict` (the per-file variable-name mapping — `PROJECT_CLAUDE_MD` vs `PROJECT_SETTINGS`, `CONFIG_CLAUDE_MD` vs `CONFIG_SETTINGS`)
+    - [x] Build the two file specs inside `update_project()` and iterate over them; on each iteration apply the four-branch routing
+    - [x] Stop on first non-zero Claude exit (CAP-5.2)
+    - [x] Run the existing test suite — all tests must still pass without modification (this is a refactor)
+    - [x] Run `uvx pyright --level error src/` — exit 0
+    - [x] Run CodeScene `pre_commit_code_health_safeguard`; iterate until score is 10.0 for the changed file
+    - [x] Commit via the commit-guidelines skill
 
 ---
 
@@ -343,3 +343,6 @@ TestAbortOnFailure 4/4 passing; pytest 31 passed exit 0; pyright 0 errors; CodeS
 
 ### 2026-06-02 16:52 - mark-task-complete
 TestIdempotenceAndCleanup 3/3 passing; legacy template deleted; pytest 34 passed; full suite 1398 passed; pyright 0 errors; CodeScene safeguard PASSED
+
+### 2026-06-02 16:57 - mark-task-complete
+ST8 T8.1: extracted per-file processing — added template_relpath to _FileSpec; orchestrator iterates over file specs; pytest 34 passed; pyright 0 errors; CodeScene 10.0/10.0; safeguard PASSED

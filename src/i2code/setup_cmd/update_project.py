@@ -14,6 +14,7 @@ from i2code.implement.claude_runner import ClaudeResult
 class _FileSpec(NamedTuple):
     project_path: str
     source_path: str
+    template_relpath: str
     read_sha: object
     write_sha: object
     template_name: str
@@ -72,7 +73,7 @@ def update_project(project_dir, config_dir, claude_runner, template_renderer):
         claude_runner=claude_runner,
         template_renderer=template_renderer,
     )
-    for spec in _build_file_specs(project_dir, config_dir):
+    for spec in _build_file_specs(project_dir, config_dir, ctx.repo_root):
         result = _process_file(spec, ctx)
         if result is not None and result.returncode != 0:
             return result
@@ -89,11 +90,14 @@ def _validate_directories(project_dir, config_dir):
         raise SystemExit(1)
 
 
-def _build_file_specs(project_dir, config_dir):
+def _build_file_specs(project_dir, config_dir, repo_root):
+    claude_md_source = os.path.join(config_dir, CLAUDE_MD_NAME)
+    settings_source = os.path.join(config_dir, SETTINGS_TEMPLATE_NAME)
     return [
         _FileSpec(
             project_path=os.path.join(project_dir, CLAUDE_MD_NAME),
-            source_path=os.path.join(config_dir, CLAUDE_MD_NAME),
+            source_path=claude_md_source,
+            template_relpath=_config_file_relpath(claude_md_source, repo_root),
             read_sha=_read_claude_md_sha,
             write_sha=_write_claude_md_sha,
             template_name=CLAUDE_MD_TEMPLATE,
@@ -102,7 +106,8 @@ def _build_file_specs(project_dir, config_dir):
         ),
         _FileSpec(
             project_path=os.path.join(project_dir, SETTINGS_RELPATH),
-            source_path=os.path.join(config_dir, SETTINGS_TEMPLATE_NAME),
+            source_path=settings_source,
+            template_relpath=_config_file_relpath(settings_source, repo_root),
             read_sha=_read_settings_sha,
             write_sha=_write_settings_sha,
             template_name=SETTINGS_TEMPLATE,
@@ -113,16 +118,15 @@ def _build_file_specs(project_dir, config_dir):
 
 
 def _process_file(spec, ctx):
-    relpath = _config_file_relpath(spec.source_path, ctx.repo_root)
     if not os.path.isfile(spec.project_path):
         _copy_template_file(spec.source_path, spec.project_path)
-        spec.write_sha(spec.project_path, _get_per_file_current_sha(ctx.repo_root, relpath))
+        spec.write_sha(spec.project_path, _get_per_file_current_sha(ctx.repo_root, spec.template_relpath))
         return None
     previous_sha = spec.read_sha(spec.project_path)
-    current_sha = _get_per_file_current_sha(ctx.repo_root, relpath)
+    current_sha = _get_per_file_current_sha(ctx.repo_root, spec.template_relpath)
     if not previous_sha:
         return _run_first_sync(spec, current_sha, ctx)
-    diff = _get_per_file_diff(ctx.repo_root, relpath, previous_sha, current_sha)
+    diff = _get_per_file_diff(ctx.repo_root, spec.template_relpath, previous_sha, current_sha)
     if diff == "":
         spec.write_sha(spec.project_path, current_sha)
         return None

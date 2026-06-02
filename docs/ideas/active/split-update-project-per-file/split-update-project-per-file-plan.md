@@ -252,23 +252,23 @@ Implements CAP-5.2, CAP-5.4, CAP-7.2 (abort-on-first-failure semantics). After t
 
 Closes out AC-7, AC-8, AC-11. After this thread, the legacy single-template file is removed, no prompt template mentions the SHA marker, and running `update-project` twice in a row with no template changes performs zero Claude invocations on the second run.
 
-- [ ] **Task 7.1: Delete legacy `update-project-claude-files.md` template and assert idempotence**
+- [x] **Task 7.1: Delete legacy `update-project-claude-files.md` template and assert idempotence**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/setup-cmd/test_update_project.py -v`
   - Observable: (a) `src/i2code/prompt-templates/update-project-claude-files.md` does not exist; (b) running `update_project(...)` a first time with S-1 preconditions advances both markers to the current per-file SHAs; (c) running `update_project(...)` a second time (no template changes between runs) results in zero Claude invocations and both markers remain at the current SHAs; (d) neither `update-project-claude-md.md` nor `update-project-settings.md` contains the string `claude-config-files-sha` or any instruction telling Claude to write a SHA.
   - Evidence: New tests `TestIdempotenceAndCleanup::test_second_consecutive_run_invokes_claude_zero_times`, `TestIdempotenceAndCleanup::test_legacy_template_file_removed`, `TestIdempotenceAndCleanup::test_neither_new_template_mentions_sha_marker` all pass.
   - Steps:
-    - [ ] Add a test class `TestIdempotenceAndCleanup` (`@pytest.mark.unit`)
-    - [ ] Write failing test `test_second_consecutive_run_invokes_claude_zero_times`: S-1 preconditions; pre-set `fake_runner` to return `ClaudeResult(returncode=0)`; run `update_project(...)` once; reset `fake_runner.calls` and `fake_renderer.calls`; with the same git mock (no diff change — both prev and curr now equal `CCC333`/`DDD444`, diffs empty), run `update_project(...)` again; assert `len(fake_runner.calls) == 0` and `len(fake_renderer.calls) == 0`
-    - [ ] Write failing test `test_legacy_template_file_removed`: `assert not os.path.exists("src/i2code/prompt-templates/update-project-claude-files.md")`
-    - [ ] Write failing test `test_neither_new_template_mentions_sha_marker`: read each of `src/i2code/prompt-templates/update-project-claude-md.md` and `src/i2code/prompt-templates/update-project-settings.md`; assert the substring `claude-config-files-sha` does not appear in either, and neither contains instructions matching the regex `(?i)write.*sha|update.*sha.*marker|update.*tracking.*comment`
-    - [ ] Delete `src/i2code/prompt-templates/update-project-claude-files.md`
-    - [ ] Re-read the two new templates and ensure they contain no SHA-marker instructions — remove any if present
-    - [ ] Run all three new tests; ensure they pass
-    - [ ] Run `uvx pyright --level error src/` — exit 0
-    - [ ] Run the entire test suite (`uv run pytest -v`) to make sure no other tests reference the deleted template
-    - [ ] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
-    - [ ] Commit via the commit-guidelines skill
+    - [x] Add a test class `TestIdempotenceAndCleanup` (`@pytest.mark.unit`)
+    - [x] Write failing test `test_second_consecutive_run_invokes_claude_zero_times`: S-1 preconditions; pre-set `fake_runner` to return `ClaudeResult(returncode=0)`; run `update_project(...)` once; reset `fake_runner.calls` and `fake_renderer.calls`; with the same git mock (no diff change — both prev and curr now equal `CCC333`/`DDD444`, diffs empty), run `update_project(...)` again; assert `len(fake_runner.calls) == 0` and `len(fake_renderer.calls) == 0`
+    - [x] Write failing test `test_legacy_template_file_removed`: `assert not os.path.exists("src/i2code/prompt-templates/update-project-claude-files.md")`
+    - [x] Write failing test `test_neither_new_template_mentions_sha_marker`: read each of `src/i2code/prompt-templates/update-project-claude-md.md` and `src/i2code/prompt-templates/update-project-settings.md`; assert the substring `claude-config-files-sha` does not appear in either, and neither contains instructions matching the regex `(?i)write.*sha|update.*sha.*marker|update.*tracking.*comment`
+    - [x] Delete `src/i2code/prompt-templates/update-project-claude-files.md`
+    - [x] Re-read the two new templates and ensure they contain no SHA-marker instructions — remove any if present
+    - [x] Run all three new tests; ensure they pass
+    - [x] Run `uvx pyright --level error src/` — exit 0
+    - [x] Run the entire test suite (`uv run pytest -v`) to make sure no other tests reference the deleted template
+    - [x] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
+    - [x] Commit via the commit-guidelines skill
 
 ---
 
@@ -340,3 +340,6 @@ ST5 T5.1: routine update branch; pytest 27 passed; pyright 0 errors; CodeScene 1
 
 ### 2026-06-02 16:43 - mark-task-complete
 TestAbortOnFailure 4/4 passing; pytest 31 passed exit 0; pyright 0 errors; CodeScene 10.0/10.0 on both files; safeguard PASSED
+
+### 2026-06-02 16:52 - mark-task-complete
+TestIdempotenceAndCleanup 3/3 passing; legacy template deleted; pytest 34 passed; full suite 1398 passed; pyright 0 errors; CodeScene safeguard PASSED

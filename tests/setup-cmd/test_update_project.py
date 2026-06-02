@@ -109,125 +109,6 @@ class TestValidation:
         assert len(fake_runner.calls) == 0
 
 
-@pytest.mark.skip(reason="superseded by per-file flow; see Steel Thread 3")
-@pytest.mark.unit
-class TestShaExtraction:
-
-    def test_extracts_previous_sha_from_claude_md(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            _run_with_mocked_git(
-                (fake_runner, fake_renderer), tmpdir,
-                claude_md_content="# Project\n<!-- claude-config-files-sha: abc123def456 -->\n",
-                current_sha="e99999",
-            )
-            _, variables = fake_renderer.calls[0]
-            assert variables["PREVIOUS_SHA"] == "abc123def456"
-
-    def test_previous_sha_empty_when_no_claude_md(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            _run_with_mocked_git((fake_runner, fake_renderer), tmpdir)
-            _, variables = fake_renderer.calls[0]
-            assert variables["PREVIOUS_SHA"] == ""
-
-    def test_previous_sha_empty_when_no_marker_in_claude_md(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            _run_with_mocked_git(
-                (fake_runner, fake_renderer), tmpdir,
-                claude_md_content="# Project\nNo SHA here\n",
-            )
-            _, variables = fake_renderer.calls[0]
-            assert variables["PREVIOUS_SHA"] == ""
-
-
-@pytest.mark.skip(reason="superseded by per-file flow; see Steel Thread 3")
-@pytest.mark.unit
-class TestGitOperations:
-
-    def test_derives_repo_root_from_config_dir(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            project_dir = _create_project_dir(tmpdir)
-            config_dir = _create_config_dir(tmpdir)
-
-            calls = []
-
-            def tracking_run(cmd, capture_output=False, text=False, check=False, cwd=None):
-                calls.append((cmd, cwd))
-                return _fake_subprocess_run(tmpdir)(
-                    cmd, capture_output=capture_output, text=text, check=check, cwd=cwd,
-                )
-
-            with patch("i2code.setup_cmd.update_project.subprocess") as mock_sub:
-                mock_sub.run = tracking_run
-                update_project(project_dir, config_dir, fake_runner, fake_renderer)
-
-            rev_parse_calls = [c for c in calls if "rev-parse" in " ".join(c[0])]
-            assert len(rev_parse_calls) == 1
-            assert rev_parse_calls[0][1] == config_dir
-
-    def test_gets_current_sha_of_config_dir(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            _run_with_mocked_git(
-                (fake_runner, fake_renderer), tmpdir, current_sha="ccc999",
-            )
-            _, variables = fake_renderer.calls[0]
-            assert variables["CURRENT_SHA"] == "ccc999"
-
-    def test_generates_diff_between_previous_and_current_sha(self, fake_runner, fake_renderer):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            project_dir = _create_project_dir(
-                tmpdir,
-                claude_md_content="# Project\n<!-- claude-config-files-sha: aaa111 -->\n",
-            )
-            config_dir = _create_config_dir(tmpdir)
-
-            calls = []
-
-            def tracking_run(cmd, capture_output=False, text=False, check=False, cwd=None):
-                calls.append(cmd)
-                return _fake_subprocess_run(tmpdir, current_sha="bbb222", diff_output="diff here")(
-                    cmd, capture_output=capture_output, text=text, check=check, cwd=cwd,
-                )
-
-            with patch("i2code.setup_cmd.update_project.subprocess") as mock_sub:
-                mock_sub.run = tracking_run
-                update_project(project_dir, config_dir, fake_runner, fake_renderer)
-
-            diff_calls = [c for c in calls if "diff" in " ".join(c)]
-            assert len(diff_calls) == 1
-            assert "aaa111..bbb222" in " ".join(diff_calls[0])
-
-    def test_diff_message_when_no_previous_sha(self, fake_runner, fake_renderer):
-        """First sync: no previous SHA produces informational message instead of diff."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            _run_with_mocked_git((fake_runner, fake_renderer), tmpdir)
-            _, variables = fake_renderer.calls[0]
-            assert "first sync" in variables["CONFIG_DIFF"].lower()
-
-    def test_handles_repo_root_not_found(self, fake_runner, fake_renderer):
-        """When git rev-parse fails, current SHA and diff are empty."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            project_dir = _create_project_dir(tmpdir)
-            config_dir = _create_config_dir(tmpdir)
-
-            def failing_run(cmd, capture_output=False, text=False, check=False, cwd=None):
-                cmd_str = " ".join(cmd)
-                if "rev-parse" in cmd_str:
-                    result = subprocess.CompletedProcess(cmd, 128)
-                    result.stdout = ""
-                    result.stderr = "fatal: not a git repository"
-                    return result
-                return _fake_subprocess_run(tmpdir)(
-                    cmd, capture_output=capture_output, text=text, check=check, cwd=cwd,
-                )
-
-            with patch("i2code.setup_cmd.update_project.subprocess") as mock_sub:
-                mock_sub.run = failing_run
-                update_project(project_dir, config_dir, fake_runner, fake_renderer)
-
-            _, variables = fake_renderer.calls[0]
-            assert variables["CURRENT_SHA"] == ""
-
-
 @pytest.mark.skip(reason="superseded by per-file flow; see Steel Thread 5")
 @pytest.mark.unit
 class TestTemplateRendering:
@@ -604,55 +485,78 @@ class TestEmptyDiffSkip:
             assert "Bash(i2code-config-files-sha DDD444)" in allow
 
 
-def _setup_claude_md_no_marker_project(tmpdir, *, template_content="# Template CLAUDE.md content\n"):
-    """Create project where CLAUDE.md exists but has no SHA marker, settings is synced.
+_DEFAULT_CLAUDE_MD_TEMPLATE = "# Template CLAUDE.md content\n"
+_DEFAULT_SETTINGS_TEMPLATE = {"permissions": {"allow": ["Bash(echo:*)"]}}
 
-    Returns (project_dir, config_dir, claude_md_relpath, settings_relpath).
+
+def _setup_first_sync_project(tmpdir, *, missing_kind, claude_md_template, settings_template):
+    """Create project where exactly one file is missing its SHA marker.
+
+    `missing_kind` is "claude_md" or "settings". The non-missing file is created
+    with its SHA marker so it routes through the synced (empty-diff) branch.
     """
     project_dir = os.path.join(tmpdir, "my-project")
     os.makedirs(project_dir)
+    claude_md_content = "# Project\n"
+    if missing_kind != "claude_md":
+        claude_md_content += "<!-- claude-config-files-sha: AAA111 -->\n"
     with open(os.path.join(project_dir, "CLAUDE.md"), "w") as f:
-        f.write("# Project\n")
+        f.write(claude_md_content)
     os.makedirs(os.path.join(project_dir, ".claude"))
+    settings_allow = ["Bash(echo:*)"]
+    if missing_kind != "settings":
+        settings_allow.append("Bash(i2code-config-files-sha BBB222)")
     with open(os.path.join(project_dir, ".claude", "settings.local.json"), "w") as f:
-        json.dump(
-            {"permissions": {"allow": [
-                "Bash(echo:*)",
-                "Bash(i2code-config-files-sha BBB222)",
-            ]}},
-            f,
-        )
+        json.dump({"permissions": {"allow": settings_allow}}, f)
     config_dir = os.path.join(tmpdir, "config-files")
     os.makedirs(config_dir)
     with open(os.path.join(config_dir, "CLAUDE.md"), "w") as f:
-        f.write(template_content)
+        f.write(claude_md_template)
     with open(os.path.join(config_dir, "settings.local.json"), "w") as f:
-        json.dump({"permissions": {"allow": ["Bash(echo:*)"]}}, f)
+        json.dump(settings_template, f)
     claude_md_relpath = os.path.relpath(os.path.join(config_dir, "CLAUDE.md"), tmpdir)
     settings_relpath = os.path.relpath(os.path.join(config_dir, "settings.local.json"), tmpdir)
     return project_dir, config_dir, claude_md_relpath, settings_relpath
 
 
-def _run_first_sync_claude_md(tmpdir, fakes, *, template_content="# Template CLAUDE.md content\n"):
-    """Setup first-sync CLAUDE.md scenario and invoke update_project.
+def _run_first_sync(tmpdir, fakes, *, missing_kind, template_override=None):
+    """Set up a first-sync scenario for `missing_kind` and call update_project.
 
-    Returns project_dir.
+    `template_override`, if set, replaces the source template content for the
+    missing file (str for CLAUDE.md, dict for settings).
     """
     fake_runner, fake_renderer = fakes
+    claude_md_template = _DEFAULT_CLAUDE_MD_TEMPLATE
+    settings_template = _DEFAULT_SETTINGS_TEMPLATE
+    if template_override is not None:
+        if missing_kind == "claude_md":
+            claude_md_template = template_override
+        else:
+            settings_template = template_override
     project_dir, config_dir, claude_md_relpath, settings_relpath = (
-        _setup_claude_md_no_marker_project(tmpdir, template_content=template_content)
+        _setup_first_sync_project(
+            tmpdir, missing_kind=missing_kind,
+            claude_md_template=claude_md_template,
+            settings_template=settings_template,
+        )
     )
+    synced_relpath = settings_relpath if missing_kind == "claude_md" else claude_md_relpath
     per_file_shas = {
         claude_md_relpath: _DEFAULT_CURRENT_SHAS["claude_md"],
         settings_relpath: _DEFAULT_CURRENT_SHAS["settings"],
     }
-    per_file_diffs = {settings_relpath: ""}
     with patch("i2code.setup_cmd.update_project.subprocess") as mock_sub:
         mock_sub.run = _per_file_subprocess_run(
-            tmpdir, per_file_shas=per_file_shas, per_file_diffs=per_file_diffs,
+            tmpdir, per_file_shas=per_file_shas, per_file_diffs={synced_relpath: ""},
         )
         update_project(project_dir, config_dir, fake_runner, fake_renderer)
     return project_dir
+
+
+def _find_render_call(fake_renderer, template_name):
+    matches = [c for c in fake_renderer.calls if c[0] == template_name]
+    assert len(matches) == 1
+    return matches[0]
 
 
 @pytest.mark.unit
@@ -662,9 +566,8 @@ class TestFirstSyncClaudeMd:
         self, fake_runner, fake_renderer,
     ):
         with tempfile.TemporaryDirectory() as tmpdir:
-            _run_first_sync_claude_md(tmpdir, (fake_runner, fake_renderer))
-            template_name, variables = fake_renderer.calls[0]
-            assert template_name == "update-project-claude-md.md"
+            _run_first_sync(tmpdir, (fake_runner, fake_renderer), missing_kind="claude_md")
+            _, variables = _find_render_call(fake_renderer, "update-project-claude-md.md")
             assert variables["IS_FIRST_SYNC"] == "true"
             assert variables["PREVIOUS_SHA"] == ""
 
@@ -672,11 +575,12 @@ class TestFirstSyncClaudeMd:
         self, fake_runner, fake_renderer,
     ):
         with tempfile.TemporaryDirectory() as tmpdir:
-            _run_first_sync_claude_md(
+            _run_first_sync(
                 tmpdir, (fake_runner, fake_renderer),
-                template_content="Hello template body",
+                missing_kind="claude_md",
+                template_override="Hello template body",
             )
-            _, variables = fake_renderer.calls[0]
+            _, variables = _find_render_call(fake_renderer, "update-project-claude-md.md")
             assert "Hello template body" in variables["CONFIG_DIFF"]
             assert "first sync" in variables["CONFIG_DIFF"].lower()
 
@@ -684,8 +588,8 @@ class TestFirstSyncClaudeMd:
         self, fake_runner, fake_renderer,
     ):
         with tempfile.TemporaryDirectory() as tmpdir:
-            project_dir = _run_first_sync_claude_md(
-                tmpdir, (fake_runner, fake_renderer),
+            project_dir = _run_first_sync(
+                tmpdir, (fake_runner, fake_renderer), missing_kind="claude_md",
             )
             method, cmd, cwd = fake_runner.calls[0]
             assert method == "run_interactive"
@@ -698,9 +602,49 @@ class TestFirstSyncClaudeMd:
         from i2code.implement.claude_runner import ClaudeResult
         with tempfile.TemporaryDirectory() as tmpdir:
             fake_runner.set_result(ClaudeResult(returncode=0))
-            project_dir = _run_first_sync_claude_md(
-                tmpdir, (fake_runner, fake_renderer),
+            project_dir = _run_first_sync(
+                tmpdir, (fake_runner, fake_renderer), missing_kind="claude_md",
             )
             with open(os.path.join(project_dir, "CLAUDE.md")) as f:
                 lines = f.read().rstrip("\n").split("\n")
             assert lines[-1] == "<!-- claude-config-files-sha: CCC333 -->"
+
+
+@pytest.mark.unit
+class TestFirstSyncSettings:
+
+    def test_renders_first_sync_settings_prompt(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _run_first_sync(tmpdir, (fake_runner, fake_renderer), missing_kind="settings")
+            _, variables = _find_render_call(fake_renderer, "update-project-settings.md")
+            assert variables["IS_FIRST_SYNC"] == "true"
+            assert variables["PREVIOUS_SHA"] == ""
+
+    def test_first_sync_settings_prompt_contains_full_template_content(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _run_first_sync(
+                tmpdir, (fake_runner, fake_renderer),
+                missing_kind="settings",
+                template_override={"permissions": {"allow": ["Bash(unique-marker:*)"]}},
+            )
+            _, variables = _find_render_call(fake_renderer, "update-project-settings.md")
+            assert "Bash(unique-marker:*)" in variables["CONFIG_DIFF"]
+            assert "first sync" in variables["CONFIG_DIFF"].lower()
+
+    def test_python_writes_settings_sha_after_claude_success(
+        self, fake_runner, fake_renderer,
+    ):
+        from i2code.implement.claude_runner import ClaudeResult
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fake_runner.set_result(ClaudeResult(returncode=0))
+            project_dir = _run_first_sync(
+                tmpdir, (fake_runner, fake_renderer), missing_kind="settings",
+            )
+            project_settings = os.path.join(project_dir, ".claude", "settings.local.json")
+            with open(project_settings) as f:
+                allow = json.load(f)["permissions"]["allow"]
+            assert "Bash(i2code-config-files-sha DDD444)" in allow

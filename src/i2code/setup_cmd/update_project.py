@@ -34,6 +34,7 @@ SETTINGS_TEMPLATE_NAME = "settings.local.json"
 CLAUDE_MD_SHA_MARKER = "claude-config-files-sha"
 SETTINGS_SHA_MARKER = "i2code-config-files-sha"
 CLAUDE_MD_TEMPLATE = "update-project-claude-md.md"
+SETTINGS_TEMPLATE = "update-project-settings.md"
 FIRST_SYNC_PREAMBLE = "First sync — full current template content follows:\n\n"
 
 
@@ -96,7 +97,7 @@ def _build_file_specs(project_dir, config_dir):
             source_path=os.path.join(config_dir, SETTINGS_TEMPLATE_NAME),
             read_sha=_read_settings_sha,
             write_sha=_write_settings_sha,
-            template_name="",
+            template_name=SETTINGS_TEMPLATE,
             project_var="PROJECT_SETTINGS",
             source_var="CONFIG_SETTINGS",
         ),
@@ -112,8 +113,7 @@ def _process_file(spec, ctx):
     previous_sha = spec.read_sha(spec.project_path)
     current_sha = _get_per_file_current_sha(ctx.repo_root, relpath)
     if not previous_sha:
-        if spec.template_name:
-            _run_first_sync(spec, current_sha, ctx)
+        _run_first_sync(spec, current_sha, ctx)
         return
     diff = _get_per_file_diff(ctx.repo_root, relpath, previous_sha, current_sha)
     if diff == "":

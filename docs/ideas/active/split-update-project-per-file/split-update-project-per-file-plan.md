@@ -177,23 +177,23 @@ Implements CAP-3.2 (first-sync rendering with full template content) and CAP-3.5
     - [x] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
     - [x] Commit via the commit-guidelines skill
 
-- [ ] **Task 4.2: `update_project` invokes Claude with `IS_FIRST_SYNC=true` and full template content when `.claude/settings.local.json` has no marker**
+- [x] **Task 4.2: `update_project` invokes Claude with `IS_FIRST_SYNC=true` and full template content when `.claude/settings.local.json` has no marker**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/setup-cmd/test_update_project.py -v`
   - Observable: When project `.claude/settings.local.json` exists but contains no `Bash(i2code-config-files-sha ...)` entry, `update_project(...)`: (a) renders `update-project-settings.md` with `IS_FIRST_SYNC="true"`, `PREVIOUS_SHA=""`, `CONFIG_DIFF` containing the full current template content prefixed by an explanatory message; (b) invokes Claude per CAP-3.4; (c) on Claude exit 0, inserts `Bash(i2code-config-files-sha <current_sha>)` into the project file's `permissions.allow` array.
   - Evidence: New tests `TestFirstSyncSettings::test_renders_first_sync_settings_prompt`, `TestFirstSyncSettings::test_first_sync_settings_prompt_contains_full_template_content`, `TestFirstSyncSettings::test_python_writes_settings_sha_after_claude_success` all pass.
   - Steps:
-    - [ ] Create new template `src/i2code/prompt-templates/update-project-settings.md`. Use only the variables `$PROJECT_DIR`, `$PROJECT_SETTINGS`, `$CONFIG_SETTINGS`, `$CURRENT_SHA`, `$PREVIOUS_SHA`, `$CONFIG_DIFF`, `$IS_FIRST_SYNC`. Cover JSON-permissions-specific reconciliation: merging new entries into `permissions.allow`/`deny`/`ask`, preserving project-specific entries, asking before applying each change. MUST NOT mention `claude-config-files-sha` or any SHA-write instruction
-    - [ ] Add a test class `TestFirstSyncSettings` (`@pytest.mark.unit`)
-    - [ ] Write failing test `test_renders_first_sync_settings_prompt`: project CLAUDE.md exists with marker (empty diff); project settings.local.json exists with `{"permissions": {"allow": ["Bash(echo:*)"]}}` (no SHA entry); assert one render call for `"update-project-settings.md"` with `IS_FIRST_SYNC == "true"` and `PREVIOUS_SHA == ""`
-    - [ ] Write failing test `test_first_sync_settings_prompt_contains_full_template_content`: create `config_dir/settings.local.json` with distinctive content `{"permissions": {"allow": ["Bash(unique-marker:*)"]}}`; assert the settings `CONFIG_DIFF` contains `Bash(unique-marker:*)` and a leading explanatory message
-    - [ ] Write failing test `test_python_writes_settings_sha_after_claude_success`: settings current SHA `DDD444`; pre-set `fake_runner` to return `ClaudeResult(returncode=0)`; call `update_project(...)`; parse project settings.local.json and assert its `permissions.allow` includes `Bash(i2code-config-files-sha DDD444)`
-    - [ ] Implement the first-sync branch for settings in `update_project()` symmetric to CLAUDE.md
-    - [ ] Run all three new tests; ensure they pass
-    - [ ] Run `uvx pyright --level error src/` — exit 0
-    - [ ] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
-    - [ ] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
-    - [ ] Commit via the commit-guidelines skill
+    - [x] Create new template `src/i2code/prompt-templates/update-project-settings.md`. Use only the variables `$PROJECT_DIR`, `$PROJECT_SETTINGS`, `$CONFIG_SETTINGS`, `$CURRENT_SHA`, `$PREVIOUS_SHA`, `$CONFIG_DIFF`, `$IS_FIRST_SYNC`. Cover JSON-permissions-specific reconciliation: merging new entries into `permissions.allow`/`deny`/`ask`, preserving project-specific entries, asking before applying each change. MUST NOT mention `claude-config-files-sha` or any SHA-write instruction
+    - [x] Add a test class `TestFirstSyncSettings` (`@pytest.mark.unit`)
+    - [x] Write failing test `test_renders_first_sync_settings_prompt`: project CLAUDE.md exists with marker (empty diff); project settings.local.json exists with `{"permissions": {"allow": ["Bash(echo:*)"]}}` (no SHA entry); assert one render call for `"update-project-settings.md"` with `IS_FIRST_SYNC == "true"` and `PREVIOUS_SHA == ""`
+    - [x] Write failing test `test_first_sync_settings_prompt_contains_full_template_content`: create `config_dir/settings.local.json` with distinctive content `{"permissions": {"allow": ["Bash(unique-marker:*)"]}}`; assert the settings `CONFIG_DIFF` contains `Bash(unique-marker:*)` and a leading explanatory message
+    - [x] Write failing test `test_python_writes_settings_sha_after_claude_success`: settings current SHA `DDD444`; pre-set `fake_runner` to return `ClaudeResult(returncode=0)`; call `update_project(...)`; parse project settings.local.json and assert its `permissions.allow` includes `Bash(i2code-config-files-sha DDD444)`
+    - [x] Implement the first-sync branch for settings in `update_project()` symmetric to CLAUDE.md
+    - [x] Run all three new tests; ensure they pass
+    - [x] Run `uvx pyright --level error src/` — exit 0
+    - [x] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
+    - [x] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
+    - [x] Commit via the commit-guidelines skill
 
 ---
 
@@ -331,3 +331,6 @@ TestEmptyDiffSkip 3/3 passing; pytest exit 0 (15 passed, 20 skipped); pyright --
 
 ### 2026-06-02 16:12 - mark-task-complete
 TestFirstSyncClaudeMd 4/4 passing; pytest exit 0 (19 passed, 20 skipped); pyright --level error exit 0; CodeScene 10.0 after _Context refactor
+
+### 2026-06-02 16:25 - mark-task-complete
+TestFirstSyncSettings 3/3 passing; pytest exit 0 (22 passed, 12 skipped); pyright --level error exit 0; CodeScene 10.0 on both files; safeguard PASSED. Deleted Thread-3-superseded TestShaExtraction and TestGitOperations classes.

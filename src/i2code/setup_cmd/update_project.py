@@ -16,12 +16,25 @@ class _FileSpec(NamedTuple):
     source_path: str
     read_sha: object
     write_sha: object
+    template_name: str
+    project_var: str
+    source_var: str
+
+
+class _Context(NamedTuple):
+    project_dir: str
+    repo_root: str
+    claude_runner: object
+    template_renderer: object
+
 
 CLAUDE_MD_NAME = "CLAUDE.md"
 SETTINGS_RELPATH = os.path.join(".claude", "settings.local.json")
 SETTINGS_TEMPLATE_NAME = "settings.local.json"
 CLAUDE_MD_SHA_MARKER = "claude-config-files-sha"
 SETTINGS_SHA_MARKER = "i2code-config-files-sha"
+CLAUDE_MD_TEMPLATE = "update-project-claude-md.md"
+FIRST_SYNC_PREAMBLE = "First sync — full current template content follows:\n\n"
 
 
 def update_project(project_dir, config_dir, claude_runner, template_renderer):
@@ -44,12 +57,16 @@ def update_project(project_dir, config_dir, claude_runner, template_renderer):
     Raises:
         SystemExit: If directories don't exist
     """
-    del claude_runner, template_renderer
     _validate_directories(project_dir, config_dir)
 
-    repo_root = _get_repo_root(config_dir)
+    ctx = _Context(
+        project_dir=project_dir,
+        repo_root=_get_repo_root(config_dir),
+        claude_runner=claude_runner,
+        template_renderer=template_renderer,
+    )
     for spec in _build_file_specs(project_dir, config_dir):
-        _process_file(spec, repo_root)
+        _process_file(spec, ctx)
 
     return ClaudeResult(returncode=0)
 
@@ -70,30 +87,56 @@ def _build_file_specs(project_dir, config_dir):
             source_path=os.path.join(config_dir, CLAUDE_MD_NAME),
             read_sha=_read_claude_md_sha,
             write_sha=_write_claude_md_sha,
+            template_name=CLAUDE_MD_TEMPLATE,
+            project_var="PROJECT_CLAUDE_MD",
+            source_var="CONFIG_CLAUDE_MD",
         ),
         _FileSpec(
             project_path=os.path.join(project_dir, SETTINGS_RELPATH),
             source_path=os.path.join(config_dir, SETTINGS_TEMPLATE_NAME),
             read_sha=_read_settings_sha,
             write_sha=_write_settings_sha,
+            template_name="",
+            project_var="PROJECT_SETTINGS",
+            source_var="CONFIG_SETTINGS",
         ),
     ]
 
 
-def _process_file(spec, repo_root):
-    relpath = _config_file_relpath(spec.source_path, repo_root)
+def _process_file(spec, ctx):
+    relpath = _config_file_relpath(spec.source_path, ctx.repo_root)
     if not os.path.isfile(spec.project_path):
         _copy_template_file(spec.source_path, spec.project_path)
-        spec.write_sha(spec.project_path, _get_per_file_current_sha(repo_root, relpath))
+        spec.write_sha(spec.project_path, _get_per_file_current_sha(ctx.repo_root, relpath))
         return
     previous_sha = spec.read_sha(spec.project_path)
+    current_sha = _get_per_file_current_sha(ctx.repo_root, relpath)
     if not previous_sha:
+        if spec.template_name:
+            _run_first_sync(spec, current_sha, ctx)
         return
-    current_sha = _get_per_file_current_sha(repo_root, relpath)
-    diff = _get_per_file_diff(repo_root, relpath, previous_sha, current_sha)
+    diff = _get_per_file_diff(ctx.repo_root, relpath, previous_sha, current_sha)
     if diff == "":
         spec.write_sha(spec.project_path, current_sha)
         return
+
+
+def _run_first_sync(spec, current_sha, ctx):
+    with open(spec.source_path) as f:
+        template_content = f.read()
+    variables = {
+        "PROJECT_DIR": ctx.project_dir,
+        spec.project_var: spec.project_path,
+        spec.source_var: spec.source_path,
+        "CURRENT_SHA": current_sha,
+        "PREVIOUS_SHA": "",
+        "CONFIG_DIFF": FIRST_SYNC_PREAMBLE + template_content,
+        "IS_FIRST_SYNC": "true",
+    }
+    prompt = ctx.template_renderer(spec.template_name, variables)
+    result = ctx.claude_runner.run_interactive(["claude", prompt], cwd=ctx.project_dir)
+    if result.returncode == 0:
+        spec.write_sha(spec.project_path, current_sha)
 
 
 def _config_file_relpath(config_file_path, repo_root):

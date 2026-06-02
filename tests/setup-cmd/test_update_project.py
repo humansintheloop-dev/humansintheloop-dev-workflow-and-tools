@@ -602,3 +602,105 @@ class TestEmptyDiffSkip:
             with open(project_settings) as f:
                 allow = json.load(f)["permissions"]["allow"]
             assert "Bash(i2code-config-files-sha DDD444)" in allow
+
+
+def _setup_claude_md_no_marker_project(tmpdir, *, template_content="# Template CLAUDE.md content\n"):
+    """Create project where CLAUDE.md exists but has no SHA marker, settings is synced.
+
+    Returns (project_dir, config_dir, claude_md_relpath, settings_relpath).
+    """
+    project_dir = os.path.join(tmpdir, "my-project")
+    os.makedirs(project_dir)
+    with open(os.path.join(project_dir, "CLAUDE.md"), "w") as f:
+        f.write("# Project\n")
+    os.makedirs(os.path.join(project_dir, ".claude"))
+    with open(os.path.join(project_dir, ".claude", "settings.local.json"), "w") as f:
+        json.dump(
+            {"permissions": {"allow": [
+                "Bash(echo:*)",
+                "Bash(i2code-config-files-sha BBB222)",
+            ]}},
+            f,
+        )
+    config_dir = os.path.join(tmpdir, "config-files")
+    os.makedirs(config_dir)
+    with open(os.path.join(config_dir, "CLAUDE.md"), "w") as f:
+        f.write(template_content)
+    with open(os.path.join(config_dir, "settings.local.json"), "w") as f:
+        json.dump({"permissions": {"allow": ["Bash(echo:*)"]}}, f)
+    claude_md_relpath = os.path.relpath(os.path.join(config_dir, "CLAUDE.md"), tmpdir)
+    settings_relpath = os.path.relpath(os.path.join(config_dir, "settings.local.json"), tmpdir)
+    return project_dir, config_dir, claude_md_relpath, settings_relpath
+
+
+def _run_first_sync_claude_md(tmpdir, fakes, *, template_content="# Template CLAUDE.md content\n"):
+    """Setup first-sync CLAUDE.md scenario and invoke update_project.
+
+    Returns project_dir.
+    """
+    fake_runner, fake_renderer = fakes
+    project_dir, config_dir, claude_md_relpath, settings_relpath = (
+        _setup_claude_md_no_marker_project(tmpdir, template_content=template_content)
+    )
+    per_file_shas = {
+        claude_md_relpath: _DEFAULT_CURRENT_SHAS["claude_md"],
+        settings_relpath: _DEFAULT_CURRENT_SHAS["settings"],
+    }
+    per_file_diffs = {settings_relpath: ""}
+    with patch("i2code.setup_cmd.update_project.subprocess") as mock_sub:
+        mock_sub.run = _per_file_subprocess_run(
+            tmpdir, per_file_shas=per_file_shas, per_file_diffs=per_file_diffs,
+        )
+        update_project(project_dir, config_dir, fake_runner, fake_renderer)
+    return project_dir
+
+
+@pytest.mark.unit
+class TestFirstSyncClaudeMd:
+
+    def test_renders_first_sync_prompt_with_is_first_sync_true(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _run_first_sync_claude_md(tmpdir, (fake_runner, fake_renderer))
+            template_name, variables = fake_renderer.calls[0]
+            assert template_name == "update-project-claude-md.md"
+            assert variables["IS_FIRST_SYNC"] == "true"
+            assert variables["PREVIOUS_SHA"] == ""
+
+    def test_first_sync_prompt_contains_full_template_content(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _run_first_sync_claude_md(
+                tmpdir, (fake_runner, fake_renderer),
+                template_content="Hello template body",
+            )
+            _, variables = fake_renderer.calls[0]
+            assert "Hello template body" in variables["CONFIG_DIFF"]
+            assert "first sync" in variables["CONFIG_DIFF"].lower()
+
+    def test_first_sync_invokes_claude_for_claude_md(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = _run_first_sync_claude_md(
+                tmpdir, (fake_runner, fake_renderer),
+            )
+            method, cmd, cwd = fake_runner.calls[0]
+            assert method == "run_interactive"
+            assert cmd[0] == "claude"
+            assert cwd == project_dir
+
+    def test_python_writes_claude_md_sha_after_claude_success(
+        self, fake_runner, fake_renderer,
+    ):
+        from i2code.implement.claude_runner import ClaudeResult
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fake_runner.set_result(ClaudeResult(returncode=0))
+            project_dir = _run_first_sync_claude_md(
+                tmpdir, (fake_runner, fake_renderer),
+            )
+            with open(os.path.join(project_dir, "CLAUDE.md")) as f:
+                lines = f.read().rstrip("\n").split("\n")
+            assert lines[-1] == "<!-- claude-config-files-sha: CCC333 -->"

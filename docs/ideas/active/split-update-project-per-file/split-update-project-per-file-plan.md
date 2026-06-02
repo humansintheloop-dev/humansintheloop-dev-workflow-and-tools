@@ -157,25 +157,25 @@ Implements CAP-1.1 (read per-file previous SHA from each marker format) and CAP-
 
 Implements CAP-3.2 (first-sync rendering with full template content) and CAP-3.5 (prompts never reference the SHA marker) plus CAP-4 (Python writes SHA after Claude succeeds) for the first-sync branch. Introduces the two new per-file prompt templates and removes the legacy template.
 
-- [ ] **Task 4.1: `update_project` invokes Claude with `IS_FIRST_SYNC=true` and full template content when `CLAUDE.md` has no marker**
+- [x] **Task 4.1: `update_project` invokes Claude with `IS_FIRST_SYNC=true` and full template content when `CLAUDE.md` has no marker**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/setup-cmd/test_update_project.py -v`
   - Observable: When project `CLAUDE.md` exists but contains no SHA marker, `update_project(...)`: (a) renders `update-project-claude-md.md` with `IS_FIRST_SYNC="true"`, `PREVIOUS_SHA=""`, `CONFIG_DIFF` containing the full current template content prefixed by an explanatory leading message; (b) calls `claude_runner.run_interactive(["claude", <rendered_prompt>], cwd=project_dir)`; (c) on Claude exit 0, writes `<!-- claude-config-files-sha: <current_sha> -->` as the last line of project `CLAUDE.md`.
   - Evidence: New tests `TestFirstSyncClaudeMd::test_renders_first_sync_prompt_with_is_first_sync_true`, `TestFirstSyncClaudeMd::test_first_sync_prompt_contains_full_template_content`, `TestFirstSyncClaudeMd::test_first_sync_invokes_claude_for_claude_md`, `TestFirstSyncClaudeMd::test_python_writes_claude_md_sha_after_claude_success` all pass.
   - Steps:
-    - [ ] Create new template `src/i2code/prompt-templates/update-project-claude-md.md`. Content: instructions for reconciling a project's CLAUDE.md with the template version. Use only the variables `$PROJECT_DIR`, `$PROJECT_CLAUDE_MD`, `$CONFIG_CLAUDE_MD`, `$CURRENT_SHA`, `$PREVIOUS_SHA`, `$CONFIG_DIFF`, `$IS_FIRST_SYNC`. Cover markdown-specific reconciliation: preserve project-specific sections, merge new template sections, ask the user before applying each change. MUST NOT mention `claude-config-files-sha` or any SHA-write instruction
-    - [ ] Add a test class `TestFirstSyncClaudeMd` (`@pytest.mark.unit`)
-    - [ ] Write failing test `test_renders_first_sync_prompt_with_is_first_sync_true`: project CLAUDE.md exists with content `# Project\n` (no marker); settings present with marker and empty diff; assert `fake_renderer.calls[0]` template name is `"update-project-claude-md.md"` and `variables["IS_FIRST_SYNC"] == "true"` and `variables["PREVIOUS_SHA"] == ""`
-    - [ ] Write failing test `test_first_sync_prompt_contains_full_template_content`: create `config_dir/CLAUDE.md` with content `Hello template body`; assert that the rendered `CONFIG_DIFF` for CLAUDE.md contains `Hello template body` and contains a leading explanatory message such as `"first sync"` (case-insensitive)
-    - [ ] Write failing test `test_first_sync_invokes_claude_for_claude_md`: same setup; assert `fake_runner.calls[0]` has method `"run_interactive"`, command starts with `"claude"`, and `cwd == project_dir`
-    - [ ] Write failing test `test_python_writes_claude_md_sha_after_claude_success`: same setup; pre-set `fake_runner` to return `ClaudeResult(returncode=0)`; current SHA `CCC333`; call `update_project(...)`; read project CLAUDE.md and assert its last line equals `<!-- claude-config-files-sha: CCC333 -->`
-    - [ ] In `update_project()`, implement the first-sync branch for CLAUDE.md: when project file exists and previous SHA is empty, read the full current template file content, build `CONFIG_DIFF` as `"First sync — full current template content follows:\n\n" + <template_content>`, render `update-project-claude-md.md` with `IS_FIRST_SYNC="true"`, invoke Claude, then on `returncode == 0` call `_write_claude_md_sha(project_claude_md, current_sha)`
-    - [ ] Make sure the new template file is included in any packaging via the existing template loader (check `src/i2code/template_renderer.py` and the package config to confirm `prompt-templates/*.md` are bundled)
-    - [ ] Run all four new tests; ensure they pass
-    - [ ] Run `uvx pyright --level error src/` — exit 0
-    - [ ] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
-    - [ ] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
-    - [ ] Commit via the commit-guidelines skill
+    - [x] Create new template `src/i2code/prompt-templates/update-project-claude-md.md`. Content: instructions for reconciling a project's CLAUDE.md with the template version. Use only the variables `$PROJECT_DIR`, `$PROJECT_CLAUDE_MD`, `$CONFIG_CLAUDE_MD`, `$CURRENT_SHA`, `$PREVIOUS_SHA`, `$CONFIG_DIFF`, `$IS_FIRST_SYNC`. Cover markdown-specific reconciliation: preserve project-specific sections, merge new template sections, ask the user before applying each change. MUST NOT mention `claude-config-files-sha` or any SHA-write instruction
+    - [x] Add a test class `TestFirstSyncClaudeMd` (`@pytest.mark.unit`)
+    - [x] Write failing test `test_renders_first_sync_prompt_with_is_first_sync_true`: project CLAUDE.md exists with content `# Project\n` (no marker); settings present with marker and empty diff; assert `fake_renderer.calls[0]` template name is `"update-project-claude-md.md"` and `variables["IS_FIRST_SYNC"] == "true"` and `variables["PREVIOUS_SHA"] == ""`
+    - [x] Write failing test `test_first_sync_prompt_contains_full_template_content`: create `config_dir/CLAUDE.md` with content `Hello template body`; assert that the rendered `CONFIG_DIFF` for CLAUDE.md contains `Hello template body` and contains a leading explanatory message such as `"first sync"` (case-insensitive)
+    - [x] Write failing test `test_first_sync_invokes_claude_for_claude_md`: same setup; assert `fake_runner.calls[0]` has method `"run_interactive"`, command starts with `"claude"`, and `cwd == project_dir`
+    - [x] Write failing test `test_python_writes_claude_md_sha_after_claude_success`: same setup; pre-set `fake_runner` to return `ClaudeResult(returncode=0)`; current SHA `CCC333`; call `update_project(...)`; read project CLAUDE.md and assert its last line equals `<!-- claude-config-files-sha: CCC333 -->`
+    - [x] In `update_project()`, implement the first-sync branch for CLAUDE.md: when project file exists and previous SHA is empty, read the full current template file content, build `CONFIG_DIFF` as `"First sync — full current template content follows:\n\n" + <template_content>`, render `update-project-claude-md.md` with `IS_FIRST_SYNC="true"`, invoke Claude, then on `returncode == 0` call `_write_claude_md_sha(project_claude_md, current_sha)`
+    - [x] Make sure the new template file is included in any packaging via the existing template loader (check `src/i2code/template_renderer.py` and the package config to confirm `prompt-templates/*.md` are bundled)
+    - [x] Run all four new tests; ensure they pass
+    - [x] Run `uvx pyright --level error src/` — exit 0
+    - [x] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
+    - [x] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
+    - [x] Commit via the commit-guidelines skill
 
 - [ ] **Task 4.2: `update_project` invokes Claude with `IS_FIRST_SYNC=true` and full template content when `.claude/settings.local.json` has no marker**
   - TaskType: OUTCOME
@@ -328,3 +328,6 @@ TestPerFileShaReading 3/3 passing; pytest exit 0 (12 passed, 20 skipped); pyrigh
 
 ### 2026-06-02 16:04 - mark-task-complete
 TestEmptyDiffSkip 3/3 passing; pytest exit 0 (15 passed, 20 skipped); pyright --level error exit 0; CodeScene safeguard PASSED
+
+### 2026-06-02 16:12 - mark-task-complete
+TestFirstSyncClaudeMd 4/4 passing; pytest exit 0 (19 passed, 20 skipped); pyright --level error exit 0; CodeScene 10.0 after _Context refactor

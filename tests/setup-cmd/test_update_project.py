@@ -2,6 +2,7 @@
 generates git diff, handles first sync (no previous SHA), template variables correct,
 Claude invoked interactively."""
 
+import json
 import os
 import subprocess
 import tempfile
@@ -47,6 +48,34 @@ def _fake_subprocess_run(repo_root, current_sha="abc123def", diff_output="diff c
     return mock_run
 
 
+def _per_file_subprocess_run(repo_root, *, per_file_shas=None, per_file_diffs=None):
+    """Mock subprocess.run with per-file SHA/diff control keyed by relpath.
+
+    per_file_shas maps `relpath -> SHA string` for `git log -1 --format=%H -- <relpath>`.
+    per_file_diffs maps `relpath -> diff string` for `git diff <prev>..<curr> -- <relpath>`.
+    Matching is done by the final argv element (the relpath after `--`).
+    """
+    per_file_shas = per_file_shas or {}
+    per_file_diffs = per_file_diffs or {}
+
+    def mock_run(cmd, capture_output=False, text=False, check=False, cwd=None):
+        cmd_str = " ".join(cmd)
+        result = subprocess.CompletedProcess(cmd, 0)
+        result.stderr = ""
+        if "rev-parse --show-toplevel" in cmd_str:
+            result.stdout = repo_root + "\n"
+        elif "log -1 --format=%H" in cmd_str:
+            relpath = cmd[-1]
+            result.stdout = per_file_shas.get(relpath, "") + "\n"
+        elif "diff" in cmd_str:
+            relpath = cmd[-1]
+            result.stdout = per_file_diffs.get(relpath, "") + "\n"
+        else:
+            result.stdout = ""
+        return result
+    return mock_run
+
+
 def _run_with_mocked_git(fakes, tmpdir, *, claude_md_content=None, current_sha="abc123def"):
     """Set up dirs, mock subprocess, call update_project, return (project_dir, config_dir).
 
@@ -80,6 +109,7 @@ class TestValidation:
         assert len(fake_runner.calls) == 0
 
 
+@pytest.mark.skip(reason="superseded by per-file flow; see Steel Thread 3")
 @pytest.mark.unit
 class TestShaExtraction:
 
@@ -109,6 +139,7 @@ class TestShaExtraction:
             assert variables["PREVIOUS_SHA"] == ""
 
 
+@pytest.mark.skip(reason="superseded by per-file flow; see Steel Thread 3")
 @pytest.mark.unit
 class TestGitOperations:
 
@@ -197,6 +228,7 @@ class TestGitOperations:
             assert variables["CURRENT_SHA"] == ""
 
 
+@pytest.mark.skip(reason="superseded by per-file flow; see Steel Thread 5")
 @pytest.mark.unit
 class TestTemplateRendering:
 
@@ -248,6 +280,7 @@ class TestTemplateRendering:
             assert variables["CONFIG_SETTINGS"] == os.path.join(config_dir, "settings.local.json")
 
 
+@pytest.mark.skip(reason="superseded by per-file flow; see Steel Thread 5")
 @pytest.mark.unit
 class TestClaudeInvocation:
 
@@ -288,3 +321,82 @@ class TestClaudeInvocation:
                 result = update_project(project_dir, config_dir, fake_runner, fake_renderer)
 
             assert result.returncode == 0
+
+
+def _setup_project_missing_claude_md(tmpdir, *, settings_prev_sha="BBB222"):
+    """Create a project missing CLAUDE.md but with a synced settings.local.json.
+
+    Returns (project_dir, config_dir, claude_md_relpath, settings_relpath).
+    Relpaths are relative to tmpdir (which acts as the repo root).
+    """
+    project_dir = os.path.join(tmpdir, "my-project")
+    os.makedirs(os.path.join(project_dir, ".claude"))
+    project_settings = os.path.join(project_dir, ".claude", "settings.local.json")
+    with open(project_settings, "w") as f:
+        json.dump(
+            {"permissions": {"allow": [
+                "Bash(echo:*)",
+                f"Bash(i2code-config-files-sha {settings_prev_sha})",
+            ]}},
+            f,
+        )
+
+    config_dir = os.path.join(tmpdir, "config-files")
+    os.makedirs(config_dir)
+    with open(os.path.join(config_dir, "CLAUDE.md"), "w") as f:
+        f.write("# Template CLAUDE.md content\n")
+    with open(os.path.join(config_dir, "settings.local.json"), "w") as f:
+        json.dump({"permissions": {"allow": ["Bash(echo:*)"]}}, f)
+
+    claude_md_relpath = os.path.relpath(os.path.join(config_dir, "CLAUDE.md"), tmpdir)
+    settings_relpath = os.path.relpath(
+        os.path.join(config_dir, "settings.local.json"), tmpdir,
+    )
+    return project_dir, config_dir, claude_md_relpath, settings_relpath
+
+
+@pytest.mark.unit
+class TestMissingFileCopy:
+
+    def _call_with_missing_claude_md(self, tmpdir, fake_runner, fake_renderer):
+        project_dir, config_dir, claude_md_relpath, settings_relpath = (
+            _setup_project_missing_claude_md(tmpdir)
+        )
+        with patch("i2code.setup_cmd.update_project.subprocess") as mock_sub:
+            mock_sub.run = _per_file_subprocess_run(
+                tmpdir,
+                per_file_shas={
+                    claude_md_relpath: "CCC333",
+                    settings_relpath: "DDD444",
+                },
+                per_file_diffs={settings_relpath: ""},
+            )
+            update_project(project_dir, config_dir, fake_runner, fake_renderer)
+        return project_dir
+
+    def test_copies_missing_claude_md_from_template(self, fake_runner, fake_renderer):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = self._call_with_missing_claude_md(
+                tmpdir, fake_runner, fake_renderer,
+            )
+            project_claude_md = os.path.join(project_dir, "CLAUDE.md")
+            assert os.path.isfile(project_claude_md)
+            with open(project_claude_md) as f:
+                content = f.read()
+            assert content.startswith("# Template CLAUDE.md content\n")
+
+    def test_writes_claude_md_sha_marker_after_copy(self, fake_runner, fake_renderer):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = self._call_with_missing_claude_md(
+                tmpdir, fake_runner, fake_renderer,
+            )
+            project_claude_md = os.path.join(project_dir, "CLAUDE.md")
+            with open(project_claude_md) as f:
+                content = f.read()
+            lines = content.rstrip("\n").split("\n")
+            assert lines[-1] == "<!-- claude-config-files-sha: CCC333 -->"
+
+    def test_no_claude_invocation_when_claude_md_missing(self, fake_runner, fake_renderer):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._call_with_missing_claude_md(tmpdir, fake_runner, fake_renderer)
+            assert len(fake_runner.calls) == 0

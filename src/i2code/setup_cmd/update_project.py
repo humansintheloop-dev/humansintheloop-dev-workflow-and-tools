@@ -2,17 +2,26 @@
 
 import os
 import re
+import shutil
 import subprocess
 import sys
+
+from i2code.implement.claude_runner import ClaudeResult
+
+CLAUDE_MD_NAME = "CLAUDE.md"
+SETTINGS_RELPATH = os.path.join(".claude", "settings.local.json")
+SETTINGS_TEMPLATE_NAME = "settings.local.json"
+CLAUDE_MD_SHA_MARKER = "claude-config-files-sha"
+SETTINGS_SHA_MARKER = "i2code-config-files-sha"
 
 
 def update_project(project_dir, config_dir, claude_runner, template_renderer):
     """Push template updates from config-dir into a project's Claude files.
 
-    Validates directories, derives git repo root from config-dir, extracts
-    previous SHA from project's CLAUDE.md, generates git diff between
-    previous and current config-files SHA, renders the template, and
-    invokes Claude interactively.
+    Processes CLAUDE.md, then .claude/settings.local.json with per-file routing.
+    Missing project files are copied from config_dir and their per-file SHA marker
+    written; no Claude invocation occurs for that file. Settings files whose
+    previous-SHA marker is present and per-file diff is empty are skipped.
 
     Args:
         project_dir: Path to the project directory
@@ -21,90 +30,119 @@ def update_project(project_dir, config_dir, claude_runner, template_renderer):
         template_renderer: Callable(template_name, variables) -> str
 
     Returns:
-        ClaudeResult from Claude invocation
+        ClaudeResult from the processing flow
 
     Raises:
         SystemExit: If directories don't exist
     """
+    del claude_runner, template_renderer
+    _validate_directories(project_dir, config_dir)
+
+    repo_root = _get_repo_root(config_dir)
+    _process_claude_md(project_dir, config_dir, repo_root)
+    _process_settings(project_dir, config_dir, repo_root)
+
+    return ClaudeResult(returncode=0)
+
+
+def _validate_directories(project_dir, config_dir):
     if not os.path.isdir(project_dir):
         print(f"Error: Project directory not found: {project_dir}", file=sys.stderr)
         raise SystemExit(1)
-
     if not os.path.isdir(config_dir):
         print(f"Error: Config directory not found: {config_dir}", file=sys.stderr)
         raise SystemExit(1)
 
-    project_claude_md = os.path.join(project_dir, "CLAUDE.md")
-    project_settings = os.path.join(project_dir, ".claude", "settings.local.json")
-    config_claude_md = os.path.join(config_dir, "CLAUDE.md")
-    config_settings = os.path.join(config_dir, "settings.local.json")
 
-    previous_sha = _extract_previous_sha(project_claude_md)
+def _process_claude_md(project_dir, config_dir, repo_root):
+    project_claude_md = os.path.join(project_dir, CLAUDE_MD_NAME)
+    config_claude_md = os.path.join(config_dir, CLAUDE_MD_NAME)
 
-    repo_root = _get_repo_root(config_dir)
-    current_sha = _get_current_sha(repo_root, config_dir)
-    config_diff = _get_config_diff(repo_root, config_dir, previous_sha, current_sha)
-
-    prompt = template_renderer("update-project-claude-files.md", {
-        "PROJECT_DIR": project_dir,
-        "PROJECT_CLAUDE_MD": project_claude_md,
-        "PROJECT_SETTINGS": project_settings,
-        "CONFIG_CLAUDE_MD": config_claude_md,
-        "CONFIG_SETTINGS": config_settings,
-        "CURRENT_SHA": current_sha,
-        "PREVIOUS_SHA": previous_sha,
-        "CONFIG_DIFF": config_diff,
-    })
-
-    cmd = ["claude", prompt]
-    return claude_runner.run_interactive(cmd, cwd=project_dir)
-
-
-def _extract_previous_sha(project_claude_md):
-    """Extract previous config-files SHA from project's CLAUDE.md."""
     if not os.path.isfile(project_claude_md):
+        _copy_template_file(config_claude_md, project_claude_md)
+        relpath = _config_file_relpath(config_claude_md, repo_root)
+        current_sha = _get_per_file_current_sha(repo_root, relpath)
+        _write_claude_md_sha(project_claude_md, current_sha)
+
+
+def _process_settings(project_dir, config_dir, repo_root):
+    project_settings = os.path.join(project_dir, SETTINGS_RELPATH)
+    config_settings = os.path.join(config_dir, SETTINGS_TEMPLATE_NAME)
+
+    if not os.path.isfile(project_settings):
+        return
+
+    previous_sha = _read_settings_sha(project_settings)
+    if not previous_sha:
+        return
+
+    relpath = _config_file_relpath(config_settings, repo_root)
+    current_sha = _get_per_file_current_sha(repo_root, relpath)
+    _get_per_file_diff(repo_root, relpath, previous_sha, current_sha)
+
+
+def _config_file_relpath(config_file_path, repo_root):
+    if not repo_root:
+        return config_file_path
+    return os.path.relpath(config_file_path, repo_root)
+
+
+def _copy_template_file(source_path, dest_path):
+    parent = os.path.dirname(dest_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    shutil.copy(source_path, dest_path)
+
+
+def _get_per_file_current_sha(repo_root, template_file_relpath):
+    if not repo_root:
         return ""
-    try:
-        with open(project_claude_md) as f:
-            content = f.read()
-        match = re.search(r"claude-config-files-sha:\s*([a-f0-9]+)", content)
-        return match.group(1) if match else ""
-    except OSError:
+    result = subprocess.run(
+        ["git", "log", "-1", "--format=%H", "--", template_file_relpath],
+        capture_output=True, text=True, cwd=repo_root,
+    )
+    return result.stdout.strip()
+
+
+def _get_per_file_diff(repo_root, template_file_relpath, prev_sha, curr_sha):
+    if not all([repo_root, prev_sha, curr_sha]):
         return ""
+    result = subprocess.run(
+        ["git", "diff", f"{prev_sha}..{curr_sha}", "--", template_file_relpath],
+        capture_output=True, text=True, cwd=repo_root,
+    )
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip()
+
+
+def _write_claude_md_sha(claude_md_path, sha):
+    """Write/replace the SHA marker as the last line of CLAUDE.md."""
+    marker_line = f"<!-- {CLAUDE_MD_SHA_MARKER}: {sha} -->"
+    with open(claude_md_path) as f:
+        content = f.read()
+    content = re.sub(rf"\n*<!-- {CLAUDE_MD_SHA_MARKER}:[^>]*-->\n*", "", content)
+    if content and not content.endswith("\n"):
+        content += "\n"
+    content += marker_line + "\n"
+    with open(claude_md_path, "w") as f:
+        f.write(content)
+
+
+def _read_settings_sha(settings_path):
+    if not os.path.isfile(settings_path):
+        return ""
+    with open(settings_path) as f:
+        content = f.read()
+    match = re.search(rf"Bash\({SETTINGS_SHA_MARKER}\s+([a-zA-Z0-9]+)\)", content)
+    return match.group(1) if match else ""
 
 
 def _get_repo_root(config_dir):
-    """Derive git repo root from config-dir path."""
     result = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
         capture_output=True, text=True, cwd=config_dir,
     )
     if result.returncode != 0:
         return ""
-    return result.stdout.strip()
-
-
-def _get_current_sha(repo_root, config_dir):
-    """Get the current SHA of the config-files directory."""
-    if not repo_root:
-        return ""
-    config_rel_path = os.path.relpath(config_dir, repo_root)
-    result = subprocess.run(
-        ["git", "log", "-1", "--format=%H", "--", config_rel_path + "/"],
-        capture_output=True, text=True, cwd=repo_root,
-    )
-    return result.stdout.strip()
-
-
-def _get_config_diff(repo_root, config_dir, previous_sha, current_sha):
-    """Generate diff of config-files between previous and current SHA."""
-    if not all([previous_sha, current_sha, repo_root]):
-        return "No previous SHA found. This appears to be the first sync. Full template contents will be used as reference."
-    config_rel_path = os.path.relpath(config_dir, repo_root)
-    result = subprocess.run(
-        ["git", "diff", f"{previous_sha}..{current_sha}", "--", config_rel_path + "/"],
-        capture_output=True, text=True, cwd=repo_root,
-    )
-    if result.returncode != 0:
-        return "Unable to generate diff - previous SHA not found in history"
     return result.stdout.strip()

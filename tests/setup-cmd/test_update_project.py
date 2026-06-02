@@ -549,3 +549,56 @@ class TestPerFileShaReading:
             )
             assert "AAA111..CCC333" in " ".join(claude_md_diff)
             assert "BBB222..DDD444" in " ".join(settings_diff)
+
+
+@pytest.mark.unit
+class TestEmptyDiffSkip:
+
+    def test_skips_claude_when_claude_md_diff_empty_and_advances_marker(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = _run_update_with_per_file_mock(
+                tmpdir, (fake_runner, fake_renderer),
+                markers={"claude_md": "AAA111", "settings": "BBB222"},
+                empty_diff_for=("claude_md", "settings"),
+            )
+            assert len(fake_runner.calls) == 0
+            with open(os.path.join(project_dir, "CLAUDE.md")) as f:
+                lines = f.read().rstrip("\n").split("\n")
+            assert lines[-1] == "<!-- claude-config-files-sha: CCC333 -->"
+
+    def test_skips_claude_when_settings_diff_empty_and_advances_marker(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = _run_update_with_per_file_mock(
+                tmpdir, (fake_runner, fake_renderer),
+                markers={"claude_md": "AAA111", "settings": "BBB222"},
+                empty_diff_for=("claude_md", "settings"),
+            )
+            project_settings = os.path.join(project_dir, ".claude", "settings.local.json")
+            with open(project_settings) as f:
+                allow = json.load(f)["permissions"]["allow"]
+            sha_entries = [e for e in allow if "i2code-config-files-sha" in e]
+            assert sha_entries == ["Bash(i2code-config-files-sha DDD444)"]
+
+    def test_scenario_s4_missing_claude_md_settings_synced(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = _run_update_with_per_file_mock(
+                tmpdir, (fake_runner, fake_renderer),
+                markers={"settings": "BBB222"},
+                empty_diff_for=("settings",),
+            )
+            assert len(fake_runner.calls) == 0
+            with open(os.path.join(project_dir, "CLAUDE.md")) as f:
+                claude_md_content = f.read()
+            assert claude_md_content.rstrip("\n").endswith(
+                "<!-- claude-config-files-sha: CCC333 -->",
+            )
+            project_settings = os.path.join(project_dir, ".claude", "settings.local.json")
+            with open(project_settings) as f:
+                allow = json.load(f)["permissions"]["allow"]
+            assert "Bash(i2code-config-files-sha DDD444)" in allow

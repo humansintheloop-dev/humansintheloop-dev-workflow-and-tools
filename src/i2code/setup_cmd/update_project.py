@@ -90,7 +90,10 @@ def _process_file(spec, repo_root):
     if not previous_sha:
         return
     current_sha = _get_per_file_current_sha(repo_root, relpath)
-    _get_per_file_diff(repo_root, relpath, previous_sha, current_sha)
+    diff = _get_per_file_diff(repo_root, relpath, previous_sha, current_sha)
+    if diff == "":
+        spec.write_sha(spec.project_path, current_sha)
+        return
 
 
 def _config_file_relpath(config_file_path, repo_root):

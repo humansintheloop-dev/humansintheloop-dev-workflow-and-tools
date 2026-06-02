@@ -134,22 +134,22 @@ Implements CAP-1.1 (read per-file previous SHA from each marker format) and CAP-
     - [x] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
     - [x] Commit via the commit-guidelines skill
 
-- [ ] **Task 3.2: `update_project` skips Claude when per-file diff is empty and advances the per-file SHA marker**
+- [x] **Task 3.2: `update_project` skips Claude when per-file diff is empty and advances the per-file SHA marker**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/setup-cmd/test_update_project.py -v`
   - Observable: For an existing target file whose previous SHA marker is present and whose per-file diff is empty, `update_project(...)` does NOT invoke Claude for that file, and Python rewrites the file's SHA marker to the current per-file SHA. End-to-end S-4: with project CLAUDE.md missing and settings present + synced (empty per-file diff), CLAUDE.md is copied with its marker, settings' marker is advanced, and `fake_runner.calls` is empty.
   - Evidence: New tests `TestEmptyDiffSkip::test_skips_claude_when_claude_md_diff_empty_and_advances_marker`, `TestEmptyDiffSkip::test_skips_claude_when_settings_diff_empty_and_advances_marker`, `TestEmptyDiffSkip::test_scenario_s4_missing_claude_md_settings_synced` all pass.
   - Steps:
-    - [ ] Add a test class `TestEmptyDiffSkip` (`@pytest.mark.unit`)
-    - [ ] Write failing test `test_skips_claude_when_claude_md_diff_empty_and_advances_marker`: project CLAUDE.md exists with marker `AAA111`; settings present with marker and empty diff; CLAUDE.md per-file current SHA `CCC333`; CLAUDE.md diff mocked to `""`; assert (a) `len(fake_runner.calls) == 0` for the CLAUDE.md branch, (b) project CLAUDE.md's marker line now reads `<!-- claude-config-files-sha: CCC333 -->`
-    - [ ] Write failing test `test_skips_claude_when_settings_diff_empty_and_advances_marker`: symmetric setup; settings prev `BBB222`, current `DDD444`, diff `""`; assert the settings file's `permissions.allow` now contains `Bash(i2code-config-files-sha DDD444)` (replacing the previous one) and no other `Bash(i2code-config-files-sha ...)` entries
-    - [ ] Write failing test `test_scenario_s4_missing_claude_md_settings_synced`: project has no CLAUDE.md; settings present with marker `BBB222`, diff empty; CLAUDE.md current SHA `CCC333`, settings current SHA `DDD444`; assert `len(fake_runner.calls) == 0`, CLAUDE.md exists with `<!-- claude-config-files-sha: CCC333 -->`, settings allow list contains `Bash(i2code-config-files-sha DDD444)`
-    - [ ] Implement the empty-diff-skip branch in the per-file loop: if previous SHA is non-empty AND per-file diff is empty, write the new SHA marker (using `_write_claude_md_sha` or `_write_settings_sha`) and skip Claude
-    - [ ] Run all three new tests; ensure they pass
-    - [ ] Run `uvx pyright --level error src/` — exit 0
-    - [ ] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
-    - [ ] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
-    - [ ] Commit via the commit-guidelines skill
+    - [x] Add a test class `TestEmptyDiffSkip` (`@pytest.mark.unit`)
+    - [x] Write failing test `test_skips_claude_when_claude_md_diff_empty_and_advances_marker`: project CLAUDE.md exists with marker `AAA111`; settings present with marker and empty diff; CLAUDE.md per-file current SHA `CCC333`; CLAUDE.md diff mocked to `""`; assert (a) `len(fake_runner.calls) == 0` for the CLAUDE.md branch, (b) project CLAUDE.md's marker line now reads `<!-- claude-config-files-sha: CCC333 -->`
+    - [x] Write failing test `test_skips_claude_when_settings_diff_empty_and_advances_marker`: symmetric setup; settings prev `BBB222`, current `DDD444`, diff `""`; assert the settings file's `permissions.allow` now contains `Bash(i2code-config-files-sha DDD444)` (replacing the previous one) and no other `Bash(i2code-config-files-sha ...)` entries
+    - [x] Write failing test `test_scenario_s4_missing_claude_md_settings_synced`: project has no CLAUDE.md; settings present with marker `BBB222`, diff empty; CLAUDE.md current SHA `CCC333`, settings current SHA `DDD444`; assert `len(fake_runner.calls) == 0`, CLAUDE.md exists with `<!-- claude-config-files-sha: CCC333 -->`, settings allow list contains `Bash(i2code-config-files-sha DDD444)`
+    - [x] Implement the empty-diff-skip branch in the per-file loop: if previous SHA is non-empty AND per-file diff is empty, write the new SHA marker (using `_write_claude_md_sha` or `_write_settings_sha`) and skip Claude
+    - [x] Run all three new tests; ensure they pass
+    - [x] Run `uvx pyright --level error src/` — exit 0
+    - [x] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
+    - [x] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
+    - [x] Commit via the commit-guidelines skill
 
 ---
 
@@ -325,3 +325,6 @@ TestMissingFileCopy 7/7 passing; pytest exit 0 (9 passed, 20 skipped); pyright -
 
 ### 2026-06-02 16:00 - mark-task-complete
 TestPerFileShaReading 3/3 passing; pytest exit 0 (12 passed, 20 skipped); pyright --level error exit 0; CodeScene 10.0; safeguard PASSED
+
+### 2026-06-02 16:04 - mark-task-complete
+TestEmptyDiffSkip 3/3 passing; pytest exit 0 (15 passed, 20 skipped); pyright --level error exit 0; CodeScene safeguard PASSED

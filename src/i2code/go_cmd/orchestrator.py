@@ -19,6 +19,9 @@ from i2code.go_cmd.implement_config import (
     write_implement_config,
 )
 from i2code.go_cmd.menu import MenuConfig, get_user_choice
+from i2code.go_cmd.plan_completion import (
+    ResolverDeps, _default_gh_runner, resolve_plan_text,
+)
 from i2code.go_cmd.plan_validator import validate_plan
 from i2code.go_cmd.plugin_skills import list_plugin_skills
 from i2code.go_cmd.revise_plan import revise_plan
@@ -27,6 +30,7 @@ from i2code.idea_cmd.state_cmd import execute_transition
 from i2code.idea.metadata import read_metadata
 from i2code.implement.claude_runner import ClaudeResult, ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
+from i2code.plan_domain.parser import parse
 from i2code.spec_cmd.create_spec import create_spec
 from i2code.spec_cmd.revise_spec import revise_spec
 from i2code.template_renderer import render_template
@@ -178,6 +182,7 @@ class OrchestratorDeps:
     output: TextIO = field(default_factory=lambda: sys.stderr)
     git_runner: Callable = _default_git_runner
     implement_runner: Callable = _default_implement_runner
+    gh_runner: Callable = _default_gh_runner
     brainstorm_idea_fn: StepFn = _default_brainstorm_idea
     create_spec_fn: StepFn = _default_create_spec
     revise_spec_fn: StepFn = _default_revise_spec
@@ -412,10 +417,20 @@ class Orchestrator:
         )
 
     def _check_plan_completion(self):
-        if not os.path.isfile(self._project.plan_file):
+        config = read_implement_config(self._project.implement_config_file)
+        git_root = str(_git_root_from_path(self._project.directory))
+        plan_text = resolve_plan_text(
+            self._project, config, git_root,
+            ResolverDeps(
+                gh_runner=self._deps.gh_runner,
+                output=self._deps.output,
+            ),
+        )
+        if plan_text is None:
             return
+        plan = parse(plan_text)
         output = self._deps.output
-        if self._project.get_next_task() is not None:
+        if plan.get_next_task() is not None:
             print("", file=output)
             print("================================================", file=output)
             print("  Plan has uncompleted tasks", file=output)

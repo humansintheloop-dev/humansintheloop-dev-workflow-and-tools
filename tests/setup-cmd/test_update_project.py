@@ -558,3 +558,75 @@ class TestRoutineUpdate:
             assert "template=update-project-claude-md.md" in fake_runner.calls[0][1][1]
             _assert_claude_md_marker_advanced(project_dir, "CCC333")
             _assert_settings_marker_advanced(project_dir, "DDD444")
+
+
+def _run_update_capturing_result(tmpdir, fakes, *, markers=None, diffs_by_kind=None):
+    """Like _run_update_with_per_file_mock but returns (result, project_dir)."""
+    fake_runner, fake_renderer = fakes
+    markers = markers or {}
+    diffs_by_kind = diffs_by_kind or {}
+    project_dir, config_dir, claude_md_relpath, settings_relpath = (
+        _setup_per_file_project(tmpdir, markers)
+    )
+    relpath_by_kind = {"claude_md": claude_md_relpath, "settings": settings_relpath}
+    per_file_diffs = {relpath_by_kind[k]: d for k, d in diffs_by_kind.items()}
+    per_file_shas = {
+        relpath_by_kind[k]: sha for k, sha in _DEFAULT_CURRENT_SHAS.items()
+    }
+    with patch("i2code.setup_cmd.update_project.subprocess") as mock_sub:
+        mock_sub.run = _per_file_subprocess_run(
+            tmpdir, per_file_shas=per_file_shas, per_file_diffs=per_file_diffs,
+        )
+        result = update_project(project_dir, config_dir, fake_runner, fake_renderer)
+    return result, project_dir
+
+
+@pytest.mark.unit
+class TestAbortOnFailure:
+
+    def _run_s1_with_failing_first_claude(self, tmpdir, fake_runner, fake_renderer):
+        from i2code.implement.claude_runner import ClaudeResult
+        fake_runner.set_result(ClaudeResult(returncode=2))
+        return _run_update_capturing_result(
+            tmpdir, (fake_runner, fake_renderer),
+            markers=_S1_MARKERS, diffs_by_kind=_S1_DIFFS,
+        )
+
+    def test_no_second_render_when_first_claude_fails(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._run_s1_with_failing_first_claude(tmpdir, fake_runner, fake_renderer)
+            assert len(fake_renderer.calls) == 1
+            assert fake_renderer.calls[0][0] == "update-project-claude-md.md"
+            assert len(fake_runner.calls) == 1
+
+    def test_no_sha_writes_when_first_claude_fails(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _, project_dir = self._run_s1_with_failing_first_claude(
+                tmpdir, fake_runner, fake_renderer,
+            )
+            with open(os.path.join(project_dir, "CLAUDE.md")) as f:
+                assert "<!-- claude-config-files-sha: AAA111 -->" in f.read()
+            allow = _read_settings_allow(project_dir)
+            assert "Bash(i2code-config-files-sha BBB222)" in allow
+            assert "Bash(i2code-config-files-sha DDD444)" not in allow
+
+    def test_returns_failing_claude_result(self, fake_runner, fake_renderer):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result, _ = self._run_s1_with_failing_first_claude(
+                tmpdir, fake_runner, fake_renderer,
+            )
+            assert result.returncode == 2
+
+    def test_returns_zero_when_no_claude_invocations(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result, _ = _run_update_capturing_result(
+                tmpdir, (fake_runner, fake_renderer),
+            )
+            assert len(fake_runner.calls) == 0
+            assert result.returncode == 0

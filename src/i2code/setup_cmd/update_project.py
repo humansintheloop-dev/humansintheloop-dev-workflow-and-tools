@@ -73,7 +73,9 @@ def update_project(project_dir, config_dir, claude_runner, template_renderer):
         template_renderer=template_renderer,
     )
     for spec in _build_file_specs(project_dir, config_dir):
-        _process_file(spec, ctx)
+        result = _process_file(spec, ctx)
+        if result is not None and result.returncode != 0:
+            return result
 
     return ClaudeResult(returncode=0)
 
@@ -115,20 +117,19 @@ def _process_file(spec, ctx):
     if not os.path.isfile(spec.project_path):
         _copy_template_file(spec.source_path, spec.project_path)
         spec.write_sha(spec.project_path, _get_per_file_current_sha(ctx.repo_root, relpath))
-        return
+        return None
     previous_sha = spec.read_sha(spec.project_path)
     current_sha = _get_per_file_current_sha(ctx.repo_root, relpath)
     if not previous_sha:
-        _run_first_sync(spec, current_sha, ctx)
-        return
+        return _run_first_sync(spec, current_sha, ctx)
     diff = _get_per_file_diff(ctx.repo_root, relpath, previous_sha, current_sha)
     if diff == "":
         spec.write_sha(spec.project_path, current_sha)
-        return
+        return None
     render = _RenderSpec(
         previous_sha=previous_sha, config_diff=diff, is_first_sync="false",
     )
-    _render_and_advance_sha(spec, ctx, current_sha, render)
+    return _render_and_advance_sha(spec, ctx, current_sha, render)
 
 
 def _build_variables(spec, ctx, current_sha, render):
@@ -149,6 +150,7 @@ def _render_and_advance_sha(spec, ctx, current_sha, render):
     result = ctx.claude_runner.run_interactive(["claude", prompt], cwd=ctx.project_dir)
     if result.returncode == 0:
         spec.write_sha(spec.project_path, current_sha)
+    return result
 
 
 def _run_first_sync(spec, current_sha, ctx):
@@ -159,7 +161,7 @@ def _run_first_sync(spec, current_sha, ctx):
         config_diff=FIRST_SYNC_PREAMBLE + template_content,
         is_first_sync="true",
     )
-    _render_and_advance_sha(spec, ctx, current_sha, render)
+    return _render_and_advance_sha(spec, ctx, current_sha, render)
 
 
 def _config_file_relpath(config_file_path, repo_root):

@@ -227,24 +227,24 @@ Implements CAP-3.3 (per-file Claude invocation scoped to the per-file diff with 
 
 Implements CAP-5.2, CAP-5.4, CAP-7.2 (abort-on-first-failure semantics). After this thread, when Claude exits non-zero for `CLAUDE.md`, the second file is not processed and neither SHA marker is written.
 
-- [ ] **Task 6.1: `update_project` aborts after non-zero Claude exit, leaving both markers unchanged**
+- [x] **Task 6.1: `update_project` aborts after non-zero Claude exit, leaving both markers unchanged**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/setup-cmd/test_update_project.py -v`
   - Observable: For scenario S-5 (both files present with markers, both diffs non-empty), when `fake_runner` returns `ClaudeResult(returncode=2)` for the first invocation, `update_project(...)`: (a) makes exactly one render call (`update-project-claude-md.md`); (b) makes exactly one `fake_runner.run_interactive` call; (c) does NOT rewrite project CLAUDE.md's marker (it remains `AAA111`); (d) does NOT rewrite project settings.local.json's marker (it remains `BBB222`); (e) returns a `ClaudeResult` whose `returncode == 2`.
   - Evidence: New tests `TestAbortOnFailure::test_no_second_render_when_first_claude_fails`, `TestAbortOnFailure::test_no_sha_writes_when_first_claude_fails`, `TestAbortOnFailure::test_returns_failing_claude_result` all pass.
   - Steps:
-    - [ ] Add a test class `TestAbortOnFailure` (`@pytest.mark.unit`)
-    - [ ] Write failing test `test_no_second_render_when_first_claude_fails`: S-1 preconditions; pre-set `fake_runner.set_result(ClaudeResult(returncode=2))`; call `update_project(...)`; assert `len(fake_renderer.calls) == 1` and `fake_renderer.calls[0][0] == "update-project-claude-md.md"`
-    - [ ] Write failing test `test_no_sha_writes_when_first_claude_fails`: same setup; after the call, read project CLAUDE.md and assert its marker is still `<!-- claude-config-files-sha: AAA111 -->`; parse project settings and assert its allow list still contains `Bash(i2code-config-files-sha BBB222)` (and not `DDD444`)
-    - [ ] Write failing test `test_returns_failing_claude_result`: same setup; assert the returned `ClaudeResult.returncode == 2`
-    - [ ] Update `update_project()` to: after each Claude invocation, check `result.returncode`; if non-zero, return immediately without writing the file's SHA marker and without processing the next file
-    - [ ] Also update the no-Claude branches (missing copy, empty-diff skip) to return `ClaudeResult(returncode=0)` from a single explicit synthesized result when no Claude invocation was performed for any file (CAP-7.3)
-    - [ ] Add a regression test `TestAbortOnFailure::test_returns_zero_when_no_claude_invocations`: scenario S-6 (both files missing); assert the return value's `returncode == 0`
-    - [ ] Run all four new tests; ensure they pass
-    - [ ] Run `uvx pyright --level error src/` — exit 0
-    - [ ] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
-    - [ ] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
-    - [ ] Commit via the commit-guidelines skill
+    - [x] Add a test class `TestAbortOnFailure` (`@pytest.mark.unit`)
+    - [x] Write failing test `test_no_second_render_when_first_claude_fails`: S-1 preconditions; pre-set `fake_runner.set_result(ClaudeResult(returncode=2))`; call `update_project(...)`; assert `len(fake_renderer.calls) == 1` and `fake_renderer.calls[0][0] == "update-project-claude-md.md"`
+    - [x] Write failing test `test_no_sha_writes_when_first_claude_fails`: same setup; after the call, read project CLAUDE.md and assert its marker is still `<!-- claude-config-files-sha: AAA111 -->`; parse project settings and assert its allow list still contains `Bash(i2code-config-files-sha BBB222)` (and not `DDD444`)
+    - [x] Write failing test `test_returns_failing_claude_result`: same setup; assert the returned `ClaudeResult.returncode == 2`
+    - [x] Update `update_project()` to: after each Claude invocation, check `result.returncode`; if non-zero, return immediately without writing the file's SHA marker and without processing the next file
+    - [x] Also update the no-Claude branches (missing copy, empty-diff skip) to return `ClaudeResult(returncode=0)` from a single explicit synthesized result when no Claude invocation was performed for any file (CAP-7.3)
+    - [x] Add a regression test `TestAbortOnFailure::test_returns_zero_when_no_claude_invocations`: scenario S-6 (both files missing); assert the return value's `returncode == 0`
+    - [x] Run all four new tests; ensure they pass
+    - [x] Run `uvx pyright --level error src/` — exit 0
+    - [x] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
+    - [x] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
+    - [x] Commit via the commit-guidelines skill
 
 ---
 
@@ -337,3 +337,6 @@ TestFirstSyncSettings 3/3 passing; pytest exit 0 (22 passed, 12 skipped); pyrigh
 
 ### 2026-06-02 16:39 - mark-task-complete
 ST5 T5.1: routine update branch; pytest 27 passed; pyright 0 errors; CodeScene 10.0/10.0; safeguard PASSED
+
+### 2026-06-02 16:43 - mark-task-complete
+TestAbortOnFailure 4/4 passing; pytest 31 passed exit 0; pyright 0 errors; CodeScene 10.0/10.0 on both files; safeguard PASSED

@@ -114,25 +114,25 @@ Implements CAP-2 (direct copy of missing files) and CAP-4.2/4.3 (SHA marker writ
 
 Implements CAP-1.1 (read per-file previous SHA from each marker format) and CAP-3.1 (empty-diff skip with marker advance) for both target files. After this thread, when one file is missing and the other has a valid marker with an empty per-file diff, the missing file is copied and the other file's marker is advanced — Claude is invoked zero times.
 
-- [ ] **Task 3.1: `update_project` reads the per-file SHA marker from `CLAUDE.md` and from `.claude/settings.local.json`**
+- [x] **Task 3.1: `update_project` reads the per-file SHA marker from `CLAUDE.md` and from `.claude/settings.local.json`**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/setup-cmd/test_update_project.py -v`
   - Observable: When both files exist with valid markers, `update_project(...)` issues git diff calls scoped to each file using each file's own previous SHA. The `git diff <prev>..<curr> -- <relpath_to_CLAUDE.md>` call uses the CLAUDE.md previous SHA; the `git diff <prev>..<curr> -- <relpath_to_settings.local.json>` call uses the settings previous SHA.
   - Evidence: New tests `TestPerFileShaReading::test_reads_claude_md_previous_sha_from_marker`, `TestPerFileShaReading::test_reads_settings_previous_sha_from_fake_permission_entry`, `TestPerFileShaReading::test_per_file_diff_calls_use_per_file_previous_shas` all pass.
   - Steps:
-    - [ ] Add a test class `TestPerFileShaReading` (`@pytest.mark.unit`)
-    - [ ] Write failing test `test_reads_claude_md_previous_sha_from_marker`: create project `CLAUDE.md` containing `<!-- claude-config-files-sha: AAA111 -->`; create project `settings.local.json` with `Bash(i2code-config-files-sha BBB222)` in `permissions.allow`; mock both per-file diffs as empty; assert via `fake_renderer.calls` (if Claude were invoked) or via the captured git commands that the value `AAA111` flows into the CLAUDE.md diff command
-    - [ ] Write failing test `test_reads_settings_previous_sha_from_fake_permission_entry`: same setup; assert the value `BBB222` flows into the settings diff command
-    - [ ] Write failing test `test_per_file_diff_calls_use_per_file_previous_shas`: capture all subprocess `git diff` invocations; assert there are exactly two `git diff` calls, one scoped to the CLAUDE.md template path (with `AAA111..<curr>`), one scoped to the settings template path (with `BBB222..<curr>`)
-    - [ ] Replace `_extract_previous_sha` with `_read_claude_md_sha(claude_md_path) -> str` — same regex, renamed for symmetry
-    - [ ] Add `_read_settings_sha(settings_path) -> str` — parses JSON, scans `permissions.allow` for `Bash(i2code-config-files-sha <sha>)`, returns the SHA or `""`
-    - [ ] Add `_get_per_file_diff(repo_root, template_file_relpath, prev_sha, curr_sha) -> str` — runs `git diff <prev>..<curr> -- <relpath>` from `repo_root`. If `prev_sha` is empty or `repo_root` is empty, return `""`
-    - [ ] Wire the orchestrator: for each file, call `_read_*_sha`, then `_get_per_file_current_sha`, then `_get_per_file_diff`
-    - [ ] Run all three new tests; ensure they pass
-    - [ ] Run `uvx pyright --level error src/` — exit 0
-    - [ ] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
-    - [ ] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
-    - [ ] Commit via the commit-guidelines skill
+    - [x] Add a test class `TestPerFileShaReading` (`@pytest.mark.unit`)
+    - [x] Write failing test `test_reads_claude_md_previous_sha_from_marker`: create project `CLAUDE.md` containing `<!-- claude-config-files-sha: AAA111 -->`; create project `settings.local.json` with `Bash(i2code-config-files-sha BBB222)` in `permissions.allow`; mock both per-file diffs as empty; assert via `fake_renderer.calls` (if Claude were invoked) or via the captured git commands that the value `AAA111` flows into the CLAUDE.md diff command
+    - [x] Write failing test `test_reads_settings_previous_sha_from_fake_permission_entry`: same setup; assert the value `BBB222` flows into the settings diff command
+    - [x] Write failing test `test_per_file_diff_calls_use_per_file_previous_shas`: capture all subprocess `git diff` invocations; assert there are exactly two `git diff` calls, one scoped to the CLAUDE.md template path (with `AAA111..<curr>`), one scoped to the settings template path (with `BBB222..<curr>`)
+    - [x] Replace `_extract_previous_sha` with `_read_claude_md_sha(claude_md_path) -> str` — same regex, renamed for symmetry
+    - [x] Add `_read_settings_sha(settings_path) -> str` — parses JSON, scans `permissions.allow` for `Bash(i2code-config-files-sha <sha>)`, returns the SHA or `""`
+    - [x] Add `_get_per_file_diff(repo_root, template_file_relpath, prev_sha, curr_sha) -> str` — runs `git diff <prev>..<curr> -- <relpath>` from `repo_root`. If `prev_sha` is empty or `repo_root` is empty, return `""`
+    - [x] Wire the orchestrator: for each file, call `_read_*_sha`, then `_get_per_file_current_sha`, then `_get_per_file_diff`
+    - [x] Run all three new tests; ensure they pass
+    - [x] Run `uvx pyright --level error src/` — exit 0
+    - [x] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
+    - [x] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
+    - [x] Commit via the commit-guidelines skill
 
 - [ ] **Task 3.2: `update_project` skips Claude when per-file diff is empty and advances the per-file SHA marker**
   - TaskType: OUTCOME
@@ -322,3 +322,6 @@ TestMissingFileCopy 3/3 passing; pytest exit 0 (5 passed, 20 skipped in file); p
 
 ### 2026-06-02 15:52 - mark-task-complete
 TestMissingFileCopy 7/7 passing; pytest exit 0 (9 passed, 20 skipped); pyright --level error exit 0; CodeScene 10.0/10.0 on both files; safeguard PASSED
+
+### 2026-06-02 16:00 - mark-task-complete
+TestPerFileShaReading 3/3 passing; pytest exit 0 (12 passed, 20 skipped); pyright --level error exit 0; CodeScene 10.0; safeguard PASSED

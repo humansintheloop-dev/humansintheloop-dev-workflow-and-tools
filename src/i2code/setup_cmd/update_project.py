@@ -6,8 +6,16 @@ import re
 import shutil
 import subprocess
 import sys
+from typing import NamedTuple
 
 from i2code.implement.claude_runner import ClaudeResult
+
+
+class _FileSpec(NamedTuple):
+    project_path: str
+    source_path: str
+    read_sha: object
+    write_sha: object
 
 CLAUDE_MD_NAME = "CLAUDE.md"
 SETTINGS_RELPATH = os.path.join(".claude", "settings.local.json")
@@ -40,8 +48,8 @@ def update_project(project_dir, config_dir, claude_runner, template_renderer):
     _validate_directories(project_dir, config_dir)
 
     repo_root = _get_repo_root(config_dir)
-    _process_claude_md(project_dir, config_dir, repo_root)
-    _process_settings(project_dir, config_dir, repo_root)
+    for spec in _build_file_specs(project_dir, config_dir):
+        _process_file(spec, repo_root)
 
     return ClaudeResult(returncode=0)
 
@@ -55,33 +63,32 @@ def _validate_directories(project_dir, config_dir):
         raise SystemExit(1)
 
 
-def _process_claude_md(project_dir, config_dir, repo_root):
-    project_claude_md = os.path.join(project_dir, CLAUDE_MD_NAME)
-    config_claude_md = os.path.join(config_dir, CLAUDE_MD_NAME)
+def _build_file_specs(project_dir, config_dir):
+    return [
+        _FileSpec(
+            project_path=os.path.join(project_dir, CLAUDE_MD_NAME),
+            source_path=os.path.join(config_dir, CLAUDE_MD_NAME),
+            read_sha=_read_claude_md_sha,
+            write_sha=_write_claude_md_sha,
+        ),
+        _FileSpec(
+            project_path=os.path.join(project_dir, SETTINGS_RELPATH),
+            source_path=os.path.join(config_dir, SETTINGS_TEMPLATE_NAME),
+            read_sha=_read_settings_sha,
+            write_sha=_write_settings_sha,
+        ),
+    ]
 
-    if not os.path.isfile(project_claude_md):
-        _copy_template_file(config_claude_md, project_claude_md)
-        relpath = _config_file_relpath(config_claude_md, repo_root)
-        current_sha = _get_per_file_current_sha(repo_root, relpath)
-        _write_claude_md_sha(project_claude_md, current_sha)
 
-
-def _process_settings(project_dir, config_dir, repo_root):
-    project_settings = os.path.join(project_dir, SETTINGS_RELPATH)
-    config_settings = os.path.join(config_dir, SETTINGS_TEMPLATE_NAME)
-
-    if not os.path.isfile(project_settings):
-        _copy_template_file(config_settings, project_settings)
-        relpath = _config_file_relpath(config_settings, repo_root)
-        current_sha = _get_per_file_current_sha(repo_root, relpath)
-        _write_settings_sha(project_settings, current_sha)
+def _process_file(spec, repo_root):
+    relpath = _config_file_relpath(spec.source_path, repo_root)
+    if not os.path.isfile(spec.project_path):
+        _copy_template_file(spec.source_path, spec.project_path)
+        spec.write_sha(spec.project_path, _get_per_file_current_sha(repo_root, relpath))
         return
-
-    previous_sha = _read_settings_sha(project_settings)
+    previous_sha = spec.read_sha(spec.project_path)
     if not previous_sha:
         return
-
-    relpath = _config_file_relpath(config_settings, repo_root)
     current_sha = _get_per_file_current_sha(repo_root, relpath)
     _get_per_file_diff(repo_root, relpath, previous_sha, current_sha)
 
@@ -145,6 +152,15 @@ def _write_settings_sha(settings_path, sha):
     allow.append(f"Bash({SETTINGS_SHA_MARKER} {sha})")
     with open(settings_path, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def _read_claude_md_sha(claude_md_path):
+    if not os.path.isfile(claude_md_path):
+        return ""
+    with open(claude_md_path) as f:
+        content = f.read()
+    match = re.search(rf"<!-- {CLAUDE_MD_SHA_MARKER}:\s*([a-zA-Z0-9]+)\s*-->", content)
+    return match.group(1) if match else ""
 
 
 def _read_settings_sha(settings_path):

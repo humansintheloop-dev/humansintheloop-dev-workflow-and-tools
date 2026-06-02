@@ -572,3 +572,25 @@ class TestPlanCompletionVm:
             assert "Workflow Complete!" not in result.output_displayed
             assert "Plan has uncompleted tasks" not in result.output_displayed
             assert result.exit_code is None
+
+
+@pytest.mark.unit
+class TestPlanCompletionMissingConfig:
+
+    def test_missing_config_reads_main_repo_plan(self):
+        with TempIdeaProject("my-feature") as project:
+            _setup_has_plan(project, _COMPLETE_PLAN)
+
+            def deleting_implement_runner(_flags, _directory):
+                os.remove(project.implement_config_file)
+                return _success_result()
+
+            result = _run_has_plan_orchestrator(
+                project, [IMPLEMENT_PLAN],
+                config_kwargs=dict(
+                    interactive=True, trunk=False, isolation_type="none",
+                ),
+                implement_runner=deleting_implement_runner,
+            )
+            assert result.exit_code == 0
+            assert "Workflow Complete!" in result.output_displayed

@@ -200,16 +200,16 @@ US-2.2 / Spec S7. When `gh api` fails (non-zero, network error, missing branch, 
 
 Spec S8. When `read_implement_config` returns `None` (config file absent or empty), the resolver must read the main repo's plan file — identical to trunk behaviour.
 
-- [ ] **Task 8.1: Orchestrator prints `Workflow Complete!` when no implement-config exists and the main-repo plan is fully checked**
+- [x] **Task 8.1: Orchestrator prints `Workflow Complete!` when no implement-config exists and the main-repo plan is fully checked**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/go-cmd/test_orchestrator_implement.py::TestPlanCompletionMissingConfig::test_missing_config_reads_main_repo_plan -v`
   - Observable: With no `<idea>-implement-config.yaml` present, the resolver reads `<idea-dir>/<idea>-plan.md` (the main repo path); when fully checked, stderr contains `Workflow Complete!` and `Orchestrator.run()` raises `SystemExit(0)`. No sibling `-wt-`/`-cl-` directory is consulted.
   - Evidence: The pytest command above runs the new `TestPlanCompletionMissingConfig` class. The test simulates the "config was deleted between implement and recheck" case by having the mocked `implement_runner` delete `project.implement_config_file` before returning success, then places a complete plan at `project.plan_file`. The test asserts `result.exit_code == 0` and `"Workflow Complete!" in result.output_displayed`. Removing the `config is None` fallback in `resolve_plan_text` causes the test to fail because the resolver returns `None`.
   - Steps:
-    - [ ] Add `TestPlanCompletionMissingConfig` to `tests/go-cmd/test_orchestrator_implement.py`. The test simulates the "config was deleted between implement and recheck" case: write a config initially (so the menu doesn't reprompt), have the test's `implement_runner` mock delete `project.implement_config_file` before returning success, and place a fully-checked plan at `project.plan_file`. Assert the banner under this state.
-    - [ ] Run the test; it should fail until the `config is None` branch is added.
-    - [ ] Confirm `resolve_plan_text` already returns `Path(project.plan_file).read_text(...)` when `config is None` (added in Steel Thread 2). If only the trunk-true branch handles this, generalise to `if config is None or config["trunk"]:`.
-    - [ ] Run the test; it passes. Run `./test-scripts/test-unit.sh`; confirm green.
+    - [x] Add `TestPlanCompletionMissingConfig` to `tests/go-cmd/test_orchestrator_implement.py`. The test simulates the "config was deleted between implement and recheck" case: write a config initially (so the menu doesn't reprompt), have the test's `implement_runner` mock delete `project.implement_config_file` before returning success, and place a fully-checked plan at `project.plan_file`. Assert the banner under this state.
+    - [x] Run the test; it should fail until the `config is None` branch is added.
+    - [x] Confirm `resolve_plan_text` already returns `Path(project.plan_file).read_text(...)` when `config is None` (added in Steel Thread 2). If only the trunk-true branch handles this, generalise to `if config is None or config["trunk"]:`.
+    - [x] Run the test; it passes. Run `./test-scripts/test-unit.sh`; confirm green.
 
 ---
 
@@ -247,3 +247,6 @@ ST6 T6.1: Added VM-mode resolver branch that fetches plan via gh api; plumbed gh
 
 ### 2026-06-02 12:28 - mark-task-complete
 ST7 T7.1: VM-mode gh failure now prints diagnostic and suppresses banners; bundled gh_runner/output into ResolverDeps to keep resolve_plan_text under arg cap.
+
+### 2026-06-02 12:34 - mark-task-complete
+ST8 T8.1: Added TestPlanCompletionMissingConfig; resolver's config-is-None branch already in place from ST2 satisfies the regression guard.

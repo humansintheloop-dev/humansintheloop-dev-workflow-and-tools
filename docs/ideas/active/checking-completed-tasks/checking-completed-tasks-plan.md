@@ -124,16 +124,16 @@ US-1.5 / Spec S6. Confirms the "Plan has uncompleted tasks" banner still appears
 
 US-1.3 / Spec S4. The nono sandbox runs the agent on the host and edits the clone directory directly; the resolver must point to `<parent>/<repo>-cl-<idea>/<idea-relpath>/<idea>-plan.md`.
 
-- [ ] **Task 4.1: Orchestrator prints `Workflow Complete!` when isolation=nono and the host clone's plan file is fully checked**
+- [x] **Task 4.1: Orchestrator prints `Workflow Complete!` when isolation=nono and the host clone's plan file is fully checked**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/go-cmd/test_orchestrator_implement.py::TestPlanCompletionNono::test_nono_mode_complete_plan_prints_workflow_complete -v`
   - Observable: With `trunk=false, isolation_type=nono` and a fully-checked plan at the sibling `<parent>/<repo>-cl-<idea>/<idea-relpath>/<idea>-plan.md`, stderr contains `Workflow Complete!`, the worktree (`-wt-`) sibling path is NOT consulted, and `Orchestrator.run()` raises `SystemExit(0)`.
   - Evidence: The pytest command above runs. The test places the plan only under the `-cl-` sibling and asserts the exit semantics. Removing the `nono` branch from the resolver (so it falls through to main-repo path) causes the test to fail because the main-repo plan still has unchecked boxes.
   - Steps:
-    - [ ] In `tests/go-cmd/test_orchestrator_implement.py`, add `TestPlanCompletionNono` with the failing test described above, reusing the worktree-sibling fixture pattern but passing `"cl"` as the suffix.
-    - [ ] Run the test to confirm it fails (resolver currently lacks the nono branch).
-    - [ ] Extend `resolve_plan_text` in `src/i2code/go_cmd/plan_completion.py` with the `isolation_type == "nono"` branch: compute `clone_path = sibling_path(git_root, "cl", project.name)`, build `clone_project = project.worktree_idea_project(clone_path, git_root)`, return its plan-file text.
-    - [ ] Run the test; it passes. Run `./test-scripts/test-unit.sh` and confirm green.
+    - [x] In `tests/go-cmd/test_orchestrator_implement.py`, add `TestPlanCompletionNono` with the failing test described above, reusing the worktree-sibling fixture pattern but passing `"cl"` as the suffix.
+    - [x] Run the test to confirm it fails (resolver currently lacks the nono branch).
+    - [x] Extend `resolve_plan_text` in `src/i2code/go_cmd/plan_completion.py` with the `isolation_type == "nono"` branch: compute `clone_path = sibling_path(git_root, "cl", project.name)`, build `clone_project = project.worktree_idea_project(clone_path, git_root)`, return its plan-file text.
+    - [x] Run the test; it passes. Run `./test-scripts/test-unit.sh` and confirm green.
 
 ---
 
@@ -235,3 +235,6 @@ ST2 T2.1: Added TestPlanCompletionTrunk parametrized tests; extended resolve_pla
 
 ### 2026-06-02 08:04 - mark-task-complete
 ST3 T3.1: Added incomplete-plan worktree test; deleted obsolete TestPlanCompletion class. All 1361 unit tests pass.
+
+### 2026-06-02 09:31 - mark-task-complete
+ST4 T4.1: Extended resolve_plan_text with nono branch reading host clone -cl- sibling; refactored sibling-mode tests with shared scenario helper to satisfy CodeScene.

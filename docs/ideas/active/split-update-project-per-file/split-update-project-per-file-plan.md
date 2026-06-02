@@ -50,15 +50,15 @@ All steps below use TDD: write the failing test first, then make it pass. Each t
 
 ## Steel Thread 1: Baseline verification — existing build passes
 
-- [ ] **Task 1.1: Existing `update_project` test suite passes on master**
+- [x] **Task 1.1: Existing `update_project` test suite passes on master**
   - TaskType: INFRA
   - Entrypoint: `uv run pytest tests/setup-cmd/test_update_project.py -v`
   - Observable: All existing tests in `tests/setup-cmd/test_update_project.py` pass (exit code 0). `uvx pyright --level error src/` reports no errors.
   - Evidence: Running `uv run pytest tests/setup-cmd/test_update_project.py -v` exits 0 and `uvx pyright --level error src/` exits 0.
   - Steps:
-    - [ ] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` and confirm exit 0
-    - [ ] Run `uvx pyright --level error src/` and confirm exit 0
-    - [ ] Record this baseline in the Verification section before proceeding
+    - [x] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` and confirm exit 0
+    - [x] Run `uvx pyright --level error src/` and confirm exit 0
+    - [x] Record this baseline in the Verification section before proceeding
 
 ---
 
@@ -310,3 +310,9 @@ After Steel Thread 8, verify the full spec acceptance criteria:
 - [ ] AC-12: `uvx pyright --level error src/` exits 0 — run on the final commit
 
 If any AC is not satisfied, add the missing test/fix as a follow-up task within the relevant steel thread before opening a PR.
+
+---
+
+## Change History
+### 2026-06-02 15:31 - mark-task-complete
+Baseline verified: pytest 22 passed exit 0; pyright 0 errors exit 0

@@ -219,6 +219,10 @@ class TestEnsureImplementConfigWritesIsolationType:
         from i2code.go_cmd.implement_config import read_implement_config
 
         with TempIdeaProject("my-feature") as project:
+            _setup_has_plan(project)
+            _materialise_worktree_plan(
+                project, "- [ ] **Task 1.1: Not done**\n", suffix="cl",
+            )
             mock_implement = MagicMock(return_value=_success_result())
             user_choices = [
                 IMPLEMENT_PLAN, INTERACTIVE, ISOLATION_CHOICES[isolation_index],
@@ -270,6 +274,10 @@ class TestDisplayImplementConfig:
 
     def test_displays_isolation_type(self):
         with TempIdeaProject("my-feature") as project:
+            _setup_has_plan(project)
+            _materialise_worktree_plan(
+                project, "- [ ] **Task 1.1: Not done**\n", suffix="cl",
+            )
             mock_implement = MagicMock(return_value=_success_result())
             result = _run_has_plan_orchestrator(
                 project, [IMPLEMENT_PLAN, EXIT],
@@ -301,6 +309,59 @@ def _materialise_worktree_plan(project, plan_text, suffix="wt"):
     with open(plan_path, "w", encoding="utf-8") as f:
         f.write(plan_text)
     return plan_path
+
+
+_CONTRAST_INCOMPLETE_MAIN = (
+    "## Steel Thread 1: Feature\n\n"
+    "- [ ] **Task 1.1: Not done in main repo**\n"
+)
+_CONTRAST_COMPLETE_MAIN = (
+    "## Steel Thread 1: Feature\n\n"
+    "- [x] **Task 1.1: Main repo plan is fully checked**\n"
+)
+
+
+class _SiblingPlanScenario:
+    """Bundle of per-mode parameters for sibling-mode plan-completion tests."""
+
+    def __init__(self, *, suffix, isolation_type, user_choices, expect_complete):
+        self.suffix = suffix
+        self.isolation_type = isolation_type
+        self.user_choices = user_choices
+        self.expect_complete = expect_complete
+
+
+def _assert_sibling_mode_plan_completion(project, sibling_plan_text, scenario):
+    """Set up a sibling-mode plan-completion scenario and assert the banner.
+
+    Materialises an opposite main-repo plan (so a resolver fall-through to the
+    main repo would produce the wrong banner), places `sibling_plan_text` at
+    the `-<scenario.suffix>-` sibling, drives the orchestrator with
+    `scenario.user_choices`, and asserts the workflow-complete /
+    uncompleted-tasks banners match `scenario.expect_complete`.
+    """
+    contrast = (
+        _CONTRAST_INCOMPLETE_MAIN if scenario.expect_complete
+        else _CONTRAST_COMPLETE_MAIN
+    )
+    _setup_has_plan(project, contrast)
+    _materialise_worktree_plan(project, sibling_plan_text, suffix=scenario.suffix)
+    result = _run_has_plan_orchestrator(
+        project, scenario.user_choices,
+        config_kwargs=dict(
+            interactive=True, trunk=False,
+            isolation_type=scenario.isolation_type,
+        ),
+        implement_runner=MagicMock(return_value=_success_result()),
+    )
+    if scenario.expect_complete:
+        assert result.exit_code == 0
+        assert "Workflow Complete!" in result.output_displayed
+        assert "Plan has uncompleted tasks" not in result.output_displayed
+    else:
+        assert result.exit_code is None
+        assert "Plan has uncompleted tasks" in result.output_displayed
+        assert "Workflow Complete!" not in result.output_displayed
 
 
 @pytest.mark.unit
@@ -342,51 +403,49 @@ class TestPlanCompletionTrunk:
                 assert "Workflow Complete!" not in result.output_displayed
 
 
+_COMPLETE_PLAN = (
+    "## Steel Thread 1: Feature\n\n"
+    "- [x] **Task 1.1: Done**\n- [x] **Task 1.2: Also done**\n"
+)
+_INCOMPLETE_PLAN = (
+    "## Steel Thread 1: Feature\n\n"
+    "- [x] **Task 1.1: Done**\n- [ ] **Task 1.2: Not done**\n"
+)
+
+
 @pytest.mark.unit
 class TestPlanCompletionWorktree:
 
     def test_worktree_mode_complete_plan_prints_workflow_complete(self):
-        plan_text = (
-            "## Steel Thread 1: Feature\n\n"
-            "- [x] **Task 1.1: Done**\n- [x] **Task 1.2: Also done**\n"
-        )
         with TempIdeaProject("my-feature") as project:
-            _setup_has_plan(
-                project,
-                "## Steel Thread 1: Feature\n\n"
-                "- [ ] **Task 1.1: Not done in main repo**\n",
-            )
-            _materialise_worktree_plan(project, plan_text)
-            result = _run_has_plan_orchestrator(
-                project, [IMPLEMENT_PLAN],
-                config_kwargs=dict(
-                    interactive=True, trunk=False, isolation_type="none",
+            _assert_sibling_mode_plan_completion(
+                project, _COMPLETE_PLAN,
+                _SiblingPlanScenario(
+                    suffix="wt", isolation_type="none",
+                    user_choices=[IMPLEMENT_PLAN], expect_complete=True,
                 ),
-                implement_runner=MagicMock(return_value=_success_result()),
             )
-            assert result.exit_code == 0
-            assert "Workflow Complete!" in result.output_displayed
-            assert "Plan has uncompleted tasks" not in result.output_displayed
 
     def test_worktree_mode_incomplete_plan_prints_uncompleted_banner(self):
-        plan_text = (
-            "## Steel Thread 1: Feature\n\n"
-            "- [x] **Task 1.1: Done**\n- [ ] **Task 1.2: Not done**\n"
-        )
         with TempIdeaProject("my-feature") as project:
-            _setup_has_plan(
-                project,
-                "## Steel Thread 1: Feature\n\n"
-                "- [x] **Task 1.1: Main repo plan is fully checked**\n",
-            )
-            _materialise_worktree_plan(project, plan_text)
-            result = _run_has_plan_orchestrator(
-                project, [IMPLEMENT_PLAN, EXIT],
-                config_kwargs=dict(
-                    interactive=True, trunk=False, isolation_type="none",
+            _assert_sibling_mode_plan_completion(
+                project, _INCOMPLETE_PLAN,
+                _SiblingPlanScenario(
+                    suffix="wt", isolation_type="none",
+                    user_choices=[IMPLEMENT_PLAN, EXIT], expect_complete=False,
                 ),
-                implement_runner=MagicMock(return_value=_success_result()),
             )
-            assert result.exit_code is None
-            assert "Plan has uncompleted tasks" in result.output_displayed
-            assert "Workflow Complete!" not in result.output_displayed
+
+
+@pytest.mark.unit
+class TestPlanCompletionNono:
+
+    def test_nono_mode_complete_plan_prints_workflow_complete(self):
+        with TempIdeaProject("my-feature") as project:
+            _assert_sibling_mode_plan_completion(
+                project, _COMPLETE_PLAN,
+                _SiblingPlanScenario(
+                    suffix="cl", isolation_type="nono",
+                    user_choices=[IMPLEMENT_PLAN], expect_complete=True,
+                ),
+            )

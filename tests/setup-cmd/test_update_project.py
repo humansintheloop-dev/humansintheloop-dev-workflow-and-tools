@@ -323,23 +323,35 @@ class TestClaudeInvocation:
             assert result.returncode == 0
 
 
-def _setup_project_missing_claude_md(tmpdir, *, settings_prev_sha="BBB222"):
-    """Create a project missing CLAUDE.md but with a synced settings.local.json.
+_DEFAULT_CURRENT_SHAS = {"claude_md": "CCC333", "settings": "DDD444"}
+
+
+def _setup_per_file_project(tmpdir, markers):
+    """Create project_dir + config_dir with templates, returning paths and relpaths.
+
+    `markers` is a dict; if it contains `"claude_md"` the project's CLAUDE.md is
+    created with that SHA marker, otherwise the file is omitted. Same convention
+    for `"settings"` and `.claude/settings.local.json`. The config_dir is always
+    populated with both template files. Relpaths are relative to tmpdir (the repo
+    root).
 
     Returns (project_dir, config_dir, claude_md_relpath, settings_relpath).
-    Relpaths are relative to tmpdir (which acts as the repo root).
     """
     project_dir = os.path.join(tmpdir, "my-project")
-    os.makedirs(os.path.join(project_dir, ".claude"))
-    project_settings = os.path.join(project_dir, ".claude", "settings.local.json")
-    with open(project_settings, "w") as f:
-        json.dump(
-            {"permissions": {"allow": [
-                "Bash(echo:*)",
-                f"Bash(i2code-config-files-sha {settings_prev_sha})",
-            ]}},
-            f,
-        )
+    os.makedirs(project_dir)
+    if "claude_md" in markers:
+        with open(os.path.join(project_dir, "CLAUDE.md"), "w") as f:
+            f.write(f"# Project\n<!-- claude-config-files-sha: {markers['claude_md']} -->\n")
+    if "settings" in markers:
+        os.makedirs(os.path.join(project_dir, ".claude"))
+        with open(os.path.join(project_dir, ".claude", "settings.local.json"), "w") as f:
+            json.dump(
+                {"permissions": {"allow": [
+                    "Bash(echo:*)",
+                    f"Bash(i2code-config-files-sha {markers['settings']})",
+                ]}},
+                f,
+            )
 
     config_dir = os.path.join(tmpdir, "config-files")
     os.makedirs(config_dir)
@@ -355,48 +367,101 @@ def _setup_project_missing_claude_md(tmpdir, *, settings_prev_sha="BBB222"):
     return project_dir, config_dir, claude_md_relpath, settings_relpath
 
 
+def _run_update_with_per_file_mock(tmpdir, fakes, *, markers=None, empty_diff_for=()):
+    """Set up project + mock subprocess + invoke update_project. Returns project_dir.
+
+    `markers` is a dict mapping file-kind ("claude_md", "settings") to its previous
+    SHA marker; absent keys mean that project file is not created. `empty_diff_for`
+    is an iterable of file-kinds whose per-file diff should be empty.
+    """
+    fake_runner, fake_renderer = fakes
+    markers = markers or {}
+    project_dir, config_dir, claude_md_relpath, settings_relpath = (
+        _setup_per_file_project(tmpdir, markers)
+    )
+    relpath_by_kind = {"claude_md": claude_md_relpath, "settings": settings_relpath}
+    per_file_diffs = {relpath_by_kind[k]: "" for k in empty_diff_for}
+    per_file_shas = {
+        relpath_by_kind[k]: sha for k, sha in _DEFAULT_CURRENT_SHAS.items()
+    }
+    with patch("i2code.setup_cmd.update_project.subprocess") as mock_sub:
+        mock_sub.run = _per_file_subprocess_run(
+            tmpdir, per_file_shas=per_file_shas, per_file_diffs=per_file_diffs,
+        )
+        update_project(project_dir, config_dir, fake_runner, fake_renderer)
+    return project_dir
+
+
 @pytest.mark.unit
 class TestMissingFileCopy:
 
-    def _call_with_missing_claude_md(self, tmpdir, fake_runner, fake_renderer):
-        project_dir, config_dir, claude_md_relpath, settings_relpath = (
-            _setup_project_missing_claude_md(tmpdir)
+    def _run_missing_claude_md(self, tmpdir, fake_runner, fake_renderer):
+        return _run_update_with_per_file_mock(
+            tmpdir, (fake_runner, fake_renderer),
+            markers={"settings": "BBB222"},
+            empty_diff_for=("settings",),
         )
-        with patch("i2code.setup_cmd.update_project.subprocess") as mock_sub:
-            mock_sub.run = _per_file_subprocess_run(
-                tmpdir,
-                per_file_shas={
-                    claude_md_relpath: "CCC333",
-                    settings_relpath: "DDD444",
-                },
-                per_file_diffs={settings_relpath: ""},
-            )
-            update_project(project_dir, config_dir, fake_runner, fake_renderer)
-        return project_dir
+
+    def _run_missing_settings(self, tmpdir, fake_runner, fake_renderer):
+        return _run_update_with_per_file_mock(
+            tmpdir, (fake_runner, fake_renderer),
+            markers={"claude_md": "CCC333"},
+            empty_diff_for=("claude_md",),
+        )
 
     def test_copies_missing_claude_md_from_template(self, fake_runner, fake_renderer):
         with tempfile.TemporaryDirectory() as tmpdir:
-            project_dir = self._call_with_missing_claude_md(
-                tmpdir, fake_runner, fake_renderer,
-            )
-            project_claude_md = os.path.join(project_dir, "CLAUDE.md")
-            assert os.path.isfile(project_claude_md)
-            with open(project_claude_md) as f:
-                content = f.read()
-            assert content.startswith("# Template CLAUDE.md content\n")
+            project_dir = self._run_missing_claude_md(tmpdir, fake_runner, fake_renderer)
+            with open(os.path.join(project_dir, "CLAUDE.md")) as f:
+                assert f.read().startswith("# Template CLAUDE.md content\n")
 
     def test_writes_claude_md_sha_marker_after_copy(self, fake_runner, fake_renderer):
         with tempfile.TemporaryDirectory() as tmpdir:
-            project_dir = self._call_with_missing_claude_md(
-                tmpdir, fake_runner, fake_renderer,
-            )
-            project_claude_md = os.path.join(project_dir, "CLAUDE.md")
-            with open(project_claude_md) as f:
-                content = f.read()
-            lines = content.rstrip("\n").split("\n")
+            project_dir = self._run_missing_claude_md(tmpdir, fake_runner, fake_renderer)
+            with open(os.path.join(project_dir, "CLAUDE.md")) as f:
+                lines = f.read().rstrip("\n").split("\n")
             assert lines[-1] == "<!-- claude-config-files-sha: CCC333 -->"
 
     def test_no_claude_invocation_when_claude_md_missing(self, fake_runner, fake_renderer):
         with tempfile.TemporaryDirectory() as tmpdir:
-            self._call_with_missing_claude_md(tmpdir, fake_runner, fake_renderer)
+            self._run_missing_claude_md(tmpdir, fake_runner, fake_renderer)
+            assert len(fake_runner.calls) == 0
+
+    def test_copies_missing_settings_from_template(self, fake_runner, fake_renderer):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = self._run_missing_settings(tmpdir, fake_runner, fake_renderer)
+            project_settings = os.path.join(project_dir, ".claude", "settings.local.json")
+            with open(project_settings) as f:
+                data = json.load(f)
+            assert "Bash(echo:*)" in data["permissions"]["allow"]
+
+    def test_writes_settings_sha_marker_after_copy(self, fake_runner, fake_renderer):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = self._run_missing_settings(tmpdir, fake_runner, fake_renderer)
+            project_settings = os.path.join(project_dir, ".claude", "settings.local.json")
+            with open(project_settings) as f:
+                allow = json.load(f)["permissions"]["allow"]
+            sha_entries = [e for e in allow if "i2code-config-files-sha" in e]
+            assert sha_entries == ["Bash(i2code-config-files-sha DDD444)"]
+
+    def test_creates_claude_directory_if_absent(self, fake_runner, fake_renderer):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = self._run_missing_settings(tmpdir, fake_runner, fake_renderer)
+            assert os.path.isdir(os.path.join(project_dir, ".claude"))
+
+    def test_scenario_s6_both_files_missing_no_claude_invocations(
+        self, fake_runner, fake_renderer,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = _run_update_with_per_file_mock(
+                tmpdir, (fake_runner, fake_renderer),
+            )
+            with open(os.path.join(project_dir, "CLAUDE.md")) as f:
+                claude_md_content = f.read()
+            assert claude_md_content.rstrip("\n").endswith(
+                "<!-- claude-config-files-sha: CCC333 -->",
+            )
+            with open(os.path.join(project_dir, ".claude", "settings.local.json")) as f:
+                settings_allow = json.load(f)["permissions"]["allow"]
+            assert "Bash(i2code-config-files-sha DDD444)" in settings_allow
             assert len(fake_runner.calls) == 0

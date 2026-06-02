@@ -1,5 +1,6 @@
 """Push template updates into a project's Claude files."""
 
+import json
 import os
 import re
 import shutil
@@ -70,6 +71,10 @@ def _process_settings(project_dir, config_dir, repo_root):
     config_settings = os.path.join(config_dir, SETTINGS_TEMPLATE_NAME)
 
     if not os.path.isfile(project_settings):
+        _copy_template_file(config_settings, project_settings)
+        relpath = _config_file_relpath(config_settings, repo_root)
+        current_sha = _get_per_file_current_sha(repo_root, relpath)
+        _write_settings_sha(project_settings, current_sha)
         return
 
     previous_sha = _read_settings_sha(project_settings)
@@ -127,6 +132,19 @@ def _write_claude_md_sha(claude_md_path, sha):
     content += marker_line + "\n"
     with open(claude_md_path, "w") as f:
         f.write(content)
+
+
+def _write_settings_sha(settings_path, sha):
+    """Write/replace the SHA marker entry in permissions.allow as the last entry."""
+    with open(settings_path) as f:
+        data = json.load(f)
+    permissions = data.setdefault("permissions", {})
+    allow = permissions.setdefault("allow", [])
+    marker_pattern = re.compile(rf"^Bash\({SETTINGS_SHA_MARKER}\s+")
+    allow[:] = [entry for entry in allow if not marker_pattern.match(entry)]
+    allow.append(f"Bash({SETTINGS_SHA_MARKER} {sha})")
+    with open(settings_path, "w") as f:
+        json.dump(data, f, indent=2)
 
 
 def _read_settings_sha(settings_path):

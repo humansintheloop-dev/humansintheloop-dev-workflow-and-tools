@@ -90,23 +90,23 @@ Implements CAP-2 (direct copy of missing files) and CAP-4.2/4.3 (SHA marker writ
     - [x] Run CodeScene `pre_commit_code_health_safeguard` on `src/i2code/setup_cmd/update_project.py`; refactor if score is below 10.0
     - [x] Commit via the commit-guidelines skill
 
-- [ ] **Task 2.2: `update_project` copies missing `.claude/settings.local.json` (creating `.claude/`) and writes its SHA marker**
+- [x] **Task 2.2: `update_project` copies missing `.claude/settings.local.json` (creating `.claude/`) and writes its SHA marker**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/setup-cmd/test_update_project.py -v`
   - Observable: When the project has no `.claude/settings.local.json`, calling `update_project(...)` (a) creates `<project_dir>/.claude/` if absent, (b) copies `<config_dir>/settings.local.json` to `<project_dir>/.claude/settings.local.json`, (c) writes `Bash(i2code-config-files-sha <current_per_file_sha>)` into the JSON's `permissions.allow` array, (d) records zero `fake_runner.calls`, (e) returns `ClaudeResult(returncode=0)`. End-to-end S-6: when both files are missing, both are copied with markers and Claude is invoked zero times.
   - Evidence: New tests `TestMissingFileCopy::test_copies_missing_settings_from_template`, `TestMissingFileCopy::test_writes_settings_sha_marker_after_copy`, `TestMissingFileCopy::test_creates_claude_directory_if_absent`, `TestMissingFileCopy::test_scenario_s6_both_files_missing_no_claude_invocations` all pass.
   - Steps:
-    - [ ] Write failing test `test_copies_missing_settings_from_template`: create `config_dir/settings.local.json` with content `{"permissions": {"allow": ["Bash(echo:*)"]}}`; do NOT create `project_dir/.claude/`; ensure CLAUDE.md exists and is fully synced; mock subprocess so settings per-file current SHA is `DDD444`; call `update_project(...)`; assert the destination file exists and its parsed JSON contains the original `Bash(echo:*)` entry
-    - [ ] Write failing test `test_writes_settings_sha_marker_after_copy`: same setup; assert the parsed JSON's `permissions.allow` contains exactly one entry matching `Bash(i2code-config-files-sha DDD444)`
-    - [ ] Write failing test `test_creates_claude_directory_if_absent`: same setup; assert `os.path.isdir(os.path.join(project_dir, ".claude"))` is True
-    - [ ] Write failing test `test_scenario_s6_both_files_missing_no_claude_invocations`: do not create either project file; mock per-file SHAs `CCC333` and `DDD444`; call `update_project(...)`; assert both files exist with their markers and `len(fake_runner.calls) == 0`
-    - [ ] Add new helper `_write_settings_sha(settings_path, sha)` to `src/i2code/setup_cmd/update_project.py`: parses the JSON, removes any existing `Bash(i2code-config-files-sha ...)` entry from `permissions.allow`, appends `Bash(i2code-config-files-sha <sha>)`, writes the JSON back preserving key order (use `json.load`/`json.dump` with `indent=2`)
-    - [ ] Extend the per-file loop in `update_project()` so the settings-file branch mirrors the CLAUDE.md branch: missing → copy (creating `.claude/`), then write settings SHA marker, no Claude invocation
-    - [ ] Run all four new tests; ensure they pass
-    - [ ] Run `uvx pyright --level error src/` — exit 0
-    - [ ] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
-    - [ ] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
-    - [ ] Commit via the commit-guidelines skill
+    - [x] Write failing test `test_copies_missing_settings_from_template`: create `config_dir/settings.local.json` with content `{"permissions": {"allow": ["Bash(echo:*)"]}}`; do NOT create `project_dir/.claude/`; ensure CLAUDE.md exists and is fully synced; mock subprocess so settings per-file current SHA is `DDD444`; call `update_project(...)`; assert the destination file exists and its parsed JSON contains the original `Bash(echo:*)` entry
+    - [x] Write failing test `test_writes_settings_sha_marker_after_copy`: same setup; assert the parsed JSON's `permissions.allow` contains exactly one entry matching `Bash(i2code-config-files-sha DDD444)`
+    - [x] Write failing test `test_creates_claude_directory_if_absent`: same setup; assert `os.path.isdir(os.path.join(project_dir, ".claude"))` is True
+    - [x] Write failing test `test_scenario_s6_both_files_missing_no_claude_invocations`: do not create either project file; mock per-file SHAs `CCC333` and `DDD444`; call `update_project(...)`; assert both files exist with their markers and `len(fake_runner.calls) == 0`
+    - [x] Add new helper `_write_settings_sha(settings_path, sha)` to `src/i2code/setup_cmd/update_project.py`: parses the JSON, removes any existing `Bash(i2code-config-files-sha ...)` entry from `permissions.allow`, appends `Bash(i2code-config-files-sha <sha>)`, writes the JSON back preserving key order (use `json.load`/`json.dump` with `indent=2`)
+    - [x] Extend the per-file loop in `update_project()` so the settings-file branch mirrors the CLAUDE.md branch: missing → copy (creating `.claude/`), then write settings SHA marker, no Claude invocation
+    - [x] Run all four new tests; ensure they pass
+    - [x] Run `uvx pyright --level error src/` — exit 0
+    - [x] Run `uv run pytest tests/setup-cmd/test_update_project.py -v` — exit 0
+    - [x] Run CodeScene `pre_commit_code_health_safeguard`; refactor if below 10.0
+    - [x] Commit via the commit-guidelines skill
 
 ---
 
@@ -319,3 +319,6 @@ Baseline verified: pytest 22 passed exit 0; pyright 0 errors exit 0
 
 ### 2026-06-02 15:44 - mark-task-complete
 TestMissingFileCopy 3/3 passing; pytest exit 0 (5 passed, 20 skipped in file); pyright --level error exit 0; CodeScene score 10.0
+
+### 2026-06-02 15:52 - mark-task-complete
+TestMissingFileCopy 7/7 passing; pytest exit 0 (9 passed, 20 skipped); pyright --level error exit 0; CodeScene 10.0/10.0 on both files; safeguard PASSED

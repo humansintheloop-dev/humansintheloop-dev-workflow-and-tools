@@ -486,7 +486,7 @@ def _init_git_repo_with_origin(project_root, origin_url):
     )
 
 
-def _run_vm_mode_orchestrator(project, gh_runner):
+def _run_vm_mode_orchestrator(project, gh_runner, *, user_choices=None):
     """Drive an orchestrator configured for VM-mode plan completion."""
     from i2code.go_cmd.implement_config import write_implement_config
 
@@ -494,7 +494,9 @@ def _run_vm_mode_orchestrator(project, gh_runner):
         project.implement_config_file,
         interactive=True, trunk=False, isolation_type="vm",
     )
-    menu_config = menu_config_by_label([IMPLEMENT_PLAN])
+    if user_choices is None:
+        user_choices = [IMPLEMENT_PLAN]
+    menu_config = menu_config_by_label(user_choices)
     output = io.StringIO()
     deps = OrchestratorDeps(
         menu_config=menu_config,
@@ -533,3 +535,40 @@ class TestPlanCompletionVm:
             gh_runner.assert_called_once_with(expected_argv)
             assert result.exit_code == 0
             assert "Workflow Complete!" in result.output_displayed
+
+    @pytest.mark.parametrize("gh_runner_factory,expected_reason", [
+        (
+            lambda: MagicMock(
+                return_value=subprocess.CompletedProcess(
+                    args=[], returncode=1, stdout="", stderr="404 Not Found",
+                ),
+            ),
+            "404 Not Found",
+        ),
+        (
+            lambda: MagicMock(side_effect=FileNotFoundError("gh not installed")),
+            "gh not installed",
+        ),
+    ])
+    def test_vm_mode_gh_failure_prints_diagnostic_only(
+        self, gh_runner_factory, expected_reason,
+    ):
+        with TempIdeaProject("my-feature") as project:
+            _setup_has_plan(project, _CONTRAST_INCOMPLETE_MAIN)
+            _init_git_repo_with_origin(
+                project.project_root,
+                "https://github.com/test-owner/test-repo.git",
+            )
+            gh_runner = gh_runner_factory()
+            result = _run_vm_mode_orchestrator(
+                project, gh_runner, user_choices=[IMPLEMENT_PLAN, EXIT],
+            )
+            diagnostic_lines = [
+                line for line in result.output_displayed.splitlines()
+                if line.startswith("Could not check plan completion: ")
+            ]
+            assert len(diagnostic_lines) == 1
+            assert expected_reason in diagnostic_lines[0]
+            assert "Workflow Complete!" not in result.output_displayed
+            assert "Plan has uncompleted tasks" not in result.output_displayed
+            assert result.exit_code is None

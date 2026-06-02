@@ -181,18 +181,18 @@ US-2.1 / Spec S5. VM mode pushes completions to the PR branch `idea/<idea-name>`
 
 US-2.2 / Spec S7. When `gh api` fails (non-zero, network error, missing branch, missing file), print one diagnostic line and return without printing either banner.
 
-- [ ] **Task 7.1: Orchestrator prints `Could not check plan completion: <reason>` and returns without banner when the gh fetch fails in VM mode**
+- [x] **Task 7.1: Orchestrator prints `Could not check plan completion: <reason>` and returns without banner when the gh fetch fails in VM mode**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/go-cmd/test_orchestrator_implement.py::TestPlanCompletionVm::test_vm_mode_gh_failure_prints_diagnostic_only -v`
   - Observable: With `isolation_type=vm` and a `gh_runner` that returns `returncode=1` (or raises `FileNotFoundError` because `gh` is missing), captured stderr contains exactly one line starting with `Could not check plan completion: `, does NOT contain `Workflow Complete!`, does NOT contain `Plan has uncompleted tasks`, and `Orchestrator.run()` does NOT raise `SystemExit(0)`. The implement subprocess's own success lines (asserted via the mocked `implement_runner`'s prior output) remain in the captured stream.
   - Evidence: The pytest command above runs. The test parametrizes two failure modes: (a) `gh_runner` returns a `CompletedProcess` with `returncode=1` and `stderr="404 Not Found"`, (b) `gh_runner` raises `FileNotFoundError("gh not installed")`. In both cases the test asserts the diagnostic line is present, the banners are absent, and `result.exit_code is None`.
   - Steps:
-    - [ ] Add `test_vm_mode_gh_failure_prints_diagnostic_only` to `TestPlanCompletionVm`, parametrized over the two failure modes above. Drive the orchestrator with `[IMPLEMENT_PLAN, EXIT]` (so the test can confirm the menu is re-entered after the diagnostic).
-    - [ ] Run the test; it fails (current VM branch in `resolve_plan_text` does not handle non-zero or raised exceptions).
-    - [ ] In `resolve_plan_text`'s VM branch, wrap the `gh_runner` call in `try/except (FileNotFoundError, subprocess.SubprocessError)`. On exception or non-zero `returncode`, write a single line `Could not check plan completion: <reason>` to an injected `output` text stream and return `None`. Surface a concise reason: for non-zero, use the first non-empty line of `stderr`; for exceptions, use `str(exc)`.
-    - [ ] Plumb the `output` stream into `resolve_plan_text` (`output=self._deps.output` from `_check_plan_completion`) so the diagnostic appears on the same stream as the banners.
-    - [ ] Confirm `_check_plan_completion` already returns without printing a banner when `plan_text is None` (set up in Task 1.1). If not, add that guard now.
-    - [ ] Run the new test; it passes. Run `./test-scripts/test-unit.sh`; confirm green.
+    - [x] Add `test_vm_mode_gh_failure_prints_diagnostic_only` to `TestPlanCompletionVm`, parametrized over the two failure modes above. Drive the orchestrator with `[IMPLEMENT_PLAN, EXIT]` (so the test can confirm the menu is re-entered after the diagnostic).
+    - [x] Run the test; it fails (current VM branch in `resolve_plan_text` does not handle non-zero or raised exceptions).
+    - [x] In `resolve_plan_text`'s VM branch, wrap the `gh_runner` call in `try/except (FileNotFoundError, subprocess.SubprocessError)`. On exception or non-zero `returncode`, write a single line `Could not check plan completion: <reason>` to an injected `output` text stream and return `None`. Surface a concise reason: for non-zero, use the first non-empty line of `stderr`; for exceptions, use `str(exc)`.
+    - [x] Plumb the `output` stream into `resolve_plan_text` (`output=self._deps.output` from `_check_plan_completion`) so the diagnostic appears on the same stream as the banners.
+    - [x] Confirm `_check_plan_completion` already returns without printing a banner when `plan_text is None` (set up in Task 1.1). If not, add that guard now.
+    - [x] Run the new test; it passes. Run `./test-scripts/test-unit.sh`; confirm green.
 
 ---
 
@@ -244,3 +244,6 @@ ST5 T5.1: Extended host-clone resolver branch to accept isolation_type=container
 
 ### 2026-06-02 12:17 - mark-task-complete
 ST6 T6.1: Added VM-mode resolver branch that fetches plan via gh api; plumbed gh_runner through OrchestratorDeps; new TestPlanCompletionVm asserts argv and Workflow Complete banner.
+
+### 2026-06-02 12:28 - mark-task-complete
+ST7 T7.1: VM-mode gh failure now prints diagnostic and suppresses banners; bundled gh_runner/output into ResolverDeps to keep resolve_plan_text under arg cap.

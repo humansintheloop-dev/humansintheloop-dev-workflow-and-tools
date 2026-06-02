@@ -2,6 +2,7 @@
 
 import io
 import os
+import subprocess
 from unittest.mock import MagicMock
 
 import pytest
@@ -71,14 +72,18 @@ def _run_has_plan_orchestrator(project, menu_labels, *,
         implement_runner=implement_runner,
         output=output,
     )
-    orch = Orchestrator(project, deps=deps)
+    return _drive_orchestrator(project, deps, config, output)
 
+
+def _drive_orchestrator(project, deps, menu_config, output):
+    """Drive an Orchestrator with prebuilt deps and capture exit/output."""
+    orch = Orchestrator(project, deps=deps)
     result = _OrchestratorRun()
     try:
         orch.run()
     except SystemExit as e:
         result.exit_code = e.code
-    result.menu_displayed = config.output.getvalue()
+    result.menu_displayed = menu_config.output.getvalue()
     result.output_displayed = output.getvalue()
     return result
 
@@ -463,3 +468,68 @@ class TestPlanCompletionContainer:
                     user_choices=[IMPLEMENT_PLAN], expect_complete=True,
                 ),
             )
+
+
+def _init_git_repo_with_origin(project_root, origin_url):
+    """Initialise a git repo at `project_root` with an `origin` remote.
+
+    Required for VM-mode plan completion tests so the resolver's
+    `git remote get-url origin` invocation can resolve `<owner>/<repo>`.
+    """
+    subprocess.run(
+        ["git", "init"], cwd=project_root,
+        check=True, capture_output=True,
+    )
+    subprocess.run(
+        ["git", "remote", "add", "origin", origin_url],
+        cwd=project_root, check=True, capture_output=True,
+    )
+
+
+def _run_vm_mode_orchestrator(project, gh_runner):
+    """Drive an orchestrator configured for VM-mode plan completion."""
+    from i2code.go_cmd.implement_config import write_implement_config
+
+    write_implement_config(
+        project.implement_config_file,
+        interactive=True, trunk=False, isolation_type="vm",
+    )
+    menu_config = menu_config_by_label([IMPLEMENT_PLAN])
+    output = io.StringIO()
+    deps = OrchestratorDeps(
+        menu_config=menu_config,
+        git_runner=_clean_git(),
+        implement_runner=MagicMock(return_value=_success_result()),
+        output=output,
+        gh_runner=gh_runner,
+    )
+    return _drive_orchestrator(project, deps, menu_config, output)
+
+
+@pytest.mark.unit
+class TestPlanCompletionVm:
+
+    def test_vm_mode_complete_plan_prints_workflow_complete(self):
+        with TempIdeaProject("my-feature") as project:
+            _setup_has_plan(project, _CONTRAST_INCOMPLETE_MAIN)
+            _init_git_repo_with_origin(
+                project.project_root,
+                "https://github.com/test-owner/test-repo.git",
+            )
+            gh_runner = MagicMock(
+                return_value=subprocess.CompletedProcess(
+                    args=[], returncode=0,
+                    stdout=_COMPLETE_PLAN, stderr="",
+                ),
+            )
+            result = _run_vm_mode_orchestrator(project, gh_runner)
+            expected_argv = [
+                "gh", "api",
+                "repos/test-owner/test-repo/contents/"
+                "docs/ideas/active/my-feature/my-feature-plan.md"
+                "?ref=idea/my-feature",
+                "-H", "Accept: application/vnd.github.raw",
+            ]
+            gh_runner.assert_called_once_with(expected_argv)
+            assert result.exit_code == 0
+            assert "Workflow Complete!" in result.output_displayed

@@ -158,22 +158,22 @@ US-1.4 / Spec S3. Container mode bind-mounts the same `-cl-` sibling into Docker
 
 US-2.1 / Spec S5. VM mode pushes completions to the PR branch `idea/<idea-name>`; the orchestrator must fetch the plan file via `gh api` and apply the same banner logic.
 
-- [ ] **Task 6.1: Orchestrator prints `Workflow Complete!` when isolation=vm and the plan fetched from `idea/<idea>` on origin is fully checked**
+- [x] **Task 6.1: Orchestrator prints `Workflow Complete!` when isolation=vm and the plan fetched from `idea/<idea>` on origin is fully checked**
   - TaskType: OUTCOME
   - Entrypoint: `uv run python3 -m pytest tests/go-cmd/test_orchestrator_implement.py::TestPlanCompletionVm::test_vm_mode_complete_plan_prints_workflow_complete -v`
   - Observable: With `trunk=false, isolation_type=vm`, the resolver issues exactly one `gh api repos/<owner>/<repo>/contents/<idea-relpath>/<idea>-plan.md?ref=idea/<idea> -H "Accept: application/vnd.github.raw"` invocation, parses the captured stdout as the plan text, and — when every task is checked — prints `Workflow Complete!` and raises `SystemExit(0)`. No local file at `-wt-` or `-cl-` is consulted.
   - Evidence: The pytest command above runs. The test injects a `gh_runner` fake (via `OrchestratorDeps` plumbing — see steps) that returns a fully-checked plan when called with the expected `gh api` argv. The test asserts: (a) the fake was called exactly once with the exact argv, (b) `result.exit_code == 0`, (c) `"Workflow Complete!" in result.output_displayed`. Removing the VM branch in the resolver causes the test to fail because the fake gh_runner is never called.
   - Steps:
-    - [ ] Add `TestPlanCompletionVm` to `tests/go-cmd/test_orchestrator_implement.py` with the failing test. The test must:
+    - [x] Add `TestPlanCompletionVm` to `tests/go-cmd/test_orchestrator_implement.py` with the failing test. The test must:
       - configure `config_kwargs=dict(interactive=True, trunk=False, isolation_type="vm")`
       - inject a `MagicMock` `gh_runner` that returns a `subprocess.CompletedProcess`-shaped object whose `stdout` is a plan with all `[x]` tasks and whose `returncode` is 0
       - install an `origin` remote on the test's git repo (or stub the owner/repo derivation) so the resolver can produce `<owner>/<repo>` for the `gh api` URL
       - assert the gh_runner argv begins with `["gh", "api", "repos/<owner>/<repo>/contents/<idea-relpath>/<idea>-plan.md?ref=idea/<idea>", "-H", "Accept: application/vnd.github.raw"]`
-    - [ ] Run the test; it fails (the resolver has no VM branch yet, and no gh plumbing exists).
-    - [ ] In `src/i2code/go_cmd/plan_completion.py`, add a small helper `derive_origin_owner_repo(git_root) -> str` that parses the origin remote URL from the main repo (use `subprocess.run(["git", "-C", git_root, "remote", "get-url", "origin"])` — note: this is read-only, not the disallowed `git -C` for write ops; use `git remote get-url` since CLAUDE.md's "no git -C" rule is about avoiding accidental writes outside project root, not about read-only inspection of arbitrary repos) and returns `"<owner>/<repo>"`. Strip a trailing `.git` and handle both `https://` and `git@` URL forms.
-    - [ ] Add the VM branch to `resolve_plan_text`: when `config["isolation_type"] == "vm"`, construct the `gh api` argv as in the Observable, invoke `gh_runner(argv)` (default: `subprocess.run(argv, capture_output=True, text=True)`), and return `result.stdout` on success. Failures are handled in Steel Thread 7.
-    - [ ] Plumb `gh_runner` through `OrchestratorDeps` (`src/i2code/go_cmd/orchestrator.py:174`): add a `gh_runner: Callable = _default_gh_runner` field with a module-level `_default_gh_runner(argv)` that calls `subprocess.run(argv, capture_output=True, text=True, check=False)`. Pass `self._deps.gh_runner` from `_check_plan_completion` into `resolve_plan_text`.
-    - [ ] Run the new test; it passes. Run `./test-scripts/test-unit.sh`; confirm green.
+    - [x] Run the test; it fails (the resolver has no VM branch yet, and no gh plumbing exists).
+    - [x] In `src/i2code/go_cmd/plan_completion.py`, add a small helper `derive_origin_owner_repo(git_root) -> str` that parses the origin remote URL from the main repo (use `subprocess.run(["git", "-C", git_root, "remote", "get-url", "origin"])` — note: this is read-only, not the disallowed `git -C` for write ops; use `git remote get-url` since CLAUDE.md's "no git -C" rule is about avoiding accidental writes outside project root, not about read-only inspection of arbitrary repos) and returns `"<owner>/<repo>"`. Strip a trailing `.git` and handle both `https://` and `git@` URL forms.
+    - [x] Add the VM branch to `resolve_plan_text`: when `config["isolation_type"] == "vm"`, construct the `gh api` argv as in the Observable, invoke `gh_runner(argv)` (default: `subprocess.run(argv, capture_output=True, text=True)`), and return `result.stdout` on success. Failures are handled in Steel Thread 7.
+    - [x] Plumb `gh_runner` through `OrchestratorDeps` (`src/i2code/go_cmd/orchestrator.py:174`): add a `gh_runner: Callable = _default_gh_runner` field with a module-level `_default_gh_runner(argv)` that calls `subprocess.run(argv, capture_output=True, text=True, check=False)`. Pass `self._deps.gh_runner` from `_check_plan_completion` into `resolve_plan_text`.
+    - [x] Run the new test; it passes. Run `./test-scripts/test-unit.sh`; confirm green.
 
 ---
 
@@ -241,3 +241,6 @@ ST4 T4.1: Extended resolve_plan_text with nono branch reading host clone -cl- si
 
 ### 2026-06-02 12:07 - mark-task-complete
 ST5 T5.1: Extended host-clone resolver branch to accept isolation_type=container alongside nono; added TestPlanCompletionContainer covering the new branch.
+
+### 2026-06-02 12:17 - mark-task-complete
+ST6 T6.1: Added VM-mode resolver branch that fetches plan via gh api; plumbed gh_runner through OrchestratorDeps; new TestPlanCompletionVm asserts argv and Workflow Complete banner.

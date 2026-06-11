@@ -39,6 +39,32 @@ class ClaudeResult:
     diagnostics: DiagnosticInfo = field(default_factory=DiagnosticInfo)
 
 
+@dataclass(frozen=True)
+class SessionId:
+    """A Claude session identifier and whether it is newly created."""
+    session_id: str
+    is_new: bool
+
+
+@dataclass
+class ClaudeCodeCommand:
+    """Typed description of a Claude CLI invocation."""
+    cwd: str
+    prompt: Optional[str] = None
+    interactive: Optional[bool] = None
+    allowed_tools: Optional[str] = None
+    session_id: Optional[SessionId] = None
+    add_dirs: List[str] = field(default_factory=list)
+    extra_args: List[str] = field(default_factory=list)
+    mock_command: Optional[List[str]] = None
+
+    def __post_init__(self) -> None:
+        if self.mock_command is None and self.prompt is None:
+            raise ValueError(
+                "ClaudeCodeCommand requires either prompt or mock_command"
+            )
+
+
 def run_claude_interactive(cmd: List[str], cwd: str) -> ClaudeResult:
     """Run Claude command interactively, inheriting terminal.
 

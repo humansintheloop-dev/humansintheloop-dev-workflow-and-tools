@@ -305,3 +305,48 @@ class ClaudeRunner:
 
     def run_batch(self, cmd: List[str], cwd: str) -> ClaudeResult:
         return run_claude_with_output_capture(cmd, cwd=cwd, debug=self._debug)
+
+    def execute(self, command: ClaudeCodeCommand) -> ClaudeResult:
+        if command.mock_command is not None:
+            if self._interactive:
+                return run_claude_interactive(command.mock_command, cwd=command.cwd)
+            return run_claude_with_output_capture(
+                command.mock_command, cwd=command.cwd, debug=self._debug,
+            )
+
+        effective_interactive = (
+            command.interactive if command.interactive is not None else self._interactive
+        )
+        argv = self._build_argv(command, effective_interactive)
+
+        if effective_interactive:
+            return run_claude_interactive(argv, cwd=command.cwd)
+        return run_claude_with_output_capture(argv, cwd=command.cwd, debug=self._debug)
+
+    def _build_argv(
+        self, command: ClaudeCodeCommand, effective_interactive: bool,
+    ) -> List[str]:
+        argv: List[str] = ["claude"]
+
+        if not effective_interactive:
+            argv += ["--verbose", "--output-format=stream-json"]
+
+        if command.allowed_tools is not None:
+            argv += ["--allowedTools", command.allowed_tools]
+
+        if command.session_id is not None:
+            flag = "--session-id" if command.session_id.is_new else "--resume"
+            argv += [flag, command.session_id.session_id]
+
+        for directory in command.add_dirs:
+            argv += ["--add-dir", directory]
+
+        argv += list(command.extra_args)
+
+        prompt = command.prompt if command.prompt is not None else ""
+        if effective_interactive:
+            argv.append(prompt)
+        else:
+            argv += ["-p", prompt]
+
+        return argv

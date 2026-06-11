@@ -73,16 +73,16 @@ Establish a green baseline before any refactor changes so subsequent steel threa
 
 Implements the primary scenario from spec §6.1. Introduces `SessionId`, `ClaudeCodeCommand`, `ClaudeRunner.execute()` (batch path only at this stage — interactive path is added in Steel Thread 3), `ClaudeResult.result_text`, the result-text extraction inside `_parse_stream_json_output`, and migrates `src/i2code/go_cmd/create_plan.py` (both invocation site and stdout consumers).
 
-- [ ] **Task 2.1: `ClaudeCodeCommand` and `SessionId` dataclasses are defined in `claude_runner.py`**
+- [x] **Task 2.1: `ClaudeCodeCommand` and `SessionId` dataclasses are defined in `claude_runner.py`**
   - TaskType: OUTCOME
   - Entrypoint: `from i2code.implement.claude_runner import ClaudeCodeCommand, SessionId`
   - Observable: `ClaudeCodeCommand` has fields `cwd: str`, `prompt: Optional[str] = None`, `interactive: Optional[bool] = None`, `allowed_tools: Optional[str] = None`, `session_id: Optional[SessionId] = None`, `add_dirs: list[str] = []`, `extra_args: list[str] = []`, `mock_command: Optional[list[str]] = None`. `SessionId` is a frozen dataclass with `session_id: str` and `is_new: bool`. Constructing `ClaudeCodeCommand(cwd="/x")` with neither `prompt` nor `mock_command` raises `ValueError`. Construction with `mock_command` and no `prompt` succeeds. Construction with both succeeds.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py -v -m unit` exits 0; new tests `test_claude_code_command_requires_prompt_or_mock`, `test_claude_code_command_mock_only_ok`, `test_session_id_frozen`.
   - Steps:
-    - [ ] Add new test class `TestClaudeCodeCommand` in `tests/implement/test_claude_runner.py` asserting field defaults, `ValueError` on missing prompt+mock_command, and the both-set case
-    - [ ] Add `SessionId(frozen=True)` dataclass to `src/i2code/implement/claude_runner.py`
-    - [ ] Add `ClaudeCodeCommand` dataclass with `__post_init__` validation as specified in §3.2 of the spec
-    - [ ] Run the targeted pytest and confirm green
+    - [x] Add new test class `TestClaudeCodeCommand` in `tests/implement/test_claude_runner.py` asserting field defaults, `ValueError` on missing prompt+mock_command, and the both-set case
+    - [x] Add `SessionId(frozen=True)` dataclass to `src/i2code/implement/claude_runner.py`
+    - [x] Add `ClaudeCodeCommand` dataclass with `__post_init__` validation as specified in §3.2 of the spec
+    - [x] Run the targeted pytest and confirm green
 
 - [ ] **Task 2.2: `ClaudeResult.result_text` populated by `_parse_stream_json_output`**
   - TaskType: OUTCOME
@@ -643,3 +643,6 @@ Steel Thread 2 currently verifies ClaudeRunner.execute() only with mocked subpro
 
 ### 2026-06-11 17:50 - mark-task-complete
 Verified baseline: pytest exits 0 (1381 passed, 17 deselected, 4 xfailed); pyright reports 0 errors, 0 warnings, 0 informations
+
+### 2026-06-11 18:11 - mark-task-complete
+ClaudeCodeCommand and SessionId dataclasses defined in claude_runner.py with __post_init__ validation; 5 new unit tests pass

@@ -57,15 +57,15 @@ Use these skills by invoking them before the relevant action:
 
 Establish a green baseline before any refactor changes so subsequent steel threads can be verified against a known-good starting point.
 
-- [ ] **Task 1.1: Existing unit test suite passes on master**
+- [x] **Task 1.1: Existing unit test suite passes on master**
   - TaskType: INFRA
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/ -m unit`
   - Observable: pytest exits with code 0 and reports zero failures across all unit-marked tests; `uvx pyright --level error src/` reports zero errors.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/ -m unit` exits 0 and `uvx pyright --level error src/` exits 0 on the current working tree.
   - Steps:
-    - [ ] Run `uv run --python 3.12 python3 -m pytest tests/ -m unit` and confirm exit 0
-    - [ ] Run `uvx pyright --level error src/` and confirm exit 0
-    - [ ] If either fails, STOP and report the failure — do not begin the refactor on a red baseline
+    - [x] Run `uv run --python 3.12 python3 -m pytest tests/ -m unit` and confirm exit 0
+    - [x] Run `uvx pyright --level error src/` and confirm exit 0
+    - [x] If either fails, STOP and report the failure — do not begin the refactor on a red baseline
 
 ---
 
@@ -640,3 +640,6 @@ For verification of acceptance criterion §8.2 #7: every site below produces a `
 ## Change History
 ### 2026-06-11 17:45 - insert-task-after
 Steel Thread 2 currently verifies ClaudeRunner.execute() only with mocked subprocess.Popen (Task 2.3). Adding an integration_claude-marked test that invokes real claude guards against drift between the mocked argv shape and what the real CLI accepts, and confirms that _parse_stream_json_output extracts result_text correctly from real stream-json output (not just synthesized fixtures). Follows the existing pattern in tests/implement/test_triage_real_claude.py.
+
+### 2026-06-11 17:50 - mark-task-complete
+Verified baseline: pytest exits 0 (1381 passed, 17 deselected, 4 xfailed); pyright reports 0 errors, 0 warnings, 0 informations

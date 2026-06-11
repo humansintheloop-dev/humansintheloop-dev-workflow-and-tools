@@ -84,17 +84,17 @@ Implements the primary scenario from spec §6.1. Introduces `SessionId`, `Claude
     - [x] Add `ClaudeCodeCommand` dataclass with `__post_init__` validation as specified in §3.2 of the spec
     - [x] Run the targeted pytest and confirm green
 
-- [ ] **Task 2.2: `ClaudeResult.result_text` populated by `_parse_stream_json_output`**
+- [x] **Task 2.2: `ClaudeResult.result_text` populated by `_parse_stream_json_output`**
   - TaskType: OUTCOME
   - Entrypoint: `run_claude_with_output_capture(cmd, cwd, debug=False)` (still public at this stage)
   - Observable: When stdout contains stream-json lines with `{"type": "result", "result": "<text>"}`, the returned `ClaudeResult.result_text` equals `"<text>"` (from the LAST such message). When stdout contains no stream-json `result` message, `result_text` equals the raw captured stdout verbatim.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py::TestParseStreamJsonOutput -v -m unit` exits 0; new tests `test_result_text_from_terminal_result_message`, `test_result_text_falls_back_to_raw_stdout_when_no_result_message`.
   - Steps:
-    - [ ] Add `result_text: str = ""` to `ClaudeResult` dataclass in `src/i2code/implement/claude_runner.py:34`
-    - [ ] Write failing test that asserts `result_text` extraction from stream-json with one and multiple `type=result` messages, and the raw-stdout fallback case
-    - [ ] Modify `_parse_stream_json_output` at `src/i2code/implement/claude_runner.py:108` to also return the result-text value; modify `run_claude_with_output_capture` at `src/i2code/implement/claude_runner.py:134` to populate `ClaudeResult.result_text` from the parsed value
-    - [ ] Hoist the algorithm from `_extract_result_text` at `src/i2code/implement/pull_request_review_processor.py:457-470` into `_parse_stream_json_output` (do NOT delete the original yet — that happens in Steel Thread 8 once pull_request_review_processor is migrated)
-    - [ ] Run targeted pytest, confirm green
+    - [x] Add `result_text: str = ""` to `ClaudeResult` dataclass in `src/i2code/implement/claude_runner.py:34`
+    - [x] Write failing test that asserts `result_text` extraction from stream-json with one and multiple `type=result` messages, and the raw-stdout fallback case
+    - [x] Modify `_parse_stream_json_output` at `src/i2code/implement/claude_runner.py:108` to also return the result-text value; modify `run_claude_with_output_capture` at `src/i2code/implement/claude_runner.py:134` to populate `ClaudeResult.result_text` from the parsed value
+    - [x] Hoist the algorithm from `_extract_result_text` at `src/i2code/implement/pull_request_review_processor.py:457-470` into `_parse_stream_json_output` (do NOT delete the original yet — that happens in Steel Thread 8 once pull_request_review_processor is migrated)
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 2.3: `ClaudeRunner.execute()` builds correct argv for the plan-generation scenario and dispatches to batch path**
   - TaskType: OUTCOME

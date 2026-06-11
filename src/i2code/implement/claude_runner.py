@@ -11,7 +11,7 @@ import subprocess
 import sys
 import threading
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from i2code.implement.managed_subprocess import ManagedSubprocess
 
@@ -37,6 +37,7 @@ class ClaudeResult:
     returncode: int
     output: CapturedOutput = field(default_factory=CapturedOutput)
     diagnostics: DiagnosticInfo = field(default_factory=DiagnosticInfo)
+    result_text: str = ""
 
 
 @dataclass(frozen=True)
@@ -131,30 +132,43 @@ def _extract_result_from_message(msg: Dict[str, Any]):
     return permission_denials, None
 
 
-def _parse_stream_json_output(full_stdout: str) -> DiagnosticInfo:
-    """Parse stream-json output for errors and permission denials."""
-    permission_denials: List[Dict[str, Any]] = []
-    error_message = None
-    all_messages: List[Dict[str, Any]] = []
-
+def _iter_json_messages(full_stdout: str) -> Iterator[Dict[str, Any]]:
+    """Yield parsed JSON messages from non-empty lines, skipping invalid ones."""
     for line in full_stdout.split('\n'):
         line = line.strip()
         if not line:
             continue
         try:
-            msg = json.loads(line)
+            yield json.loads(line)
         except json.JSONDecodeError:
             continue
-        all_messages.append(msg)
-        if msg.get('type') == 'result':
-            permission_denials, error_message = _extract_result_from_message(msg)
 
-    last_messages = all_messages[-5:] if all_messages else []
-    return DiagnosticInfo(
+
+def _parse_stream_json_output(full_stdout: str) -> Tuple[DiagnosticInfo, str]:
+    """Parse stream-json output for diagnostics and result text.
+
+    Returns (diagnostics, result_text). result_text is the `result` field of
+    the last `type=result` message; if no such message exists, it is the raw
+    stdout unchanged.
+    """
+    permission_denials: List[Dict[str, Any]] = []
+    error_message = None
+    all_messages: List[Dict[str, Any]] = []
+    result_text: Optional[str] = None
+
+    for msg in _iter_json_messages(full_stdout):
+        all_messages.append(msg)
+        if msg.get('type') != 'result':
+            continue
+        permission_denials, error_message = _extract_result_from_message(msg)
+        result_text = msg.get('result', result_text)
+
+    diagnostics = DiagnosticInfo(
         permission_denials=permission_denials,
         error_message=error_message,
-        last_messages=last_messages,
+        last_messages=all_messages[-5:],
     )
+    return diagnostics, result_text if result_text is not None else full_stdout
 
 
 def run_claude_with_output_capture(cmd: List[str], cwd: str, debug: bool = False) -> ClaudeResult:
@@ -208,11 +222,13 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str, debug: bool = False
     sys.stdout.flush()
 
     full_stdout = ''.join(stdout_chunks)
+    diagnostics, result_text = _parse_stream_json_output(full_stdout)
 
     return ClaudeResult(
         returncode=process.returncode,
         output=CapturedOutput(full_stdout, ''.join(stderr_chunks)),
-        diagnostics=_parse_stream_json_output(full_stdout),
+        diagnostics=diagnostics,
+        result_text=result_text,
     )
 
 

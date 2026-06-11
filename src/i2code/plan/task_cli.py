@@ -9,15 +9,19 @@ from i2code.plan.plan_file_io import with_error_handling, with_plan_file_update
 from i2code.plan_domain.task import Task, TaskMetadata
 
 
+_TASK_SPEC_FIELDS = ("title", "task_type", "entrypoint", "observable", "evidence", "steps")
+
+
 def _task_spec_options(fn):
     """Apply the shared Click options for specifying a new task."""
     for option in reversed([
-        click.option("--title", required=True, help="Task title"),
-        click.option("--task-type", required=True, help="Task type (INFRA or OUTCOME)"),
-        click.option("--entrypoint", required=True, help="Entrypoint command"),
-        click.option("--observable", required=True, help="Observable outcome"),
-        click.option("--evidence", required=True, help="Evidence command"),
-        click.option("--steps", required=True, help="JSON array of step descriptions"),
+        click.option("--title", required=False, default=None, help="Task title"),
+        click.option("--task-type", required=False, default=None, help="Task type (INFRA or OUTCOME)"),
+        click.option("--entrypoint", required=False, default=None, help="Entrypoint command"),
+        click.option("--observable", required=False, default=None, help="Observable outcome"),
+        click.option("--evidence", required=False, default=None, help="Evidence command"),
+        click.option("--steps", required=False, default=None, help="JSON array of step descriptions"),
+        click.option("--task-file", default=None, type=click.Path(exists=True), help="Path to JSON file containing a task object"),
     ]):
         fn = option(fn)
     return fn
@@ -37,6 +41,43 @@ def _parse_task_spec(command_name, **kwargs):
         evidence=kwargs['evidence'],
     )
     return Task.create(kwargs['title'], metadata, steps)
+
+
+def _load_task_from_file(command_name, task_file):
+    """Load a Task object from a JSON file, exiting on errors."""
+    with open(task_file) as f:
+        content = f.read()
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError as e:
+        click.echo(f"{command_name}: --task-file is not valid JSON: {e}", err=True)
+        sys.exit(1)
+    for key in _TASK_SPEC_FIELDS:
+        if key not in data:
+            click.echo(f"{command_name}: --task-file JSON is missing required field: {key}", err=True)
+            sys.exit(1)
+    metadata = TaskMetadata(
+        task_type=data["task_type"],
+        entrypoint=data["entrypoint"],
+        observable=data["observable"],
+        evidence=data["evidence"],
+    )
+    return Task.create(data["title"], metadata, data["steps"])
+
+
+def _resolve_task_spec(command_name, **kwargs):
+    """Resolve a task specification from either --task-file or individual options."""
+    task_file = kwargs.get("task_file")
+    individual_provided = [k for k in _TASK_SPEC_FIELDS if kwargs.get(k) is not None]
+    if task_file and individual_provided:
+        click.echo(f"{command_name}: --task-file and individual task options are mutually exclusive", err=True)
+        sys.exit(1)
+    if not task_file and len(individual_provided) < len(_TASK_SPEC_FIELDS):
+        click.echo(f"{command_name}: either --task-file or all individual task options are required", err=True)
+        sys.exit(1)
+    if task_file:
+        return _load_task_from_file(command_name, task_file)
+    return _parse_task_spec(command_name, **kwargs)
 
 
 @click.command("mark-task-complete")
@@ -104,11 +145,11 @@ def mark_step_incomplete_cmd(plan_file, thread, task, step, rationale):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def insert_task_before_cmd(plan_file, thread, before, rationale, **kwargs):
     """Insert a task before a specified task within a thread."""
-    new_task = _parse_task_spec("insert-task-before", **kwargs)
+    new_task = _resolve_task_spec("insert-task-before", **kwargs)
     with with_error_handling():
         with with_plan_file_update(plan_file, "insert-task-before", rationale) as domain_plan:
             domain_plan.insert_task_before(thread, before, new_task)
-    click.echo(f"Inserted task '{kwargs['title']}' in thread {thread}")
+    click.echo(f"Inserted task '{new_task.title}' in thread {thread}")
 
 
 # @codescene(disable:"Excess Number of Function Arguments")
@@ -120,11 +161,11 @@ def insert_task_before_cmd(plan_file, thread, before, rationale, **kwargs):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def insert_task_after_cmd(plan_file, thread, after, rationale, **kwargs):
     """Insert a task after a specified task within a thread."""
-    new_task = _parse_task_spec("insert-task-after", **kwargs)
+    new_task = _resolve_task_spec("insert-task-after", **kwargs)
     with with_error_handling():
         with with_plan_file_update(plan_file, "insert-task-after", rationale) as domain_plan:
             domain_plan.insert_task_after(thread, after, new_task)
-    click.echo(f"Inserted task '{kwargs['title']}' in thread {thread}")
+    click.echo(f"Inserted task '{new_task.title}' in thread {thread}")
 
 
 @click.command("delete-task")
@@ -149,7 +190,7 @@ def delete_task_cmd(plan_file, thread, task, rationale):
 @click.option("--rationale", required=True, help="Rationale for change history")
 def replace_task_cmd(plan_file, thread, task, rationale, **kwargs):
     """Replace a task's content in place within a thread."""
-    new_task = _parse_task_spec("replace-task", **kwargs)
+    new_task = _resolve_task_spec("replace-task", **kwargs)
     with with_error_handling():
         with with_plan_file_update(plan_file, "replace-task", rationale) as domain_plan:
             domain_plan.replace_task(thread, task, new_task)

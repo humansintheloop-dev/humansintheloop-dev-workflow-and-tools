@@ -11,7 +11,7 @@ import subprocess
 import sys
 import threading
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from i2code.implement.managed_subprocess import ManagedSubprocess
 
@@ -37,6 +37,33 @@ class ClaudeResult:
     returncode: int
     output: CapturedOutput = field(default_factory=CapturedOutput)
     diagnostics: DiagnosticInfo = field(default_factory=DiagnosticInfo)
+    result_text: str = ""
+
+
+@dataclass(frozen=True)
+class SessionId:
+    """A Claude session identifier and whether it is newly created."""
+    session_id: str
+    is_new: bool
+
+
+@dataclass
+class ClaudeCodeCommand:
+    """Typed description of a Claude CLI invocation."""
+    cwd: str
+    prompt: Optional[str] = None
+    interactive: Optional[bool] = None
+    allowed_tools: Optional[str] = None
+    session_id: Optional[SessionId] = None
+    add_dirs: List[str] = field(default_factory=list)
+    extra_args: List[str] = field(default_factory=list)
+    mock_command: Optional[List[str]] = None
+
+    def __post_init__(self) -> None:
+        if self.mock_command is None and self.prompt is None:
+            raise ValueError(
+                "ClaudeCodeCommand requires either prompt or mock_command"
+            )
 
 
 def run_claude_interactive(cmd: List[str], cwd: str) -> ClaudeResult:
@@ -105,30 +132,43 @@ def _extract_result_from_message(msg: Dict[str, Any]):
     return permission_denials, None
 
 
-def _parse_stream_json_output(full_stdout: str) -> DiagnosticInfo:
-    """Parse stream-json output for errors and permission denials."""
-    permission_denials: List[Dict[str, Any]] = []
-    error_message = None
-    all_messages: List[Dict[str, Any]] = []
-
+def _iter_json_messages(full_stdout: str) -> Iterator[Dict[str, Any]]:
+    """Yield parsed JSON messages from non-empty lines, skipping invalid ones."""
     for line in full_stdout.split('\n'):
         line = line.strip()
         if not line:
             continue
         try:
-            msg = json.loads(line)
+            yield json.loads(line)
         except json.JSONDecodeError:
             continue
-        all_messages.append(msg)
-        if msg.get('type') == 'result':
-            permission_denials, error_message = _extract_result_from_message(msg)
 
-    last_messages = all_messages[-5:] if all_messages else []
-    return DiagnosticInfo(
+
+def _parse_stream_json_output(full_stdout: str) -> Tuple[DiagnosticInfo, str]:
+    """Parse stream-json output for diagnostics and result text.
+
+    Returns (diagnostics, result_text). result_text is the `result` field of
+    the last `type=result` message; if no such message exists, it is the raw
+    stdout unchanged.
+    """
+    permission_denials: List[Dict[str, Any]] = []
+    error_message = None
+    all_messages: List[Dict[str, Any]] = []
+    result_text: Optional[str] = None
+
+    for msg in _iter_json_messages(full_stdout):
+        all_messages.append(msg)
+        if msg.get('type') != 'result':
+            continue
+        permission_denials, error_message = _extract_result_from_message(msg)
+        result_text = msg.get('result', result_text)
+
+    diagnostics = DiagnosticInfo(
         permission_denials=permission_denials,
         error_message=error_message,
-        last_messages=last_messages,
+        last_messages=all_messages[-5:],
     )
+    return diagnostics, result_text if result_text is not None else full_stdout
 
 
 def run_claude_with_output_capture(cmd: List[str], cwd: str, debug: bool = False) -> ClaudeResult:
@@ -182,11 +222,13 @@ def run_claude_with_output_capture(cmd: List[str], cwd: str, debug: bool = False
     sys.stdout.flush()
 
     full_stdout = ''.join(stdout_chunks)
+    diagnostics, result_text = _parse_stream_json_output(full_stdout)
 
     return ClaudeResult(
         returncode=process.returncode,
         output=CapturedOutput(full_stdout, ''.join(stderr_chunks)),
-        diagnostics=_parse_stream_json_output(full_stdout),
+        diagnostics=diagnostics,
+        result_text=result_text,
     )
 
 
@@ -263,3 +305,48 @@ class ClaudeRunner:
 
     def run_batch(self, cmd: List[str], cwd: str) -> ClaudeResult:
         return run_claude_with_output_capture(cmd, cwd=cwd, debug=self._debug)
+
+    def execute(self, command: ClaudeCodeCommand) -> ClaudeResult:
+        if command.mock_command is not None:
+            if self._interactive:
+                return run_claude_interactive(command.mock_command, cwd=command.cwd)
+            return run_claude_with_output_capture(
+                command.mock_command, cwd=command.cwd, debug=self._debug,
+            )
+
+        effective_interactive = (
+            command.interactive if command.interactive is not None else self._interactive
+        )
+        argv = self._build_argv(command, effective_interactive)
+
+        if effective_interactive:
+            return run_claude_interactive(argv, cwd=command.cwd)
+        return run_claude_with_output_capture(argv, cwd=command.cwd, debug=self._debug)
+
+    def _build_argv(
+        self, command: ClaudeCodeCommand, effective_interactive: bool,
+    ) -> List[str]:
+        argv: List[str] = ["claude"]
+
+        if not effective_interactive:
+            argv += ["--verbose", "--output-format=stream-json"]
+
+        if command.allowed_tools is not None:
+            argv += ["--allowedTools", command.allowed_tools]
+
+        if command.session_id is not None:
+            flag = "--session-id" if command.session_id.is_new else "--resume"
+            argv += [flag, command.session_id.session_id]
+
+        for directory in command.add_dirs:
+            argv += ["--add-dir", directory]
+
+        argv += list(command.extra_args)
+
+        prompt = command.prompt if command.prompt is not None else ""
+        if effective_interactive:
+            argv.append(prompt)
+        else:
+            argv += ["-p", prompt]
+
+        return argv

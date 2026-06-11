@@ -6,7 +6,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from fake_claude_runner import FakeClaudeRunner
-from i2code.implement.claude_runner import CapturedOutput, ClaudeResult, ClaudeRunner, run_claude_with_output_capture
+from i2code.implement.claude_runner import (
+    CapturedOutput,
+    ClaudeCodeCommand,
+    ClaudeResult,
+    ClaudeRunner,
+    SessionId,
+    _parse_stream_json_output,
+    run_claude_with_output_capture,
+)
 
 
 @pytest.mark.unit
@@ -62,6 +70,21 @@ class TestFakeClaudeRunner:
         assert r1.returncode == 42
         assert r2.returncode == 0  # default
 
+    def test_records_execute_call(self):
+        fake = FakeClaudeRunner()
+        command = ClaudeCodeCommand(prompt="x", cwd="/r", interactive=False)
+        fake.execute(command)
+        assert fake.calls == [("execute", command, "/r")]
+        assert fake.calls[0][1] is command
+
+    def test_execute_returns_configured_result(self):
+        fake = FakeClaudeRunner()
+        fake.set_result(ClaudeResult(returncode=7, result_text="done"))
+        command = ClaudeCodeCommand(prompt="x", cwd="/r", interactive=False)
+        result = fake.execute(command)
+        assert result.returncode == 7
+        assert result.result_text == "done"
+
 
 @pytest.mark.unit
 class TestClaudeResultInModule:
@@ -74,52 +97,38 @@ class TestClaudeResultInModule:
         assert result.output.stdout == "hi"
 
 
+def _run_with_mocked_pipes(mocker, stdout_chunks, stderr_chunks, returncode=0):
+    """Patch Popen with pipes producing the given chunks and run the capture helper."""
+    mock_stdout = mocker.MagicMock()
+    mock_stderr = mocker.MagicMock()
+    mock_stdout.read1.side_effect = [*stdout_chunks, b""]
+    mock_stderr.read1.side_effect = [*stderr_chunks, b""]
+
+    mock_process = mocker.MagicMock()
+    mock_process.stdout = mock_stdout
+    mock_process.stderr = mock_stderr
+    mock_process.returncode = returncode
+    mocker.patch(
+        'i2code.implement.claude_runner.subprocess.Popen',
+        return_value=mock_process,
+    )
+
+    return run_claude_with_output_capture(["claude", "test"], cwd="/tmp")
+
+
 @pytest.mark.unit
 class TestRunClaudeWithOutputCapture:
     """Test running Claude with output capture and real-time display."""
 
     def test_run_claude_captures_stdout(self, mocker):
-        """Should capture stdout from Claude process."""
-        from i2code.implement.claude_runner import run_claude_with_output_capture
-
-        # Mock Popen with pipe-like objects
-        mock_stdout = mocker.MagicMock()
-        mock_stderr = mocker.MagicMock()
-
-        # read1() returns data then empty bytes (EOF) to stop the reader thread
-        mock_stdout.read1.side_effect = [b"line1\n", b"line2\n", b""]
-        mock_stderr.read1.side_effect = [b""]  # No stderr
-
-        mock_process = mocker.MagicMock()
-        mock_process.stdout = mock_stdout
-        mock_process.stderr = mock_stderr
-        mock_process.returncode = 0
-        mocker.patch('i2code.implement.claude_runner.subprocess.Popen', return_value=mock_process)
-
-        result = run_claude_with_output_capture(["claude", "test"], cwd="/tmp")
+        result = _run_with_mocked_pipes(mocker, [b"line1\n", b"line2\n"], [])
 
         assert "line1" in result.output.stdout
         assert "line2" in result.output.stdout
         assert result.returncode == 0
 
     def test_run_claude_captures_stderr(self, mocker):
-        """Should capture stderr from Claude process."""
-        from i2code.implement.claude_runner import run_claude_with_output_capture
-
-        mock_stdout = mocker.MagicMock()
-        mock_stderr = mocker.MagicMock()
-
-        # read1() returns data then empty bytes (EOF)
-        mock_stdout.read1.side_effect = [b""]  # No stdout
-        mock_stderr.read1.side_effect = [b"error1\n", b""]
-
-        mock_process = mocker.MagicMock()
-        mock_process.stdout = mock_stdout
-        mock_process.stderr = mock_stderr
-        mock_process.returncode = 1
-        mocker.patch('i2code.implement.claude_runner.subprocess.Popen', return_value=mock_process)
-
-        result = run_claude_with_output_capture(["claude", "test"], cwd="/tmp")
+        result = _run_with_mocked_pipes(mocker, [], [b"error1\n"], returncode=1)
 
         assert "error1" in result.output.stderr
         assert result.returncode == 1
@@ -222,6 +231,142 @@ class TestClaudeInvocationResult:
         assert check_claude_success(exit_code=1, head_before="abc", head_after="def") is False
         # Both conditions met
         assert check_claude_success(exit_code=0, head_before="abc", head_after="def") is True
+
+
+@pytest.mark.unit
+class TestClaudeCodeCommand:
+    """ClaudeCodeCommand dataclass field defaults and validation."""
+
+    def test_claude_code_command_field_defaults(self):
+        cmd = ClaudeCodeCommand(cwd="/x", prompt="hello")
+        assert cmd.cwd == "/x"
+        assert cmd.prompt == "hello"
+        assert cmd.interactive is None
+        assert cmd.allowed_tools is None
+        assert cmd.session_id is None
+        assert cmd.add_dirs == []
+        assert cmd.extra_args == []
+        assert cmd.mock_command is None
+
+    def test_claude_code_command_requires_prompt_or_mock(self):
+        with pytest.raises(ValueError):
+            ClaudeCodeCommand(cwd="/x")
+
+    def test_claude_code_command_mock_only_ok(self):
+        cmd = ClaudeCodeCommand(cwd="/x", mock_command=["/usr/bin/mock", "label"])
+        assert cmd.prompt is None
+        assert cmd.mock_command == ["/usr/bin/mock", "label"]
+
+    def test_claude_code_command_both_prompt_and_mock_ok(self):
+        cmd = ClaudeCodeCommand(
+            cwd="/x",
+            prompt="hello",
+            mock_command=["/usr/bin/mock", "label"],
+        )
+        assert cmd.prompt == "hello"
+        assert cmd.mock_command == ["/usr/bin/mock", "label"]
+
+    def test_session_id_frozen(self):
+        sid = SessionId(session_id="abc123", is_new=True)
+        assert sid.session_id == "abc123"
+        assert sid.is_new is True
+        with pytest.raises(Exception):
+            sid.session_id = "other"  # type: ignore[misc]
+
+
+@pytest.mark.unit
+class TestParseStreamJsonOutput:
+    """_parse_stream_json_output extracts result_text from stream-json output."""
+
+    def test_result_text_from_terminal_result_message(self):
+        stdout = (
+            '{"type":"assistant","message":{}}\n'
+            '{"type":"result","result":"first"}\n'
+            '{"type":"assistant","message":{}}\n'
+            '{"type":"result","result":"last"}\n'
+        )
+
+        _diagnostics, result_text = _parse_stream_json_output(stdout)
+
+        assert result_text == "last"
+
+    def test_result_text_from_single_result_message(self):
+        stdout = '{"type":"result","result":"only"}\n'
+
+        _diagnostics, result_text = _parse_stream_json_output(stdout)
+
+        assert result_text == "only"
+
+    def test_result_text_falls_back_to_raw_stdout_when_no_result_message(self):
+        stdout = "plain text without stream-json\nanother line\n"
+
+        _diagnostics, result_text = _parse_stream_json_output(stdout)
+
+        assert result_text == stdout
+
+
+@pytest.mark.unit
+class TestRunClaudeWithOutputCaptureResultText:
+    """run_claude_with_output_capture populates ClaudeResult.result_text."""
+
+    def test_result_text_populated_from_stream_json(self, mocker):
+        result = _run_with_mocked_pipes(
+            mocker, [b'{"type":"result","result":"hello"}\n'], [],
+        )
+
+        assert result.result_text == "hello"
+
+    def test_result_text_falls_back_to_raw_stdout(self, mocker):
+        result = _run_with_mocked_pipes(mocker, [b"raw output\n"], [])
+
+        assert result.result_text == "raw output\n"
+
+
+@pytest.mark.unit
+class TestClaudeRunnerExecute:
+    """ClaudeRunner.execute(ClaudeCodeCommand) builds argv per spec §3.3."""
+
+    def test_execute_batch_with_allowed_tools_emits_expected_argv(self, mocker):
+        mock_stdout = MagicMock()
+        mock_stderr = MagicMock()
+        mock_stdout.read1.side_effect = [
+            b'{"type":"result","result":"hello world"}\n',
+            b"",
+        ]
+        mock_stderr.read1.side_effect = [b""]
+
+        mock_process = MagicMock()
+        mock_process.stdout = mock_stdout
+        mock_process.stderr = mock_stderr
+        mock_process.returncode = 0
+        mock_popen = mocker.patch(
+            'i2code.implement.claude_runner.subprocess.Popen',
+            return_value=mock_process,
+        )
+
+        runner = ClaudeRunner(interactive=True, debug=False)
+        command = ClaudeCodeCommand(
+            prompt="do task",
+            cwd="/repo",
+            interactive=False,
+            allowed_tools="Read(/repo/**)",
+        )
+
+        result = runner.execute(command)
+
+        mock_popen.assert_called_once()
+        args, kwargs = mock_popen.call_args
+        assert args[0] == [
+            "claude",
+            "--verbose",
+            "--output-format=stream-json",
+            "--allowedTools",
+            "Read(/repo/**)",
+            "-p",
+            "do task",
+        ]
+        assert kwargs.get("cwd") == "/repo"
+        assert result.result_text == "hello world"
 
 
 @pytest.mark.unit

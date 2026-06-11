@@ -57,15 +57,15 @@ Use these skills by invoking them before the relevant action:
 
 Establish a green baseline before any refactor changes so subsequent steel threads can be verified against a known-good starting point.
 
-- [ ] **Task 1.1: Existing unit test suite passes on master**
+- [x] **Task 1.1: Existing unit test suite passes on master**
   - TaskType: INFRA
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/ -m unit`
   - Observable: pytest exits with code 0 and reports zero failures across all unit-marked tests; `uvx pyright --level error src/` reports zero errors.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/ -m unit` exits 0 and `uvx pyright --level error src/` exits 0 on the current working tree.
   - Steps:
-    - [ ] Run `uv run --python 3.12 python3 -m pytest tests/ -m unit` and confirm exit 0
-    - [ ] Run `uvx pyright --level error src/` and confirm exit 0
-    - [ ] If either fails, STOP and report the failure — do not begin the refactor on a red baseline
+    - [x] Run `uv run --python 3.12 python3 -m pytest tests/ -m unit` and confirm exit 0
+    - [x] Run `uvx pyright --level error src/` and confirm exit 0
+    - [x] If either fails, STOP and report the failure — do not begin the refactor on a red baseline
 
 ---
 
@@ -73,50 +73,50 @@ Establish a green baseline before any refactor changes so subsequent steel threa
 
 Implements the primary scenario from spec §6.1. Introduces `SessionId`, `ClaudeCodeCommand`, `ClaudeRunner.execute()` (batch path only at this stage — interactive path is added in Steel Thread 3), `ClaudeResult.result_text`, the result-text extraction inside `_parse_stream_json_output`, and migrates `src/i2code/go_cmd/create_plan.py` (both invocation site and stdout consumers).
 
-- [ ] **Task 2.1: `ClaudeCodeCommand` and `SessionId` dataclasses are defined in `claude_runner.py`**
+- [x] **Task 2.1: `ClaudeCodeCommand` and `SessionId` dataclasses are defined in `claude_runner.py`**
   - TaskType: OUTCOME
   - Entrypoint: `from i2code.implement.claude_runner import ClaudeCodeCommand, SessionId`
   - Observable: `ClaudeCodeCommand` has fields `cwd: str`, `prompt: Optional[str] = None`, `interactive: Optional[bool] = None`, `allowed_tools: Optional[str] = None`, `session_id: Optional[SessionId] = None`, `add_dirs: list[str] = []`, `extra_args: list[str] = []`, `mock_command: Optional[list[str]] = None`. `SessionId` is a frozen dataclass with `session_id: str` and `is_new: bool`. Constructing `ClaudeCodeCommand(cwd="/x")` with neither `prompt` nor `mock_command` raises `ValueError`. Construction with `mock_command` and no `prompt` succeeds. Construction with both succeeds.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py -v -m unit` exits 0; new tests `test_claude_code_command_requires_prompt_or_mock`, `test_claude_code_command_mock_only_ok`, `test_session_id_frozen`.
   - Steps:
-    - [ ] Add new test class `TestClaudeCodeCommand` in `tests/implement/test_claude_runner.py` asserting field defaults, `ValueError` on missing prompt+mock_command, and the both-set case
-    - [ ] Add `SessionId(frozen=True)` dataclass to `src/i2code/implement/claude_runner.py`
-    - [ ] Add `ClaudeCodeCommand` dataclass with `__post_init__` validation as specified in §3.2 of the spec
-    - [ ] Run the targeted pytest and confirm green
+    - [x] Add new test class `TestClaudeCodeCommand` in `tests/implement/test_claude_runner.py` asserting field defaults, `ValueError` on missing prompt+mock_command, and the both-set case
+    - [x] Add `SessionId(frozen=True)` dataclass to `src/i2code/implement/claude_runner.py`
+    - [x] Add `ClaudeCodeCommand` dataclass with `__post_init__` validation as specified in §3.2 of the spec
+    - [x] Run the targeted pytest and confirm green
 
-- [ ] **Task 2.2: `ClaudeResult.result_text` populated by `_parse_stream_json_output`**
+- [x] **Task 2.2: `ClaudeResult.result_text` populated by `_parse_stream_json_output`**
   - TaskType: OUTCOME
   - Entrypoint: `run_claude_with_output_capture(cmd, cwd, debug=False)` (still public at this stage)
   - Observable: When stdout contains stream-json lines with `{"type": "result", "result": "<text>"}`, the returned `ClaudeResult.result_text` equals `"<text>"` (from the LAST such message). When stdout contains no stream-json `result` message, `result_text` equals the raw captured stdout verbatim.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py::TestParseStreamJsonOutput -v -m unit` exits 0; new tests `test_result_text_from_terminal_result_message`, `test_result_text_falls_back_to_raw_stdout_when_no_result_message`.
   - Steps:
-    - [ ] Add `result_text: str = ""` to `ClaudeResult` dataclass in `src/i2code/implement/claude_runner.py:34`
-    - [ ] Write failing test that asserts `result_text` extraction from stream-json with one and multiple `type=result` messages, and the raw-stdout fallback case
-    - [ ] Modify `_parse_stream_json_output` at `src/i2code/implement/claude_runner.py:108` to also return the result-text value; modify `run_claude_with_output_capture` at `src/i2code/implement/claude_runner.py:134` to populate `ClaudeResult.result_text` from the parsed value
-    - [ ] Hoist the algorithm from `_extract_result_text` at `src/i2code/implement/pull_request_review_processor.py:457-470` into `_parse_stream_json_output` (do NOT delete the original yet — that happens in Steel Thread 8 once pull_request_review_processor is migrated)
-    - [ ] Run targeted pytest, confirm green
+    - [x] Add `result_text: str = ""` to `ClaudeResult` dataclass in `src/i2code/implement/claude_runner.py:34`
+    - [x] Write failing test that asserts `result_text` extraction from stream-json with one and multiple `type=result` messages, and the raw-stdout fallback case
+    - [x] Modify `_parse_stream_json_output` at `src/i2code/implement/claude_runner.py:108` to also return the result-text value; modify `run_claude_with_output_capture` at `src/i2code/implement/claude_runner.py:134` to populate `ClaudeResult.result_text` from the parsed value
+    - [x] Hoist the algorithm from `_extract_result_text` at `src/i2code/implement/pull_request_review_processor.py:457-470` into `_parse_stream_json_output` (do NOT delete the original yet — that happens in Steel Thread 8 once pull_request_review_processor is migrated)
+    - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 2.3: `ClaudeRunner.execute()` builds correct argv for the plan-generation scenario and dispatches to batch path**
+- [x] **Task 2.3: `ClaudeRunner.execute()` builds correct argv for the plan-generation scenario and dispatches to batch path**
   - TaskType: OUTCOME
   - Entrypoint: `ClaudeRunner(interactive=True, debug=False).execute(ClaudeCodeCommand(prompt=p, cwd=c, interactive=False, allowed_tools="Read(/repo/**)"))`
   - Observable: With `subprocess.Popen` patched, `Popen` is invoked once with positional args `["claude", "--verbose", "--output-format=stream-json", "--allowedTools", "Read(/repo/**)", "-p", p]` and `cwd=c`. The returned `ClaudeResult` includes `result_text` populated from the mocked stream-json `result` message.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py::TestClaudeRunnerExecute -v -m unit` exits 0; new test `test_execute_batch_with_allowed_tools_emits_expected_argv` patches `subprocess.Popen` and asserts the argv tuple and the resulting `result_text`.
   - Steps:
-    - [ ] Write failing test in `tests/implement/test_claude_runner.py` using `patch('subprocess.Popen')` that asserts argv, cwd, and `result_text`
-    - [ ] Add `execute(command: ClaudeCodeCommand) -> ClaudeResult` method to `ClaudeRunner` at `src/i2code/implement/claude_runner.py:248` following §3.3 ordered procedure
-    - [ ] Implement a private `_build_argv(command, effective_interactive)` helper on `ClaudeRunner` that follows steps 3a–3f from §3.3 (mock short-circuit, batch policy, allowed_tools, session_id, add_dirs, extra_args, prompt placement)
-    - [ ] Dispatch from `execute()` to existing `run_claude_with_output_capture` (batch) or `run_claude_interactive` (interactive); both functions remain at module scope as public for now (rename happens in Steel Thread 15)
-    - [ ] Run targeted pytest, confirm green
+    - [x] Write failing test in `tests/implement/test_claude_runner.py` using `patch('subprocess.Popen')` that asserts argv, cwd, and `result_text`
+    - [x] Add `execute(command: ClaudeCodeCommand) -> ClaudeResult` method to `ClaudeRunner` at `src/i2code/implement/claude_runner.py:248` following §3.3 ordered procedure
+    - [x] Implement a private `_build_argv(command, effective_interactive)` helper on `ClaudeRunner` that follows steps 3a–3f from §3.3 (mock short-circuit, batch policy, allowed_tools, session_id, add_dirs, extra_args, prompt placement)
+    - [x] Dispatch from `execute()` to existing `run_claude_with_output_capture` (batch) or `run_claude_interactive` (interactive); both functions remain at module scope as public for now (rename happens in Steel Thread 15)
+    - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 2.4: `FakeClaudeRunner.execute(command)` records calls in test fake**
+- [x] **Task 2.4: `FakeClaudeRunner.execute(command)` records calls in test fake**
   - TaskType: INFRA
   - Entrypoint: `FakeClaudeRunner().execute(ClaudeCodeCommand(prompt="x", cwd="/r", interactive=False))`
   - Observable: `fake.calls` records `("execute", command, "/r")` where `command` is the exact `ClaudeCodeCommand` instance passed. The fake returns the configured `ClaudeResult` (using the same default/configured-result mechanism as `run_interactive`/`run_batch`). Existing `run`/`run_interactive`/`run_batch` behaviour on the fake is unchanged.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py::TestFakeClaudeRunner -v -m unit` exits 0; new tests `test_records_execute_call`, `test_execute_returns_configured_result`.
   - Steps:
-    - [ ] Write failing tests in `tests/implement/test_claude_runner.py` asserting `fake.calls` and configured-result behaviour for `execute`
-    - [ ] Add `execute(self, command) -> ClaudeResult` to `tests/implement/fake_claude_runner.py`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Write failing tests in `tests/implement/test_claude_runner.py` asserting `fake.calls` and configured-result behaviour for `execute`
+    - [x] Add `execute(self, command) -> ClaudeResult` to `tests/implement/fake_claude_runner.py`
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 2.5: `create_plan` builds a `ClaudeCodeCommand` and reads `result.result_text`**
   - TaskType: OUTCOME
@@ -640,3 +640,15 @@ For verification of acceptance criterion §8.2 #7: every site below produces a `
 ## Change History
 ### 2026-06-11 17:45 - insert-task-after
 Steel Thread 2 currently verifies ClaudeRunner.execute() only with mocked subprocess.Popen (Task 2.3). Adding an integration_claude-marked test that invokes real claude guards against drift between the mocked argv shape and what the real CLI accepts, and confirms that _parse_stream_json_output extracts result_text correctly from real stream-json output (not just synthesized fixtures). Follows the existing pattern in tests/implement/test_triage_real_claude.py.
+
+### 2026-06-11 17:50 - mark-task-complete
+Verified baseline: pytest exits 0 (1381 passed, 17 deselected, 4 xfailed); pyright reports 0 errors, 0 warnings, 0 informations
+
+### 2026-06-11 18:11 - mark-task-complete
+ClaudeCodeCommand and SessionId dataclasses defined in claude_runner.py with __post_init__ validation; 5 new unit tests pass
+
+### 2026-06-11 18:30 - mark-task-complete
+Implemented ClaudeRunner.execute() and _build_argv() helper; targeted pytest green; pyright zero errors; CodeScene safeguard passes.
+
+### 2026-06-11 18:34 - mark-task-complete
+Added FakeClaudeRunner.execute(command) with new tests test_records_execute_call and test_execute_returns_configured_result; targeted pytest green.

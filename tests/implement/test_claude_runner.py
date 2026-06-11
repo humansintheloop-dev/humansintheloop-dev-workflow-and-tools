@@ -308,6 +308,53 @@ class TestRunClaudeWithOutputCaptureResultText:
 
 
 @pytest.mark.unit
+class TestClaudeRunnerExecute:
+    """ClaudeRunner.execute(ClaudeCodeCommand) builds argv per spec §3.3."""
+
+    def test_execute_batch_with_allowed_tools_emits_expected_argv(self, mocker):
+        mock_stdout = MagicMock()
+        mock_stderr = MagicMock()
+        mock_stdout.read1.side_effect = [
+            b'{"type":"result","result":"hello world"}\n',
+            b"",
+        ]
+        mock_stderr.read1.side_effect = [b""]
+
+        mock_process = MagicMock()
+        mock_process.stdout = mock_stdout
+        mock_process.stderr = mock_stderr
+        mock_process.returncode = 0
+        mock_popen = mocker.patch(
+            'i2code.implement.claude_runner.subprocess.Popen',
+            return_value=mock_process,
+        )
+
+        runner = ClaudeRunner(interactive=True, debug=False)
+        command = ClaudeCodeCommand(
+            prompt="do task",
+            cwd="/repo",
+            interactive=False,
+            allowed_tools="Read(/repo/**)",
+        )
+
+        result = runner.execute(command)
+
+        mock_popen.assert_called_once()
+        args, kwargs = mock_popen.call_args
+        assert args[0] == [
+            "claude",
+            "--verbose",
+            "--output-format=stream-json",
+            "--allowedTools",
+            "Read(/repo/**)",
+            "-p",
+            "do task",
+        ]
+        assert kwargs.get("cwd") == "/repo"
+        assert result.result_text == "hello world"
+
+
+@pytest.mark.unit
 class TestClaudeRunnerRun:
     """ClaudeRunner.run() dispatches to run_interactive or run_batch."""
 

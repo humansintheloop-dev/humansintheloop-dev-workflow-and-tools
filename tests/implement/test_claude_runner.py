@@ -6,7 +6,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from fake_claude_runner import FakeClaudeRunner
-from i2code.implement.claude_runner import CapturedOutput, ClaudeResult, ClaudeRunner, run_claude_with_output_capture
+from i2code.implement.claude_runner import (
+    CapturedOutput,
+    ClaudeCodeCommand,
+    ClaudeResult,
+    ClaudeRunner,
+    SessionId,
+    run_claude_with_output_capture,
+)
 
 
 @pytest.mark.unit
@@ -222,6 +229,47 @@ class TestClaudeInvocationResult:
         assert check_claude_success(exit_code=1, head_before="abc", head_after="def") is False
         # Both conditions met
         assert check_claude_success(exit_code=0, head_before="abc", head_after="def") is True
+
+
+@pytest.mark.unit
+class TestClaudeCodeCommand:
+    """ClaudeCodeCommand dataclass field defaults and validation."""
+
+    def test_claude_code_command_field_defaults(self):
+        cmd = ClaudeCodeCommand(cwd="/x", prompt="hello")
+        assert cmd.cwd == "/x"
+        assert cmd.prompt == "hello"
+        assert cmd.interactive is None
+        assert cmd.allowed_tools is None
+        assert cmd.session_id is None
+        assert cmd.add_dirs == []
+        assert cmd.extra_args == []
+        assert cmd.mock_command is None
+
+    def test_claude_code_command_requires_prompt_or_mock(self):
+        with pytest.raises(ValueError):
+            ClaudeCodeCommand(cwd="/x")
+
+    def test_claude_code_command_mock_only_ok(self):
+        cmd = ClaudeCodeCommand(cwd="/x", mock_command=["/usr/bin/mock", "label"])
+        assert cmd.prompt is None
+        assert cmd.mock_command == ["/usr/bin/mock", "label"]
+
+    def test_claude_code_command_both_prompt_and_mock_ok(self):
+        cmd = ClaudeCodeCommand(
+            cwd="/x",
+            prompt="hello",
+            mock_command=["/usr/bin/mock", "label"],
+        )
+        assert cmd.prompt == "hello"
+        assert cmd.mock_command == ["/usr/bin/mock", "label"]
+
+    def test_session_id_frozen(self):
+        sid = SessionId(session_id="abc123", is_new=True)
+        assert sid.session_id == "abc123"
+        assert sid.is_new is True
+        with pytest.raises(Exception):
+            sid.session_id = "other"  # type: ignore[misc]
 
 
 @pytest.mark.unit

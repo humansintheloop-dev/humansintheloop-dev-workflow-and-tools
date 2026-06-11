@@ -108,15 +108,15 @@ Implements the primary scenario from spec §6.1. Introduces `SessionId`, `Claude
     - [x] Dispatch from `execute()` to existing `run_claude_with_output_capture` (batch) or `run_claude_interactive` (interactive); both functions remain at module scope as public for now (rename happens in Steel Thread 15)
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 2.4: `FakeClaudeRunner.execute(command)` records calls in test fake**
+- [x] **Task 2.4: `FakeClaudeRunner.execute(command)` records calls in test fake**
   - TaskType: INFRA
   - Entrypoint: `FakeClaudeRunner().execute(ClaudeCodeCommand(prompt="x", cwd="/r", interactive=False))`
   - Observable: `fake.calls` records `("execute", command, "/r")` where `command` is the exact `ClaudeCodeCommand` instance passed. The fake returns the configured `ClaudeResult` (using the same default/configured-result mechanism as `run_interactive`/`run_batch`). Existing `run`/`run_interactive`/`run_batch` behaviour on the fake is unchanged.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py::TestFakeClaudeRunner -v -m unit` exits 0; new tests `test_records_execute_call`, `test_execute_returns_configured_result`.
   - Steps:
-    - [ ] Write failing tests in `tests/implement/test_claude_runner.py` asserting `fake.calls` and configured-result behaviour for `execute`
-    - [ ] Add `execute(self, command) -> ClaudeResult` to `tests/implement/fake_claude_runner.py`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Write failing tests in `tests/implement/test_claude_runner.py` asserting `fake.calls` and configured-result behaviour for `execute`
+    - [x] Add `execute(self, command) -> ClaudeResult` to `tests/implement/fake_claude_runner.py`
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 2.5: `create_plan` builds a `ClaudeCodeCommand` and reads `result.result_text`**
   - TaskType: OUTCOME
@@ -649,3 +649,6 @@ ClaudeCodeCommand and SessionId dataclasses defined in claude_runner.py with __p
 
 ### 2026-06-11 18:30 - mark-task-complete
 Implemented ClaudeRunner.execute() and _build_argv() helper; targeted pytest green; pyright zero errors; CodeScene safeguard passes.
+
+### 2026-06-11 18:34 - mark-task-complete
+Added FakeClaudeRunner.execute(command) with new tests test_records_execute_call and test_execute_returns_configured_result; targeted pytest green.

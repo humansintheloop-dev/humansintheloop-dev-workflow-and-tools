@@ -70,6 +70,21 @@ class TestFakeClaudeRunner:
         assert r1.returncode == 42
         assert r2.returncode == 0  # default
 
+    def test_records_execute_call(self):
+        fake = FakeClaudeRunner()
+        command = ClaudeCodeCommand(prompt="x", cwd="/r", interactive=False)
+        fake.execute(command)
+        assert fake.calls == [("execute", command, "/r")]
+        assert fake.calls[0][1] is command
+
+    def test_execute_returns_configured_result(self):
+        fake = FakeClaudeRunner()
+        fake.set_result(ClaudeResult(returncode=7, result_text="done"))
+        command = ClaudeCodeCommand(prompt="x", cwd="/r", interactive=False)
+        result = fake.execute(command)
+        assert result.returncode == 7
+        assert result.result_text == "done"
+
 
 @pytest.mark.unit
 class TestClaudeResultInModule:

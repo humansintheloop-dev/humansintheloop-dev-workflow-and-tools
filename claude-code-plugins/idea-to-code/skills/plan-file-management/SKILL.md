@@ -54,13 +54,19 @@ Insert a fully structured thread before a specified thread, then auto-renumber.
 
     i2code plan insert-thread-before <plan_file> --before <N> --title <title> --introduction <text> --tasks <json> --rationale <text>
 
-The `--tasks` argument is a JSON array of task objects (see spec for schema).
+    i2code plan insert-thread-before <plan_file> --before <N> --title <title> --introduction <text> --tasks-file <path> --rationale <text>
+
+The `--tasks` argument is a JSON array of task objects (see spec for schema). Use `--tasks-file` instead of `--tasks` when the JSON is large or contains characters that are difficult to escape in the shell. Write the JSON file to the idea directory (alongside the plan file) and delete it after use. `--tasks` and `--tasks-file` are mutually exclusive; exactly one is required.
 
 ## insert-thread-after
 
 Insert a fully structured thread after a specified thread, then auto-renumber.
 
     i2code plan insert-thread-after <plan_file> --after <N> --title <title> --introduction <text> --tasks <json> --rationale <text>
+
+    i2code plan insert-thread-after <plan_file> --after <N> --title <title> --introduction <text> --tasks-file <path> --rationale <text>
+
+Use `--tasks-file` instead of `--tasks` when the JSON is large or contains characters that are difficult to escape in the shell. Write the JSON file to the idea directory (alongside the plan file) and delete it after use. `--tasks` and `--tasks-file` are mutually exclusive; exactly one is required.
 
 ## get-next-task
 
@@ -122,13 +128,19 @@ Insert a task before a specified task within a thread, then auto-renumber tasks.
 
     i2code plan insert-task-before <plan_file> --thread <N> --before <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
 
-The `--steps` argument is a JSON array of step description strings.
+    i2code plan insert-task-before <plan_file> --thread <N> --before <M> --task-file <path> --rationale <text>
+
+The `--steps` argument is a JSON array of step description strings. Use `--task-file` instead of the individual task options when the JSON is large or contains characters that are difficult to escape in the shell. The file must contain a JSON object with `title`, `task_type`, `entrypoint`, `observable`, `evidence`, and `steps` fields. Write the JSON file to the idea directory (alongside the plan file) and delete it after use. `--task-file` and the individual task options are mutually exclusive; exactly one set is required.
 
 ## insert-task-after
 
 Insert a task after a specified task within a thread, then auto-renumber tasks.
 
     i2code plan insert-task-after <plan_file> --thread <N> --after <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
+
+    i2code plan insert-task-after <plan_file> --thread <N> --after <M> --task-file <path> --rationale <text>
+
+Use `--task-file` instead of the individual task options when the JSON is large or contains characters that are difficult to escape in the shell. The file must contain a JSON object with `title`, `task_type`, `entrypoint`, `observable`, `evidence`, and `steps` fields. Write the JSON file to the idea directory (alongside the plan file) and delete it after use. `--task-file` and the individual task options are mutually exclusive; exactly one set is required.
 
 ## reorder-tasks
 
@@ -166,7 +178,9 @@ Replace a task's content in place within a thread, then auto-renumber tasks. Equ
 
     i2code plan replace-task <plan_file> --thread <N> --task <M> --title <title> --task-type <INFRA|OUTCOME> --entrypoint <cmd> --observable <text> --evidence <cmd> --steps <json> --rationale <text>
 
-The `--steps` argument is a JSON array of step description strings.
+    i2code plan replace-task <plan_file> --thread <N> --task <M> --task-file <path> --rationale <text>
+
+The `--steps` argument is a JSON array of step description strings. Use `--task-file` instead of the individual task options when the JSON is large or contains characters that are difficult to escape in the shell. The file must contain a JSON object with `title`, `task_type`, `entrypoint`, `observable`, `evidence`, and `steps` fields. Write the JSON file to the idea directory (alongside the plan file) and delete it after use. `--task-file` and the individual task options are mutually exclusive; exactly one set is required.
 
 Errors if the thread or task does not exist.
 

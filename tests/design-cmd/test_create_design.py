@@ -6,7 +6,7 @@ import sys
 import pytest
 
 from conftest import TempIdeaProject
-from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.claude_runner import ClaudeCodeCommand, ClaudeResult, SessionId
 from i2code.design_cmd.create_design import create_design
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "implement"))
@@ -117,7 +117,8 @@ class TestCreateDesignTemplateRendering:
     def test_renders_template_with_all_variables(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_create_design(project)
-            prompt = cmd[-1]
+            assert isinstance(cmd, ClaudeCodeCommand)
+            prompt = cmd.prompt or ""
             assert project.idea_file in prompt
             assert project.discussion_file in prompt
             assert project.spec_file in prompt
@@ -125,7 +126,8 @@ class TestCreateDesignTemplateRendering:
     def test_renders_template_with_design_skills(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_create_design(project)
-            prompt = cmd[-1]
+            assert isinstance(cmd, ClaudeCodeCommand)
+            prompt = cmd.prompt or ""
             assert "idea-to-code:tdd" in prompt
             assert "idea-to-code:commit-guidelines" in prompt
 
@@ -143,27 +145,37 @@ class TestCreateDesignSessionManagement:
             create_design(project, runner, plugin_skills_fn=_fake_plugin_skills)
 
             _, cmd, _ = runner.calls[0]
-            assert "--resume" in cmd
-            assert "existing-session-id" in cmd
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cmd.session_id == SessionId(session_id="existing-session-id", is_new=False)
+            assert cmd.interactive is True
 
     def test_no_resume_when_no_session_file(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_create_design(project)
-            assert "--resume" not in cmd
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cmd.session_id is None
 
 
 @pytest.mark.unit
 class TestCreateDesignClaudeInvocation:
 
-    def test_invokes_claude_interactively(self):
+    def test_invokes_claude_via_execute(self):
         with TempIdeaProject("my-feature") as project:
             _, _, method, _, _ = _run_create_design(project)
-            assert method == "run_interactive"
+            assert method == "execute"
 
-    def test_claude_command_starts_with_claude(self):
+    def test_command_is_interactive(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_create_design(project)
-            assert cmd[0] == "claude"
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cmd.interactive is True
+
+    def test_command_cwd_is_project_directory(self):
+        with TempIdeaProject("my-feature") as project:
+            _, _, _, cmd, cwd = _run_create_design(project)
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cmd.cwd == project.directory
+            assert cwd == project.directory
 
     def test_returns_claude_result(self):
         with TempIdeaProject("my-feature") as project:

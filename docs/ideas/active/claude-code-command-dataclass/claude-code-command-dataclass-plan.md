@@ -179,16 +179,16 @@ Adds the interactive dispatch path to `ClaudeRunner.execute()`, adds `--resume` 
     - [x] Add new public `read_session_id(path: str) -> Optional[SessionId]` to `src/i2code/session_manager.py` returning `SessionId(id, is_new=False)` or `None`
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 3.4: `create_design` builds a `ClaudeCodeCommand` with `session_id` from `read_session_id`**
+- [x] **Task 3.4: `create_design` builds a `ClaudeCodeCommand` with `session_id` from `read_session_id`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.design_cmd.create_design.create_design(project, claude_runner, ...)`
   - Observable: With a `FakeClaudeRunner` injected, when the session file exists, `fake.calls` records one `("execute", cmd, project.directory)` where `cmd.session_id == SessionId(<id>, is_new=False)`, `cmd.prompt` equals the rendered design prompt, `cmd.interactive is True`. When the session file does not exist, `cmd.session_id is None`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/design-cmd/ -v -m unit -k "create_design"` exits 0; updated test asserts both the with-session and without-session `ClaudeCodeCommand` shapes.
   - Steps:
-    - [ ] Update the existing `create_design` unit test to assert the `ClaudeCodeCommand` shape (both with and without session file)
-    - [ ] Replace argv assembly at `src/i2code/design_cmd/create_design.py:63` with `claude_runner.execute(ClaudeCodeCommand(prompt=prompt, cwd=project.directory, interactive=True, session_id=read_session_id(project.session_id_file)))`
-    - [ ] Run targeted pytest and full unit suite; both green
-    - [ ] Run `uvx pyright --level error src/`; zero errors
+    - [x] Update the existing `create_design` unit test to assert the `ClaudeCodeCommand` shape (both with and without session file)
+    - [x] Replace argv assembly at `src/i2code/design_cmd/create_design.py:63` with `claude_runner.execute(ClaudeCodeCommand(prompt=prompt, cwd=project.directory, interactive=True, session_id=read_session_id(project.session_id_file)))`
+    - [x] Run targeted pytest and full unit suite; both green
+    - [x] Run `uvx pyright --level error src/`; zero errors
 
 ---
 

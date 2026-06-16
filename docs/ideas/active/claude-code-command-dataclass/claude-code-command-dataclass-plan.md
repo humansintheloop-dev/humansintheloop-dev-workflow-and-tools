@@ -147,15 +147,15 @@ Implements the primary scenario from spec §6.1. Introduces `SessionId`, `Claude
 
 Adds the interactive dispatch path to `ClaudeRunner.execute()`, adds `--resume` rendering for `session_id.is_new=False`, introduces `read_session_id(path) -> Optional[SessionId]` in `session_manager.py`, and migrates `src/i2code/design_cmd/create_design.py`.
 
-- [ ] **Task 3.1: `ClaudeRunner.execute()` interactive path emits `["claude", prompt]` (no session)**
+- [x] **Task 3.1: `ClaudeRunner.execute()` interactive path emits `["claude", prompt]` (no session)**
   - TaskType: OUTCOME
   - Entrypoint: `ClaudeRunner(interactive=True).execute(ClaudeCodeCommand(prompt="p", cwd="/c", interactive=True))`
   - Observable: With `subprocess.run` patched, `subprocess.run` is invoked with positional args `["claude", "p"]` and `cwd="/c"`. No `--verbose`, no `--output-format=stream-json`, no `-p`. `ClaudeResult.result_text` equals `""` (interactive does not capture stdout).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py::TestClaudeRunnerExecute::test_execute_interactive_no_session -v -m unit` exits 0.
   - Steps:
-    - [ ] Write failing test patching `subprocess.run` and asserting argv + empty `result_text`
-    - [ ] Update `_build_argv` and `execute()` in `src/i2code/implement/claude_runner.py` so the interactive branch appends `command.prompt` positionally (no `-p`)
-    - [ ] Run targeted pytest, confirm green
+    - [x] Write failing test patching `subprocess.run` and asserting argv + empty `result_text`
+    - [x] Update `_build_argv` and `execute()` in `src/i2code/implement/claude_runner.py` so the interactive branch appends `command.prompt` positionally (no `-p`)
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 3.2: `ClaudeRunner.execute()` interactive path renders `--resume <id>` for `is_new=False`**
   - TaskType: OUTCOME
@@ -655,3 +655,6 @@ Added FakeClaudeRunner.execute(command) with new tests test_records_execute_call
 
 ### 2026-06-16 16:25 - mark-task-complete
 ST2 T2.5: create_plan builds ClaudeCodeCommand and reads result_text
+
+### 2026-06-16 16:35 - mark-task-complete
+Test test_execute_interactive_no_session locks in the interactive argv contract; _build_argv already appended prompt positionally (no -p, no --verbose, no stream-json) from T2.3 conditional

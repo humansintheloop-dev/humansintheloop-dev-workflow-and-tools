@@ -167,17 +167,17 @@ Adds the interactive dispatch path to `ClaudeRunner.execute()`, adds `--resume` 
     - [x] Extend `_build_argv` in `src/i2code/implement/claude_runner.py` to render `["--resume", session_id.session_id]` when `command.session_id is not None and not command.session_id.is_new` (already implemented in ST2; this task locks in the behavior with a test)
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 3.3: `read_session_id(path) -> Optional[SessionId]` in `session_manager.py`**
+- [x] **Task 3.3: `read_session_id(path) -> Optional[SessionId]` in `session_manager.py`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.session_manager.read_session_id(path)` (NEW typed variant returning `Optional[SessionId]`)
   - Observable: When `path` exists with a UUID, the function returns `SessionId(session_id=<uuid>, is_new=False)`. When `path` does not exist, returns `None`. The existing private string-returning `read_session_id` helper is renamed to a private name to avoid the type clash.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/ -m unit -k "session_manager and read_session_id" -v` exits 0; new tests `test_read_session_id_returns_session_id_dataclass_when_file_present`, `test_read_session_id_returns_none_when_file_absent`.
   - Steps:
-    - [ ] Rename the existing string-returning `read_session_id` at `src/i2code/session_manager.py:8` to `_read_session_id_str` (internal helper)
-    - [ ] Update internal callers in `src/i2code/session_manager.py` (`build_session_args`, `get_or_create_session_args`) to use `_read_session_id_str` so they still function
-    - [ ] Write failing test asserting `SessionId` return type and `None` case
-    - [ ] Add new public `read_session_id(path: str) -> Optional[SessionId]` to `src/i2code/session_manager.py` returning `SessionId(id, is_new=False)` or `None`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Rename the existing string-returning `read_session_id` at `src/i2code/session_manager.py:8` to `_read_session_id_str` (internal helper)
+    - [x] Update internal callers in `src/i2code/session_manager.py` (`build_session_args`, `get_or_create_session_args`) to use `_read_session_id_str` so they still function
+    - [x] Write failing test asserting `SessionId` return type and `None` case
+    - [x] Add new public `read_session_id(path: str) -> Optional[SessionId]` to `src/i2code/session_manager.py` returning `SessionId(id, is_new=False)` or `None`
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 3.4: `create_design` builds a `ClaudeCodeCommand` with `session_id` from `read_session_id`**
   - TaskType: OUTCOME

@@ -118,17 +118,17 @@ Implements the primary scenario from spec §6.1. Introduces `SessionId`, `Claude
     - [x] Add `execute(self, command) -> ClaudeResult` to `tests/implement/fake_claude_runner.py`
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 2.5: `create_plan` builds a `ClaudeCodeCommand` and reads `result.result_text`**
+- [x] **Task 2.5: `create_plan` builds a `ClaudeCodeCommand` and reads `result.result_text`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.go_cmd.create_plan.create_plan(project, claude_runner, services, repo_root=repo_root)`
   - Observable: With a `FakeClaudeRunner` injected and a configured `ClaudeResult(returncode=0, result_text=<valid plan>)`, `fake.calls` contains a single `("execute", cmd, repo_root)` entry where `cmd.prompt` equals the rendered `create-implementation-plan.md`, `cmd.interactive is False`, `cmd.allowed_tools` equals `build_read_only_tools_flag(repo_root)`, and `cmd.cwd == repo_root`. The plan file written at `project.plan_file` contains `result.result_text` (NOT `result.output.stdout`).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/ -v -m unit -k "create_plan"` exits 0; an updated unit test for `create_plan` asserts both the `ClaudeCodeCommand` shape and that the plan file content equals `result.result_text`.
   - Steps:
-    - [ ] Update the existing `create_plan` unit test (under `tests/go-cmd/`) to assert the `("execute", ClaudeCodeCommand(...), cwd)` call shape and the use of `result_text`
-    - [ ] Replace `_generate_plan` in `src/i2code/go_cmd/create_plan.py:20` with a body that constructs a `ClaudeCodeCommand(prompt=rendered_prompt, cwd=cwd, interactive=False, allowed_tools=build_read_only_tools_flag(repo_root) if repo_root else None)` and calls `claude_runner.execute(...)`
-    - [ ] Change `src/i2code/go_cmd/create_plan.py:70` and `:78` from `result.output.stdout` to `result.result_text`
-    - [ ] Run targeted pytest, confirm green, then run full unit suite (`uv run --python 3.12 python3 -m pytest tests/ -m unit`) to confirm no regressions
-    - [ ] Run `uvx pyright --level error src/` and confirm zero errors
+    - [x] Update the existing `create_plan` unit test (under `tests/go-cmd/`) to assert the `("execute", ClaudeCodeCommand(...), cwd)` call shape and the use of `result_text`
+    - [x] Replace `_generate_plan` in `src/i2code/go_cmd/create_plan.py:20` with a body that constructs a `ClaudeCodeCommand(prompt=rendered_prompt, cwd=cwd, interactive=False, allowed_tools=build_read_only_tools_flag(repo_root) if repo_root else None)` and calls `claude_runner.execute(...)`
+    - [x] Change `src/i2code/go_cmd/create_plan.py:70` and `:78` from `result.output.stdout` to `result.result_text`
+    - [x] Run targeted pytest, confirm green, then run full unit suite (`uv run --python 3.12 python3 -m pytest tests/ -m unit`) to confirm no regressions
+    - [x] Run `uvx pyright --level error src/` and confirm zero errors
 
 - [ ] **Task 2.6: Real Claude integration test for ClaudeRunner.execute() batch path**
   - TaskType: OUTCOME
@@ -652,3 +652,6 @@ Implemented ClaudeRunner.execute() and _build_argv() helper; targeted pytest gre
 
 ### 2026-06-11 18:34 - mark-task-complete
 Added FakeClaudeRunner.execute(command) with new tests test_records_execute_call and test_execute_returns_configured_result; targeted pytest green.
+
+### 2026-06-16 16:25 - mark-task-complete
+ST2 T2.5: create_plan builds ClaudeCodeCommand and reads result_text

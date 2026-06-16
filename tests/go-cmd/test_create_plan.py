@@ -6,7 +6,8 @@ import sys
 import pytest
 
 from conftest import TempIdeaProject
-from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.claude.permissions import build_read_only_tools_flag
+from i2code.implement.claude_runner import ClaudeCodeCommand, ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 from i2code.go_cmd.create_plan import PlanServices, create_plan
 
@@ -51,17 +52,11 @@ def _create_idea_and_spec(project):
 
 
 def _valid_result():
-    return ClaudeResult(
-        returncode=0,
-        output=CapturedOutput(stdout=VALID_PLAN, stderr=""),
-    )
+    return ClaudeResult(returncode=0, result_text=VALID_PLAN)
 
 
 def _invalid_result():
-    return ClaudeResult(
-        returncode=0,
-        output=CapturedOutput(stdout=INVALID_PLAN, stderr=""),
-    )
+    return ClaudeResult(returncode=0, result_text=INVALID_PLAN)
 
 
 def _fake_renderer(template_name, variables):
@@ -144,7 +139,9 @@ class TestCreatePlanTemplateRendering:
     def test_renders_template_with_idea_spec_and_skills(self):
         with TempIdeaProject("my-feature") as project:
             runner = _run_create_plan(project)
-            prompt = runner.calls[0][1][-1]
+            command = runner.calls[0][1]
+            assert isinstance(command, ClaudeCodeCommand)
+            prompt = command.prompt or ""
             assert "create-implementation-plan.md" in prompt
             assert project.idea_file in prompt
             assert project.spec_file in prompt
@@ -154,15 +151,17 @@ class TestCreatePlanTemplateRendering:
 @pytest.mark.unit
 class TestCreatePlanClaudeInvocation:
 
-    def test_invokes_claude_in_batch_mode(self):
+    def test_invokes_claude_via_execute(self):
         with TempIdeaProject("my-feature") as project:
             runner = _run_create_plan(project)
-            assert runner.calls[0][0] == "run_batch"
+            assert runner.calls[0][0] == "execute"
 
-    def test_claude_command_uses_print_flag(self):
+    def test_command_is_non_interactive_batch(self):
         with TempIdeaProject("my-feature") as project:
             runner = _run_create_plan(project)
-            assert "-p" in runner.calls[0][1]
+            command = runner.calls[0][1]
+            assert isinstance(command, ClaudeCodeCommand)
+            assert command.interactive is False
 
 
 @pytest.mark.unit
@@ -193,8 +192,9 @@ class TestCreatePlanRepairOnValidationFailure:
             runner = FakeClaudeRunner()
             runner.set_results([_invalid_result(), _valid_result()])
             create_plan(project, runner, _counting_validator_services())
-            repair_prompt = runner.calls[1][1][-1]
-            assert "Missing Evidence in Task 1.1" in repair_prompt
+            repair_command = runner.calls[1][1]
+            assert isinstance(repair_command, ClaudeCodeCommand)
+            assert "Missing Evidence in Task 1.1" in (repair_command.prompt or "")
 
     def test_writes_repaired_plan_when_repair_succeeds(self):
         with TempIdeaProject("my-feature") as project:
@@ -221,24 +221,25 @@ class TestCreatePlanAllowedTools:
 
         create_plan(project, runner, _pass_services(), repo_root=repo_root)
 
-        _, cmd, cwd = runner.calls[0]
-        assert "--allowedTools" in cmd
-        allowed_tools_idx = cmd.index("--allowedTools")
-        allowed_tools_value = cmd[allowed_tools_idx + 1]
-        assert f"Read(/{repo_root}/**)" in allowed_tools_value
-        assert "Write" not in allowed_tools_value
-        assert "Edit" not in allowed_tools_value
+        kind, command, cwd = runner.calls[0]
+        assert kind == "execute"
+        assert isinstance(command, ClaudeCodeCommand)
+        assert command.allowed_tools == build_read_only_tools_flag(repo_root)
+        assert command.cwd == repo_root
         assert cwd == repo_root
 
     def test_standalone_no_allowed_tools(self):
-        """Standalone create_plan (no repo_root) omits --allowedTools and uses project.directory as cwd."""
+        """Standalone create_plan (no repo_root) omits allowed_tools and uses project.directory as cwd."""
         with TempIdeaProject("my-feature") as project:
             _create_idea_and_spec(project)
             runner = FakeClaudeRunner()
             runner.set_result(_valid_result())
             create_plan(project, runner, _pass_services())
-            _, cmd, cwd = runner.calls[0]
-            assert "--allowedTools" not in cmd
+            kind, command, cwd = runner.calls[0]
+            assert kind == "execute"
+            assert isinstance(command, ClaudeCodeCommand)
+            assert command.allowed_tools is None
+            assert command.cwd == project.directory
             assert cwd == project.directory
 
 

@@ -15,7 +15,7 @@ from i2code.go_cmd.orchestrator import (
     _default_create_plan,
     _default_revise_plan,
 )
-from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.claude_runner import ClaudeCodeCommand, ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 
 
@@ -112,10 +112,7 @@ class TestDefaultReviseSpecPassesRepoRoot:
 def _run_default_create_plan(tmp_path):
     """Run _default_create_plan with all dependencies patched, return (fake, repo_root)."""
     fake = FakeClaudeRunner()
-    fake.set_result(ClaudeResult(
-        returncode=0,
-        output=CapturedOutput(stdout=VALID_PLAN, stderr=""),
-    ))
+    fake.set_result(ClaudeResult(returncode=0, result_text=VALID_PLAN))
     project, repo_root = _make_idea_project_with_spec(tmp_path)
     with (
         patch("i2code.go_cmd.orchestrator.validate_plan", return_value=(True, [])),
@@ -132,7 +129,11 @@ class TestDefaultCreatePlanPassesRepoRoot:
 
     def test_cwd_is_repo_root_not_idea_dir(self, tmp_path):
         fake, expected_repo_root = _run_default_create_plan(tmp_path)
-        _assert_repo_root_cwd(fake, expected_repo_root)
+        _, command, cwd = fake.calls[0]
+        assert isinstance(command, ClaudeCodeCommand)
+        assert cwd == expected_repo_root
+        assert command.cwd == expected_repo_root
+        assert command.allowed_tools is not None
 
 
 @pytest.mark.unit

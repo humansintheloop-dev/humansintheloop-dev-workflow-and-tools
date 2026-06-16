@@ -369,6 +369,25 @@ class TestClaudeRunnerExecute:
         assert result.result_text == "hello world"
 
 
+@pytest.mark.integration_claude
+class TestClaudeRunnerExecuteRealClaude:
+    """ClaudeRunner.execute() against the real claude CLI returns parsed result_text."""
+
+    def test_execute_batch_returns_result_text_from_real_claude(self, tmp_path):
+        command = ClaudeCodeCommand(
+            prompt="Reply with exactly the word: pong",
+            cwd=str(tmp_path),
+            interactive=False,
+            allowed_tools="Read(/dev/null)",
+        )
+
+        result = ClaudeRunner().execute(command)
+
+        assert result.returncode == 0
+        assert result.result_text
+        assert not result.result_text.startswith("{")
+
+
 @pytest.mark.unit
 class TestClaudeRunnerRun:
     """ClaudeRunner.run() dispatches to run_interactive or run_batch."""

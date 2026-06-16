@@ -348,6 +348,29 @@ class TestClaudeRunnerExecute:
         assert "-p" not in args[0]
         assert result.result_text == ""
 
+    def test_execute_interactive_with_resume(self, mocker):
+        mock_completed = MagicMock()
+        mock_completed.returncode = 0
+        mock_run = mocker.patch(
+            'i2code.implement.claude_runner.subprocess.run',
+            return_value=mock_completed,
+        )
+
+        runner = ClaudeRunner(interactive=True)
+        command = ClaudeCodeCommand(
+            prompt="p",
+            cwd="/c",
+            interactive=True,
+            session_id=SessionId("abc123", is_new=False),
+        )
+
+        runner.execute(command)
+
+        mock_run.assert_called_once()
+        args, kwargs = mock_run.call_args
+        assert args[0] == ["claude", "--resume", "abc123", "p"]
+        assert kwargs.get("cwd") == "/c"
+
     def test_execute_batch_with_allowed_tools_emits_expected_argv(self, mocker):
         mock_stdout = MagicMock()
         mock_stderr = MagicMock()

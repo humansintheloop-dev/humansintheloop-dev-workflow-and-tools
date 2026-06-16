@@ -157,15 +157,15 @@ Adds the interactive dispatch path to `ClaudeRunner.execute()`, adds `--resume` 
     - [x] Update `_build_argv` and `execute()` in `src/i2code/implement/claude_runner.py` so the interactive branch appends `command.prompt` positionally (no `-p`)
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 3.2: `ClaudeRunner.execute()` interactive path renders `--resume <id>` for `is_new=False`**
+- [x] **Task 3.2: `ClaudeRunner.execute()` interactive path renders `--resume <id>` for `is_new=False`**
   - TaskType: OUTCOME
   - Entrypoint: `ClaudeRunner(interactive=True).execute(ClaudeCodeCommand(prompt="p", cwd="/c", interactive=True, session_id=SessionId("abc123", is_new=False)))`
   - Observable: `subprocess.run` is invoked with `["claude", "--resume", "abc123", "p"]`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py::TestClaudeRunnerExecute::test_execute_interactive_with_resume -v -m unit` exits 0.
   - Steps:
-    - [ ] Write failing test asserting argv with `--resume`
-    - [ ] Extend `_build_argv` in `src/i2code/implement/claude_runner.py` to render `["--resume", session_id.session_id]` when `command.session_id is not None and not command.session_id.is_new`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Write failing test asserting argv with `--resume`
+    - [x] Extend `_build_argv` in `src/i2code/implement/claude_runner.py` to render `["--resume", session_id.session_id]` when `command.session_id is not None and not command.session_id.is_new` (already implemented in ST2; this task locks in the behavior with a test)
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 3.3: `read_session_id(path) -> Optional[SessionId]` in `session_manager.py`**
   - TaskType: OUTCOME

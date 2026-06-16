@@ -130,16 +130,16 @@ Implements the primary scenario from spec §6.1. Introduces `SessionId`, `Claude
     - [x] Run targeted pytest, confirm green, then run full unit suite (`uv run --python 3.12 python3 -m pytest tests/ -m unit`) to confirm no regressions
     - [x] Run `uvx pyright --level error src/` and confirm zero errors
 
-- [ ] **Task 2.6: Real Claude integration test for ClaudeRunner.execute() batch path**
+- [x] **Task 2.6: Real Claude integration test for ClaudeRunner.execute() batch path**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py -v -m integration_claude`
   - Observable: Invoking ClaudeRunner().execute(ClaudeCodeCommand(prompt=..., cwd=tmp_path, interactive=False, allowed_tools="Read(/dev/null)")) against the real claude CLI returns a ClaudeResult with returncode == 0, non-empty result_text, and result_text that does NOT start with { (proving the stream-json type=result message was extracted rather than the raw JSON stdout being returned verbatim).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py -m integration_claude -v exits 0; new test class TestClaudeRunnerExecuteRealClaude with test test_execute_batch_returns_result_text_from_real_claude.`
   - Steps:
-    - [ ] Add new test class TestClaudeRunnerExecuteRealClaude in tests/implement/test_claude_runner.py decorated with @pytest.mark.integration_claude (marker already registered in pytest.ini:6)
-    - [ ] Write test_execute_batch_returns_result_text_from_real_claude(tmp_path) that constructs a ClaudeCodeCommand with a deterministic prompt (e.g. Reply with exactly the word: pong), cwd=str(tmp_path), interactive=False, and a minimal allowed_tools flag, then calls ClaudeRunner().execute(cmd)
-    - [ ] Assert result.returncode == 0, result.result_text is non-empty, and result.result_text does not start with { (proving stream-json result extraction populated result_text rather than returning the raw JSON stdout)
-    - [ ] Run uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py -m integration_claude -v and confirm exit 0 (this requires claude on PATH and is excluded from the default -m unit run)
+    - [x] Add new test class TestClaudeRunnerExecuteRealClaude in tests/implement/test_claude_runner.py decorated with @pytest.mark.integration_claude (marker already registered in pytest.ini:6)
+    - [x] Write test_execute_batch_returns_result_text_from_real_claude(tmp_path) that constructs a ClaudeCodeCommand with a deterministic prompt (e.g. Reply with exactly the word: pong), cwd=str(tmp_path), interactive=False, and a minimal allowed_tools flag, then calls ClaudeRunner().execute(cmd)
+    - [x] Assert result.returncode == 0, result.result_text is non-empty, and result.result_text does not start with { (proving stream-json result extraction populated result_text rather than returning the raw JSON stdout)
+    - [x] Run uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py -m integration_claude -v and confirm exit 0 (this requires claude on PATH and is excluded from the default -m unit run)
 
 ---
 

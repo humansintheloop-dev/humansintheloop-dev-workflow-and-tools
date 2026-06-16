@@ -4,9 +4,9 @@ import os
 import sys
 from datetime import datetime
 
-from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.claude_runner import ClaudeCodeCommand, ClaudeResult
 from i2code.implement.idea_project import IdeaProject
-from i2code.session_manager import build_session_args
+from i2code.session_manager import read_session_id
 from i2code.template_renderer import render_template
 
 
@@ -60,7 +60,9 @@ def create_design(
         "DESIGN_SKILLS": design_skills,
     })
 
-    session_args = build_session_args(project.session_id_file)
-    cmd = ["claude"] + session_args + [prompt]
-
-    return claude_runner.run_interactive(cmd, cwd=project.directory)
+    return claude_runner.execute(ClaudeCodeCommand(
+        prompt=prompt,
+        cwd=project.directory,
+        interactive=True,
+        session_id=read_session_id(project.session_id_file),
+    ))

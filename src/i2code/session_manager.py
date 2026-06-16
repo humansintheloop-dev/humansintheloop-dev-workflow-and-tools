@@ -4,9 +4,11 @@ import os
 import uuid
 from typing import Optional
 
+from i2code.implement.claude_runner import SessionId
 
-def read_session_id(path: str) -> Optional[str]:
-    """Read session ID from file if it exists.
+
+def _read_session_id_str(path: str) -> Optional[str]:
+    """Read session ID string from file if it exists.
 
     Args:
         path: Path to the session ID file
@@ -20,6 +22,21 @@ def read_session_id(path: str) -> Optional[str]:
         return f.read().strip()
 
 
+def read_session_id(path: str) -> Optional[SessionId]:
+    """Read session ID from file as a typed SessionId.
+
+    Args:
+        path: Path to the session ID file
+
+    Returns:
+        SessionId(session_id, is_new=False) if file exists, else None
+    """
+    session_id = _read_session_id_str(path)
+    if session_id is None:
+        return None
+    return SessionId(session_id=session_id, is_new=False)
+
+
 def build_session_args(session_id_path: str) -> list[str]:
     """Build Claude CLI args for session resume.
 
@@ -29,7 +46,7 @@ def build_session_args(session_id_path: str) -> list[str]:
     Returns:
         ["--resume", id] if session file exists, else empty list
     """
-    session_id = read_session_id(session_id_path)
+    session_id = _read_session_id_str(session_id_path)
     if session_id:
         return ["--resume", session_id]
     return []
@@ -62,7 +79,7 @@ def get_or_create_session_args(session_id_path: str) -> list[str]:
     Returns:
         List of CLI args for session management
     """
-    session_id = read_session_id(session_id_path)
+    session_id = _read_session_id_str(session_id_path)
     if session_id:
         return ["--resume", session_id]
     new_id = create_session_id(session_id_path)

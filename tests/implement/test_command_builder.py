@@ -51,6 +51,17 @@ def _build_fix_cmd(**overrides):
     return CommandBuilder().build_fix_command(**defaults)
 
 
+def _build_recovery_cmd(**overrides):
+    defaults = dict(
+        plan_file="docs/features/my-feature/my-feature-plan.md",
+        diff_summary="some diff output",
+        cwd="/cwd",
+        interactive=True,
+    )
+    defaults.update(overrides)
+    return CommandBuilder().build_recovery_command(**defaults)
+
+
 def _build_ci_fix_cmd(**overrides):
     defaults = dict(run_id=12345, workflow_name="CI Build", failure_logs="Error: test failed", interactive=True)
     defaults.update(overrides)
@@ -213,6 +224,30 @@ class TestCommandBuilderFixCommand:
         cmd = _build_fix_cmd(feedback_content="Please add tests", fix_description="Add unit tests")
         assert "Please add tests" in cmd.prompt
         assert "Add unit tests" in cmd.prompt
+
+
+@pytest.mark.unit
+class TestCommandBuilderRecoveryCommand:
+    """Test building commit-recovery commands."""
+
+    def test_build_recovery_command_returns_dataclass(self):
+        cmd = _build_recovery_cmd(cwd="/work/tree", interactive=False)
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.cwd == "/work/tree"
+        assert cmd.interactive is False
+        assert cmd.prompt is not None
+
+    def test_interactive_flag_mapped_from_parameter(self):
+        cmd = _build_recovery_cmd(interactive=True)
+        assert cmd.interactive is True
+
+    def test_includes_plan_file_in_prompt(self):
+        cmd = _build_recovery_cmd(plan_file="docs/features/my-feature/my-feature-plan.md")
+        assert "docs/features/my-feature/my-feature-plan.md" in cmd.prompt
+
+    def test_includes_diff_summary_in_prompt(self):
+        cmd = _build_recovery_cmd(diff_summary="diff --git a/foo b/foo")
+        assert "diff --git a/foo b/foo" in cmd.prompt
 
 
 @pytest.mark.unit

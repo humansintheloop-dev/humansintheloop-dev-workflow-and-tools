@@ -383,15 +383,15 @@ Migrates the fix-path in `pull_request_review_processor.py` (both mock-binary sh
 
 Migrates `commit_recovery.py:48`. This is a non-mock single-site migration; it exercises `CommandBuilder` plumbing established earlier.
 
-- [ ] **Task 10.1: `CommandBuilder.build_recovery_command` returns a `ClaudeCodeCommand`**
+- [x] **Task 10.1: `CommandBuilder.build_recovery_command` returns a `ClaudeCodeCommand`**
   - TaskType: OUTCOME
   - Entrypoint: `CommandBuilder().build_recovery_command(plan_file, diff_summary, cwd=working_tree_dir, interactive=True)`
   - Observable: Returns a `ClaudeCodeCommand` with `prompt = render_template("commit_recovery.j2", ...)`, `cwd=working_tree_dir`, `interactive=True` (or `False` as supplied).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_command_builder.py -v -m unit -k "build_recovery_command"` exits 0.
   - Steps:
-    - [ ] Update existing tests for `build_recovery_command` to assert dataclass return type
-    - [ ] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:54` with a `ClaudeCodeCommand` constructor
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update existing tests for `build_recovery_command` to assert dataclass return type
+    - [x] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:54` with a `ClaudeCodeCommand` constructor
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 10.2: `commit_recovery` invokes `execute()` with the `ClaudeCodeCommand` from `build_recovery_command`**
   - TaskType: OUTCOME

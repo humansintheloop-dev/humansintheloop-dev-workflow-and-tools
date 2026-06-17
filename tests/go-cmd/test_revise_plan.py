@@ -36,12 +36,13 @@ def _fake_renderer(template_name, variables):
 
 
 def _run_revise_plan(project, runner=None):
-    """Run revise_plan with a ready project and sensible defaults."""
+    """Run revise_plan with a ready project and return (runner, method, cmd, cwd)."""
     _create_all_files(project)
     if runner is None:
         runner = FakeClaudeRunner()
     revise_plan(project, runner, _fake_renderer)
-    return runner
+    method, cmd, cwd = runner.calls[0]
+    return runner, method, cmd, cwd
 
 
 def _create_files_except(project, excluded_suffix):
@@ -72,26 +73,25 @@ class TestRevisePlanTemplateRendering:
 
     def test_renders_template_with_idea_spec_and_plan(self):
         with TempIdeaProject("my-feature") as project:
-            runner = _run_revise_plan(project)
-            prompt = runner.calls[0][1][-1]
-            assert "revise-plan.md" in prompt
-            assert project.idea_file in prompt
-            assert project.spec_file in prompt
-            assert project.plan_file in prompt
+            _, _, cmd, _ = _run_revise_plan(project)
+            assert "revise-plan.md" in cmd.prompt
+            assert project.idea_file in cmd.prompt
+            assert project.spec_file in cmd.prompt
+            assert project.plan_file in cmd.prompt
 
 
 @pytest.mark.unit
 class TestRevisePlanClaudeInvocation:
 
-    def test_invokes_claude_in_interactive_mode(self):
+    def test_invokes_claude_via_execute(self):
         with TempIdeaProject("my-feature") as project:
-            runner = _run_revise_plan(project)
-            assert runner.calls[0][0] == "run_interactive"
+            _, method, _, _ = _run_revise_plan(project)
+            assert method == "execute"
 
-    def test_claude_command_starts_with_claude(self):
+    def test_command_is_interactive(self):
         with TempIdeaProject("my-feature") as project:
-            runner = _run_revise_plan(project)
-            assert runner.calls[0][1][0] == "claude"
+            _, _, cmd, _ = _run_revise_plan(project)
+            assert cmd.interactive is True
 
 
 @pytest.mark.unit
@@ -109,20 +109,15 @@ class TestRevisePlanAllowedTools:
         revise_plan(project, runner, _fake_renderer, repo_root=repo_root)
 
         _, cmd, cwd = runner.calls[0]
-        assert "--allowedTools" in cmd
-        allowed_tools_idx = cmd.index("--allowedTools")
-        allowed_tools_value = cmd[allowed_tools_idx + 1]
-        assert f"Read(/{repo_root}/**)" in allowed_tools_value
-        assert f"Write(/{idea_dir}/**)" in allowed_tools_value
-        assert f"Edit(/{idea_dir}/**)" in allowed_tools_value
+        assert cmd.allowed_tools is not None
+        assert f"Read(/{repo_root}/**)" in cmd.allowed_tools
+        assert f"Write(/{idea_dir}/**)" in cmd.allowed_tools
+        assert f"Edit(/{idea_dir}/**)" in cmd.allowed_tools
         assert cwd == repo_root
 
     def test_standalone_no_allowed_tools(self):
-        """Standalone revise_plan (no repo_root) omits --allowedTools and uses project.directory as cwd."""
+        """Standalone revise_plan (no repo_root) omits allowed_tools and uses project.directory as cwd."""
         with TempIdeaProject("my-feature") as project:
-            _create_all_files(project)
-            runner = FakeClaudeRunner()
-            revise_plan(project, runner, _fake_renderer)
-            _, cmd, cwd = runner.calls[0]
-            assert "--allowedTools" not in cmd
+            _, _, cmd, cwd = _run_revise_plan(project)
+            assert cmd.allowed_tools is None
             assert cwd == project.directory

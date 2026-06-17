@@ -59,14 +59,6 @@ def _make_idea_project_with_plan(tmp_path, name="my-feature"):
     return project, repo_root
 
 
-def _assert_repo_root_cwd(fake, expected_repo_root):
-    _, cmd, cwd = fake.calls[0]
-    assert cwd == expected_repo_root, (
-        f"Expected cwd={expected_repo_root}, got cwd={cwd}"
-    )
-    assert "--allowedTools" in cmd
-
-
 def _assert_command_cwd_is_repo_root(fake, expected_repo_root):
     _, command, cwd = fake.calls[0]
     assert isinstance(command, ClaudeCodeCommand)
@@ -154,4 +146,4 @@ class TestDefaultRevisePlanPassesRepoRoot:
         project, expected_repo_root = _make_idea_project_with_plan(tmp_path)
         _default_revise_plan(project)
 
-        _assert_repo_root_cwd(fake, expected_repo_root)
+        _assert_command_cwd_is_repo_root(fake, expected_repo_root)

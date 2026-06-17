@@ -63,40 +63,36 @@ class TestReviseSpecPromptContent:
     def test_prompt_contains_idea_file_path(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_revise_spec(project)
-            prompt = cmd[-1]
-            assert project.idea_file in prompt
+            assert project.idea_file in cmd.prompt
 
     def test_prompt_contains_discussion_file_path(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_revise_spec(project)
-            prompt = cmd[-1]
-            assert project.discussion_file in prompt
+            assert project.discussion_file in cmd.prompt
 
     def test_prompt_contains_spec_file_path(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_revise_spec(project)
-            prompt = cmd[-1]
-            assert project.spec_file in prompt
+            assert project.spec_file in cmd.prompt
 
     def test_prompt_describes_three_files(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_revise_spec(project)
-            prompt = cmd[-1]
-            assert "three files" in prompt.lower()
+            assert "three files" in cmd.prompt.lower()
 
 
 @pytest.mark.unit
 class TestReviseSpecClaudeInvocation:
 
-    def test_invokes_claude_interactively(self):
+    def test_invokes_claude_via_execute(self):
         with TempIdeaProject("my-feature") as project:
             _, _, method, _, _ = _run_revise_spec(project)
-            assert method == "run_interactive"
+            assert method == "execute"
 
-    def test_claude_command_starts_with_claude(self):
+    def test_command_is_interactive(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_revise_spec(project)
-            assert cmd[0] == "claude"
+            assert cmd.interactive is True
 
     def test_returns_claude_result(self):
         with TempIdeaProject("my-feature") as project:
@@ -127,17 +123,15 @@ class TestReviseSpecAllowedTools:
         revise_spec(project, runner, repo_root=repo_root)
 
         _, cmd, cwd = runner.calls[0]
-        assert "--allowedTools" in cmd
-        allowed_tools_idx = cmd.index("--allowedTools")
-        allowed_tools_value = cmd[allowed_tools_idx + 1]
-        assert f"Read(/{repo_root}/**)" in allowed_tools_value
-        assert f"Write(/{idea_dir}/**)" in allowed_tools_value
-        assert f"Edit(/{idea_dir}/**)" in allowed_tools_value
+        assert cmd.allowed_tools is not None
+        assert f"Read(/{repo_root}/**)" in cmd.allowed_tools
+        assert f"Write(/{idea_dir}/**)" in cmd.allowed_tools
+        assert f"Edit(/{idea_dir}/**)" in cmd.allowed_tools
         assert cwd == repo_root
 
     def test_standalone_no_allowed_tools(self):
-        """Standalone revise_spec (no repo_root) omits --allowedTools and uses project.directory as cwd."""
+        """Standalone revise_spec (no repo_root) omits allowed_tools and uses project.directory as cwd."""
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, cwd = _run_revise_spec(project)
-            assert "--allowedTools" not in cmd
+            assert cmd.allowed_tools is None
             assert cwd == project.directory

@@ -5,7 +5,12 @@ import tempfile
 
 import pytest
 
-from i2code.implement.claude_runner import CapturedOutput, ClaudeResult, DiagnosticInfo
+from i2code.implement.claude_runner import (
+    CapturedOutput,
+    ClaudeCodeCommand,
+    ClaudeResult,
+    DiagnosticInfo,
+)
 from i2code.implement.implement_opts import ImplementOpts
 
 
@@ -13,82 +18,6 @@ def _opts(**kwargs):
     """Build ImplementOpts with defaults suitable for project setup tests."""
     kwargs.setdefault("idea_directory", "/tmp/fake-idea")
     return ImplementOpts(**kwargs)
-
-
-@pytest.mark.unit
-class TestBuildScaffoldingPrompt:
-    """Test build_scaffolding_prompt() constructs correct Claude commands."""
-
-    def test_interactive_mode_returns_claude_with_prompt(self):
-        """Interactive mode should return ['claude', <prompt>]."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        cmd = CommandBuilder().build_scaffolding_command("/tmp/docs/features/my-service", interactive=True)
-
-        assert cmd[0] == "claude"
-        assert len(cmd) == 2
-        # Second element is the prompt string
-        assert isinstance(cmd[1], str)
-
-    def test_non_interactive_mode_returns_claude_with_p_flag(self):
-        """Non-interactive mode should return ['claude', '--verbose', '--output-format=stream-json', '-p', <prompt>]."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        cmd = CommandBuilder().build_scaffolding_command("/tmp/docs/features/my-service", interactive=False)
-
-        assert cmd[0] == "claude"
-        assert "--verbose" in cmd
-        assert "--output-format=stream-json" in cmd
-        assert "-p" in cmd
-        # Prompt should be the last element (after -p)
-        p_index = cmd.index("-p")
-        assert p_index == len(cmd) - 2
-        assert isinstance(cmd[p_index + 1], str)
-
-    def test_prompt_references_idea_files(self):
-        """Prompt should reference the idea directory files."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        cmd = CommandBuilder().build_scaffolding_command("/tmp/docs/features/my-service", interactive=True)
-        prompt = cmd[1]
-
-        assert "/tmp/docs/features/my-service" in prompt
-        assert "*-idea.*" in prompt or "idea" in prompt.lower()
-        assert "*-spec.md" in prompt or "spec" in prompt.lower()
-
-    def test_prompt_describes_scaffolding_goals(self):
-        """Prompt should describe desired scaffolding outcome without prescribing versions."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        cmd = CommandBuilder().build_scaffolding_command("/tmp/docs/features/my-service", interactive=True)
-        prompt = cmd[1]
-
-        # Should mention key scaffolding concepts
-        assert "ci.yaml" in prompt.lower() or "ci" in prompt.lower()
-        assert "scaffold" in prompt.lower() or "placeholder" in prompt.lower()
-        assert "commit" in prompt.lower()
-
-    def test_mock_claude_returns_mock_script_command(self):
-        """When mock_claude is provided, should return [mock_script, 'setup']."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        cmd = CommandBuilder().build_scaffolding_command(
-            "/tmp/docs/features/my-service",
-            mock_claude="/path/to/mock-claude.sh"
-        )
-
-        assert cmd == ["/path/to/mock-claude.sh", "setup"]
-
-    def test_mock_claude_none_returns_normal_command(self):
-        """When mock_claude is None, should return normal Claude command."""
-        from i2code.implement.command_builder import CommandBuilder
-
-        cmd = CommandBuilder().build_scaffolding_command(
-            "/tmp/docs/features/my-service",
-            mock_claude=None
-        )
-
-        assert cmd[0] == "claude"
 
 
 @pytest.mark.unit
@@ -194,21 +123,9 @@ class TestRunScaffolding:
 
         return ScaffoldingCreator(command_builder=CommandBuilder(), claude_runner=fake_runner)
 
-    def test_interactive_calls_run(self):
-        from tests.implement.fake_claude_runner import FakeClaudeRunner
-
-        fake = FakeClaudeRunner()
-        creator = self._make_creator(fake)
-
-        creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=True)
-
-        assert len(fake.calls) == 1
-        method, cmd, cwd = fake.calls[0]
-        assert method == "run"
-        assert cmd[0] == "claude"
-        assert cwd == "/tmp/repo"
-
-    def test_non_interactive_calls_run(self):
+    @pytest.mark.parametrize("interactive", [True, False])
+    def test_calls_execute_with_build_scaffolding_command(self, interactive):
+        from i2code.implement.command_builder import CommandBuilder
         from tests.implement.fake_claude_runner import FakeClaudeRunner
 
         fake = FakeClaudeRunner()
@@ -217,16 +134,18 @@ class TestRunScaffolding:
         ))
         creator = self._make_creator(fake)
 
-        creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=False)
+        creator.run_scaffolding("/tmp/idea", cwd="/tmp/repo", interactive=interactive)
 
         assert len(fake.calls) == 1
         method, cmd, cwd = fake.calls[0]
-        assert method == "run"
-        assert cmd[0] == "claude"
-        assert "-p" in cmd
+        assert method == "execute"
+        expected = CommandBuilder().build_scaffolding_command(
+            "/tmp/idea", cwd="/tmp/repo", interactive=interactive,
+        )
+        assert cmd == expected
         assert cwd == "/tmp/repo"
 
-    def test_forwards_mock_claude(self):
+    def test_mock_claude_executes_mock_command(self):
         from tests.implement.fake_claude_runner import FakeClaudeRunner
 
         fake = FakeClaudeRunner()
@@ -236,8 +155,10 @@ class TestRunScaffolding:
 
         assert len(fake.calls) == 1
         method, cmd, cwd = fake.calls[0]
-        assert method == "run"
-        assert cmd == ["/mock.sh", "setup"]
+        assert method == "execute"
+        assert cmd == ClaudeCodeCommand(
+            cwd="/tmp/repo", mock_command=["/mock.sh", "setup"],
+        )
 
 
 class FakeBuildFixer:

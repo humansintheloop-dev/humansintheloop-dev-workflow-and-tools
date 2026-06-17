@@ -410,27 +410,27 @@ Migrates `commit_recovery.py:48`. This is a non-mock single-site migration; it e
 
 Migrates `project_scaffolding.py:35` and the mock short-circuit at `command_builder.py:124-125`. The `mock_claude` parameter is REMOVED from `build_scaffolding_command` and the mock pattern moves to the caller.
 
-- [ ] **Task 11.1: `CommandBuilder.build_scaffolding_command` returns a `ClaudeCodeCommand` and no longer accepts `mock_claude`**
+- [x] **Task 11.1: `CommandBuilder.build_scaffolding_command` returns a `ClaudeCodeCommand` and no longer accepts `mock_claude`**
   - TaskType: OUTCOME
   - Entrypoint: `CommandBuilder().build_scaffolding_command(idea_directory, cwd=working_tree_dir, interactive=False)`
   - Observable: Returns a `ClaudeCodeCommand` with `prompt = render_template("scaffolding.j2", ...)`, `cwd=working_tree_dir`, `interactive=False`, `allowed_tools="Write,Read,Edit,Bash(gradle --version),Bash(mkdir -p:*)"`. The `mock_claude` parameter is gone — calling with it raises `TypeError`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_command_builder.py -v -m unit -k "build_scaffolding_command"` exits 0; new test `test_build_scaffolding_command_no_longer_accepts_mock_claude`.
   - Steps:
-    - [ ] Update existing `build_scaffolding_command` tests to drop the `mock_claude` argument and assert dataclass return; add `TypeError` test for `mock_claude=` kwarg
-    - [ ] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:108` with `ClaudeCodeCommand(prompt=..., cwd=..., interactive=False, allowed_tools="Write,Read,Edit,Bash(gradle --version),Bash(mkdir -p:*)")` for the batch case and `ClaudeCodeCommand(prompt=..., cwd=..., interactive=True)` for interactive
-    - [ ] DELETE the `mock_claude` parameter from `build_scaffolding_command`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update existing `build_scaffolding_command` tests to drop the `mock_claude` argument and assert dataclass return; add `TypeError` test for `mock_claude=` kwarg
+    - [x] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:108` with `ClaudeCodeCommand(prompt=..., cwd=..., interactive=False, allowed_tools="Write,Read,Edit,Bash(gradle --version),Bash(mkdir -p:*)")` for the batch case and `ClaudeCodeCommand(prompt=..., cwd=..., interactive=True)` for interactive
+    - [x] DELETE the `mock_claude` parameter from `build_scaffolding_command`
+    - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 11.2: `project_scaffolding` builds mock or real `ClaudeCodeCommand` at the caller**
+- [x] **Task 11.2: `project_scaffolding` builds mock or real `ClaudeCodeCommand` at the caller**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.implement.project_scaffolding.run_scaffolding(idea_directory, claude_runner, mock_claude=None, cwd=working_tree_dir)` (call site at `src/i2code/implement/project_scaffolding.py:35`)
   - Observable: When `mock_claude` is set, `fake.calls` records `("execute", ClaudeCodeCommand(cwd=working_tree_dir, mock_command=[mock_claude, "setup"]))`. When unset, the recorded command matches the output of `build_scaffolding_command(idea_directory, cwd=working_tree_dir, interactive=False)`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_project_scaffolding.py -v -m unit` exits 0.
   - Steps:
-    - [ ] Update `test_project_scaffolding.py` tests to assert both mock and non-mock branches construct the right `ClaudeCodeCommand`
-    - [ ] In `src/i2code/implement/project_scaffolding.py:35`, wrap the call with a branch: if `mock_claude` is set, construct `ClaudeCodeCommand(cwd=..., mock_command=[mock_claude, "setup"])`; else call `build_scaffolding_command(...)`
-    - [ ] Replace dispatch with `claude_runner.execute(cmd)`
-    - [ ] Run targeted pytest and full unit suite; both green
+    - [x] Update `test_project_scaffolding.py` tests to assert both mock and non-mock branches construct the right `ClaudeCodeCommand`
+    - [x] In `src/i2code/implement/project_scaffolding.py:35`, wrap the call with a branch: if `mock_claude` is set, construct `ClaudeCodeCommand(cwd=..., mock_command=[mock_claude, "setup"])`; else call `build_scaffolding_command(...)`
+    - [x] Replace dispatch with `claude_runner.execute(cmd)`
+    - [x] Run targeted pytest and full unit suite; both green
 
 ---
 

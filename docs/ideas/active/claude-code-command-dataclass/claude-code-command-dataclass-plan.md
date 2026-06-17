@@ -566,17 +566,17 @@ Final cleanup step. Removes all deprecated symbols and renames the module-level 
     - [x] Search for any remaining test imports of `run_claude_interactive` or `run_claude_with_output_capture` and either delete them or update to the private names where the tests legitimately exercise the dispatch layer
     - [x] Run full unit suite, confirm green
 
-- [ ] **Task 15.2: Remove `build_session_args`, `get_or_create_session_args`, and the public string-returning `read_session_id` aliasing from `session_manager.py`**
+- [x] **Task 15.2: Remove `build_session_args`, `get_or_create_session_args`, and the public string-returning `read_session_id` aliasing from `session_manager.py`**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/ -m unit`
   - Observable: `grep -rn 'build_session_args\|get_or_create_session_args' src/i2code/ --include='*.py'` returns zero matches. The only public symbols in `src/i2code/session_manager.py` are `read_session_id(path) -> Optional[SessionId]`, `read_or_create_session(path) -> SessionId`, and `create_session_id(path) -> str` (still used internally by `read_or_create_session`).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/ -m unit` exits 0 and `uvx pyright --level error src/` exits 0 after the deletions.
   - Steps:
-    - [ ] Delete `build_session_args` at `src/i2code/session_manager.py:23`
-    - [ ] Delete `get_or_create_session_args` at `src/i2code/session_manager.py:53`
-    - [ ] Confirm `_read_session_id_str` (renamed in Task 3.3) is now unused by external callers; if so, inline it into `read_or_create_session` and delete the helper
-    - [ ] Update any tests in `tests/` that exercised the deleted helpers — they should already have been migrated through Steel Threads 3–14; if any remain, delete them
-    - [ ] Run full unit suite, confirm green
+    - [x] Delete `build_session_args` at `src/i2code/session_manager.py:23`
+    - [x] Delete `get_or_create_session_args` at `src/i2code/session_manager.py:53`
+    - [x] Confirm `_read_session_id_str` (renamed in Task 3.3) is now unused by external callers; if so, inline it into `read_or_create_session` and delete the helper
+    - [x] Update any tests in `tests/` that exercised the deleted helpers — they should already have been migrated through Steel Threads 3–14; if any remain, delete them
+    - [x] Run full unit suite, confirm green
 
 - [ ] **Task 15.3: Remove `CommandBuilder._with_mode` helper**
   - TaskType: REFACTOR

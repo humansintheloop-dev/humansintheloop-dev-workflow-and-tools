@@ -1,4 +1,4 @@
-"""Tests for session_manager: reads session ID and builds session args."""
+"""Tests for session_manager: reads session ID."""
 
 
 import pytest
@@ -24,22 +24,3 @@ class TestReadSessionId:
 
         result = read_session_id("/nonexistent/path/sessionID.txt")
         assert result is None
-
-
-@pytest.mark.unit
-class TestBuildSessionArgs:
-
-    def test_returns_resume_args_when_session_file_exists(self):
-        from i2code.session_manager import build_session_args
-
-        with TempIdeaProject("my-feature") as project:
-            with open(project.session_id_file, "w") as f:
-                f.write("session-xyz")
-            result = build_session_args(project.session_id_file)
-            assert result == ["--resume", "session-xyz"]
-
-    def test_returns_empty_list_when_no_session_file(self):
-        from i2code.session_manager import build_session_args
-
-        result = build_session_args("/nonexistent/path/sessionID.txt")
-        assert result == []

@@ -21,7 +21,7 @@ def _create_idea_file(project, content="My idea"):
 
 
 def _run_create_spec(project, runner=None):
-    """Run create_spec with a ready project and return (runner, method, cmd, cwd)."""
+    """Run create_spec with a ready project and return (runner, result, method, cmd, cwd)."""
     _create_idea_file(project)
     if runner is None:
         runner = FakeClaudeRunner()
@@ -47,9 +47,8 @@ class TestCreateSpecTemplateRendering:
     def test_renders_template_with_idea_and_discussion_files(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_create_spec(project)
-            prompt = cmd[-1]
-            assert project.idea_file in prompt
-            assert project.discussion_file in prompt
+            assert project.idea_file in cmd.prompt
+            assert project.discussion_file in cmd.prompt
 
 
 @pytest.mark.unit
@@ -65,27 +64,28 @@ class TestCreateSpecSessionResume:
             create_spec(project, runner)
 
             _, cmd, _ = runner.calls[0]
-            assert "--resume" in cmd
-            assert "existing-session-id" in cmd
+            assert cmd.session_id is not None
+            assert cmd.session_id.session_id == "existing-session-id"
+            assert cmd.session_id.is_new is False
 
     def test_no_resume_when_no_session_file(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_create_spec(project)
-            assert "--resume" not in cmd
+            assert cmd.session_id is None
 
 
 @pytest.mark.unit
 class TestCreateSpecClaudeInvocation:
 
-    def test_invokes_claude_interactively(self):
+    def test_invokes_claude_via_execute(self):
         with TempIdeaProject("my-feature") as project:
             _, _, method, _, _ = _run_create_spec(project)
-            assert method == "run_interactive"
+            assert method == "execute"
 
-    def test_claude_command_starts_with_claude(self):
+    def test_command_is_interactive(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_create_spec(project)
-            assert cmd[0] == "claude"
+            assert cmd.interactive is True
 
     def test_returns_claude_result(self):
         with TempIdeaProject("my-feature") as project:
@@ -110,17 +110,15 @@ class TestCreateSpecAllowedTools:
         create_spec(project, runner, repo_root=repo_root)
 
         _, cmd, cwd = runner.calls[0]
-        assert "--allowedTools" in cmd
-        allowed_tools_idx = cmd.index("--allowedTools")
-        allowed_tools_value = cmd[allowed_tools_idx + 1]
-        assert f"Read(/{repo_root}/**)" in allowed_tools_value
-        assert f"Write(/{idea_dir}/**)" in allowed_tools_value
-        assert f"Edit(/{idea_dir}/**)" in allowed_tools_value
+        assert cmd.allowed_tools is not None
+        assert f"Read(/{repo_root}/**)" in cmd.allowed_tools
+        assert f"Write(/{idea_dir}/**)" in cmd.allowed_tools
+        assert f"Edit(/{idea_dir}/**)" in cmd.allowed_tools
         assert cwd == repo_root
 
     def test_standalone_no_allowed_tools(self):
-        """Standalone create_spec (no repo_root) omits --allowedTools and uses project.directory as cwd."""
+        """Standalone create_spec (no repo_root) omits allowed_tools and uses project.directory as cwd."""
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, cwd = _run_create_spec(project)
-            assert "--allowedTools" not in cmd
+            assert cmd.allowed_tools is None
             assert cwd == project.directory

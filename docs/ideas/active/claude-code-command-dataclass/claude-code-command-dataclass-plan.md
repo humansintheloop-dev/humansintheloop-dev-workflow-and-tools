@@ -474,15 +474,15 @@ Migrates the six remaining interactive direct-argv sites. They all share the sim
     - [x] Replace argv assembly at `src/i2code/setup_cmd/update_project.py:154` with a single `claude_runner.execute(ClaudeCodeCommand(...))`
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 13.2: `spec_cmd/create_spec` invokes `execute()` with a `ClaudeCodeCommand`**
+- [x] **Task 13.2: `spec_cmd/create_spec` invokes `execute()` with a `ClaudeCodeCommand`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.spec_cmd.create_spec.create_spec(project, claude_runner, ...)` (call site at `src/i2code/spec_cmd/create_spec.py:42`)
   - Observable: `fake.calls` records one `("execute", cmd, cwd)` with `cmd.interactive is True` and `cmd.prompt` equals the rendered create-spec prompt. Any allowed_tools currently in the argv become `cmd.allowed_tools`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/spec-cmd/ -v -m unit -k "create_spec"` exits 0.
   - Steps:
-    - [ ] Update existing test to assert the `ClaudeCodeCommand` shape
-    - [ ] Replace argv assembly at `src/i2code/spec_cmd/create_spec.py:42` with `claude_runner.execute(ClaudeCodeCommand(...))`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update existing test to assert the `ClaudeCodeCommand` shape
+    - [x] Replace argv assembly at `src/i2code/spec_cmd/create_spec.py:42` with `claude_runner.execute(ClaudeCodeCommand(...))`
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 13.3: `spec_cmd/revise_spec` invokes `execute()` with a `ClaudeCodeCommand`**
   - TaskType: OUTCOME
@@ -694,3 +694,6 @@ build_ci_fix_command now returns ClaudeCodeCommand with cwd parameter; failure-l
 
 ### 2026-06-16 21:25 - mark-task-complete
 update_project now invokes claude_runner.execute(ClaudeCodeCommand(prompt=..., cwd=..., interactive=True))
+
+### 2026-06-17 07:03 - mark-task-complete
+create_spec uses execute() with ClaudeCodeCommand; tests verify shape (interactive, prompt, session_id, allowed_tools); all 12 tests pass

@@ -322,39 +322,59 @@ class TestRunClaudeWithOutputCaptureResultText:
         assert result.result_text == "raw output\n"
 
 
+def _patch_interactive_run(mocker):
+    mock_completed = MagicMock()
+    mock_completed.returncode = 0
+    return mocker.patch(
+        'i2code.implement.claude_runner.subprocess.run',
+        return_value=mock_completed,
+    )
+
+
+def _patch_batch_popen(mocker, stdout_chunks=(b"",)):
+    mock_stdout = MagicMock()
+    mock_stderr = MagicMock()
+    mock_stdout.read1.side_effect = list(stdout_chunks)
+    mock_stderr.read1.side_effect = [b""]
+
+    mock_process = MagicMock()
+    mock_process.stdout = mock_stdout
+    mock_process.stderr = mock_stderr
+    mock_process.returncode = 0
+    return mocker.patch(
+        'i2code.implement.claude_runner.subprocess.Popen',
+        return_value=mock_process,
+    )
+
+
+def _assert_argv_and_cwd(mock_call, expected_argv, expected_cwd):
+    mock_call.assert_called_once()
+    args, kwargs = mock_call.call_args
+    assert args[0] == expected_argv
+    assert kwargs.get("cwd") == expected_cwd
+
+
 @pytest.mark.unit
 class TestClaudeRunnerExecute:
     """ClaudeRunner.execute(ClaudeCodeCommand) builds argv per spec §3.3."""
 
     def test_execute_interactive_no_session(self, mocker):
-        mock_completed = MagicMock()
-        mock_completed.returncode = 0
-        mock_run = mocker.patch(
-            'i2code.implement.claude_runner.subprocess.run',
-            return_value=mock_completed,
-        )
+        mock_run = _patch_interactive_run(mocker)
 
         runner = ClaudeRunner(interactive=True)
         command = ClaudeCodeCommand(prompt="p", cwd="/c", interactive=True)
 
         result = runner.execute(command)
 
-        mock_run.assert_called_once()
-        args, kwargs = mock_run.call_args
-        assert args[0] == ["claude", "p"]
-        assert kwargs.get("cwd") == "/c"
-        assert "--verbose" not in args[0]
-        assert "--output-format=stream-json" not in args[0]
-        assert "-p" not in args[0]
+        _assert_argv_and_cwd(mock_run, ["claude", "p"], "/c")
+        argv = mock_run.call_args[0][0]
+        assert "--verbose" not in argv
+        assert "--output-format=stream-json" not in argv
+        assert "-p" not in argv
         assert result.result_text == ""
 
     def test_execute_interactive_with_resume(self, mocker):
-        mock_completed = MagicMock()
-        mock_completed.returncode = 0
-        mock_run = mocker.patch(
-            'i2code.implement.claude_runner.subprocess.run',
-            return_value=mock_completed,
-        )
+        mock_run = _patch_interactive_run(mocker)
 
         runner = ClaudeRunner(interactive=True)
         command = ClaudeCodeCommand(
@@ -366,18 +386,10 @@ class TestClaudeRunnerExecute:
 
         runner.execute(command)
 
-        mock_run.assert_called_once()
-        args, kwargs = mock_run.call_args
-        assert args[0] == ["claude", "--resume", "abc123", "p"]
-        assert kwargs.get("cwd") == "/c"
+        _assert_argv_and_cwd(mock_run, ["claude", "--resume", "abc123", "p"], "/c")
 
     def test_execute_with_new_session_id(self, mocker):
-        mock_completed = MagicMock()
-        mock_completed.returncode = 0
-        mock_run = mocker.patch(
-            'i2code.implement.claude_runner.subprocess.run',
-            return_value=mock_completed,
-        )
+        mock_run = _patch_interactive_run(mocker)
 
         runner = ClaudeRunner(interactive=True)
         command = ClaudeCodeCommand(
@@ -389,27 +401,49 @@ class TestClaudeRunnerExecute:
 
         runner.execute(command)
 
-        mock_run.assert_called_once()
-        args, kwargs = mock_run.call_args
-        assert args[0] == ["claude", "--session-id", "newid", "p"]
-        assert kwargs.get("cwd") == "/c"
+        _assert_argv_and_cwd(mock_run, ["claude", "--session-id", "newid", "p"], "/c")
+
+    @pytest.mark.parametrize(
+        "add_dirs,expected_dir_args",
+        [
+            (["/d1"], ["--add-dir", "/d1"]),
+            (["/d1", "/d2"], ["--add-dir", "/d1", "--add-dir", "/d2"]),
+        ],
+        ids=["one_dir", "two_dirs"],
+    )
+    def test_execute_with_add_dirs(self, mocker, add_dirs, expected_dir_args):
+        mock_popen = _patch_batch_popen(mocker)
+
+        runner = ClaudeRunner(interactive=True, debug=False)
+        command = ClaudeCodeCommand(
+            prompt="p",
+            cwd="/c",
+            interactive=False,
+            allowed_tools="Read",
+            add_dirs=add_dirs,
+        )
+
+        runner.execute(command)
+
+        _assert_argv_and_cwd(
+            mock_popen,
+            [
+                "claude",
+                "--verbose",
+                "--output-format=stream-json",
+                "--allowedTools",
+                "Read",
+                *expected_dir_args,
+                "-p",
+                "p",
+            ],
+            "/c",
+        )
 
     def test_execute_batch_with_allowed_tools_emits_expected_argv(self, mocker):
-        mock_stdout = MagicMock()
-        mock_stderr = MagicMock()
-        mock_stdout.read1.side_effect = [
-            b'{"type":"result","result":"hello world"}\n',
-            b"",
-        ]
-        mock_stderr.read1.side_effect = [b""]
-
-        mock_process = MagicMock()
-        mock_process.stdout = mock_stdout
-        mock_process.stderr = mock_stderr
-        mock_process.returncode = 0
-        mock_popen = mocker.patch(
-            'i2code.implement.claude_runner.subprocess.Popen',
-            return_value=mock_process,
+        mock_popen = _patch_batch_popen(
+            mocker,
+            stdout_chunks=[b'{"type":"result","result":"hello world"}\n', b""],
         )
 
         runner = ClaudeRunner(interactive=True, debug=False)
@@ -422,18 +456,19 @@ class TestClaudeRunnerExecute:
 
         result = runner.execute(command)
 
-        mock_popen.assert_called_once()
-        args, kwargs = mock_popen.call_args
-        assert args[0] == [
-            "claude",
-            "--verbose",
-            "--output-format=stream-json",
-            "--allowedTools",
-            "Read(/repo/**)",
-            "-p",
-            "do task",
-        ]
-        assert kwargs.get("cwd") == "/repo"
+        _assert_argv_and_cwd(
+            mock_popen,
+            [
+                "claude",
+                "--verbose",
+                "--output-format=stream-json",
+                "--allowedTools",
+                "Read(/repo/**)",
+                "-p",
+                "do task",
+            ],
+            "/repo",
+        )
         assert result.result_text == "hello world"
 
 

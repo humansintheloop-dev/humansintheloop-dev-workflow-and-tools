@@ -233,15 +233,15 @@ Adds `--session-id` rendering for `session_id.is_new=True`, introduces `read_or_
 
 Adds `add_dirs` rendering to `ClaudeRunner.execute()` and migrates `src/i2code/improve/summary_reports.py` (including the second `result.result_text` consumer).
 
-- [ ] **Task 5.1: `ClaudeRunner.execute()` renders `--add-dir <path>` for each entry in `add_dirs`**
+- [x] **Task 5.1: `ClaudeRunner.execute()` renders `--add-dir <path>` for each entry in `add_dirs`**
   - TaskType: OUTCOME
   - Entrypoint: `ClaudeRunner().execute(ClaudeCodeCommand(prompt="p", cwd="/c", interactive=False, allowed_tools="Read", add_dirs=["/d1", "/d2"]))`
   - Observable: `subprocess.Popen` is invoked with `["claude", "--verbose", "--output-format=stream-json", "--allowedTools", "Read", "--add-dir", "/d1", "--add-dir", "/d2", "-p", "p"]`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py::TestClaudeRunnerExecute::test_execute_with_add_dirs -v -m unit` exits 0; new test asserts argv ordering for one and two `add_dirs`.
   - Steps:
-    - [ ] Write failing test asserting argv with one and with two `--add-dir` entries
-    - [ ] Extend `_build_argv` to emit `--add-dir <path>` per entry, AFTER session flags and BEFORE `extra_args` and the prompt (per §3.3 ordered procedure)
-    - [ ] Run targeted pytest, confirm green
+    - [x] Write failing test asserting argv with one and with two `--add-dir` entries
+    - [x] Extend `_build_argv` to emit `--add-dir <path>` per entry, AFTER session flags and BEFORE `extra_args` and the prompt (per §3.3 ordered procedure)
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 5.2: `summary_reports` builds a `ClaudeCodeCommand` and writes `result.result_text` to the report file**
   - TaskType: OUTCOME

@@ -438,15 +438,15 @@ Migrates `project_scaffolding.py:35` and the mock short-circuit at `command_buil
 
 Migrates `github_actions_build_fixer.py` (`build_ci_fix_command` site at `:138-139`, both mock and non-mock branches).
 
-- [ ] **Task 12.1: `CommandBuilder.build_ci_fix_command` returns a `ClaudeCodeCommand`**
+- [x] **Task 12.1: `CommandBuilder.build_ci_fix_command` returns a `ClaudeCodeCommand`**
   - TaskType: OUTCOME
   - Entrypoint: `CommandBuilder().build_ci_fix_command(run_id, workflow_name, failure_logs, cwd=working_tree_dir, interactive=False)`
   - Observable: Returns a `ClaudeCodeCommand` with `prompt = render_template("ci_fix.j2", ...)`, `cwd=working_tree_dir`, `interactive=False`. Failure-log truncation at `command_builder.py:212-213` is preserved.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_command_builder.py -v -m unit -k "build_ci_fix_command"` exits 0.
   - Steps:
-    - [ ] Update existing tests to assert dataclass return
-    - [ ] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:193` with a `ClaudeCodeCommand` constructor (preserving the `max_log_length` truncation)
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update existing tests to assert dataclass return
+    - [x] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:193` with a `ClaudeCodeCommand` constructor (preserving the `max_log_length` truncation)
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 12.2: `github_actions_build_fixer` invokes `execute()` for both mock and non-mock branches**
   - TaskType: OUTCOME
@@ -688,3 +688,6 @@ build_fix_command returns ClaudeCodeCommand with cwd; content args bundled into 
 
 ### 2026-06-16 19:36 - mark-task-complete
 fix path now uses execute() with ClaudeCodeCommand for both mock and non-mock branches
+
+### 2026-06-16 20:29 - mark-task-complete
+build_ci_fix_command now returns ClaudeCodeCommand with cwd parameter; failure-log truncation preserved

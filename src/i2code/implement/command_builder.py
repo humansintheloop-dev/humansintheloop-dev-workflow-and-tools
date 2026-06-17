@@ -28,6 +28,14 @@ class FixRequest:
     fix_description: str
 
 
+@dataclass
+class CiFixRequest:
+    """The failing workflow run that build_ci_fix_command should ask Claude to fix."""
+    run_id: int
+    workflow_name: str
+    failure_logs: str
+
+
 class CommandBuilder:
     """Builds Claude CLI commands for all invocation types.
 
@@ -199,35 +207,23 @@ class CommandBuilder:
 
     def build_ci_fix_command(
         self,
-        run_id: int,
-        workflow_name: str,
-        failure_logs: str,
+        request: CiFixRequest,
+        cwd: str = "",
         interactive: bool = True,
-    ) -> List[str]:
-        """Build command to invoke Claude for fixing CI failures.
-
-        Args:
-            run_id: The workflow run database ID.
-            workflow_name: Name of the failing workflow.
-            failure_logs: The failure logs from the workflow.
-            interactive: If True, run Claude interactively.
-
-        Returns:
-            Command list suitable for subprocess.
-        """
+    ) -> ClaudeCodeCommand:
         max_log_length = 5000
+        failure_logs = request.failure_logs
         if len(failure_logs) > max_log_length:
             failure_logs = f"... (truncated)\n{failure_logs[-max_log_length:]}"
 
-        prompt = render_template(
+        return self._render_prompt_command(
             "ci_fix.j2",
-            package="i2code.implement",
-            run_id=run_id,
-            workflow_name=workflow_name,
+            cwd,
+            interactive,
+            run_id=request.run_id,
+            workflow_name=request.workflow_name,
             failure_logs=failure_logs,
         )
-
-        return self._with_mode(prompt, interactive)
 
     def build_feedback_command(
         self,

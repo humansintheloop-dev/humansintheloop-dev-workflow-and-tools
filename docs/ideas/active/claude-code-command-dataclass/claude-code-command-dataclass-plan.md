@@ -276,15 +276,15 @@ Validates multi-`add-dir` rendering with `allowed_tools="Read,Edit,Write"` and m
 
 Implements the third secondary scenario from §6.2: a `CommandBuilder.build_task_command` call returns a `ClaudeCodeCommand` with `interactive=None`, and `ClaudeRunner.execute()` resolves the mode from the runner's `__init__` setting. Migrates `worktree_mode.py:204` and `trunk_mode.py:72`.
 
-- [ ] **Task 7.1: `ClaudeRunner.execute()` resolves `command.interactive=None` from runner's `_interactive`**
+- [x] **Task 7.1: `ClaudeRunner.execute()` resolves `command.interactive=None` from runner's `_interactive`**
   - TaskType: OUTCOME
   - Entrypoint: `ClaudeRunner(interactive=False).execute(ClaudeCodeCommand(prompt="p", cwd="/c", interactive=None))` and `ClaudeRunner(interactive=True).execute(ClaudeCodeCommand(prompt="p", cwd="/c", interactive=None))`
   - Observable: First case dispatches to the batch path (`subprocess.Popen` with `--verbose --output-format=stream-json -p p`). Second case dispatches to the interactive path (`subprocess.run` with `claude p`).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py::TestClaudeRunnerExecute::test_execute_mode_inherited_from_runner -v -m unit` exits 0; parameterized test covering both cases.
   - Steps:
-    - [ ] Write failing parameterized test covering both `interactive=None` resolutions
-    - [ ] Verify `execute()` already implements `effective_interactive = command.interactive if command.interactive is not None else self._interactive` from Task 2.3; adjust if missing
-    - [ ] Run targeted pytest, confirm green
+    - [x] Write failing parameterized test covering both `interactive=None` resolutions
+    - [x] Verify `execute()` already implements `effective_interactive = command.interactive if command.interactive is not None else self._interactive` from Task 2.3; adjust if missing
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 7.2: `CommandBuilder.build_task_command` returns a `ClaudeCodeCommand`**
   - TaskType: OUTCOME

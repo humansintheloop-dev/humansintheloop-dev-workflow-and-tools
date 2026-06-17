@@ -216,16 +216,16 @@ Adds `--session-id` rendering for `session_id.is_new=True`, introduces `read_or_
     - [x] Add `read_or_create_session(path: str) -> SessionId` to `src/i2code/session_manager.py`, calling existing `_read_session_id_str` and `create_session_id` helpers
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 4.3: `brainstorm` builds a `ClaudeCodeCommand` with session and allowed_tools**
+- [x] **Task 4.3: `brainstorm` builds a `ClaudeCodeCommand` with session and allowed_tools**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.idea_cmd.brainstorm.brainstorm(project, claude_runner, ..., repo_root=repo_root)`
   - Observable: With a `FakeClaudeRunner`, `fake.calls` records one `("execute", cmd, cwd)` where `cmd.prompt` equals the rendered brainstorm prompt, `cmd.interactive is True`, `cmd.allowed_tools` equals `build_allowed_tools_flag(repo_root, project.directory)` (or `None` when `repo_root is None`), and `cmd.session_id` is the `SessionId` returned by `read_or_create_session(project.session_id_file)`. After invocation, the session-id file at `project.session_id_file` exists and contains a UUID.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/idea-cmd/ -v -m unit -k "brainstorm"` exits 0; updated brainstorm unit test asserts the `ClaudeCodeCommand` shape and side-effect on session file.
   - Steps:
-    - [ ] Update existing brainstorm unit test to assert the `ClaudeCodeCommand` shape and the session-file side effect
-    - [ ] Replace argv assembly at `src/i2code/idea_cmd/brainstorm.py:88` with a single `claude_runner.execute(ClaudeCodeCommand(...))` call using `read_or_create_session(project.session_id_file)`
-    - [ ] Run targeted pytest and full unit suite; both green
-    - [ ] Run `uvx pyright --level error src/`; zero errors
+    - [x] Update existing brainstorm unit test to assert the `ClaudeCodeCommand` shape and the session-file side effect
+    - [x] Replace argv assembly at `src/i2code/idea_cmd/brainstorm.py:88` with a single `claude_runner.execute(ClaudeCodeCommand(...))` call using `read_or_create_session(project.session_id_file)`
+    - [x] Run targeted pytest and full unit suite; both green
+    - [x] Run `uvx pyright --level error src/`; zero errors
 
 ---
 
@@ -664,3 +664,6 @@ Locked --session-id rendering for is_new=True via test_execute_with_new_session_
 
 ### 2026-06-16 17:07 - mark-task-complete
 ST4 T4.2: added read_or_create_session returning typed SessionId with is_new flag
+
+### 2026-06-16 17:20 - mark-task-complete
+ST4 T4.3: brainstorm now builds a ClaudeCodeCommand with session_id, allowed_tools, interactive=True

@@ -135,7 +135,7 @@ class TestTrunkModeExecute:
             mode.execute()
         assert exc_info.value.code == 1
 
-    def test_non_interactive_uses_run(self, capsys):
+    def test_non_interactive_uses_mock_command(self, capsys):
         mode, _, fake_repo, fake_runner, plan_path = _make_trunk_mode(
             [(1, 1, "Set up", False)], opts_overrides=dict(non_interactive=True, mock_claude="/mock"),
         )
@@ -149,8 +149,10 @@ class TestTrunkModeExecute:
 
         assert len(fake_runner.calls) == 1
         method, cmd, _ = fake_runner.calls[0]
-        assert method == "run"
-        assert cmd[0] == "/mock"
+        assert method == "execute"
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.mock_command is not None
+        assert cmd.mock_command[0] == "/mock"
 
     def test_mock_claude_bypasses_command_builder(self, capsys):
         mode, _, fake_repo, fake_runner, plan_path = _make_trunk_mode(
@@ -162,7 +164,10 @@ class TestTrunkModeExecute:
         mode.execute()
 
         assert len(fake_runner.calls) == 1
-        assert fake_runner.calls[0][1][0] == "/path/to/mock-script"
+        _, cmd, _ = fake_runner.calls[0]
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.mock_command is not None
+        assert cmd.mock_command[0] == "/path/to/mock-script"
 
 
 PLAN_WITH_INCOMPLETE_TASK = """\

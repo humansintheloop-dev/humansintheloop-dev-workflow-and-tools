@@ -1,9 +1,9 @@
 """ClaudeRunner: strategy pattern for running Claude commands.
 
-Provides module-level run_claude_interactive() and run_claude_with_output_capture()
-functions, plus ClaudeRunner classes (Real/Mock) that delegate to them.
-Also includes result diagnostics: check_claude_success() and
-print_task_failure_diagnostics().
+Exposes the public ``ClaudeRunner.execute(command)`` API plus result diagnostics
+(``check_claude_success`` and ``print_task_failure_diagnostics``). The actual
+subprocess work is handled by the private module-level
+``_run_claude_interactive`` and ``_run_claude_with_output_capture`` helpers.
 """
 
 import json
@@ -66,7 +66,7 @@ class ClaudeCodeCommand:
             )
 
 
-def run_claude_interactive(cmd: List[str], cwd: str) -> ClaudeResult:
+def _run_claude_interactive(cmd: List[str], cwd: str) -> ClaudeResult:
     """Run Claude command interactively, inheriting terminal.
 
     In interactive mode, Claude needs direct access to the terminal
@@ -171,7 +171,7 @@ def _parse_stream_json_output(full_stdout: str) -> Tuple[DiagnosticInfo, str]:
     return diagnostics, result_text if result_text is not None else full_stdout
 
 
-def run_claude_with_output_capture(cmd: List[str], cwd: str, debug: bool = False) -> ClaudeResult:
+def _run_claude_with_output_capture(cmd: List[str], cwd: str, debug: bool = False) -> ClaudeResult:
     """Run Claude command, capturing output while displaying progress.
 
     For stream-json output, prints a dot for each JSON message received.
@@ -294,23 +294,11 @@ class ClaudeRunner:
         self._interactive = interactive
         self._debug = debug
 
-    def run(self, cmd: List[str], cwd: str) -> ClaudeResult:
-        print(f"Running Claude (cwd= {cwd} ): {' '.join(cmd)}")
-        if self._interactive:
-            return self.run_interactive(cmd, cwd=cwd)
-        return self.run_batch(cmd, cwd=cwd)
-
-    def run_interactive(self, cmd: List[str], cwd: str) -> ClaudeResult:
-        return run_claude_interactive(cmd, cwd=cwd)
-
-    def run_batch(self, cmd: List[str], cwd: str) -> ClaudeResult:
-        return run_claude_with_output_capture(cmd, cwd=cwd, debug=self._debug)
-
     def execute(self, command: ClaudeCodeCommand) -> ClaudeResult:
         if command.mock_command is not None:
             if self._interactive:
-                return run_claude_interactive(command.mock_command, cwd=command.cwd)
-            return run_claude_with_output_capture(
+                return _run_claude_interactive(command.mock_command, cwd=command.cwd)
+            return _run_claude_with_output_capture(
                 command.mock_command, cwd=command.cwd, debug=self._debug,
             )
 
@@ -320,8 +308,8 @@ class ClaudeRunner:
         argv = self._build_argv(command, effective_interactive)
 
         if effective_interactive:
-            return run_claude_interactive(argv, cwd=command.cwd)
-        return run_claude_with_output_capture(argv, cwd=command.cwd, debug=self._debug)
+            return _run_claude_interactive(argv, cwd=command.cwd)
+        return _run_claude_with_output_capture(argv, cwd=command.cwd, debug=self._debug)
 
     def _build_argv(
         self, command: ClaudeCodeCommand, effective_interactive: bool,

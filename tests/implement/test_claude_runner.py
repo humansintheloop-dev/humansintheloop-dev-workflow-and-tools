@@ -13,7 +13,7 @@ from i2code.implement.claude_runner import (
     ClaudeRunner,
     SessionId,
     _parse_stream_json_output,
-    run_claude_with_output_capture,
+    _run_claude_with_output_capture,
 )
 
 
@@ -23,50 +23,34 @@ class TestFakeClaudeRunner:
 
     def test_returns_default_success_result(self):
         fake = FakeClaudeRunner()
-        result = fake.run_interactive(["claude", "do task"], cwd="/repo")
+        command = ClaudeCodeCommand(prompt="do task", cwd="/repo")
+        result = fake.execute(command)
         assert result.returncode == 0
 
-    def test_records_run_interactive_call(self):
-        fake = FakeClaudeRunner()
-        fake.run_interactive(["claude", "do task"], cwd="/repo")
-        assert fake.calls == [("run_interactive", ["claude", "do task"], "/repo")]
-
-    def test_records_run_batch_call(self):
-        fake = FakeClaudeRunner()
-        fake.run_batch(["claude", "-p", "do task"], cwd="/repo")
-        assert fake.calls == [("run_batch", ["claude", "-p", "do task"], "/repo")]
-
     def test_returns_configured_result(self):
-
         fake = FakeClaudeRunner()
         fake.set_result(ClaudeResult(returncode=1, output=CapturedOutput("error", "fail")))
-        result = fake.run_interactive(["claude", "x"], cwd="/repo")
+        command = ClaudeCodeCommand(prompt="x", cwd="/repo")
+        result = fake.execute(command)
         assert result.returncode == 1
         assert result.output.stdout == "error"
 
     def test_returns_sequence_of_results(self):
-
         fake = FakeClaudeRunner()
         fake.set_results([
             ClaudeResult(returncode=0, output=CapturedOutput("ok1")),
             ClaudeResult(returncode=1, output=CapturedOutput("fail", "err")),
         ])
-        r1 = fake.run_interactive(["claude", "t1"], cwd="/r")
-        r2 = fake.run_batch(["claude", "t2"], cwd="/r")
+        r1 = fake.execute(ClaudeCodeCommand(prompt="t1", cwd="/r"))
+        r2 = fake.execute(ClaudeCodeCommand(prompt="t2", cwd="/r"))
         assert r1.returncode == 0
         assert r2.returncode == 1
 
-    def test_records_run_call(self):
-        fake = FakeClaudeRunner()
-        fake.run(["claude", "do task"], cwd="/repo")
-        assert fake.calls == [("run", ["claude", "do task"], "/repo")]
-
     def test_falls_back_to_default_after_sequence_exhausted(self):
-
         fake = FakeClaudeRunner()
         fake.set_results([ClaudeResult(returncode=42)])
-        r1 = fake.run_interactive(["claude", "t1"], cwd="/r")
-        r2 = fake.run_interactive(["claude", "t2"], cwd="/r")
+        r1 = fake.execute(ClaudeCodeCommand(prompt="t1", cwd="/r"))
+        r2 = fake.execute(ClaudeCodeCommand(prompt="t2", cwd="/r"))
         assert r1.returncode == 42
         assert r2.returncode == 0  # default
 
@@ -113,7 +97,7 @@ def _run_with_mocked_pipes(mocker, stdout_chunks, stderr_chunks, returncode=0):
         return_value=mock_process,
     )
 
-    return run_claude_with_output_capture(["claude", "test"], cwd="/tmp")
+    return _run_claude_with_output_capture(["claude", "test"], cwd="/tmp")
 
 
 @pytest.mark.unit
@@ -153,7 +137,7 @@ class TestRunClaudeWithOutputCaptureSignalHandling:
         mock_process = _make_mock_popen()
         mock_popen_cls.return_value = mock_process
 
-        run_claude_with_output_capture(["claude", "-p", "task"], cwd="/tmp")
+        _run_claude_with_output_capture(["claude", "-p", "task"], cwd="/tmp")
 
         mock_popen_cls.assert_called_once()
         call_kwargs = mock_popen_cls.call_args[1]
@@ -172,7 +156,7 @@ class TestRunClaudeWithOutputCaptureSignalHandling:
         mock_managed.__exit__ = MagicMock(return_value=False)
         mock_managed_cls.return_value = mock_managed
 
-        run_claude_with_output_capture(["claude", "-p", "task"], cwd="/tmp")
+        _run_claude_with_output_capture(["claude", "-p", "task"], cwd="/tmp")
 
         mock_managed_cls.assert_called_once()
         call_kwargs = mock_managed_cls.call_args[1]
@@ -192,7 +176,7 @@ class TestRunClaudeWithOutputCaptureSignalHandling:
         mock_managed.__exit__ = MagicMock(return_value=True)
         mock_managed_cls.return_value = mock_managed
 
-        result = run_claude_with_output_capture(["claude", "-p", "task"], cwd="/tmp")
+        result = _run_claude_with_output_capture(["claude", "-p", "task"], cwd="/tmp")
 
         assert result.returncode == 130
         assert result.output.stdout == ""
@@ -543,32 +527,3 @@ class TestClaudeRunnerExecuteRealClaude:
         assert result.returncode == 0
         assert result.result_text
         assert not result.result_text.startswith("{")
-
-
-@pytest.mark.unit
-class TestClaudeRunnerRun:
-    """ClaudeRunner.run() dispatches to run_interactive or run_batch."""
-
-    def test_interactive_true_delegates_to_run_interactive(self, mocker):
-        runner = ClaudeRunner(interactive=True)
-        mock_result = ClaudeResult(returncode=0)
-        mocker.patch.object(runner, 'run_interactive', return_value=mock_result)
-        mocker.patch.object(runner, 'run_batch', return_value=mock_result)
-
-        result = runner.run(["claude", "task"], cwd="/repo")
-
-        runner.run_interactive.assert_called_once_with(["claude", "task"], cwd="/repo")
-        runner.run_batch.assert_not_called()
-        assert result is mock_result
-
-    def test_interactive_false_delegates_to_run_batch(self, mocker):
-        runner = ClaudeRunner(interactive=False)
-        mock_result = ClaudeResult(returncode=0)
-        mocker.patch.object(runner, 'run_interactive', return_value=mock_result)
-        mocker.patch.object(runner, 'run_batch', return_value=mock_result)
-
-        result = runner.run(["claude", "-p", "task"], cwd="/repo")
-
-        runner.run_batch.assert_called_once_with(["claude", "-p", "task"], cwd="/repo")
-        runner.run_interactive.assert_not_called()
-        assert result is mock_result

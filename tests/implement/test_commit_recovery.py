@@ -2,7 +2,8 @@
 
 import pytest
 
-from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.claude_runner import CapturedOutput, ClaudeCodeCommand, ClaudeResult
+from i2code.implement.command_builder import CommandBuilder
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from conftest import advance_head
 from fake_claude_runner import FakeClaudeRunner
@@ -147,7 +148,16 @@ class TestTaskCommitRecoveryRecover:
         assert result is True
         assert len(runner.calls) == 1
         method, cmd, cwd = runner.calls[0]
-        assert method == "run_batch"
+        assert method == "execute"
+        assert isinstance(cmd, ClaudeCodeCommand)
+        expected = CommandBuilder().build_recovery_command(
+            plan_file=recovery._project.plan_file,
+            diff_summary="some diff output",
+            cwd=git_repo.working_tree_dir,
+            interactive=False,
+        )
+        assert cmd == expected
+        assert cwd == git_repo.working_tree_dir
         captured = capsys.readouterr()
         assert "Detected uncommitted changes" in captured.out
 

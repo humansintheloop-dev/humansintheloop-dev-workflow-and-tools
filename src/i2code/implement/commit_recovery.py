@@ -48,13 +48,12 @@ class TaskCommitRecovery:
         cmd = CommandBuilder().build_recovery_command(
             plan_file=self._project.plan_file,
             diff_summary=diff_summary,
+            cwd=self._git_repo.working_tree_dir,
             interactive=False,
         )
 
         head_before = self._git_repo.head_sha
-        claude_result = self._claude_runner.run_batch(
-            cmd, cwd=self._git_repo.working_tree_dir,
-        )
+        claude_result = self._claude_runner.execute(cmd)
         head_after = self._git_repo.head_sha
 
         if not check_claude_success(claude_result.returncode, head_before, head_after):

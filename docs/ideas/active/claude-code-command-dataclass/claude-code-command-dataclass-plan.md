@@ -260,15 +260,15 @@ Adds `add_dirs` rendering to `ClaudeRunner.execute()` and migrates `src/i2code/i
 
 Validates multi-`add-dir` rendering with `allowed_tools="Read,Edit,Write"` and migrates `src/i2code/improve/analyze_sessions.py`. This caller writes its report file directly via Claude, so `result.result_text` is discarded — verifies the spec's Q9 condition.
 
-- [ ] **Task 6.1: `analyze_sessions` builds a `ClaudeCodeCommand` with two `add_dirs`**
+- [x] **Task 6.1: `analyze_sessions` builds a `ClaudeCodeCommand` with two `add_dirs`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.improve.analyze_sessions.analyze_sessions(...)` (the function at `src/i2code/improve/analyze_sessions.py:93`)
   - Observable: With `FakeClaudeRunner`, `fake.calls` records one `("execute", cmd, tracking_dir)` where `cmd.interactive is False`, `cmd.allowed_tools == "Read,Edit,Write"`, `cmd.add_dirs == [sessions_dir, issues_dir]` (preserving today's order at `analyze_sessions.py:93`). The caller does NOT consume `result.result_text` or `result.output.stdout` for the report body (the report is written by Claude itself).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k "analyze_sessions"` exits 0.
   - Steps:
-    - [ ] Update existing analyze_sessions unit test to assert the `ClaudeCodeCommand` shape with two `add_dirs` and that stdout content is NOT read by the caller
-    - [ ] Replace argv assembly at `src/i2code/improve/analyze_sessions.py:93` with `claude_runner.execute(ClaudeCodeCommand(...))`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update existing analyze_sessions unit test to assert the `ClaudeCodeCommand` shape with two `add_dirs` and that stdout content is NOT read by the caller
+    - [x] Replace argv assembly at `src/i2code/improve/analyze_sessions.py:93` with `claude_runner.execute(ClaudeCodeCommand(...))`
+    - [x] Run targeted pytest, confirm green
 
 ---
 

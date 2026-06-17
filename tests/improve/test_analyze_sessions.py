@@ -159,36 +159,57 @@ class TestTemplateRendering:
 class TestClaudeInvocation:
 
     def test_invokes_claude_non_interactively(self, analyzed_session):
-        _, fake_runner, _ = analyzed_session
-        method, _, _ = fake_runner.calls[0]
-        assert method == "run_batch"
+        from i2code.implement.claude_runner import ClaudeCodeCommand
 
-    def test_claude_command_includes_add_dir_for_sessions(self, analyzed_session):
+        _, fake_runner, _ = analyzed_session
+        method, cmd, _ = fake_runner.calls[0]
+        assert method == "execute"
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.interactive is False
+
+    def test_claude_command_add_dirs_lists_sessions_then_issues(self, analyzed_session):
+        from i2code.implement.claude_runner import ClaudeCodeCommand
+
         tracking_dir, fake_runner, _ = analyzed_session
         _, cmd, _ = fake_runner.calls[0]
         sessions_dir = os.path.join(tracking_dir, "sessions")
-        add_dir_idx = cmd.index("--add-dir")
-        assert cmd[add_dir_idx + 1] == sessions_dir
-
-    def test_claude_command_includes_add_dir_for_issues(self, analyzed_session):
-        tracking_dir, fake_runner, _ = analyzed_session
-        _, cmd, _ = fake_runner.calls[0]
         issues_dir = os.path.join(tracking_dir, "issues")
-        # Find the second --add-dir
-        indices = [i for i, x in enumerate(cmd) if x == "--add-dir"]
-        assert len(indices) == 2
-        assert cmd[indices[1] + 1] == issues_dir
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.add_dirs == [sessions_dir, issues_dir]
 
     def test_claude_command_includes_allowed_tools(self, analyzed_session):
-        _, fake_runner, _ = analyzed_session
-        _, cmd, _ = fake_runner.calls[0]
-        tools_idx = cmd.index("--allowedTools")
-        assert cmd[tools_idx + 1] == "Read,Edit,Write"
+        from i2code.implement.claude_runner import ClaudeCodeCommand
 
-    def test_claude_command_uses_print_flag(self, analyzed_session):
         _, fake_runner, _ = analyzed_session
         _, cmd, _ = fake_runner.calls[0]
-        assert "-p" in cmd
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.allowed_tools == "Read,Edit,Write"
+
+    def test_claude_command_cwd_is_tracking_dir(self, analyzed_session):
+        tracking_dir, fake_runner, _ = analyzed_session
+        _, cmd, cwd = fake_runner.calls[0]
+        assert cmd.cwd == tracking_dir
+        assert cwd == tracking_dir
+
+    def test_caller_does_not_consume_result_text_or_stdout(self, fake_runner, fake_renderer):
+        """The report is written by Claude itself; caller must not write it."""
+        from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tracking_dir = _create_tracking_dir(tmpdir)
+            _create_session_file(tracking_dir, "session-2025-01-15-143022-abc123.md")
+
+            fake_runner.set_result(ClaudeResult(
+                returncode=0,
+                output=CapturedOutput(stdout="STDOUT CONTENT"),
+                result_text="RESULT TEXT CONTENT",
+            ))
+
+            analyze_sessions(tracking_dir, fake_runner, fake_renderer)
+
+            _, variables = fake_renderer.calls[0]
+            report_file = variables["REPORT_FILE"]
+            assert not os.path.exists(report_file)
 
     def test_returns_claude_result(self, fake_runner, fake_renderer):
         from i2code.implement.claude_runner import ClaudeResult

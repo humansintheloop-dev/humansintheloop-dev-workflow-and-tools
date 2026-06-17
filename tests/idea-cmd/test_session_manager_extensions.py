@@ -5,7 +5,12 @@ import os
 import pytest
 
 from conftest import TempIdeaProject
-from i2code.session_manager import create_session_id, get_or_create_session_args
+from i2code.implement.claude_runner import SessionId
+from i2code.session_manager import (
+    create_session_id,
+    get_or_create_session_args,
+    read_or_create_session,
+)
 
 
 @pytest.mark.unit
@@ -58,3 +63,26 @@ class TestGetOrCreateSessionArgs:
             get_or_create_session_args(project.session_id_file)
             with open(project.session_id_file) as f:
                 assert f.read().strip() == "keep-this-id"
+
+
+@pytest.mark.unit
+class Test_read_or_create_session:
+
+    def test_read_or_create_returns_existing_session(self):
+        with TempIdeaProject("my-feature") as project:
+            with open(project.session_id_file, "w") as f:
+                f.write("existing-session-id")
+            result = read_or_create_session(project.session_id_file)
+            assert result == SessionId(session_id="existing-session-id", is_new=False)
+            with open(project.session_id_file) as f:
+                assert f.read().strip() == "existing-session-id"
+
+    def test_read_or_create_creates_new_session_and_writes_file(self):
+        with TempIdeaProject("my-feature") as project:
+            result = read_or_create_session(project.session_id_file)
+            assert isinstance(result, SessionId)
+            assert result.is_new is True
+            assert len(result.session_id) == 36
+            assert os.path.isfile(project.session_id_file)
+            with open(project.session_id_file) as f:
+                assert f.read().strip() == result.session_id

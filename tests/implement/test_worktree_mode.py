@@ -488,7 +488,9 @@ class TestWorktreeModeWithRecovery:
 
             # Recovery Claude call (non-interactive) happens before task-loop call
             assert len(fake_runner.calls) == 2
-            assert fake_runner.calls[0][0] == "run_batch"  # recovery (commit_recovery uses run_batch directly)
+            assert fake_runner.calls[0][0] == "execute"  # recovery
+            assert isinstance(fake_runner.calls[0][1], ClaudeCodeCommand)
+            assert fake_runner.calls[0][2] == tmpdir
             assert fake_runner.calls[1][0] == "execute"  # task execution
             assert isinstance(fake_runner.calls[1][1], ClaudeCodeCommand)
             assert fake_runner.calls[1][2] == tmpdir

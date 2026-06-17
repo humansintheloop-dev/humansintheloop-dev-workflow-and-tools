@@ -393,16 +393,16 @@ Migrates `commit_recovery.py:48`. This is a non-mock single-site migration; it e
     - [x] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:54` with a `ClaudeCodeCommand` constructor
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 10.2: `commit_recovery` invokes `execute()` with the `ClaudeCodeCommand` from `build_recovery_command`**
+- [x] **Task 10.2: `commit_recovery` invokes `execute()` with the `ClaudeCodeCommand` from `build_recovery_command`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.implement.commit_recovery.recover_commit(plan_file, diff_summary, claude_runner, cwd, ...)` (call site at `src/i2code/implement/commit_recovery.py:48`)
   - Observable: `fake.calls` records `("execute", cmd, cwd)` where `cmd` is verbatim from `build_recovery_command`. Reads of `result.output.stdout` at `commit_recovery.py:63` are NOT changed (per spec Q9 — this site continues using raw stdout for diagnostic, not result-text).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_commit_recovery.py -v -m unit` exits 0.
   - Steps:
-    - [ ] Update `test_commit_recovery.py` tests to assert the new call shape
-    - [ ] Update `src/i2code/implement/commit_recovery.py:48` to call `build_recovery_command(plan_file, diff_summary, cwd=cwd, interactive=...)` and `claude_runner.execute(...)`
-    - [ ] Confirm `src/i2code/implement/commit_recovery.py:63` continues to read `result.output.stdout` (unchanged per spec)
-    - [ ] Run targeted pytest and full unit suite; both green
+    - [x] Update `test_commit_recovery.py` tests to assert the new call shape
+    - [x] Update `src/i2code/implement/commit_recovery.py:48` to call `build_recovery_command(plan_file, diff_summary, cwd=cwd, interactive=...)` and `claude_runner.execute(...)`
+    - [x] Confirm `src/i2code/implement/commit_recovery.py:63` continues to read `result.output.stdout` (unchanged per spec)
+    - [x] Run targeted pytest and full unit suite; both green
 
 ---
 

@@ -243,7 +243,9 @@ class TestTrunkModeWithRecovery:
         mode.execute()
 
         assert len(fake_runner.calls) == 2
-        assert fake_runner.calls[0][0] == "run_batch"
+        assert fake_runner.calls[0][0] == "execute"
+        assert isinstance(fake_runner.calls[0][1], ClaudeCodeCommand)
+        assert fake_runner.calls[0][2] == fake_repo.working_tree_dir
         assert fake_runner.calls[1][0] == "execute"
         assert isinstance(fake_runner.calls[1][1], ClaudeCodeCommand)
         assert fake_runner.calls[1][2] == fake_repo.working_tree_dir

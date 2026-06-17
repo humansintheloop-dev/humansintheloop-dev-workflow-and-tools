@@ -504,15 +504,15 @@ Migrates the six remaining interactive direct-argv sites. They all share the sim
     - [x] Replace argv assembly at `src/i2code/go_cmd/revise_plan.py:36` with `claude_runner.execute(ClaudeCodeCommand(...))`
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 13.5: `improve/review_issues` invokes `execute()` with a `ClaudeCodeCommand`**
+- [x] **Task 13.5: `improve/review_issues` invokes `execute()` with a `ClaudeCodeCommand`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.improve.review_issues.review_issues(...)` (call site at `src/i2code/improve/review_issues.py:117`)
   - Observable: `fake.calls` records one `("execute", cmd, cwd)` with `cmd.interactive is True` and `cmd.prompt` equals the rendered review-issues prompt.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k "review_issues"` exits 0.
   - Steps:
-    - [ ] Update existing test to assert the `ClaudeCodeCommand` shape
-    - [ ] Replace argv assembly at `src/i2code/improve/review_issues.py:117` with `claude_runner.execute(ClaudeCodeCommand(...))`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update existing test to assert the `ClaudeCodeCommand` shape
+    - [x] Replace argv assembly at `src/i2code/improve/review_issues.py:117` with `claude_runner.execute(ClaudeCodeCommand(...))`
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 13.6: `improve/update_claude_files` invokes `execute()` with a `ClaudeCodeCommand`**
   - TaskType: OUTCOME

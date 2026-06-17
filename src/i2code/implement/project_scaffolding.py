@@ -5,6 +5,8 @@ import sys
 from dataclasses import dataclass
 from typing import Optional
 
+from i2code.implement.claude_runner import ClaudeCodeCommand
+
 SCAFFOLDING_GUARD_DIR = ".hitl_dev"
 SCAFFOLDING_GUARD_FILE = "scaffolding-done"
 
@@ -29,10 +31,15 @@ class ScaffoldingCreator:
         interactive: bool = True, mock_claude: Optional[str] = None,
     ):
         """Invoke Claude to generate project scaffolding."""
-        cmd = self._command_builder.build_scaffolding_command(
-            idea_directory, interactive=interactive, mock_claude=mock_claude,
-        )
-        result = self._claude_runner.run(cmd, cwd=cwd)
+        if mock_claude:
+            cmd = ClaudeCodeCommand(
+                cwd=cwd, mock_command=[mock_claude, "setup"],
+            )
+        else:
+            cmd = self._command_builder.build_scaffolding_command(
+                idea_directory, cwd=cwd, interactive=interactive,
+            )
+        result = self._claude_runner.execute(cmd)
 
         if interactive or _scaffolding_succeeded(result):
             return

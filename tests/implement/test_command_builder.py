@@ -18,7 +18,11 @@ def _build_task_cmd(**overrides):
 
 
 def _build_scaffolding_cmd(**overrides):
-    defaults = dict(idea_directory="docs/features/my-feature", interactive=True)
+    defaults = dict(
+        idea_directory="docs/features/my-feature",
+        cwd="/cwd",
+        interactive=True,
+    )
     defaults.update(overrides)
     return CommandBuilder().build_scaffolding_command(**defaults)
 
@@ -153,27 +157,37 @@ class TestCommandBuilderTaskCommand:
 class TestCommandBuilderScaffoldingCommand:
     """Test building scaffolding commands."""
 
-    def test_interactive_returns_claude_with_prompt(self):
-        """Interactive scaffolding should be ['claude', prompt]."""
-        cmd = _build_scaffolding_cmd()
-        assert cmd[0] == "claude"
-        assert "-p" not in cmd
+    def test_build_scaffolding_command_returns_dataclass(self):
+        cmd = _build_scaffolding_cmd(cwd="/work/tree", interactive=False)
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.cwd == "/work/tree"
+        assert cmd.interactive is False
+        assert cmd.prompt is not None
 
-    def test_non_interactive_includes_allowed_tools(self):
-        """Non-interactive scaffolding includes specific --allowed-tools."""
+    def test_interactive_flag_mapped_from_parameter(self):
+        cmd = _build_scaffolding_cmd(interactive=True)
+        assert cmd.interactive is True
+
+    def test_non_interactive_sets_allowed_tools(self):
         cmd = _build_scaffolding_cmd(interactive=False)
-        assert "--allowed-tools" in cmd
-        assert "-p" in cmd
+        assert cmd.allowed_tools == "Write,Read,Edit,Bash(gradle --version),Bash(mkdir -p:*)"
 
-    def test_mock_claude_returns_mock_script_command(self):
-        """Mock mode should return [mock_script, 'setup']."""
-        cmd = _build_scaffolding_cmd(mock_claude="/path/to/mock")
-        assert cmd == ["/path/to/mock", "setup"]
+    def test_interactive_omits_allowed_tools(self):
+        cmd = _build_scaffolding_cmd(interactive=True)
+        assert cmd.allowed_tools is None
 
     def test_includes_idea_directory_in_prompt(self):
-        """Prompt should reference the idea directory."""
         cmd = _build_scaffolding_cmd()
-        assert "docs/features/my-feature" in cmd[1]
+        assert "docs/features/my-feature" in cmd.prompt
+
+    def test_build_scaffolding_command_no_longer_accepts_mock_claude(self):
+        with pytest.raises(TypeError):
+            CommandBuilder().build_scaffolding_command(
+                idea_directory="docs/features/my-feature",
+                cwd="/cwd",
+                interactive=True,
+                mock_claude="/path/to/mock",
+            )
 
 
 @pytest.mark.unit

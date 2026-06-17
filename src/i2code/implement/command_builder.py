@@ -131,37 +131,25 @@ class CommandBuilder:
     def build_scaffolding_command(
         self,
         idea_directory: str,
+        cwd: str = "",
         interactive: bool = True,
-        mock_claude: Optional[str] = None,
-    ) -> List[str]:
-        """Build the Claude command for project scaffolding.
-
-        Args:
-            idea_directory: Path to the idea directory.
-            interactive: If True, run Claude interactively.
-            mock_claude: Optional path to mock script for testing.
-
-        Returns:
-            Command list suitable for subprocess.
-        """
-        if mock_claude:
-            return [mock_claude, "setup"]
-
+    ) -> ClaudeCodeCommand:
         prompt = render_template(
             "scaffolding.j2",
             package="i2code.implement",
             idea_directory=idea_directory,
         )
 
-        if interactive:
-            return ["claude", prompt]
-        else:
-            return [
-                "claude",
-                "--allowed-tools",
-                "Write,Read,Edit,Bash(gradle --version),Bash(mkdir -p:*)",
-                "--verbose", "--output-format=stream-json", "-p", prompt,
-            ]
+        allowed_tools = (
+            None if interactive
+            else "Write,Read,Edit,Bash(gradle --version),Bash(mkdir -p:*)"
+        )
+        return ClaudeCodeCommand(
+            cwd=cwd,
+            prompt=prompt,
+            interactive=interactive,
+            allowed_tools=allowed_tools,
+        )
 
     def _render_prompt_command(
         self,

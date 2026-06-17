@@ -578,15 +578,15 @@ Final cleanup step. Removes all deprecated symbols and renames the module-level 
     - [x] Update any tests in `tests/` that exercised the deleted helpers — they should already have been migrated through Steel Threads 3–14; if any remain, delete them
     - [x] Run full unit suite, confirm green
 
-- [ ] **Task 15.3: Remove `CommandBuilder._with_mode` helper**
+- [x] **Task 15.3: Remove `CommandBuilder._with_mode` helper**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/implement/test_command_builder.py -m unit`
   - Observable: `grep -n '_with_mode' src/i2code/implement/command_builder.py` returns zero matches. All `build_*` methods on `CommandBuilder` return `ClaudeCodeCommand` directly without `_with_mode`. No regressions in existing tests.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_command_builder.py -m unit` exits 0 and `uvx pyright --level error src/` exits 0.
   - Steps:
-    - [ ] Confirm no `build_*` method still calls `self._with_mode(...)` (search `src/i2code/implement/command_builder.py`)
-    - [ ] Delete `_with_mode` at `src/i2code/implement/command_builder.py:30`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Confirm no `build_*` method still calls `self._with_mode(...)` (search `src/i2code/implement/command_builder.py`)
+    - [x] Delete `_with_mode` at `src/i2code/implement/command_builder.py:30`
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 15.4: End-to-end verification — no raw `["claude"` lists, no old API, full suite green**
   - TaskType: INFRA
@@ -703,3 +703,6 @@ build_feedback_command now returns ClaudeCodeCommand with extra_args=['--print',
 
 ### 2026-06-17 08:59 - mark-task-complete
 Deleted ClaudeRunner.run/run_interactive/run_batch; renamed module-level run_claude_interactive and run_claude_with_output_capture to private _-prefixed names; migrated trunk_mode.py and worktree_mode.py mock_claude branches to ClaudeCodeCommand(mock_command=...); updated FakeClaudeRunner and test_claude_runner.py to drop the deleted methods. Unit suite green; pyright clean.
+
+### 2026-06-17 09:10 - mark-task-complete
+Deleted _with_mode helper; no build_* method referenced it. 39 command_builder unit tests pass, full unit suite (1402) green, pyright clean.

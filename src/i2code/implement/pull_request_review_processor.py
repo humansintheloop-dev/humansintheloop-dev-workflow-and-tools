@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from i2code.implement.claude_runner import ClaudeCodeCommand
-from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.command_builder import CommandBuilder, FixRequest
 
 
 class PullRequestReviewProcessor:
@@ -326,7 +326,10 @@ class PullRequestReviewProcessor:
         if self._opts.mock_claude:
             fix_cmd = [self._opts.mock_claude, f"fix-{pr_number}-{comment_ids[0]}"]
         else:
-            fix_cmd = CommandBuilder().build_fix_command(pr_url, group_content, description, interactive=interactive)
+            fix_cmd = CommandBuilder().build_fix_command(
+                FixRequest(pr_url=pr_url, feedback_content=group_content, fix_description=description),
+                interactive=interactive,
+            )
 
         print("  Invoking Claude to fix...")
         self._claude_runner.run(fix_cmd, cwd=self._git_repo.working_tree_dir)

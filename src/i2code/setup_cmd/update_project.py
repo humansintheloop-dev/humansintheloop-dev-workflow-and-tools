@@ -8,7 +8,7 @@ import subprocess
 import sys
 from typing import NamedTuple
 
-from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.claude_runner import ClaudeCodeCommand, ClaudeResult
 
 
 class _FileSpec(NamedTuple):
@@ -151,7 +151,9 @@ def _build_variables(spec, ctx, current_sha, render):
 def _render_and_advance_sha(spec, ctx, current_sha, render):
     variables = _build_variables(spec, ctx, current_sha, render)
     prompt = ctx.template_renderer(spec.template_name, variables)
-    result = ctx.claude_runner.run_interactive(["claude", prompt], cwd=ctx.project_dir)
+    result = ctx.claude_runner.execute(
+        ClaudeCodeCommand(prompt=prompt, cwd=ctx.project_dir, interactive=True),
+    )
     if result.returncode == 0:
         spec.write_sha(spec.project_path, current_sha)
     return result

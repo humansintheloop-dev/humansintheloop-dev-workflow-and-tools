@@ -91,11 +91,12 @@ class TestRoutineUpdate:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_dir = _run_routine_update(tmpdir, (fake_runner, fake_renderer))
             assert len(fake_runner.calls) == 2
-            for method, _, cwd in fake_runner.calls:
-                assert method == "run_interactive"
+            for method, cmd, cwd in fake_runner.calls:
+                assert method == "execute"
+                assert cmd.interactive is True
                 assert cwd == project_dir
-            assert "template=update-project-claude-md.md" in fake_runner.calls[0][1][1]
-            assert "template=update-project-settings.md" in fake_runner.calls[1][1][1]
+            assert "template=update-project-claude-md.md" in fake_runner.calls[0][1].prompt
+            assert "template=update-project-settings.md" in fake_runner.calls[1][1].prompt
 
     def test_scenario_s1_both_markers_advanced(self, fake_runner, fake_renderer):
         from i2code.implement.claude_runner import ClaudeResult
@@ -117,7 +118,7 @@ class TestRoutineUpdate:
                 diffs_by_kind={"claude_md": "diff-for-claude-md"},
             )
             assert len(fake_runner.calls) == 1
-            assert "template=update-project-claude-md.md" in fake_runner.calls[0][1][1]
+            assert "template=update-project-claude-md.md" in fake_runner.calls[0][1].prompt
             assert_claude_md_marker_advanced(project_dir, "CCC333")
             assert_settings_marker_advanced(project_dir, "DDD444")
 

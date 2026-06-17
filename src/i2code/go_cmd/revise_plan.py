@@ -1,7 +1,7 @@
 """Revise implementation plan via Claude interactively."""
 
 from i2code.claude.permissions import build_allowed_tools_flag
-from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.claude_runner import ClaudeCodeCommand, ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 
 
@@ -15,7 +15,7 @@ def revise_plan(project: IdeaProject, claude_runner, template_renderer, *, repo_
         project: The idea project containing file paths
         claude_runner: ClaudeRunner instance for invoking Claude
         template_renderer: Callable to render prompt templates
-        repo_root: Optional repo root for --allowedTools and cwd
+        repo_root: Optional repo root for allowed_tools and cwd
 
     Returns:
         ClaudeResult from the Claude invocation
@@ -27,16 +27,23 @@ def revise_plan(project: IdeaProject, claude_runner, template_renderer, *, repo_
     project.validate_spec()
     project.validate_plan()
 
-    rendered_prompt = template_renderer("revise-plan.md", {
+    prompt = template_renderer("revise-plan.md", {
         "IDEA_FILE": project.idea_file,
         "SPEC_FILE": project.spec_file,
         "PLAN_WITHOUT_STORIES_FILE": project.plan_file,
     })
 
-    cmd = ["claude"]
-    if repo_root is not None:
-        allowed_tools = build_allowed_tools_flag(repo_root, project.directory)
-        cmd += ["--allowedTools", allowed_tools]
-    cmd.append(rendered_prompt)
+    allowed_tools = (
+        build_allowed_tools_flag(repo_root, project.directory)
+        if repo_root is not None else None
+    )
     cwd = repo_root if repo_root is not None else project.directory
-    return claude_runner.run_interactive(cmd, cwd=cwd)
+
+    return claude_runner.execute(
+        ClaudeCodeCommand(
+            cwd=cwd,
+            prompt=prompt,
+            interactive=True,
+            allowed_tools=allowed_tools,
+        ),
+    )

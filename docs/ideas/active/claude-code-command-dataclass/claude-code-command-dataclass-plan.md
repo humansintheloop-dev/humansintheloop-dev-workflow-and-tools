@@ -314,15 +314,15 @@ Implements the third secondary scenario from §6.2: a `CommandBuilder.build_task
 
 Implements the mock-binary triage scenario from §6.2 and finishes the migration of `pull_request_review_processor.py` for the triage path. Also removes the now-dead `_extract_result_text` private helper since `result.result_text` is populated by `_parse_stream_json_output`.
 
-- [ ] **Task 8.1: `ClaudeRunner.execute()` mock short-circuit dispatches `mock_command` argv as-is**
+- [x] **Task 8.1: `ClaudeRunner.execute()` mock short-circuit dispatches `mock_command` argv as-is**
   - TaskType: OUTCOME
   - Entrypoint: `ClaudeRunner(interactive=False).execute(ClaudeCodeCommand(cwd="/c", mock_command=["/path/mock-claude", "triage-42"]))`
   - Observable: `subprocess.Popen` (or `subprocess.run` if runner's `_interactive=True`) is invoked with positional args `["/path/mock-claude", "triage-42"]` exactly — no `claude`, no `--verbose`, no `-p`, no extra arguments. `cwd="/c"`. All other `ClaudeCodeCommand` fields are ignored.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py::TestClaudeRunnerExecute::test_execute_mock_command_short_circuit -v -m unit` exits 0; new test parameterised over batch and interactive runner modes.
   - Steps:
-    - [ ] Write failing test asserting verbatim argv dispatch for both batch and interactive runner modes
-    - [ ] Implement step 1 of §3.3 in `ClaudeRunner.execute()` — when `command.mock_command is not None`, dispatch the argv as-is using the runner's default mode (`self._interactive`); skip all subsequent steps
-    - [ ] Run targeted pytest, confirm green
+    - [x] Write failing test asserting verbatim argv dispatch for both batch and interactive runner modes
+    - [x] Implement step 1 of §3.3 in `ClaudeRunner.execute()` — when `command.mock_command is not None`, dispatch the argv as-is using the runner's default mode (`self._interactive`); skip all subsequent steps
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 8.2: `CommandBuilder.build_triage_command` returns a `ClaudeCodeCommand`**
   - TaskType: OUTCOME

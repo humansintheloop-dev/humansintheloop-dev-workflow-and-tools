@@ -37,6 +37,23 @@ def read_session_id(path: str) -> Optional[SessionId]:
     return SessionId(session_id=session_id, is_new=False)
 
 
+def read_or_create_session(path: str) -> SessionId:
+    """Read existing session ID or create a new one, returning a typed SessionId.
+
+    Args:
+        path: Path to the session ID file
+
+    Returns:
+        SessionId with is_new=False when the file exists, otherwise a freshly
+        generated UUID written to the file with is_new=True.
+    """
+    existing = _read_session_id_str(path)
+    if existing is not None:
+        return SessionId(session_id=existing, is_new=False)
+    new_id = create_session_id(path)
+    return SessionId(session_id=new_id, is_new=True)
+
+
 def build_session_args(session_id_path: str) -> list[str]:
     """Build Claude CLI args for session resume.
 

@@ -206,15 +206,15 @@ Adds `--session-id` rendering for `session_id.is_new=True`, introduces `read_or_
     - [x] Extend `_build_argv` so `command.session_id.is_new=True` renders `["--session-id", session_id.session_id]`
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 4.2: `read_or_create_session(path) -> SessionId` in `session_manager.py`**
+- [x] **Task 4.2: `read_or_create_session(path) -> SessionId` in `session_manager.py`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.session_manager.read_or_create_session(path)`
   - Observable: When `path` exists, returns `SessionId(<id>, is_new=False)` without writing. When `path` does not exist, generates a UUID, writes it to `path`, and returns `SessionId(<new_uuid>, is_new=True)`. The written content equals the returned `session_id`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/ -m unit -k "session_manager and read_or_create_session" -v` exits 0; new tests `test_read_or_create_returns_existing_session`, `test_read_or_create_creates_new_session_and_writes_file`.
   - Steps:
-    - [ ] Write failing tests covering both branches (existing file, missing file)
-    - [ ] Add `read_or_create_session(path: str) -> SessionId` to `src/i2code/session_manager.py`, calling existing `_read_session_id_str` and `create_session_id` helpers
-    - [ ] Run targeted pytest, confirm green
+    - [x] Write failing tests covering both branches (existing file, missing file)
+    - [x] Add `read_or_create_session(path: str) -> SessionId` to `src/i2code/session_manager.py`, calling existing `_read_session_id_str` and `create_session_id` helpers
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 4.3: `brainstorm` builds a `ClaudeCodeCommand` with session and allowed_tools**
   - TaskType: OUTCOME
@@ -661,3 +661,6 @@ Test test_execute_interactive_no_session locks in the interactive argv contract;
 
 ### 2026-06-16 16:59 - mark-task-complete
 Locked --session-id rendering for is_new=True via test_execute_with_new_session_id
+
+### 2026-06-16 17:07 - mark-task-complete
+ST4 T4.2: added read_or_create_session returning typed SessionId with is_new flag

@@ -531,17 +531,17 @@ Migrates the six remaining interactive direct-argv sites. They all share the sim
 
 Migrates the last `CommandBuilder` method. Issue #40 (broken `--print wt-handle-feedback.md` argv shape) is INTENTIONALLY preserved via the `extra_args` escape hatch per spec §3.8 and §6.2 last bullet.
 
-- [ ] **Task 14.1: `build_feedback_command` returns a `ClaudeCodeCommand(..., extra_args=["--print", "wt-handle-feedback.md"])`**
+- [x] **Task 14.1: `build_feedback_command` returns a `ClaudeCodeCommand(..., extra_args=["--print", "wt-handle-feedback.md"])`**
   - TaskType: OUTCOME
   - Entrypoint: `CommandBuilder().build_feedback_command(pr_url, feedback_type, feedback_content, cwd=working_tree_dir)`
   - Observable: Returns a `ClaudeCodeCommand` with `prompt = render_template("address_feedback.j2", ...)`, `cwd=working_tree_dir`, `interactive=False`, `extra_args=["--print", "wt-handle-feedback.md"]`. When dispatched through `ClaudeRunner.execute()`, the emitted argv is `["claude", "--verbose", "--output-format=stream-json", "--print", "wt-handle-feedback.md", "-p", <prompt>]` — the same broken 2-token shape as today (issue #40 preserved).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_command_builder.py -v -m unit -k "build_feedback_command"` exits 0; new test `test_build_feedback_command_preserves_issue_40_via_extra_args` asserts the emitted argv via `_build_argv` against the verbatim 2-token shape.
   - Steps:
-    - [ ] Update existing test for `build_feedback_command` to assert dataclass return AND assert the verbatim `extra_args=["--print", "wt-handle-feedback.md"]` shape; add the cross-check test that runs `ClaudeRunner._build_argv` against the returned command and asserts the full argv list
-    - [ ] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:225` with `ClaudeCodeCommand(prompt=rendered, cwd=cwd, interactive=False, extra_args=["--print", "wt-handle-feedback.md"])`
-    - [ ] Update the feedback-command caller (search for `build_feedback_command` invocations in `src/i2code/implement/`) to pass `cwd=working_tree_dir` and to call `claude_runner.execute(cmd)` instead of `run_batch`/`run_interactive`
-    - [ ] Run targeted pytest and full unit suite; both green
-    - [ ] After this task: confirm with `grep -R '\["claude"' src/i2code/ --include='*.py'` that the ONLY remaining matches are inside `src/i2code/implement/claude_runner.py` (the canonical `["claude"]` in `_build_argv`)
+    - [x] Update existing test for `build_feedback_command` to assert dataclass return AND assert the verbatim `extra_args=["--print", "wt-handle-feedback.md"]` shape; add the cross-check test that runs `ClaudeRunner._build_argv` against the returned command and asserts the full argv list
+    - [x] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:225` with `ClaudeCodeCommand(prompt=rendered, cwd=cwd, interactive=False, extra_args=["--print", "wt-handle-feedback.md"])`
+    - [x] Update the feedback-command caller (search for `build_feedback_command` invocations in `src/i2code/implement/`) to pass `cwd=working_tree_dir` and to call `claude_runner.execute(cmd)` instead of `run_batch`/`run_interactive`
+    - [x] Run targeted pytest and full unit suite; both green
+    - [x] After this task: confirm with `grep -R '\["claude"' src/i2code/ --include='*.py'` that the ONLY remaining matches are inside `src/i2code/implement/claude_runner.py` (the canonical `["claude"]` in `_build_argv`)
 
 ---
 
@@ -697,3 +697,6 @@ update_project now invokes claude_runner.execute(ClaudeCodeCommand(prompt=..., c
 
 ### 2026-06-17 07:03 - mark-task-complete
 create_spec uses execute() with ClaudeCodeCommand; tests verify shape (interactive, prompt, session_id, allowed_tools); all 12 tests pass
+
+### 2026-06-17 08:47 - mark-task-complete
+build_feedback_command now returns ClaudeCodeCommand with extra_args=['--print', 'wt-handle-feedback.md'] preserving issue #40; tests assert dataclass shape and emitted argv via _build_argv

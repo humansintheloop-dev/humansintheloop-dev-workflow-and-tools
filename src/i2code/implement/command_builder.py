@@ -230,17 +230,8 @@ class CommandBuilder:
         pr_url: str,
         feedback_type: str,
         feedback_content: str,
-    ) -> List[str]:
-        """Build the command to invoke Claude for handling feedback.
-
-        Args:
-            pr_url: The PR URL.
-            feedback_type: Type of feedback (review_comment, review, etc.).
-            feedback_content: The feedback content to address.
-
-        Returns:
-            Command list suitable for subprocess.
-        """
+        cwd: str = "",
+    ) -> ClaudeCodeCommand:
         prompt = render_template(
             "address_feedback.j2",
             package="i2code.implement",
@@ -249,8 +240,9 @@ class CommandBuilder:
             feedback_content=feedback_content,
         )
 
-        return [
-            "claude",
-            "--print", "wt-handle-feedback.md",
-            "-p", prompt,
-        ]
+        return ClaudeCodeCommand(
+            prompt=prompt,
+            cwd=cwd,
+            interactive=False,
+            extra_args=["--print", "wt-handle-feedback.md"],
+        )

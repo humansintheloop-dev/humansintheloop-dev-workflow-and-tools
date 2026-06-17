@@ -322,17 +322,22 @@ class PullRequestReviewProcessor:
         pr_url = self._git_repo.gh_client.get_pr_url(pr_number)
         interactive = not self._opts.non_interactive
         head_before = self._git_repo.head_sha
+        cwd = self._git_repo.working_tree_dir
 
         if self._opts.mock_claude:
-            fix_cmd = [self._opts.mock_claude, f"fix-{pr_number}-{comment_ids[0]}"]
+            fix_cmd = ClaudeCodeCommand(
+                cwd=cwd,
+                mock_command=[self._opts.mock_claude, f"fix-{pr_number}-{comment_ids[0]}"],
+            )
         else:
             fix_cmd = CommandBuilder().build_fix_command(
                 FixRequest(pr_url=pr_url, feedback_content=group_content, fix_description=description),
+                cwd=cwd,
                 interactive=interactive,
             )
 
         print("  Invoking Claude to fix...")
-        self._claude_runner.run(fix_cmd, cwd=self._git_repo.working_tree_dir)
+        self._claude_runner.execute(fix_cmd)
 
         head_after = self._git_repo.head_sha
         if head_before == head_after:

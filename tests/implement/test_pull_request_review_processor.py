@@ -261,14 +261,50 @@ class TestProcessPrFeedbackFixGroup:
         push_calls = [c for c in fake_repo.calls if c[0] == "push"]
         assert len(push_calls) == 1
 
-    def test_fix_uses_runner_run(self):
-        """Fix invokes claude_runner.run() instead of if/else dispatch."""
-        processor, _, _, fake_claude = _make_fix_processor(
-            SINGLE_COMMENT, _triage_with_fix([1]), non_interactive=False,
+    def test_fix_uses_execute_with_command_dataclass(self):
+        """Non-mock fix dispatches execute() with the CommandBuilder fix command."""
+        from i2code.implement.command_builder import FixRequest
+        processor, fake_repo, _, fake_claude = _make_fix_processor(
+            SINGLE_COMMENT, _triage_with_fix([1]),
         )
         processor.process_pr_feedback()
-        assert fake_claude.calls[0][0] == "execute"
-        assert fake_claude.calls[1][0] == "run"
+
+        assert len(fake_claude.calls) == 2
+        triage_method, _, _ = fake_claude.calls[0]
+        fix_method, fix_cmd, fix_cwd = fake_claude.calls[1]
+        assert triage_method == "execute"
+        assert fix_method == "execute"
+        assert isinstance(fix_cmd, ClaudeCodeCommand)
+        feedback_content = PullRequestReviewProcessor._format_all_feedback(
+            SINGLE_COMMENT, [], [],
+        )
+        expected = CommandBuilder().build_fix_command(
+            FixRequest(
+                pr_url="https://github.com/org/repo/pull/42",
+                feedback_content=feedback_content,
+                fix_description="Fix issue",
+            ),
+            cwd=fake_repo.working_tree_dir,
+            interactive=False,
+        )
+        assert fix_cmd == expected
+        assert fix_cwd == fake_repo.working_tree_dir
+
+    def test_fix_with_mock_claude_uses_execute_with_mock_command(self):
+        """When mock_claude is set, fix execute() receives a ClaudeCodeCommand with mock_command."""
+        mock_path = "/path/to/mock-claude"
+        processor, fake_repo, _, fake_claude = _make_fix_processor(
+            SINGLE_COMMENT, _triage_with_fix([1]), mock_claude=mock_path,
+        )
+        processor.process_pr_feedback()
+
+        assert len(fake_claude.calls) == 2
+        fix_method, fix_cmd, fix_cwd = fake_claude.calls[1]
+        assert fix_method == "execute"
+        assert isinstance(fix_cmd, ClaudeCodeCommand)
+        assert fix_cmd.cwd == fake_repo.working_tree_dir
+        assert fix_cmd.mock_command == [mock_path, "fix-42-1"]
+        assert fix_cwd == fake_repo.working_tree_dir
 
     def test_fix_marks_all_feedback_processed(self):
         """After processing, all feedback IDs are marked processed in state."""

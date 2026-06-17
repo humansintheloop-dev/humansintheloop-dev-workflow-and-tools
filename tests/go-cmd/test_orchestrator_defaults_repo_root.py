@@ -114,7 +114,7 @@ class TestDefaultReviseSpecPassesRepoRoot:
         project, expected_repo_root = _make_idea_project_with_spec(tmp_path)
         _default_revise_spec(project)
 
-        _assert_repo_root_cwd(fake, expected_repo_root)
+        _assert_command_cwd_is_repo_root(fake, expected_repo_root)
 
 
 def _run_default_create_plan(tmp_path):

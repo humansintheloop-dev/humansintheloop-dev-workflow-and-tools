@@ -4,7 +4,12 @@ import os
 import pytest
 
 from i2code.implement.claude_runner import ClaudeCodeCommand
-from i2code.implement.command_builder import CommandBuilder, FixRequest, TaskCommandOpts
+from i2code.implement.command_builder import (
+    CiFixRequest,
+    CommandBuilder,
+    FixRequest,
+    TaskCommandOpts,
+)
 
 
 def _build_task_cmd(**overrides):
@@ -67,7 +72,19 @@ def _build_recovery_cmd(**overrides):
 
 
 def _build_ci_fix_cmd(**overrides):
-    defaults = dict(run_id=12345, workflow_name="CI Build", failure_logs="Error: test failed", interactive=True)
+    request_fields = {
+        "run_id": 12345,
+        "workflow_name": "CI Build",
+        "failure_logs": "Error: test failed",
+    }
+    for key in list(request_fields):
+        if key in overrides:
+            request_fields[key] = overrides.pop(key)
+    defaults = dict(
+        request=CiFixRequest(**request_fields),
+        cwd="/cwd",
+        interactive=True,
+    )
     defaults.update(overrides)
     return CommandBuilder().build_ci_fix_command(**defaults)
 
@@ -268,30 +285,28 @@ class TestCommandBuilderRecoveryCommand:
 class TestCommandBuilderCiFixCommand:
     """Test building CI fix commands."""
 
-    def test_interactive_returns_claude_with_prompt(self):
-        """Interactive CI fix should be ['claude', prompt]."""
-        cmd = _build_ci_fix_cmd()
-        assert cmd[0] == "claude"
-        assert "-p" not in cmd
+    def test_build_ci_fix_command_returns_dataclass(self):
+        cmd = _build_ci_fix_cmd(cwd="/work/tree", interactive=False)
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.cwd == "/work/tree"
+        assert cmd.interactive is False
+        assert cmd.prompt is not None
 
-    def test_non_interactive_includes_p_flag(self):
-        """Non-interactive CI fix should include -p flag."""
-        cmd = _build_ci_fix_cmd(interactive=False)
-        assert "-p" in cmd
-        assert "--verbose" in cmd
+    def test_interactive_flag_mapped_from_parameter(self):
+        cmd = _build_ci_fix_cmd(interactive=True)
+        assert cmd.interactive is True
 
     def test_includes_workflow_info_in_prompt(self):
         """Prompt should include run_id and workflow_name."""
         cmd = _build_ci_fix_cmd()
-        prompt = cmd[1]
-        assert "12345" in prompt
-        assert "CI Build" in prompt
-        assert "Error: test failed" in prompt
+        assert "12345" in cmd.prompt
+        assert "CI Build" in cmd.prompt
+        assert "Error: test failed" in cmd.prompt
 
     def test_truncates_long_logs(self):
         """Should truncate logs longer than 5000 chars."""
         cmd = _build_ci_fix_cmd(failure_logs="x" * 6000)
-        assert "truncated" in cmd[1].lower()
+        assert "truncated" in cmd.prompt.lower()
 
     def test_renders_ci_fix_template(self, mocker):
         """Should render prompt from ci_fix.j2 template."""

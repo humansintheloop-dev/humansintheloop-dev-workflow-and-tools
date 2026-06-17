@@ -1,9 +1,4 @@
-"""CommandBuilder: builds all Claude command lists.
-
-Consolidates the interactive/non-interactive branching into a single
-_with_mode() helper so the if interactive: ... else: ... pattern
-exists in one place.
-"""
+"""CommandBuilder: builds ``ClaudeCodeCommand`` instances for all invocation types."""
 
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
@@ -37,36 +32,7 @@ class CiFixRequest:
 
 
 class CommandBuilder:
-    """Builds Claude CLI commands for all invocation types.
-
-    The interactive/non-interactive branching is handled once in
-    ``_with_mode()``.  Each public method renders its template and
-    delegates to that helper.
-    """
-
-    def _with_mode(
-        self,
-        prompt: str,
-        interactive: bool,
-        extra_cli_args: Optional[List[str]] = None,
-    ) -> List[str]:
-        """Apply interactive/non-interactive flags to a prompt.
-
-        Args:
-            prompt: The rendered prompt string.
-            interactive: True for interactive, False for -p mode.
-            extra_cli_args: Optional extra CLI arguments.
-
-        Returns:
-            Command list suitable for subprocess.
-        """
-        extra = extra_cli_args or []
-        if interactive:
-            return ["claude"] + extra + [prompt]
-        else:
-            return ["claude"] + extra + [
-                "--verbose", "--output-format=stream-json", "-p", prompt
-            ]
+    """Builds ``ClaudeCodeCommand`` instances for all invocation types."""
 
     def build_recovery_command(
         self,

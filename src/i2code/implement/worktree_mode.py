@@ -9,6 +9,7 @@ from i2code.implement.git_setup import (
     has_ci_workflow_files,
 )
 from i2code.implement.claude_runner import (
+    ClaudeCodeCommand,
     check_claude_success,
     print_task_failure_diagnostics,
 )
@@ -209,7 +210,10 @@ class WorktreeMode:
                 extra_prompt=self._opts.extra_prompt,
                 extra_cli_args=extra_cli_args,
             ),
+            cwd=self._git_repo.working_tree_dir,
         )
 
     def _run_claude(self, claude_cmd):
+        if isinstance(claude_cmd, ClaudeCodeCommand):
+            return self._loop_steps.claude_runner.execute(claude_cmd)
         return self._loop_steps.claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)

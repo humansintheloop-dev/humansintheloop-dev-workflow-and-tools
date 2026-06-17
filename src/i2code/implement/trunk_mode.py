@@ -4,6 +4,7 @@ import sys
 
 from i2code.claude.permissions import calculate_claude_permissions
 from i2code.implement.claude_runner import (
+    ClaudeCodeCommand,
     check_claude_success,
     print_task_failure_diagnostics,
 )
@@ -77,7 +78,10 @@ class TrunkMode:
                 extra_prompt=self._opts.extra_prompt,
                 extra_cli_args=extra_cli_args,
             ),
+            cwd=self._workspace.git_repo.working_tree_dir,
         )
 
     def _run_claude(self, claude_cmd):
+        if isinstance(claude_cmd, ClaudeCodeCommand):
+            return self._claude_runner.execute(claude_cmd)
         return self._claude_runner.run(claude_cmd, cwd=self._workspace.git_repo.working_tree_dir)

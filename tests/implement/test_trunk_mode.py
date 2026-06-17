@@ -6,7 +6,7 @@ from contextlib import contextmanager
 
 import pytest
 
-from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.claude_runner import CapturedOutput, ClaudeCodeCommand, ClaudeResult
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.idea_project import IdeaProject
 from i2code.implement.implement_opts import ImplementOpts
@@ -99,7 +99,10 @@ class TestTrunkModeExecute:
         mode.execute()
 
         assert len(fake_runner.calls) == 1
-        assert fake_runner.calls[0][0] == "run"
+        method, cmd, cwd = fake_runner.calls[0]
+        assert method == "execute"
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cwd == fake_repo.working_tree_dir
         assert "All tasks completed!" in capsys.readouterr().out
 
     def test_exits_on_claude_failure(self):
@@ -241,7 +244,9 @@ class TestTrunkModeWithRecovery:
 
         assert len(fake_runner.calls) == 2
         assert fake_runner.calls[0][0] == "run_batch"
-        assert fake_runner.calls[1][0] == "run"
+        assert fake_runner.calls[1][0] == "execute"
+        assert isinstance(fake_runner.calls[1][1], ClaudeCodeCommand)
+        assert fake_runner.calls[1][2] == fake_repo.working_tree_dir
         captured = capsys.readouterr()
         assert "Detected uncommitted changes" in captured.out
         assert "All tasks completed!" in captured.out
@@ -258,7 +263,10 @@ class TestTrunkModeWithRecovery:
         mode.execute()
 
         assert len(fake_runner.calls) == 1
-        assert fake_runner.calls[0][0] == "run"
+        method, cmd, cwd = fake_runner.calls[0]
+        assert method == "execute"
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cwd == fake_repo.working_tree_dir
         captured = capsys.readouterr()
         assert "Detected uncommitted changes" not in captured.out
         assert "All tasks completed!" in captured.out

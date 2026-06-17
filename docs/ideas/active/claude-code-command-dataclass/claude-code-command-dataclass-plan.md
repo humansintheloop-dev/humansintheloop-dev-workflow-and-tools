@@ -298,15 +298,15 @@ Implements the third secondary scenario from §6.2: a `CommandBuilder.build_task
     - [x] Replace the body of `build_task_command` to render the prompt and return a `ClaudeCodeCommand`
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 7.3: `worktree_mode` and `trunk_mode` invoke `execute()` with the `ClaudeCodeCommand` from `build_task_command`**
+- [x] **Task 7.3: `worktree_mode` and `trunk_mode` invoke `execute()` with the `ClaudeCodeCommand` from `build_task_command`**
   - TaskType: OUTCOME
   - Entrypoint: `WorktreeMode.run_task(...)` (call site at `src/i2code/implement/worktree_mode.py:204`) and `TrunkMode.run_task(...)` (call site at `src/i2code/implement/trunk_mode.py:72`)
   - Observable: With a `FakeClaudeRunner` (configured with `interactive=False` for non-interactive runs), `fake.calls` records `("execute", cmd, working_tree_dir)` where `cmd` was returned verbatim by `CommandBuilder.build_task_command`. `subprocess` is invoked with the argv that `_build_argv` produces from that command.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_worktree_mode.py tests/implement/test_trunk_mode.py -v -m unit` exits 0.
   - Steps:
-    - [ ] Update `test_worktree_mode.py` and `test_trunk_mode.py` task-execution tests to assert the `("execute", ClaudeCodeCommand, cwd)` recorded call
-    - [ ] Replace `run_batch`/`run_interactive`/`run` calls at `src/i2code/implement/worktree_mode.py:204` and `src/i2code/implement/trunk_mode.py:72` with `claude_runner.execute(command)` where `command` is the `ClaudeCodeCommand` returned by `build_task_command`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update `test_worktree_mode.py` and `test_trunk_mode.py` task-execution tests to assert the `("execute", ClaudeCodeCommand, cwd)` recorded call
+    - [x] Replace `run_batch`/`run_interactive`/`run` calls at `src/i2code/implement/worktree_mode.py:204` and `src/i2code/implement/trunk_mode.py:72` with `claude_runner.execute(command)` where `command` is the `ClaudeCodeCommand` returned by `build_task_command`
+    - [x] Run targeted pytest, confirm green
 
 ---
 

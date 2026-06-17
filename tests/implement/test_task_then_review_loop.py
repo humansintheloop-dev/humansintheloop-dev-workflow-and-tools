@@ -120,7 +120,7 @@ class TestTaskExecutionThenReviewPollLoop:
             mode.execute()
 
             assert len(fake_runner.calls) == 1
-            assert fake_runner.calls[0][0] == "run"
+            assert fake_runner.calls[0][0] == "execute"
             assert review_proc.call_count == 3
 
             captured = capsys.readouterr()
@@ -159,8 +159,8 @@ class TestTaskExecutionThenReviewPollLoop:
             mode.execute()
 
             assert len(fake_runner.calls) == 2
-            assert fake_runner.calls[0][0] == "run"
-            assert fake_runner.calls[1][0] == "run"
+            assert fake_runner.calls[0][0] == "execute"
+            assert fake_runner.calls[1][0] == "execute"
             assert review_proc.call_count == 4
 
             captured = capsys.readouterr()

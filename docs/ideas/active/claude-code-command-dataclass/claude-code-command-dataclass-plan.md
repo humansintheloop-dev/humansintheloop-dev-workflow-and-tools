@@ -588,18 +588,18 @@ Final cleanup step. Removes all deprecated symbols and renames the module-level 
     - [x] Delete `_with_mode` at `src/i2code/implement/command_builder.py:30`
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 15.4: End-to-end verification — no raw `["claude"` lists, no old API, full suite green**
+- [x] **Task 15.4: End-to-end verification — no raw `["claude"` lists, no old API, full suite green**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: `./test-scripts/test-end-to-end.sh` exits 0. `grep -rn '\["claude"' src/i2code/ --include='*.py'` returns exactly ONE match (the canonical `["claude"]` initial list inside `ClaudeRunner._build_argv` in `src/i2code/implement/claude_runner.py`). `grep -rn 'run_batch\|run_interactive\|build_session_args\|get_or_create_session_args' src/i2code/ --include='*.py'` returns zero matches. `command_builder.build_feedback_command` still produces argv containing the 2-token sequence `["--print", "wt-handle-feedback.md"]` (issue #40 preserved). `src/i2code/implement/managed_subprocess.py` is unchanged from `git diff master...HEAD -- src/i2code/implement/managed_subprocess.py`.
   - Evidence: `./test-scripts/test-end-to-end.sh` exits 0; `uvx pyright --level error src/` exits 0; the four `grep` invocations listed above produce the expected match counts.
   - Steps:
-    - [ ] Run `./test-scripts/test-end-to-end.sh` and confirm exit 0
-    - [ ] Run `uvx pyright --level error src/` and confirm exit 0
-    - [ ] Run the four `grep` invocations listed in Observable and confirm match counts
-    - [ ] Run `git diff master...HEAD -- src/i2code/implement/managed_subprocess.py` and confirm zero diff
-    - [ ] Inspect `command_builder.build_feedback_command`'s test from Task 14.1 to confirm it still asserts the 2-token `--print wt-handle-feedback.md` sequence in the emitted argv
-    - [ ] If any check fails, STOP and fix before committing the cleanup
+    - [x] Run `./test-scripts/test-end-to-end.sh` and confirm exit 0
+    - [x] Run `uvx pyright --level error src/` and confirm exit 0
+    - [x] Run the four `grep` invocations listed in Observable and confirm match counts
+    - [x] Run `git diff master...HEAD -- src/i2code/implement/managed_subprocess.py` and confirm zero diff
+    - [x] Inspect `command_builder.build_feedback_command`'s test from Task 14.1 to confirm it still asserts the 2-token `--print wt-handle-feedback.md` sequence in the emitted argv
+    - [x] If any check fails, STOP and fix before committing the cleanup
 
 ---
 

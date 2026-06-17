@@ -94,6 +94,7 @@ def _build_feedback_cmd(**overrides):
         pr_url="https://github.com/owner/repo/pull/123",
         feedback_type="review_comment",
         feedback_content="Please fix the typo",
+        cwd="/cwd",
     )
     defaults.update(overrides)
     return CommandBuilder().build_feedback_command(**defaults)
@@ -325,25 +326,42 @@ class TestCommandBuilderCiFixCommand:
 class TestCommandBuilderFeedbackCommand:
     """Test building feedback commands."""
 
-    def test_uses_print_flag(self):
-        """Feedback command should use --print flag."""
+    def test_build_feedback_command_returns_dataclass(self):
+        cmd = _build_feedback_cmd(cwd="/work/tree")
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.cwd == "/work/tree"
+        assert cmd.interactive is False
+        assert cmd.prompt is not None
+
+    def test_extra_args_preserves_issue_40_two_token_shape(self):
+        """extra_args carries the verbatim broken --print sequence (issue #40)."""
         cmd = _build_feedback_cmd()
-        assert "--print" in cmd or "-p" in cmd
+        assert cmd.extra_args == ["--print", "wt-handle-feedback.md"]
 
     def test_includes_pr_url_in_prompt(self):
-        """Command should include PR URL in prompt."""
         cmd = _build_feedback_cmd()
-        assert "https://github.com/owner/repo/pull/123" in " ".join(cmd)
+        assert "https://github.com/owner/repo/pull/123" in cmd.prompt
 
     def test_includes_feedback_content_in_prompt(self):
-        """Command should include feedback content."""
         cmd = _build_feedback_cmd()
-        assert "Please fix the typo" in " ".join(cmd)
+        assert "Please fix the typo" in cmd.prompt
 
-    def test_uses_feedback_template(self):
-        """Should use wt-handle-feedback.md template."""
-        cmd = _build_feedback_cmd()
-        assert "wt-handle-feedback.md" in " ".join(cmd)
+    def test_build_feedback_command_preserves_issue_40_via_extra_args(self):
+        """Cross-check: argv emitted by ClaudeRunner._build_argv matches the
+        broken 2-token --print shape exactly."""
+        from i2code.implement.claude_runner import ClaudeRunner
+
+        cmd = _build_feedback_cmd(cwd="/work/tree")
+        runner = ClaudeRunner(interactive=False)
+        argv = runner._build_argv(cmd, effective_interactive=False)
+
+        assert argv == [
+            "claude",
+            "--verbose",
+            "--output-format=stream-json",
+            "--print", "wt-handle-feedback.md",
+            "-p", cmd.prompt,
+        ]
 
 
 @pytest.mark.unit

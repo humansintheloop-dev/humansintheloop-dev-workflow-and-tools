@@ -24,7 +24,11 @@ def _build_scaffolding_cmd(**overrides):
 
 
 def _build_triage_cmd(**overrides):
-    defaults = dict(feedback_content="Please fix the typo", interactive=True)
+    defaults = dict(
+        feedback_content="Please fix the typo",
+        cwd="/cwd",
+        interactive=True,
+    )
     defaults.update(overrides)
     return CommandBuilder().build_triage_command(**defaults)
 
@@ -158,29 +162,25 @@ class TestCommandBuilderScaffoldingCommand:
 class TestCommandBuilderTriageCommand:
     """Test building triage feedback commands."""
 
-    def test_interactive_returns_claude_with_prompt(self):
-        """Interactive triage should be ['claude', prompt]."""
-        cmd = _build_triage_cmd()
-        assert cmd[0] == "claude"
-        assert "-p" not in cmd
+    def test_build_triage_command_returns_dataclass(self):
+        cmd = _build_triage_cmd(cwd="/work/tree", interactive=False)
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.cwd == "/work/tree"
+        assert cmd.interactive is False
+        assert cmd.prompt is not None
 
-    def test_non_interactive_includes_p_flag(self):
-        """Non-interactive triage should include -p flag."""
-        cmd = _build_triage_cmd(interactive=False)
-        assert "-p" in cmd
-        assert "--verbose" in cmd
+    def test_interactive_flag_mapped_from_parameter(self):
+        cmd = _build_triage_cmd(interactive=True)
+        assert cmd.interactive is True
 
     def test_includes_feedback_content_in_prompt(self):
-        """Prompt should include the feedback content."""
         cmd = _build_triage_cmd()
-        assert "Please fix the typo" in cmd[1]
+        assert "Please fix the typo" in cmd.prompt
 
     def test_requests_json_output(self):
-        """Should request JSON output format."""
         cmd = _build_triage_cmd()
-        prompt = cmd[1]
-        assert "json" in prompt.lower()
-        assert "comment_ids" in prompt
+        assert "json" in cmd.prompt.lower()
+        assert "comment_ids" in cmd.prompt
 
 
 @pytest.mark.unit

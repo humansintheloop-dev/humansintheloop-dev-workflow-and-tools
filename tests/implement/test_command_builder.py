@@ -4,7 +4,7 @@ import os
 import pytest
 
 from i2code.implement.claude_runner import ClaudeCodeCommand
-from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
+from i2code.implement.command_builder import CommandBuilder, FixRequest, TaskCommandOpts
 
 
 def _build_task_cmd(**overrides):
@@ -34,10 +34,17 @@ def _build_triage_cmd(**overrides):
 
 
 def _build_fix_cmd(**overrides):
+    request_fields = {
+        "pr_url": "https://github.com/owner/repo/pull/123",
+        "feedback_content": "Fix the typo",
+        "fix_description": "Fix typo in README",
+    }
+    for key in list(request_fields):
+        if key in overrides:
+            request_fields[key] = overrides.pop(key)
     defaults = dict(
-        pr_url="https://github.com/owner/repo/pull/123",
-        feedback_content="Fix the typo",
-        fix_description="Fix typo in README",
+        request=FixRequest(**request_fields),
+        cwd="/cwd",
         interactive=True,
     )
     defaults.update(overrides)
@@ -187,28 +194,25 @@ class TestCommandBuilderTriageCommand:
 class TestCommandBuilderFixCommand:
     """Test building fix feedback commands."""
 
-    def test_interactive_returns_claude_with_prompt(self):
-        """Interactive fix should be ['claude', prompt]."""
-        cmd = _build_fix_cmd()
-        assert cmd[0] == "claude"
-        assert "-p" not in cmd
+    def test_build_fix_command_returns_dataclass(self):
+        cmd = _build_fix_cmd(cwd="/work/tree", interactive=False)
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.cwd == "/work/tree"
+        assert cmd.interactive is False
+        assert cmd.prompt is not None
 
-    def test_non_interactive_includes_p_flag(self):
-        """Non-interactive fix should include -p flag."""
-        cmd = _build_fix_cmd(interactive=False)
-        assert "-p" in cmd
-        assert "--verbose" in cmd
+    def test_interactive_flag_mapped_from_parameter(self):
+        cmd = _build_fix_cmd(interactive=True)
+        assert cmd.interactive is True
 
     def test_includes_pr_url_in_prompt(self):
-        """Prompt should include the PR URL."""
         cmd = _build_fix_cmd()
-        assert "https://github.com/owner/repo/pull/123" in cmd[1]
+        assert "https://github.com/owner/repo/pull/123" in cmd.prompt
 
     def test_includes_feedback_and_description_in_prompt(self):
-        """Should include feedback content and fix description in prompt."""
         cmd = _build_fix_cmd(feedback_content="Please add tests", fix_description="Add unit tests")
-        assert "Please add tests" in cmd[1]
-        assert "Add unit tests" in cmd[1]
+        assert "Please add tests" in cmd.prompt
+        assert "Add unit tests" in cmd.prompt
 
 
 @pytest.mark.unit

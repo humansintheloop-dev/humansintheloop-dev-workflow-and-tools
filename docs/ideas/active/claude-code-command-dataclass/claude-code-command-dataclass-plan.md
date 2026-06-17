@@ -355,25 +355,25 @@ Implements the mock-binary triage scenario from §6.2 and finishes the migration
 
 Migrates the fix-path in `pull_request_review_processor.py` (both mock-binary short-circuit at `:317-318` and non-mock call at `:323`). Same pattern as Steel Thread 8 but for the fix command.
 
-- [ ] **Task 9.1: `CommandBuilder.build_fix_command` returns a `ClaudeCodeCommand`**
+- [x] **Task 9.1: `CommandBuilder.build_fix_command` returns a `ClaudeCodeCommand`**
   - TaskType: OUTCOME
   - Entrypoint: `CommandBuilder().build_fix_command(pr_url, feedback_content, fix_description, cwd=working_tree_dir, interactive=False)`
   - Observable: Returns a `ClaudeCodeCommand` with `prompt = render_template("fix_feedback.j2", ...)`, `cwd=working_tree_dir`, `interactive=False`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_command_builder.py -v -m unit -k "build_fix_command"` exits 0.
   - Steps:
-    - [ ] Update tests for `build_fix_command` to assert dataclass return
-    - [ ] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:165` with a `ClaudeCodeCommand` constructor
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update tests for `build_fix_command` to assert dataclass return
+    - [x] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:165` with a `ClaudeCodeCommand` constructor
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 9.2: `pull_request_review_processor` fix path uses `execute()` for mock and non-mock branches**
   - TaskType: OUTCOME
   - Entrypoint: `PullRequestReviewProcessor.process_fix_group(pr_url, comment_ids, fix_description, ...)` (the path covering `src/i2code/implement/pull_request_review_processor.py:317-323`)
-  - Observable: When `self._opts.mock_claude` is set, `fake.calls` records `("execute", ClaudeCodeCommand(cwd=working_tree_dir, mock_command=[mock_path, f"fix-{pr_number}-{comment_ids[0]}"]))`. When unset, the recorded `ClaudeCodeCommand` matches the output of `build_fix_command(pr_url, feedback_content, fix_description, cwd=working_tree_dir, interactive=False)`.
+  - Observable: When `self._opts.mock_claude` is set, `fake.calls` records `("execute", ClaudeCodeCommand(cwd=working_tree_dir, mock_command=[mock_path, f"fix-{pr_number}-{comment_ids[0]}"]))`. When unset, the recorded `ClaudeCodeCommand` matches the output of `build_fix_command(FixRequest(pr_url, feedback_content, fix_description), cwd=working_tree_dir, interactive=False)`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_pull_request_review_processor.py -v -m unit -k "fix"` exits 0.
   - Steps:
     - [ ] Update fix-path tests to assert the new call shape (both mock and non-mock branches)
     - [ ] Update `src/i2code/implement/pull_request_review_processor.py:317-318` (mock branch) to construct `ClaudeCodeCommand(cwd=..., mock_command=[mock_path, f"fix-{pr_number}-{comment_ids[0]}"])`
-    - [ ] Update `src/i2code/implement/pull_request_review_processor.py:323` (non-mock branch) to call `CommandBuilder().build_fix_command(pr_url, feedback_content, fix_description, cwd=..., interactive=False)`
+    - [ ] Update `src/i2code/implement/pull_request_review_processor.py:323` (non-mock branch) to call `CommandBuilder().build_fix_command(FixRequest(pr_url, feedback_content, fix_description), cwd=..., interactive=False)`
     - [ ] Replace `run_batch`/`run_interactive` dispatch with `claude_runner.execute(cmd)`
     - [ ] Run targeted pytest and full unit suite; both green
 
@@ -676,3 +676,12 @@ build_task_command returns ClaudeCodeCommand with cwd, mapped interactive, and s
 
 ### 2026-06-16 19:11 - mark-task-complete
 ST8 T8.3: triage path uses execute() with ClaudeCodeCommand and consumes result.result_text
+
+### 2026-06-16 19:17 - mark-task-complete
+build_fix_command now returns ClaudeCodeCommand with cwd parameter
+
+### 2026-06-16 19:27 - mark-task-incomplete
+CodeScene pre-commit hook blocks: build_fix_command has 5 args (threshold 4); cannot reach 10.0 score without diverging from plan-mandated signature
+
+### 2026-06-16 19:29 - mark-task-complete
+build_fix_command returns ClaudeCodeCommand with cwd; content args bundled into FixRequest dataclass to satisfy CodeScene arg-count threshold while keeping the dedup helper

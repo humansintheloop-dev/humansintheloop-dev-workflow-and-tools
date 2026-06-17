@@ -20,6 +20,14 @@ class TaskCommandOpts:
     extra_cli_args: Optional[List[str]] = None
 
 
+@dataclass
+class FixRequest:
+    """The PR-comment group that build_fix_command should ask Claude to fix."""
+    pr_url: str
+    feedback_content: str
+    fix_description: str
+
+
 class CommandBuilder:
     """Builds Claude CLI commands for all invocation types.
 
@@ -166,51 +174,51 @@ class CommandBuilder:
                 "--verbose", "--output-format=stream-json", "-p", prompt,
             ]
 
-    def build_triage_command(
+    def _render_prompt_command(
         self,
-        feedback_content: str,
-        cwd: str = "",
-        interactive: bool = True,
+        template_name: str,
+        cwd: str,
+        interactive: bool,
+        **template_args: object,
     ) -> ClaudeCodeCommand:
         prompt = render_template(
-            "triage_feedback.j2",
+            template_name,
             package="i2code.implement",
-            feedback_content=feedback_content,
+            **template_args,
         )
-
         return ClaudeCodeCommand(
             cwd=cwd,
             prompt=prompt,
             interactive=interactive,
         )
 
-    def build_fix_command(
+    def build_triage_command(
         self,
-        pr_url: str,
         feedback_content: str,
-        fix_description: str,
+        cwd: str = "",
         interactive: bool = True,
-    ) -> List[str]:
-        """Build command to invoke Claude for fixing a group of comments.
-
-        Args:
-            pr_url: The PR URL.
-            feedback_content: The specific feedback to address.
-            fix_description: Description of what to fix.
-            interactive: If True, run Claude interactively.
-
-        Returns:
-            Command list suitable for subprocess.
-        """
-        prompt = render_template(
-            "fix_feedback.j2",
-            package="i2code.implement",
-            pr_url=pr_url,
+    ) -> ClaudeCodeCommand:
+        return self._render_prompt_command(
+            "triage_feedback.j2",
+            cwd,
+            interactive,
             feedback_content=feedback_content,
-            fix_description=fix_description,
         )
 
-        return self._with_mode(prompt, interactive)
+    def build_fix_command(
+        self,
+        request: FixRequest,
+        cwd: str = "",
+        interactive: bool = True,
+    ) -> ClaudeCodeCommand:
+        return self._render_prompt_command(
+            "fix_feedback.j2",
+            cwd,
+            interactive,
+            pr_url=request.pr_url,
+            feedback_content=request.feedback_content,
+            fix_description=request.fix_description,
+        )
 
     def build_ci_fix_command(
         self,

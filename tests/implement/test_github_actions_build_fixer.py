@@ -2,6 +2,8 @@
 
 import pytest
 
+from i2code.implement.claude_runner import ClaudeCodeCommand
+from i2code.implement.command_builder import CiFixRequest, CommandBuilder
 from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.implement_opts import ImplementOpts
 
@@ -89,7 +91,7 @@ class TestGithubActionsBuildFixerFixCiFailure:
 
         assert fixer.fix_ci_failure() is False
         assert len(fake_runner.calls) == 1
-        assert fake_runner.calls[0][0] == "run"
+        assert fake_runner.calls[0][0] == "execute"
 
     def test_pushes_and_returns_true_when_ci_passes(self):
         fixer, fake_repo, fake_gh, fake_runner = _make_fixer(
@@ -102,3 +104,50 @@ class TestGithubActionsBuildFixerFixCiFailure:
         assert fixer.fix_ci_failure() is True
         assert ("push",) in fake_repo.calls
         assert ("get_workflow_failure_logs", 123) in fake_gh.calls
+
+    def test_fix_ci_invokes_execute_with_command_dataclass(self):
+        """Non-mock CI fix dispatches execute() with CommandBuilder output."""
+        fixer, fake_repo, _, fake_runner = _make_fixer(
+            failing_run=_CI_BUILD_FAILURE,
+            opts_overrides=dict(ci_fix_retries=1, non_interactive=True),
+        )
+        fake_repo.set_head_sha("aaa")
+
+        fixer.fix_ci_failure()
+
+        assert len(fake_runner.calls) == 1
+        method, cmd, cwd = fake_runner.calls[0]
+        assert method == "execute"
+        assert isinstance(cmd, ClaudeCodeCommand)
+        expected = CommandBuilder().build_ci_fix_command(
+            CiFixRequest(
+                run_id=123,
+                workflow_name="CI Build",
+                failure_logs="Build failed",
+            ),
+            cwd=fake_repo.working_tree_dir,
+            interactive=False,
+        )
+        assert cmd == expected
+        assert cwd == fake_repo.working_tree_dir
+
+    def test_fix_ci_with_mock_claude_uses_execute_with_mock_command(self):
+        """When mock_claude is set, execute() receives a ClaudeCodeCommand with mock_command."""
+        mock_path = "/path/to/mock-claude"
+        fixer, fake_repo, _, fake_runner = _make_fixer(
+            failing_run=_CI_BUILD_FAILURE,
+            opts_overrides=dict(
+                ci_fix_retries=1, non_interactive=True, mock_claude=mock_path,
+            ),
+        )
+        fake_repo.set_head_sha("aaa")
+
+        fixer.fix_ci_failure()
+
+        assert len(fake_runner.calls) == 1
+        method, cmd, cwd = fake_runner.calls[0]
+        assert method == "execute"
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.cwd == fake_repo.working_tree_dir
+        assert cmd.mock_command == [mock_path, "fix-ci-123"]
+        assert cwd == fake_repo.working_tree_dir

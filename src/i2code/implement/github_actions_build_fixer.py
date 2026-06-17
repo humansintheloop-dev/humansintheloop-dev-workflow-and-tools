@@ -3,6 +3,7 @@
 import sys
 from typing import Any, Dict, Optional
 
+from i2code.implement.claude_runner import ClaudeCodeCommand
 from i2code.implement.command_builder import CiFixRequest, CommandBuilder
 
 
@@ -134,9 +135,13 @@ class GithubActionsBuildFixer:
     def _invoke_claude_for_fix(self, run_id, workflow_name, failure_logs):
         """Build and run the Claude command for a CI fix."""
         interactive = not self._opts.non_interactive
+        cwd = self._git_repo.working_tree_dir
 
         if self._opts.mock_claude:
-            claude_cmd = [self._opts.mock_claude, f"fix-ci-{run_id}"]
+            claude_cmd = ClaudeCodeCommand(
+                cwd=cwd,
+                mock_command=[self._opts.mock_claude, f"fix-ci-{run_id}"],
+            )
         else:
             claude_cmd = CommandBuilder().build_ci_fix_command(
                 CiFixRequest(
@@ -144,8 +149,9 @@ class GithubActionsBuildFixer:
                     workflow_name=workflow_name,
                     failure_logs=failure_logs,
                 ),
+                cwd=cwd,
                 interactive=interactive,
             )
 
         print("  Invoking Claude to fix CI failure...")
-        self._claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)
+        self._claude_runner.execute(claude_cmd)

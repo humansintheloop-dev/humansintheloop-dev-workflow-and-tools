@@ -448,15 +448,15 @@ Migrates `github_actions_build_fixer.py` (`build_ci_fix_command` site at `:138-1
     - [x] Add `cwd: str` parameter and replace body at `src/i2code/implement/command_builder.py:193` with a `ClaudeCodeCommand` constructor (preserving the `max_log_length` truncation)
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 12.2: `github_actions_build_fixer` invokes `execute()` for both mock and non-mock branches**
+- [x] **Task 12.2: `github_actions_build_fixer` invokes `execute()` for both mock and non-mock branches**
   - TaskType: OUTCOME
   - Entrypoint: `GithubActionsBuildFixer.fix_failing_run(run_id, ...)` (the path covering `src/i2code/implement/github_actions_build_fixer.py:138-139`)
   - Observable: When mock is set, `fake.calls` records `("execute", ClaudeCodeCommand(cwd=working_tree_dir, mock_command=[mock_path, f"fix-ci-{run_id}"]))`. When unset, matches `build_ci_fix_command(...)` output.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_github_actions_build_fixer.py -v -m unit` exits 0.
   - Steps:
-    - [ ] Update tests to assert both branches' call shapes
-    - [ ] Update `src/i2code/implement/github_actions_build_fixer.py:138-139` to construct mock or real `ClaudeCodeCommand` and call `claude_runner.execute(cmd)`
-    - [ ] Run targeted pytest and full unit suite; both green
+    - [x] Update tests to assert both branches' call shapes
+    - [x] Update `src/i2code/implement/github_actions_build_fixer.py:138-139` to construct mock or real `ClaudeCodeCommand` and call `claude_runner.execute(cmd)`
+    - [x] Run targeted pytest and full unit suite; both green
 
 ---
 

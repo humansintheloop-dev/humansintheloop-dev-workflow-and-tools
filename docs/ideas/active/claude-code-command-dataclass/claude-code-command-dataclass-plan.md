@@ -324,15 +324,15 @@ Implements the mock-binary triage scenario from §6.2 and finishes the migration
     - [x] Implement step 1 of §3.3 in `ClaudeRunner.execute()` — when `command.mock_command is not None`, dispatch the argv as-is using the runner's default mode (`self._interactive`); skip all subsequent steps
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 8.2: `CommandBuilder.build_triage_command` returns a `ClaudeCodeCommand`**
+- [x] **Task 8.2: `CommandBuilder.build_triage_command` returns a `ClaudeCodeCommand`**
   - TaskType: OUTCOME
   - Entrypoint: `CommandBuilder().build_triage_command(feedback_content, cwd=working_tree_dir, interactive=False)`
   - Observable: Returns a `ClaudeCodeCommand` with `prompt = render_template("triage_feedback.j2", ...)`, `cwd=working_tree_dir`, `interactive=False`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_command_builder.py -v -m unit -k "build_triage_command"` exits 0.
   - Steps:
-    - [ ] Update existing `build_triage_command` tests to assert the `ClaudeCodeCommand` return type
-    - [ ] Add `cwd: str` parameter and replace the `_with_mode` call at `src/i2code/implement/command_builder.py:143` with a `ClaudeCodeCommand` constructor
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update existing `build_triage_command` tests to assert the `ClaudeCodeCommand` return type
+    - [x] Add `cwd: str` parameter and replace the `_with_mode` call at `src/i2code/implement/command_builder.py:143` with a `ClaudeCodeCommand` constructor
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 8.3: `pull_request_review_processor` triage path uses `execute()` and consumes `result.result_text`**
   - TaskType: OUTCOME

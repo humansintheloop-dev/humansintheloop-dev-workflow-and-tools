@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from i2code.implement.claude_runner import ClaudeCodeCommand
 from i2code.implement.command_builder import CommandBuilder
 
 
@@ -186,6 +187,8 @@ class PullRequestReviewProcessor:
     @staticmethod
     def _extract_prompt_from_command(cmd):
         """Extract the -p prompt argument from a Claude command list."""
+        if isinstance(cmd, ClaudeCodeCommand):
+            return cmd.prompt or ""
         try:
             idx = cmd.index("-p")
             return cmd[idx + 1]

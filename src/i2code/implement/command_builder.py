@@ -169,24 +169,20 @@ class CommandBuilder:
     def build_triage_command(
         self,
         feedback_content: str,
+        cwd: str = "",
         interactive: bool = True,
-    ) -> List[str]:
-        """Build command to invoke Claude for triaging PR feedback.
-
-        Args:
-            feedback_content: Formatted feedback content.
-            interactive: If True, run Claude interactively.
-
-        Returns:
-            Command list suitable for subprocess.
-        """
+    ) -> ClaudeCodeCommand:
         prompt = render_template(
             "triage_feedback.j2",
             package="i2code.implement",
             feedback_content=feedback_content,
         )
 
-        return self._with_mode(prompt, interactive)
+        return ClaudeCodeCommand(
+            cwd=cwd,
+            prompt=prompt,
+            interactive=interactive,
+        )
 
     def build_fix_command(
         self,

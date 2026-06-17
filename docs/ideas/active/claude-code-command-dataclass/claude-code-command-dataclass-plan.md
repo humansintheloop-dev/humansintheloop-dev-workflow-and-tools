@@ -514,16 +514,16 @@ Migrates the six remaining interactive direct-argv sites. They all share the sim
     - [x] Replace argv assembly at `src/i2code/improve/review_issues.py:117` with `claude_runner.execute(ClaudeCodeCommand(...))`
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 13.6: `improve/update_claude_files` invokes `execute()` with a `ClaudeCodeCommand`**
+- [x] **Task 13.6: `improve/update_claude_files` invokes `execute()` with a `ClaudeCodeCommand`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.improve.update_claude_files.update_claude_files(...)` (call site at `src/i2code/improve/update_claude_files.py:58`)
   - Observable: `fake.calls` records one `("execute", cmd, cwd)` with `cmd.interactive is True` and `cmd.prompt` equals the rendered prompt.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k "update_claude_files"` exits 0.
   - Steps:
-    - [ ] Update existing test to assert the `ClaudeCodeCommand` shape
-    - [ ] Replace argv assembly at `src/i2code/improve/update_claude_files.py:58` with `claude_runner.execute(ClaudeCodeCommand(...))`
-    - [ ] Run targeted pytest, confirm green
-    - [ ] After this task: confirm with `grep -R '\["claude"' src/i2code/ --include='*.py'` that the only remaining match is inside `src/i2code/implement/command_builder.py` (`build_feedback_command`, fixed in Steel Thread 14)
+    - [x] Update existing test to assert the `ClaudeCodeCommand` shape
+    - [x] Replace argv assembly at `src/i2code/improve/update_claude_files.py:58` with `claude_runner.execute(ClaudeCodeCommand(...))`
+    - [x] Run targeted pytest, confirm green
+    - [x] After this task: confirm with `grep -R '\["claude"' src/i2code/ --include='*.py'` that the only remaining match is inside `src/i2code/implement/command_builder.py` (`build_feedback_command`, fixed in Steel Thread 14)
 
 ---
 

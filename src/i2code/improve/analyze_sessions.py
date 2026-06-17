@@ -5,7 +5,7 @@ import re
 import sys
 from datetime import datetime
 
-from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.claude_runner import ClaudeCodeCommand, ClaudeResult
 
 _SESSION_PATTERN = re.compile(
     r"^session-\d{4}-\d{2}-\d{2}-\d{6}-(.+)\.md$"
@@ -90,12 +90,10 @@ def analyze_sessions(
         "REPORT_FILE": report_file,
     })
 
-    cmd = [
-        "claude",
-        "--add-dir", sessions_dir,
-        "--add-dir", issues_dir,
-        "--allowedTools", "Read,Edit,Write",
-        "-p", prompt,
-    ]
-
-    return claude_runner.run_batch(cmd, cwd=tracking_dir)
+    return claude_runner.execute(ClaudeCodeCommand(
+        prompt=prompt,
+        cwd=tracking_dir,
+        interactive=False,
+        allowed_tools="Read,Edit,Write",
+        add_dirs=[sessions_dir, issues_dir],
+    ))

@@ -10,7 +10,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "implement"))
 
 from conftest import TempIdeaProject
 from fake_claude_runner import FakeClaudeRunner
+from i2code.claude.permissions import build_allowed_tools_flag
 from i2code.idea_cmd.brainstorm import brainstorm_idea, detect_editor
+from i2code.implement.claude_runner import ClaudeCodeCommand, SessionId
 from i2code.implement.idea_project import IdeaProject
 
 
@@ -112,8 +114,12 @@ class TestSessionManagement:
     def test_generates_session_id_for_new_session(self, tmp_path):
         project, runner, _, _ = run_brainstorm(tmp_path)
         _, cmd, _ = runner.calls[0]
-        assert "--session-id" in cmd
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.session_id is not None
+        assert cmd.session_id.is_new is True
         assert os.path.isfile(project.session_id_file)
+        with open(project.session_id_file) as f:
+            assert f.read().strip() == cmd.session_id.session_id
 
     def test_resumes_existing_session(self):
         with TempIdeaProject("my-feature") as project:
@@ -130,29 +136,31 @@ class TestSessionManagement:
             )
 
             _, cmd, _ = runner.calls[0]
-            assert "--resume" in cmd
-            assert "existing-session-id" in cmd
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cmd.session_id == SessionId(session_id="existing-session-id", is_new=False)
 
 
 @pytest.mark.unit
 class TestClaudeInvocation:
 
-    def test_invokes_claude_interactively(self, tmp_path):
+    def test_invokes_claude_via_execute(self, tmp_path):
         _, runner, _, _ = run_brainstorm(tmp_path)
         method, _, _ = runner.calls[0]
-        assert method == "run_interactive"
+        assert method == "execute"
+
+    def test_command_is_interactive(self, tmp_path):
+        _, runner, _, _ = run_brainstorm(tmp_path)
+        _, cmd, _ = runner.calls[0]
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.interactive is True
 
     def test_claude_prompt_contains_idea_and_discussion_files(self, tmp_path):
         project, runner, _, _ = run_brainstorm(tmp_path)
         _, cmd, _ = runner.calls[0]
-        prompt = cmd[-1]
+        assert isinstance(cmd, ClaudeCodeCommand)
+        prompt = cmd.prompt or ""
         assert project.idea_file in prompt
         assert project.discussion_file in prompt
-
-    def test_claude_command_starts_with_claude(self, tmp_path):
-        _, runner, _, _ = run_brainstorm(tmp_path)
-        _, cmd, _ = runner.calls[0]
-        assert cmd[0] == "claude"
 
     def test_returns_claude_result(self, tmp_path):
         from i2code.implement.claude_runner import ClaudeResult
@@ -179,25 +187,26 @@ class TestAllowedTools:
         )
 
         _, cmd, cwd = runner.calls[0]
-        assert "--allowedTools" in cmd
-        allowed_tools_idx = cmd.index("--allowedTools")
-        allowed_tools_value = cmd[allowed_tools_idx + 1]
-        assert f"Read(/{repo_root}/**)" in allowed_tools_value
-        assert f"Write(/{idea_dir}/**)" in allowed_tools_value
-        assert f"Edit(/{idea_dir}/**)" in allowed_tools_value
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.allowed_tools == build_allowed_tools_flag(repo_root, project.directory)
+        assert cmd.cwd == repo_root
         assert cwd == repo_root
 
     def test_no_allowed_tools_when_repo_root_not_provided(self, tmp_path):
         project, runner, _, _ = run_brainstorm(tmp_path)
         _, cmd, cwd = runner.calls[0]
-        assert "--allowedTools" not in cmd
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.allowed_tools is None
+        assert cmd.cwd == project.directory
         assert cwd == project.directory
 
     def test_standalone_no_allowed_tools(self, tmp_path):
         """Standalone brainstorm (no repo_root) omits --allowedTools and uses project.directory as cwd."""
         project, runner, _, _ = run_brainstorm(tmp_path)
         _, cmd, cwd = runner.calls[0]
-        assert "--allowedTools" not in cmd
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.allowed_tools is None
+        assert cmd.cwd == project.directory
         assert cwd == project.directory
 
 

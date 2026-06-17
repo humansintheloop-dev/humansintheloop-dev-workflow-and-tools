@@ -8,9 +8,9 @@ from pathlib import Path
 
 from i2code.claude.permissions import build_allowed_tools_flag
 from i2code.idea.metadata import write_metadata
-from i2code.implement.claude_runner import ClaudeResult
+from i2code.implement.claude_runner import ClaudeCodeCommand, ClaudeResult
 from i2code.implement.idea_project import IdeaProject
-from i2code.session_manager import get_or_create_session_args
+from i2code.session_manager import read_or_create_session
 from i2code.template_renderer import render_template
 
 IDEA_TEMPLATE_TEXT = "PLEASE DESCRIBE YOUR IDEA"
@@ -85,14 +85,16 @@ def brainstorm_idea(
         "DISCUSSION_FILE": project.discussion_file,
     })
 
-    session_args = get_or_create_session_args(project.session_id_file)
-    cmd = ["claude"]
-
-    if repo_root is not None:
-        allowed_tools = build_allowed_tools_flag(repo_root, project.directory)
-        cmd += ["--allowedTools", allowed_tools]
-
-    cmd += session_args + [prompt]
-
+    allowed_tools = (
+        build_allowed_tools_flag(repo_root, project.directory)
+        if repo_root is not None
+        else None
+    )
     cwd = repo_root if repo_root is not None else project.directory
-    return claude_runner.run_interactive(cmd, cwd=cwd)
+    return claude_runner.execute(ClaudeCodeCommand(
+        prompt=prompt,
+        cwd=cwd,
+        interactive=True,
+        allowed_tools=allowed_tools,
+        session_id=read_or_create_session(project.session_id_file),
+    ))

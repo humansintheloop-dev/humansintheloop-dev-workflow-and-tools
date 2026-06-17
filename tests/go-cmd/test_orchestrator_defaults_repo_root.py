@@ -78,7 +78,11 @@ class TestDefaultBrainstormPassesRepoRoot:
         project, expected_repo_root = _make_idea_project(tmp_path)
         _default_brainstorm_idea(project)
 
-        _assert_repo_root_cwd(fake, expected_repo_root)
+        _, command, cwd = fake.calls[0]
+        assert isinstance(command, ClaudeCodeCommand)
+        assert cwd == expected_repo_root
+        assert command.cwd == expected_repo_root
+        assert command.allowed_tools is not None
 
 
 @pytest.mark.unit

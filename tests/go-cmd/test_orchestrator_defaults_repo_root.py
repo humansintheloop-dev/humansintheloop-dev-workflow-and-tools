@@ -67,6 +67,14 @@ def _assert_repo_root_cwd(fake, expected_repo_root):
     assert "--allowedTools" in cmd
 
 
+def _assert_command_cwd_is_repo_root(fake, expected_repo_root):
+    _, command, cwd = fake.calls[0]
+    assert isinstance(command, ClaudeCodeCommand)
+    assert cwd == expected_repo_root
+    assert command.cwd == expected_repo_root
+    assert command.allowed_tools is not None
+
+
 @pytest.mark.unit
 class TestDefaultBrainstormPassesRepoRoot:
 
@@ -78,11 +86,7 @@ class TestDefaultBrainstormPassesRepoRoot:
         project, expected_repo_root = _make_idea_project(tmp_path)
         _default_brainstorm_idea(project)
 
-        _, command, cwd = fake.calls[0]
-        assert isinstance(command, ClaudeCodeCommand)
-        assert cwd == expected_repo_root
-        assert command.cwd == expected_repo_root
-        assert command.allowed_tools is not None
+        _assert_command_cwd_is_repo_root(fake, expected_repo_root)
 
 
 @pytest.mark.unit
@@ -96,7 +100,7 @@ class TestDefaultCreateSpecPassesRepoRoot:
         project, expected_repo_root = _make_idea_project(tmp_path)
         _default_create_spec(project)
 
-        _assert_repo_root_cwd(fake, expected_repo_root)
+        _assert_command_cwd_is_repo_root(fake, expected_repo_root)
 
 
 @pytest.mark.unit
@@ -133,11 +137,7 @@ class TestDefaultCreatePlanPassesRepoRoot:
 
     def test_cwd_is_repo_root_not_idea_dir(self, tmp_path):
         fake, expected_repo_root = _run_default_create_plan(tmp_path)
-        _, command, cwd = fake.calls[0]
-        assert isinstance(command, ClaudeCodeCommand)
-        assert cwd == expected_repo_root
-        assert command.cwd == expected_repo_root
-        assert command.allowed_tools is not None
+        _assert_command_cwd_is_repo_root(fake, expected_repo_root)
 
 
 @pytest.mark.unit

@@ -5,7 +5,7 @@ import tempfile
 
 import pytest
 
-from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.claude_runner import CapturedOutput, ClaudeCodeCommand, ClaudeResult
 from i2code.implement.commit_recovery import TaskCommitRecovery
 from i2code.implement.github_actions_build_fixer import GithubActionsBuildFixer
 from i2code.implement.github_actions_monitor import GithubActionsMonitor
@@ -206,6 +206,10 @@ class TestWorktreeModeTaskExecution:
             mode.execute()
 
             assert len(fake_runner.calls) == 1
+            method, cmd, cwd = fake_runner.calls[0]
+            assert method == "execute"
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cwd == tmpdir
             assert ("push",) in fake_repo.calls
             assert any(c[0] == "ensure_pr" for c in fake_repo.calls)
             assert any(c[0] == "wait_for_workflow_completion" for c in fake_gh.calls)
@@ -380,6 +384,7 @@ class TestWorktreeModeNonInteractive:
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
             assert method == "run"
+            assert cmd[0] == "/mock"
 
     def test_non_interactive_passes_allowed_tools(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -398,7 +403,10 @@ class TestWorktreeModeNonInteractive:
             mode.execute()
 
             assert len(fake_runner.calls) == 1
-            _, cmd, _ = fake_runner.calls[0]
+            method, cmd, cwd = fake_runner.calls[0]
+            assert method == "execute"
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cwd == tmpdir
             tools_value = cmd.allowed_tools
             assert tools_value is not None
             assert f"Edit(/{tmpdir}/**)" in tools_value
@@ -481,7 +489,9 @@ class TestWorktreeModeWithRecovery:
             # Recovery Claude call (non-interactive) happens before task-loop call
             assert len(fake_runner.calls) == 2
             assert fake_runner.calls[0][0] == "run_batch"  # recovery (commit_recovery uses run_batch directly)
-            assert fake_runner.calls[1][0] == "run"  # task execution
+            assert fake_runner.calls[1][0] == "execute"  # task execution
+            assert isinstance(fake_runner.calls[1][1], ClaudeCodeCommand)
+            assert fake_runner.calls[1][2] == tmpdir
 
             captured = capsys.readouterr()
             assert "Detected uncommitted changes" in captured.out
@@ -514,7 +524,9 @@ class TestWorktreeModeWithRecovery:
             # Only one Claude call for task execution, no recovery
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
-            assert method == "run"
+            assert method == "execute"
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cwd == tmpdir
 
             captured = capsys.readouterr()
             assert "Detected uncommitted changes" not in captured.out

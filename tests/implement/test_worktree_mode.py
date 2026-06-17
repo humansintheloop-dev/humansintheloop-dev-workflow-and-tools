@@ -399,9 +399,8 @@ class TestWorktreeModeNonInteractive:
 
             assert len(fake_runner.calls) == 1
             _, cmd, _ = fake_runner.calls[0]
-            assert "--allowedTools" in cmd
-            tools_index = cmd.index("--allowedTools")
-            tools_value = cmd[tools_index + 1]
+            tools_value = cmd.allowed_tools
+            assert tools_value is not None
             assert f"Edit(/{tmpdir}/**)" in tools_value
             assert f"Write(/{tmpdir}/**)" in tools_value
 

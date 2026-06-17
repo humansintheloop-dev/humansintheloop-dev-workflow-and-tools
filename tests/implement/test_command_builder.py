@@ -3,11 +3,16 @@
 import os
 import pytest
 
+from i2code.implement.claude_runner import ClaudeCodeCommand
 from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 
 
 def _build_task_cmd(**overrides):
-    defaults = dict(idea_directory="docs/features/my-feature", task_description="Task 1.1: Create config file")
+    defaults = dict(
+        idea_directory="docs/features/my-feature",
+        task_description="Task 1.1: Create config file",
+        cwd="/cwd",
+    )
     defaults.update(overrides)
     return CommandBuilder().build_task_command(**defaults)
 
@@ -63,48 +68,51 @@ def _read_feedback_template():
 class TestCommandBuilderTaskCommand:
     """Test building task execution commands."""
 
-    def test_interactive_returns_claude_with_prompt(self):
-        """Interactive command should be ['claude', prompt]."""
-        cmd = _build_task_cmd()
-        assert cmd[0] == "claude"
-        assert len(cmd) == 2
-        assert "-p" not in cmd
+    def test_build_task_command_returns_dataclass(self):
+        cmd = _build_task_cmd(cwd="/work/tree")
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.cwd == "/work/tree"
+        assert cmd.interactive is True
+        assert cmd.prompt is not None
+        assert cmd.allowed_tools is None
+        assert cmd.add_dirs == []
+        assert cmd.extra_args == []
 
-    def test_non_interactive_includes_p_flag(self):
-        """Non-interactive command should include -p flag."""
+    def test_interactive_flag_mapped_from_opts(self):
         cmd = _build_task_cmd(opts=TaskCommandOpts(interactive=False))
-        assert cmd[0] == "claude"
-        assert "-p" in cmd
-        assert "--verbose" in cmd
-        assert "--output-format=stream-json" in cmd
+        assert cmd.interactive is False
 
     def test_includes_idea_directory_in_prompt(self):
-        """Prompt should reference the idea directory."""
         cmd = _build_task_cmd()
-        assert "docs/features/my-feature" in cmd[1]
+        assert "docs/features/my-feature" in cmd.prompt
 
     def test_includes_task_description_in_prompt(self):
-        """Prompt should include the task description."""
         cmd = _build_task_cmd()
-        assert "Task 1.1" in cmd[1]
+        assert "Task 1.1" in cmd.prompt
 
-    def test_extra_cli_args_in_interactive(self):
-        """Interactive command should include extra_cli_args."""
-        cmd = _build_task_cmd(opts=TaskCommandOpts(extra_cli_args=["--allowedTools", "Bash(git commit:*)"]))
-        assert "--allowedTools" in cmd
-        assert cmd[0] == "claude"
-
-    def test_extra_cli_args_in_non_interactive(self):
-        """Non-interactive command should include extra_cli_args before -p."""
+    def test_build_task_command_splits_allowed_tools_from_extra_cli_args(self):
         cmd = _build_task_cmd(opts=TaskCommandOpts(
-            interactive=False,
-            extra_cli_args=["--allowedTools", "Bash(git commit:*),Write(/repo/)"],
+            extra_cli_args=["--allowedTools", "Bash(git commit:*)", "--debug"],
         ))
-        assert "--allowedTools" in cmd
-        assert "-p" in cmd
+        assert cmd.allowed_tools == "Bash(git commit:*)"
+        assert cmd.extra_args == ["--debug"]
+        assert cmd.add_dirs == []
+
+    def test_build_task_command_splits_add_dir_from_extra_cli_args(self):
+        cmd = _build_task_cmd(opts=TaskCommandOpts(
+            extra_cli_args=[
+                "--add-dir", "/repo/a",
+                "--allowedTools", "Read",
+                "--add-dir", "/repo/b",
+                "--foo",
+            ],
+        ))
+        assert cmd.add_dirs == ["/repo/a", "/repo/b"]
+        assert cmd.allowed_tools == "Read"
+        assert cmd.extra_args == ["--foo"]
 
     def test_claude_prompt_uses_worktree_idea_directory(self):
-        """Claude command prompt should reference worktree idea dir, not main repo."""
+        """Prompt should reference worktree idea dir, not main repo."""
         from i2code.implement.idea_project import IdeaProject
 
         main_repo_root = "/home/user/my-repo"
@@ -115,9 +123,8 @@ class TestCommandBuilderTaskCommand:
 
         cmd = _build_task_cmd(idea_directory=worktree_idea_dir, task_description="Task 1.1: Create project")
 
-        prompt = cmd[1]
-        assert worktree_path in prompt, f"Prompt should use worktree path. Got: {prompt}"
-        assert main_repo_root not in prompt, f"Prompt should NOT use main repo path. Got: {prompt}"
+        assert worktree_path in cmd.prompt, f"Prompt should use worktree path. Got: {cmd.prompt}"
+        assert main_repo_root not in cmd.prompt, f"Prompt should NOT use main repo path. Got: {cmd.prompt}"
 
 
 @pytest.mark.unit

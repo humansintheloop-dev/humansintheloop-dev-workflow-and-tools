@@ -195,12 +195,16 @@ class WorktreeMode:
                 print(f"PR: {pr_url}")
 
     def _build_command(self, task_description):
+        cwd = self._git_repo.working_tree_dir
         if self._opts.mock_claude:
-            return [self._opts.mock_claude, task_description]
+            return ClaudeCodeCommand(
+                cwd=cwd,
+                mock_command=[self._opts.mock_claude, task_description],
+            )
 
         extra_cli_args = None
         if self._opts.non_interactive:
-            permissions = calculate_claude_permissions(self._git_repo.working_tree_dir)
+            permissions = calculate_claude_permissions(cwd)
             extra_cli_args = ["--allowedTools", ",".join(permissions)]
         return CommandBuilder().build_task_command(
             self._work_project.directory,
@@ -210,10 +214,8 @@ class WorktreeMode:
                 extra_prompt=self._opts.extra_prompt,
                 extra_cli_args=extra_cli_args,
             ),
-            cwd=self._git_repo.working_tree_dir,
+            cwd=cwd,
         )
 
     def _run_claude(self, claude_cmd):
-        if isinstance(claude_cmd, ClaudeCodeCommand):
-            return self._loop_steps.claude_runner.execute(claude_cmd)
-        return self._loop_steps.claude_runner.run(claude_cmd, cwd=self._git_repo.working_tree_dir)
+        return self._loop_steps.claude_runner.execute(claude_cmd)

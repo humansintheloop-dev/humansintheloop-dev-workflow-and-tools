@@ -549,22 +549,22 @@ Migrates the last `CommandBuilder` method. Issue #40 (broken `--print wt-handle-
 
 Final cleanup step. Removes all deprecated symbols and renames the module-level dispatch functions to mark them private. Satisfies §3.6 and acceptance criteria 1–8 in §8.
 
-- [ ] **Task 15.1: Remove `ClaudeRunner.run`, `run_interactive`, `run_batch` and rename module-level functions to private**
+- [x] **Task 15.1: Remove `ClaudeRunner.run`, `run_interactive`, `run_batch` and rename module-level functions to private**
   - TaskType: REFACTOR
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/ -m unit` (unchanged — the public API is now `ClaudeRunner.execute(command)` only)
   - Observable: No behaviour change — every existing test continues to pass. After this task, `grep -rn '\.run_batch\(\|\.run_interactive\(\|\.run(' src/i2code/ --include='*.py'` (restricted to `ClaudeRunner` usages) returns zero matches; `grep -rn '^def run_claude_interactive\|^def run_claude_with_output_capture' src/i2code/ --include='*.py'` returns zero matches (only the private `_` variants remain).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/ -m unit` exits 0 and `uvx pyright --level error src/` exits 0 after the deletions.
   - Steps:
-    - [ ] Delete `ClaudeRunner.run` at `src/i2code/implement/claude_runner.py:255`
-    - [ ] Delete `ClaudeRunner.run_interactive` at `src/i2code/implement/claude_runner.py:261`
-    - [ ] Delete `ClaudeRunner.run_batch` at `src/i2code/implement/claude_runner.py:264`
-    - [ ] Rename module-level `run_claude_interactive` at `src/i2code/implement/claude_runner.py:42` to `_run_claude_interactive`
-    - [ ] Rename module-level `run_claude_with_output_capture` at `src/i2code/implement/claude_runner.py:134` to `_run_claude_with_output_capture`
-    - [ ] Update `ClaudeRunner.execute()` internal dispatch to use the new `_run_*` names
-    - [ ] Update `tests/implement/fake_claude_runner.py` to remove `run`, `run_interactive`, `run_batch` methods (FakeClaudeRunner now exposes only `execute`)
-    - [ ] Update `tests/implement/test_claude_runner.py` to delete the `TestFakeClaudeRunner` tests that exercised `run_interactive`/`run_batch`/`run` (they no longer exist); keep `test_records_execute_call` from Task 2.4
-    - [ ] Search for any remaining test imports of `run_claude_interactive` or `run_claude_with_output_capture` and either delete them or update to the private names where the tests legitimately exercise the dispatch layer
-    - [ ] Run full unit suite, confirm green
+    - [x] Delete `ClaudeRunner.run` at `src/i2code/implement/claude_runner.py:255`
+    - [x] Delete `ClaudeRunner.run_interactive` at `src/i2code/implement/claude_runner.py:261`
+    - [x] Delete `ClaudeRunner.run_batch` at `src/i2code/implement/claude_runner.py:264`
+    - [x] Rename module-level `run_claude_interactive` at `src/i2code/implement/claude_runner.py:42` to `_run_claude_interactive`
+    - [x] Rename module-level `run_claude_with_output_capture` at `src/i2code/implement/claude_runner.py:134` to `_run_claude_with_output_capture`
+    - [x] Update `ClaudeRunner.execute()` internal dispatch to use the new `_run_*` names
+    - [x] Update `tests/implement/fake_claude_runner.py` to remove `run`, `run_interactive`, `run_batch` methods (FakeClaudeRunner now exposes only `execute`)
+    - [x] Update `tests/implement/test_claude_runner.py` to delete the `TestFakeClaudeRunner` tests that exercised `run_interactive`/`run_batch`/`run` (they no longer exist); keep `test_records_execute_call` from Task 2.4
+    - [x] Search for any remaining test imports of `run_claude_interactive` or `run_claude_with_output_capture` and either delete them or update to the private names where the tests legitimately exercise the dispatch layer
+    - [x] Run full unit suite, confirm green
 
 - [ ] **Task 15.2: Remove `build_session_args`, `get_or_create_session_args`, and the public string-returning `read_session_id` aliasing from `session_manager.py`**
   - TaskType: REFACTOR
@@ -700,3 +700,6 @@ create_spec uses execute() with ClaudeCodeCommand; tests verify shape (interacti
 
 ### 2026-06-17 08:47 - mark-task-complete
 build_feedback_command now returns ClaudeCodeCommand with extra_args=['--print', 'wt-handle-feedback.md'] preserving issue #40; tests assert dataclass shape and emitted argv via _build_argv
+
+### 2026-06-17 08:59 - mark-task-complete
+Deleted ClaudeRunner.run/run_interactive/run_batch; renamed module-level run_claude_interactive and run_claude_with_output_capture to private _-prefixed names; migrated trunk_mode.py and worktree_mode.py mock_claude branches to ClaudeCodeCommand(mock_command=...); updated FakeClaudeRunner and test_claude_runner.py to drop the deleted methods. Unit suite green; pyright clean.

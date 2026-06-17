@@ -13,9 +13,9 @@ class FakeClaudeRunner:
     Usage:
         fake = FakeClaudeRunner()
         fake.set_result(ClaudeResult(returncode=0))
-        result = fake.run(["claude", "do task"], cwd="/repo")
+        result = fake.execute(ClaudeCodeCommand(prompt="do task", cwd="/repo"))
         assert result.returncode == 0
-        assert fake.calls == [("run", ["claude", "do task"], "/repo")]
+        assert fake.calls[0][0] == "execute"
     """
 
     def __init__(self, interactive: bool = True):
@@ -47,18 +47,6 @@ class FakeClaudeRunner:
         if self._results:
             return self._results.pop(0)
         return self._default_result
-
-    def run(self, cmd, cwd):
-        self.calls.append(("run", cmd, cwd))
-        return self._next_result()
-
-    def run_interactive(self, cmd, cwd):
-        self.calls.append(("run_interactive", cmd, cwd))
-        return self._next_result()
-
-    def run_batch(self, cmd, cwd):
-        self.calls.append(("run_batch", cmd, cwd))
-        return self._next_result()
 
     def execute(self, command):
         self.calls.append(("execute", command, command.cwd))

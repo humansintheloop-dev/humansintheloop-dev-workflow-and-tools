@@ -372,7 +372,7 @@ def _make_non_interactive_mode(tmpdir, result_output, *, skip_ci_wait=False):
 
 @pytest.mark.unit
 class TestWorktreeModeNonInteractive:
-    """WorktreeMode in non-interactive mode uses run."""
+    """WorktreeMode in non-interactive mode dispatches via ClaudeRunner.execute()."""
 
     def test_non_interactive_uses_capture_and_checks_success_tag(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -383,8 +383,10 @@ class TestWorktreeModeNonInteractive:
 
             assert len(fake_runner.calls) == 1
             method, cmd, cwd = fake_runner.calls[0]
-            assert method == "run"
-            assert cmd[0] == "/mock"
+            assert method == "execute"
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cmd.mock_command is not None
+            assert cmd.mock_command[0] == "/mock"
 
     def test_non_interactive_passes_allowed_tools(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:

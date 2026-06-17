@@ -33,21 +33,19 @@ def test_real_claude_triage_pr6(tmp_path):
         data["review_comments"], data["reviews"], data["conversation_comments"],
     )
 
-    triage_cmd = CommandBuilder().build_triage_command(feedback_content, interactive=False)
-
-    # Extract prompt
-    prompt_idx = triage_cmd.index("-p")
-    prompt = triage_cmd[prompt_idx + 1]
+    triage_cmd = CommandBuilder().build_triage_command(
+        feedback_content, cwd=os.getcwd(), interactive=False,
+    )
 
     print("\n" + "=" * 80)
     print("(1) PROMPT PASSED TO CLAUDE")
     print("=" * 80)
-    print(prompt)
+    print(triage_cmd.prompt)
     print()
 
     # Run real Claude
-    runner = ClaudeRunner()
-    result = runner.run_batch(triage_cmd, cwd=os.getcwd())
+    runner = ClaudeRunner(interactive=False)
+    result = runner.execute(triage_cmd)
 
     print("=" * 80)
     print("(2) CLAUDE'S RESPONSE")
@@ -60,7 +58,7 @@ def test_real_claude_triage_pr6(tmp_path):
     # Also write to a file for easy review
     log_file = tmp_path / "triage_debug.log"
     log_file.write_text(
-        f"=== PROMPT ===\n{prompt}\n\n"
+        f"=== PROMPT ===\n{triage_cmd.prompt}\n\n"
         f"=== RESPONSE (stdout) ===\n{result.output.stdout}\n\n"
         f"=== STDERR ===\n{result.output.stderr}\n"
     )

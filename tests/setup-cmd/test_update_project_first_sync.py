@@ -161,8 +161,9 @@ class TestFirstSync:
                 tmpdir, (fake_runner, fake_renderer), missing_kind=case.kind,
             )
             method, cmd, cwd = fake_runner.calls[0]
-            assert method == "run_interactive"
-            assert cmd[0] == "claude"
+            assert method == "execute"
+            assert cmd.interactive is True
+            assert cmd.prompt is not None
             assert cwd == project_dir
 
     @pytest.mark.parametrize("case", _FIRST_SYNC_CASES)

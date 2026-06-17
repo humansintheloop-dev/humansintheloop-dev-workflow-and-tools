@@ -464,15 +464,15 @@ Migrates `github_actions_build_fixer.py` (`build_ci_fix_command` site at `:138-1
 
 Migrates the six remaining interactive direct-argv sites. They all share the simple pattern `claude_runner.execute(ClaudeCodeCommand(prompt=..., cwd=..., interactive=True))` (plus optional `allowed_tools`). No new capability surface is introduced — this thread sweeps remaining sites so Steel Thread 15 can delete the old API.
 
-- [ ] **Task 13.1: `setup_cmd/update_project` invokes `execute()` with a `ClaudeCodeCommand`**
+- [x] **Task 13.1: `setup_cmd/update_project` invokes `execute()` with a `ClaudeCodeCommand`**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.setup_cmd.update_project.update_project(project, claude_runner, ...)` (call site at `src/i2code/setup_cmd/update_project.py:154`)
   - Observable: `fake.calls` records one `("execute", cmd, cwd)` where `cmd.interactive is True` and `cmd.prompt` equals the rendered prompt from the existing template. No raw `["claude", ...]` list is constructed.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/setup-cmd/ -v -m unit -k "update_project"` exits 0.
   - Steps:
-    - [ ] Update existing `update_project` unit test to assert the `ClaudeCodeCommand` shape
-    - [ ] Replace argv assembly at `src/i2code/setup_cmd/update_project.py:154` with a single `claude_runner.execute(ClaudeCodeCommand(...))`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update existing `update_project` unit test to assert the `ClaudeCodeCommand` shape
+    - [x] Replace argv assembly at `src/i2code/setup_cmd/update_project.py:154` with a single `claude_runner.execute(ClaudeCodeCommand(...))`
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 13.2: `spec_cmd/create_spec` invokes `execute()` with a `ClaudeCodeCommand`**
   - TaskType: OUTCOME
@@ -691,3 +691,6 @@ fix path now uses execute() with ClaudeCodeCommand for both mock and non-mock br
 
 ### 2026-06-16 20:29 - mark-task-complete
 build_ci_fix_command now returns ClaudeCodeCommand with cwd parameter; failure-log truncation preserved
+
+### 2026-06-16 21:25 - mark-task-complete
+update_project now invokes claude_runner.execute(ClaudeCodeCommand(prompt=..., cwd=..., interactive=True))

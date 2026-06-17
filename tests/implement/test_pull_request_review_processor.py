@@ -6,7 +6,13 @@ import os
 import pytest
 
 from i2code.implement.pull_request_review_processor import PullRequestReviewProcessor, parse_owner_repo
-from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+from i2code.implement.claude_runner import (
+    CapturedOutput,
+    ClaudeCodeCommand,
+    ClaudeResult,
+    _parse_stream_json_output,
+)
+from i2code.implement.command_builder import CommandBuilder
 
 from fake_git_repository import FakeGitRepository
 from fake_github_client import FakeGitHubClient
@@ -92,7 +98,11 @@ def _triage_with_fix(comment_ids, description="Fix issue"):
 
 def _make_fix_processor(comments, triage_json, non_interactive=True, **extra):
     """Create a processor configured for fix-group tests with head SHA advancement."""
-    triage_result = ClaudeResult(returncode=0, output=CapturedOutput(triage_json))
+    triage_result = ClaudeResult(
+        returncode=0,
+        output=CapturedOutput(triage_json),
+        result_text=triage_json,
+    )
     fix_result = ClaudeResult(returncode=0)
 
     processor, _, fake_repo, fake_state, fake_claude = _make_processor(
@@ -137,24 +147,97 @@ class TestProcessPrFeedbackNoFeedback:
 
 @pytest.mark.unit
 class TestProcessPrFeedbackTriage:
-    """process_pr_feedback triages feedback using claude_runner."""
+    """process_pr_feedback triages feedback using claude_runner.execute()."""
 
-    def test_triage_uses_claude_runner_run_batch(self):
-        """Triage invokes claude_runner.run_batch, not module-level function."""
+    def test_triage_uses_execute_with_command_dataclass(self):
+        """Non-mock triage dispatches execute() with the CommandBuilder triage command."""
         triage_json = json.dumps({"will_fix": [], "needs_clarification": []})
-        triage_result = ClaudeResult(returncode=0, output=CapturedOutput(triage_json))
+        triage_result = ClaudeResult(
+            returncode=0,
+            output=CapturedOutput(triage_json),
+            result_text=triage_json,
+        )
 
+        feedback_comment = {"id": 1, "body": "fix this", "user": {"login": "u"}}
         processor, _, fake_repo, _, fake_claude = _make_processor(
-            comments=[{"id": 1, "body": "fix this", "user": {"login": "u"}}],
+            comments=[feedback_comment],
         )
         fake_claude.set_result(triage_result)
 
         processor.process_pr_feedback()
 
         assert len(fake_claude.calls) == 1
-        method, _cmd, cwd = fake_claude.calls[0]
-        assert method == "run_batch"
+        method, cmd, cwd = fake_claude.calls[0]
+        assert method == "execute"
+        assert isinstance(cmd, ClaudeCodeCommand)
+        feedback_content = PullRequestReviewProcessor._format_all_feedback(
+            [feedback_comment], [], [],
+        )
+        expected = CommandBuilder().build_triage_command(
+            feedback_content,
+            cwd=fake_repo.working_tree_dir,
+            interactive=False,
+        )
+        assert cmd == expected
         assert cwd == fake_repo.working_tree_dir
+
+    def test_triage_with_mock_claude_uses_execute_with_mock_command(self):
+        """When mock_claude is set, triage execute() receives a ClaudeCodeCommand with mock_command."""
+        triage_json = json.dumps({"will_fix": [], "needs_clarification": []})
+        triage_result = ClaudeResult(
+            returncode=0,
+            output=CapturedOutput(triage_json),
+            result_text=triage_json,
+        )
+
+        mock_path = "/path/to/mock-claude"
+        processor, _, fake_repo, _, fake_claude = _make_processor(
+            comments=[{"id": 1, "body": "fix this", "user": {"login": "u"}}],
+            mock_claude=mock_path,
+        )
+        fake_claude.set_result(triage_result)
+
+        processor.process_pr_feedback()
+
+        assert len(fake_claude.calls) == 1
+        method, cmd, cwd = fake_claude.calls[0]
+        assert method == "execute"
+        assert isinstance(cmd, ClaudeCodeCommand)
+        assert cmd.cwd == fake_repo.working_tree_dir
+        assert cmd.mock_command == [mock_path, "triage-42"]
+        assert cwd == fake_repo.working_tree_dir
+
+    def test_triage_reads_from_result_text(self):
+        """Triage parses will_fix from result.result_text, not output.stdout."""
+        triage_json = json.dumps({
+            "will_fix": [{"comment_ids": [1], "description": "fix"}],
+            "needs_clarification": [],
+        })
+        triage_result = ClaudeResult(
+            returncode=0,
+            output=CapturedOutput("ignored raw stdout"),
+            result_text=triage_json,
+        )
+        fix_result = ClaudeResult(returncode=0)
+
+        processor, _, fake_repo, _, fake_claude = _make_processor(
+            comments=[{"id": 1, "body": "fix this", "user": {"login": "u"}}],
+        )
+        fake_repo.set_head_sha("aaa111")
+
+        def advance_head():
+            fake_repo.set_head_sha("bbb222")
+
+        fake_claude.set_results([triage_result, fix_result])
+        fake_claude.set_side_effects([lambda: None, advance_head])
+
+        had_feedback, made_changes = processor.process_pr_feedback()
+        assert had_feedback is True
+        assert made_changes is True
+
+    def test_extract_result_text_no_longer_defined(self):
+        """_extract_result_text private function is removed from the processor."""
+        assert not hasattr(PullRequestReviewProcessor, "_extract_result_text")
 
 
 SINGLE_COMMENT = [{"id": 1, "body": "fix this", "user": {"login": "u"}}]
@@ -184,7 +267,7 @@ class TestProcessPrFeedbackFixGroup:
             SINGLE_COMMENT, _triage_with_fix([1]), non_interactive=False,
         )
         processor.process_pr_feedback()
-        assert fake_claude.calls[0][0] == "run_batch"
+        assert fake_claude.calls[0][0] == "execute"
         assert fake_claude.calls[1][0] == "run"
 
     def test_fix_marks_all_feedback_processed(self):
@@ -574,7 +657,12 @@ class TestTriageFeedbackLogging:
         fake_repo.set_pushed(True)
 
         fake_claude = FakeClaudeRunner()
-        fake_claude.set_result(ClaudeResult(returncode=0, output=CapturedOutput(claude_stdout)))
+        _diagnostics, result_text = _parse_stream_json_output(claude_stdout)
+        fake_claude.set_result(ClaudeResult(
+            returncode=0,
+            output=CapturedOutput(claude_stdout),
+            result_text=result_text,
+        ))
 
         processor = PullRequestReviewProcessor(
             opts=ImplementOpts(idea_directory="/tmp/idea", non_interactive=True, skip_ci_wait=True),

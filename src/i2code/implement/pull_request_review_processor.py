@@ -177,7 +177,7 @@ class PullRequestReviewProcessor:
             f"--- claude response ---\n{triage_result.output.stdout}\n"
         )
 
-        triage = self._parse_triage_result(triage_result.output.stdout)
+        triage = self._parse_triage_result(triage_result.result_text)
         if not triage:
             print("Warning: Could not parse triage result, marking all as processed")
             return None
@@ -224,16 +224,22 @@ class PullRequestReviewProcessor:
         """Build and run the triage command via Claude.
 
         Returns:
-            Tuple of (command_list, ClaudeResult).
+            Tuple of (ClaudeCodeCommand, ClaudeResult).
         """
         print("Triaging feedback...")
+        cwd = self._git_repo.working_tree_dir
         if self._opts.mock_claude:
-            triage_cmd = [self._opts.mock_claude, f"triage-{pr_number}"]
+            cmd = ClaudeCodeCommand(
+                cwd=cwd,
+                mock_command=[self._opts.mock_claude, f"triage-{pr_number}"],
+            )
         else:
-            triage_cmd = CommandBuilder().build_triage_command(feedback_content, interactive=False)
+            cmd = CommandBuilder().build_triage_command(
+                feedback_content, cwd=cwd, interactive=False,
+            )
 
-        result = self._claude_runner.run_batch(triage_cmd, cwd=self._git_repo.working_tree_dir)
-        return triage_cmd, result
+        result = self._claude_runner.execute(cmd)
+        return cmd, result
 
     def _reply_with_clarifications(self, needs_clarification, pr_number, new_review_comments, new_conversation):
         """Reply to comments needing clarification."""
@@ -441,9 +447,8 @@ class PullRequestReviewProcessor:
         return "\n".join(sections)
 
     @staticmethod
-    def _parse_triage_result(claude_output: str) -> Optional[Dict[str, Any]]:
-        """Parse the JSON triage result from Claude's output."""
-        text = PullRequestReviewProcessor._extract_result_text(claude_output)
+    def _parse_triage_result(text: str) -> Optional[Dict[str, Any]]:
+        """Parse the JSON triage result from Claude's already-extracted result text."""
         json_match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL)
         if json_match:
             try:
@@ -456,21 +461,6 @@ class PullRequestReviewProcessor:
             print(f"Warning: Failed to parse triage output as JSON: {e}", file=sys.stderr)
             print(f"  Output: {text.strip()}", file=sys.stderr)
         return None
-
-    @staticmethod
-    def _extract_result_text(claude_output: str) -> str:
-        """Extract result text from stream-json output, or return as-is."""
-        for line in claude_output.split('\n'):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                msg = json.loads(line)
-                if msg.get('type') == 'result' and 'result' in msg:
-                    return msg['result']
-            except json.JSONDecodeError:
-                continue
-        return claude_output
 
     @staticmethod
     def _get_feedback_by_ids(

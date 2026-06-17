@@ -334,20 +334,20 @@ Implements the mock-binary triage scenario from §6.2 and finishes the migration
     - [x] Add `cwd: str` parameter and replace the `_with_mode` call at `src/i2code/implement/command_builder.py:143` with a `ClaudeCodeCommand` constructor
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 8.3: `pull_request_review_processor` triage path uses `execute()` and consumes `result.result_text`**
+- [x] **Task 8.3: `pull_request_review_processor` triage path uses `execute()` and consumes `result.result_text`**
   - TaskType: OUTCOME
   - Entrypoint: `PullRequestReviewProcessor.process_triage(pr_number, ...)` (the path covering `src/i2code/implement/pull_request_review_processor.py:227-230`)
   - Observable: When `self._opts.mock_claude` is set, `fake.calls` records `("execute", ClaudeCodeCommand(cwd=working_tree_dir, mock_command=[mock_path, f"triage-{pr_number}"]))`. When `mock_claude` is unset, `fake.calls` records `("execute", <CommandBuilder.build_triage_command(...)>)` verbatim. The processor reads triage output from `result.result_text` (NOT from a private call to `_extract_result_text`). `_extract_result_text` is no longer defined in `pull_request_review_processor.py`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_pull_request_review_processor.py -v -m unit -k "triage"` exits 0; updated tests cover both mock and non-mock paths.
   - Steps:
-    - [ ] Update triage-path tests in `tests/implement/test_pull_request_review_processor.py` to assert the new `("execute", ClaudeCodeCommand)` call shape (both mock and non-mock) and to assert reads from `result.result_text`
-    - [ ] Update `src/i2code/implement/pull_request_review_processor.py:227-228` (mock branch) to construct `ClaudeCodeCommand(cwd=..., mock_command=[mock_path, f"triage-{pr_number}"])`
-    - [ ] Update `src/i2code/implement/pull_request_review_processor.py:230` (non-mock branch) to call `CommandBuilder().build_triage_command(feedback_content, cwd=..., interactive=False)`
-    - [ ] Replace the call to `claude_runner.run_batch(triage_cmd, cwd=...)` with `claude_runner.execute(cmd)`
-    - [ ] Replace the private `_extract_result_text(...)` call (around `pull_request_review_processor.py:457-470`) with a read of `result.result_text` from the `ClaudeResult` already returned
-    - [ ] Delete the `_extract_result_text` private function at `src/i2code/implement/pull_request_review_processor.py:457-470`
-    - [ ] Run targeted pytest and full unit suite; both green
-    - [ ] Run `uvx pyright --level error src/`; zero errors
+    - [x] Update triage-path tests in `tests/implement/test_pull_request_review_processor.py` to assert the new `("execute", ClaudeCodeCommand)` call shape (both mock and non-mock) and to assert reads from `result.result_text`
+    - [x] Update `src/i2code/implement/pull_request_review_processor.py:227-228` (mock branch) to construct `ClaudeCodeCommand(cwd=..., mock_command=[mock_path, f"triage-{pr_number}"])`
+    - [x] Update `src/i2code/implement/pull_request_review_processor.py:230` (non-mock branch) to call `CommandBuilder().build_triage_command(feedback_content, cwd=..., interactive=False)`
+    - [x] Replace the call to `claude_runner.run_batch(triage_cmd, cwd=...)` with `claude_runner.execute(cmd)`
+    - [x] Replace the private `_extract_result_text(...)` call (around `pull_request_review_processor.py:457-470`) with a read of `result.result_text` from the `ClaudeResult` already returned
+    - [x] Delete the `_extract_result_text` private function at `src/i2code/implement/pull_request_review_processor.py:457-470`
+    - [x] Run targeted pytest and full unit suite; both green
+    - [x] Run `uvx pyright --level error src/`; zero errors
 
 ---
 
@@ -673,3 +673,6 @@ summary_reports migrated to ClaudeCodeCommand.execute() with result_text consume
 
 ### 2026-06-16 18:34 - mark-task-complete
 build_task_command returns ClaudeCodeCommand with cwd, mapped interactive, and split allowed_tools/add_dirs/extra_args
+
+### 2026-06-16 19:11 - mark-task-complete
+ST8 T8.3: triage path uses execute() with ClaudeCodeCommand and consumes result.result_text

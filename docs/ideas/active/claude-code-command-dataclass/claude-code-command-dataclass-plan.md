@@ -196,15 +196,15 @@ Adds the interactive dispatch path to `ClaudeRunner.execute()`, adds `--resume` 
 
 Adds `--session-id` rendering for `session_id.is_new=True`, introduces `read_or_create_session(path) -> SessionId`, and migrates `src/i2code/idea_cmd/brainstorm.py`.
 
-- [ ] **Task 4.1: `ClaudeRunner.execute()` renders `--session-id <id>` for `is_new=True`**
+- [x] **Task 4.1: `ClaudeRunner.execute()` renders `--session-id <id>` for `is_new=True`**
   - TaskType: OUTCOME
   - Entrypoint: `ClaudeRunner(interactive=True).execute(ClaudeCodeCommand(prompt="p", cwd="/c", interactive=True, session_id=SessionId("newid", is_new=True)))`
   - Observable: `subprocess.run` is invoked with `["claude", "--session-id", "newid", "p"]`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_claude_runner.py::TestClaudeRunnerExecute::test_execute_with_new_session_id -v -m unit` exits 0.
   - Steps:
-    - [ ] Write failing test asserting argv with `--session-id`
-    - [ ] Extend `_build_argv` so `command.session_id.is_new=True` renders `["--session-id", session_id.session_id]`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Write failing test asserting argv with `--session-id`
+    - [x] Extend `_build_argv` so `command.session_id.is_new=True` renders `["--session-id", session_id.session_id]`
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 4.2: `read_or_create_session(path) -> SessionId` in `session_manager.py`**
   - TaskType: OUTCOME
@@ -658,3 +658,6 @@ ST2 T2.5: create_plan builds ClaudeCodeCommand and reads result_text
 
 ### 2026-06-16 16:35 - mark-task-complete
 Test test_execute_interactive_no_session locks in the interactive argv contract; _build_argv already appended prompt positionally (no -p, no --verbose, no stream-json) from T2.3 conditional
+
+### 2026-06-16 16:59 - mark-task-complete
+Locked --session-id rendering for is_new=True via test_execute_with_new_session_id

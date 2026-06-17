@@ -162,7 +162,7 @@ class TestTemplateRendering:
 @pytest.mark.unit
 class TestClaudeInvocation:
 
-    def test_invokes_claude_interactively(self, fake_runner, fake_renderer):
+    def test_invokes_claude_via_execute(self, fake_runner, fake_renderer):
         with tempfile.TemporaryDirectory() as tmpdir:
             project_dir = _create_project_with_claude_files(tmpdir)
             config_dir = _create_config_dir(tmpdir)
@@ -170,9 +170,9 @@ class TestClaudeInvocation:
             update_claude_files(project_dir, config_dir, fake_runner, fake_renderer)
 
             method, _, _ = fake_runner.calls[0]
-            assert method == "run_interactive"
+            assert method == "execute"
 
-    def test_claude_command_starts_with_claude(self, fake_runner, fake_renderer):
+    def test_command_is_interactive(self, fake_runner, fake_renderer):
         with tempfile.TemporaryDirectory() as tmpdir:
             project_dir = _create_project_with_claude_files(tmpdir)
             config_dir = _create_config_dir(tmpdir)
@@ -180,7 +180,7 @@ class TestClaudeInvocation:
             update_claude_files(project_dir, config_dir, fake_runner, fake_renderer)
 
             _, cmd, _ = fake_runner.calls[0]
-            assert cmd[0] == "claude"
+            assert cmd.interactive is True
 
     def test_claude_receives_rendered_prompt(self, fake_runner, fake_renderer):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -190,7 +190,18 @@ class TestClaudeInvocation:
             update_claude_files(project_dir, config_dir, fake_runner, fake_renderer)
 
             _, cmd, _ = fake_runner.calls[0]
-            assert "template=update-claude-files-from-project.md" in cmd[1]
+            assert "template=update-claude-files-from-project.md" in cmd.prompt
+
+    def test_cwd_is_project_dir(self, fake_runner, fake_renderer):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = _create_project_with_claude_files(tmpdir)
+            config_dir = _create_config_dir(tmpdir)
+
+            update_claude_files(project_dir, config_dir, fake_runner, fake_renderer)
+
+            _, cmd, cwd = fake_runner.calls[0]
+            assert cmd.cwd == project_dir
+            assert cwd == project_dir
 
     def test_returns_claude_result(self, fake_runner, fake_renderer):
         from i2code.implement.claude_runner import ClaudeResult

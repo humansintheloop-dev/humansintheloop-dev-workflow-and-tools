@@ -3,6 +3,8 @@
 import os
 import sys
 
+from i2code.implement.claude_runner import ClaudeCodeCommand
+
 
 def update_claude_files(project_dir, config_dir, claude_runner, template_renderer):
     """Review project Claude files and update config-files templates.
@@ -55,6 +57,10 @@ def update_claude_files(project_dir, config_dir, claude_runner, template_rendere
         "CONFIG_SETTINGS": config_settings,
     })
 
-    cmd = ["claude", prompt]
-
-    return claude_runner.run_interactive(cmd, cwd=project_dir)
+    return claude_runner.execute(
+        ClaudeCodeCommand(
+            cwd=project_dir,
+            prompt=prompt,
+            interactive=True,
+        ),
+    )

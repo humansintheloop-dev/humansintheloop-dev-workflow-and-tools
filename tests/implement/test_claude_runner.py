@@ -440,6 +440,30 @@ class TestClaudeRunnerExecute:
             "/c",
         )
 
+    @pytest.mark.parametrize(
+        "runner_interactive,expected_argv",
+        [
+            (False, ["claude", "--verbose", "--output-format=stream-json", "-p", "p"]),
+            (True, ["claude", "p"]),
+        ],
+        ids=["runner_batch", "runner_interactive"],
+    )
+    def test_execute_mode_inherited_from_runner(
+        self, mocker, runner_interactive, expected_argv,
+    ):
+        mock_run = _patch_interactive_run(mocker)
+        mock_popen = _patch_batch_popen(mocker)
+
+        runner = ClaudeRunner(interactive=runner_interactive)
+        command = ClaudeCodeCommand(prompt="p", cwd="/c", interactive=None)
+
+        runner.execute(command)
+
+        dispatched = mock_run if runner_interactive else mock_popen
+        not_dispatched = mock_popen if runner_interactive else mock_run
+        _assert_argv_and_cwd(dispatched, expected_argv, "/c")
+        not_dispatched.assert_not_called()
+
     def test_execute_batch_with_allowed_tools_emits_expected_argv(self, mocker):
         mock_popen = _patch_batch_popen(
             mocker,

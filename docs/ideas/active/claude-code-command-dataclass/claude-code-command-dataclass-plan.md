@@ -243,16 +243,16 @@ Adds `add_dirs` rendering to `ClaudeRunner.execute()` and migrates `src/i2code/i
     - [x] Extend `_build_argv` to emit `--add-dir <path>` per entry, AFTER session flags and BEFORE `extra_args` and the prompt (per §3.3 ordered procedure)
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 5.2: `summary_reports` builds a `ClaudeCodeCommand` and writes `result.result_text` to the report file**
+- [x] **Task 5.2: `summary_reports` builds a `ClaudeCodeCommand` and writes `result.result_text` to the report file**
   - TaskType: OUTCOME
   - Entrypoint: `i2code.improve.summary_reports.generate_summary_report(...)` (the function at `src/i2code/improve/summary_reports.py:134`)
   - Observable: With `FakeClaudeRunner` configured with `ClaudeResult(result_text="REPORT BODY")`, `fake.calls` records one `("execute", cmd, project_dir)` where `cmd.interactive is False`, `cmd.allowed_tools == "Read"`, `cmd.add_dirs == [project_dir]`. The file at the report output path contains exactly `"REPORT BODY"` (NOT the raw stdout).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/improve/ -v -m unit -k "summary_reports"` exits 0.
   - Steps:
-    - [ ] Update the existing summary_reports unit test to assert the `ClaudeCodeCommand` shape and that the written file content equals `result.result_text`
-    - [ ] Replace argv assembly at `src/i2code/improve/summary_reports.py:134` with `claude_runner.execute(ClaudeCodeCommand(prompt=rendered, cwd=project_dir, interactive=False, allowed_tools="Read", add_dirs=[project_dir]))`
-    - [ ] Change `src/i2code/improve/summary_reports.py:145` from `result.output.stdout` to `result.result_text`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update the existing summary_reports unit test to assert the `ClaudeCodeCommand` shape and that the written file content equals `result.result_text`
+    - [x] Replace argv assembly at `src/i2code/improve/summary_reports.py:134` with `claude_runner.execute(ClaudeCodeCommand(prompt=rendered, cwd=project_dir, interactive=False, allowed_tools="Read", add_dirs=[project_dir]))`
+    - [x] Change `src/i2code/improve/summary_reports.py:145` from `result.output.stdout` to `result.result_text`
+    - [x] Run targeted pytest, confirm green
 
 ---
 
@@ -667,3 +667,6 @@ ST4 T4.2: added read_or_create_session returning typed SessionId with is_new fla
 
 ### 2026-06-16 17:20 - mark-task-complete
 ST4 T4.3: brainstorm now builds a ClaudeCodeCommand with session_id, allowed_tools, interactive=True
+
+### 2026-06-16 17:44 - mark-task-complete
+summary_reports migrated to ClaudeCodeCommand.execute() with result_text consumer

@@ -188,60 +188,68 @@ class TestTemplateRendering:
 class TestClaudeInvocation:
 
     @patch("i2code.improve.summary_reports._today", return_value="2025-06-15")
-    def test_invokes_claude_with_print_flag(self, _mock_today, fake_runner, fake_renderer):
+    def test_invokes_claude_non_interactively(self, _mock_today, fake_runner, fake_renderer):
+        from i2code.implement.claude_runner import ClaudeCodeCommand
+
         with tempfile.TemporaryDirectory() as tmpdir:
             _create_project(tmpdir, "my-project", ["session-2025-06-15-100000-abc.md"])
 
             create_summary_reports(tmpdir, fake_runner, fake_renderer)
 
             _, cmd, _ = fake_runner.calls[0]
-            assert "--print" in cmd
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cmd.interactive is False
 
     @patch("i2code.improve.summary_reports._today", return_value="2025-06-15")
     def test_invokes_claude_with_add_dir(self, _mock_today, fake_runner, fake_renderer):
+        from i2code.implement.claude_runner import ClaudeCodeCommand
+
         with tempfile.TemporaryDirectory() as tmpdir:
             project_dir = _create_project(tmpdir, "my-project", ["session-2025-06-15-100000-abc.md"])
 
             create_summary_reports(tmpdir, fake_runner, fake_renderer)
 
             _, cmd, _ = fake_runner.calls[0]
-            add_dir_idx = cmd.index("--add-dir")
-            assert cmd[add_dir_idx + 1] == project_dir
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cmd.add_dirs == [project_dir]
 
     @patch("i2code.improve.summary_reports._today", return_value="2025-06-15")
     def test_invokes_claude_with_allowed_tools(self, _mock_today, fake_runner, fake_renderer):
+        from i2code.implement.claude_runner import ClaudeCodeCommand
+
         with tempfile.TemporaryDirectory() as tmpdir:
             _create_project(tmpdir, "my-project", ["session-2025-06-15-100000-abc.md"])
 
             create_summary_reports(tmpdir, fake_runner, fake_renderer)
 
             _, cmd, _ = fake_runner.calls[0]
-            tools_idx = cmd.index("--allowedTools")
-            assert cmd[tools_idx + 1] == "Read"
+            assert isinstance(cmd, ClaudeCodeCommand)
+            assert cmd.allowed_tools == "Read"
 
     @patch("i2code.improve.summary_reports._today", return_value="2025-06-15")
-    def test_uses_run_batch(self, _mock_today, fake_runner, fake_renderer):
+    def test_uses_execute(self, _mock_today, fake_runner, fake_renderer):
         with tempfile.TemporaryDirectory() as tmpdir:
-            _create_project(tmpdir, "my-project", ["session-2025-06-15-100000-abc.md"])
+            project_dir = _create_project(tmpdir, "my-project", ["session-2025-06-15-100000-abc.md"])
 
             create_summary_reports(tmpdir, fake_runner, fake_renderer)
 
-            method, _, _ = fake_runner.calls[0]
-            assert method == "run_batch"
+            method, _, cwd = fake_runner.calls[0]
+            assert method == "execute"
+            assert cwd == project_dir
 
 
 @pytest.mark.unit
 class TestReportOutput:
 
     @patch("i2code.improve.summary_reports._today", return_value="2025-06-15")
-    def test_saves_claude_output_to_report_file(self, _mock_today, fake_runner, fake_renderer):
-        from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+    def test_saves_claude_result_text_to_report_file(self, _mock_today, fake_runner, fake_renderer):
+        from i2code.implement.claude_runner import ClaudeResult
 
         with tempfile.TemporaryDirectory() as tmpdir:
             project_dir = _create_project(tmpdir, "my-project", ["session-2025-06-15-100000-abc.md"])
             fake_runner.set_result(ClaudeResult(
                 returncode=0,
-                output=CapturedOutput(stdout="# Summary Report\nGreat work today."),
+                result_text="REPORT BODY",
             ))
 
             create_summary_reports(tmpdir, fake_runner, fake_renderer)
@@ -252,17 +260,17 @@ class TestReportOutput:
             assert report_files[0].startswith("summary-")
             assert report_files[0].endswith(".md")
             content = open(os.path.join(reports_dir, report_files[0])).read()
-            assert content == "# Summary Report\nGreat work today."
+            assert content == "REPORT BODY"
 
     @patch("i2code.improve.summary_reports._today", return_value="2025-06-15")
     def test_returns_list_of_report_paths(self, _mock_today, fake_runner, fake_renderer):
-        from i2code.implement.claude_runner import CapturedOutput, ClaudeResult
+        from i2code.implement.claude_runner import ClaudeResult
 
         with tempfile.TemporaryDirectory() as tmpdir:
             _create_project(tmpdir, "my-project", ["session-2025-06-15-100000-abc.md"])
             fake_runner.set_result(ClaudeResult(
                 returncode=0,
-                output=CapturedOutput(stdout="Report content"),
+                result_text="Report content",
             ))
 
             result = create_summary_reports(tmpdir, fake_runner, fake_renderer)

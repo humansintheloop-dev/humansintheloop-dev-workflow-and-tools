@@ -4,6 +4,8 @@ import os
 import sys
 from datetime import datetime
 
+from i2code.implement.claude_runner import ClaudeCodeCommand
+
 
 def _today() -> str:
     """Return today's date as YYYY-MM-DD. Extracted for testability."""
@@ -131,18 +133,16 @@ def create_summary_reports(
             "ISSUE_FILES": issue_files,
         })
 
-        cmd = [
-            "claude",
-            "--print",
-            "--add-dir", project_dir,
-            "--allowedTools", "Read",
-            "-p", prompt,
-        ]
-
-        result = claude_runner.run_batch(cmd, cwd=project_dir)
+        result = claude_runner.execute(ClaudeCodeCommand(
+            prompt=prompt,
+            cwd=project_dir,
+            interactive=False,
+            allowed_tools="Read",
+            add_dirs=[project_dir],
+        ))
 
         with open(report_file, "w") as f:
-            f.write(result.output.stdout)
+            f.write(result.result_text)
 
         report_paths.append(report_file)
 

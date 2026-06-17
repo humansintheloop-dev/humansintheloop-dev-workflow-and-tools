@@ -464,6 +464,36 @@ class TestClaudeRunnerExecute:
         _assert_argv_and_cwd(dispatched, expected_argv, "/c")
         not_dispatched.assert_not_called()
 
+    @pytest.mark.parametrize(
+        "runner_interactive",
+        [False, True],
+        ids=["runner_batch", "runner_interactive"],
+    )
+    def test_execute_mock_command_short_circuit(self, mocker, runner_interactive):
+        mock_run = _patch_interactive_run(mocker)
+        mock_popen = _patch_batch_popen(mocker)
+
+        runner = ClaudeRunner(interactive=runner_interactive)
+        command = ClaudeCodeCommand(
+            cwd="/c",
+            prompt="ignored prompt",
+            interactive=not runner_interactive,
+            allowed_tools="Read",
+            session_id=SessionId("ignored-session", is_new=True),
+            add_dirs=["/ignored"],
+            extra_args=["--ignored-flag"],
+            mock_command=["/path/mock-claude", "triage-42"],
+        )
+
+        runner.execute(command)
+
+        dispatched = mock_run if runner_interactive else mock_popen
+        not_dispatched = mock_popen if runner_interactive else mock_run
+        _assert_argv_and_cwd(
+            dispatched, ["/path/mock-claude", "triage-42"], "/c",
+        )
+        not_dispatched.assert_not_called()
+
     def test_execute_batch_with_allowed_tools_emits_expected_argv(self, mocker):
         mock_popen = _patch_batch_popen(
             mocker,

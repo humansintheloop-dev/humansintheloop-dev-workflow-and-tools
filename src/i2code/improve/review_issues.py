@@ -4,6 +4,8 @@ import os
 import sys
 from datetime import datetime
 
+from i2code.implement.claude_runner import ClaudeCodeCommand
+
 
 def _current_year() -> str:
     """Return the current year as YYYY. Extracted for testability."""
@@ -114,6 +116,10 @@ def review_issues(
         "HITL_TRACKING_DIR": tracking_dir,
     })
 
-    cmd = ["claude", prompt]
-
-    return claude_runner.run_interactive(cmd, cwd=tracking_dir)
+    return claude_runner.execute(
+        ClaudeCodeCommand(
+            cwd=tracking_dir,
+            prompt=prompt,
+            interactive=True,
+        ),
+    )

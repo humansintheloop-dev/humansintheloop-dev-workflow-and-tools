@@ -211,20 +211,20 @@ class TestTemplateRendering:
 @pytest.mark.unit
 class TestClaudeInvocation:
 
-    def test_invokes_claude_interactively(self, fake_runner, fake_renderer):
+    def test_invokes_claude_via_execute(self, fake_runner, fake_renderer):
         _review_with_issues(fake_runner, fake_renderer, _SINGLE_BUG)
         method, _, _ = fake_runner.calls[0]
-        assert method == "run_interactive"
+        assert method == "execute"
 
-    def test_claude_command_starts_with_claude(self, fake_runner, fake_renderer):
+    def test_command_is_interactive(self, fake_runner, fake_renderer):
         _review_with_issues(fake_runner, fake_renderer, _SINGLE_BUG)
         _, cmd, _ = fake_runner.calls[0]
-        assert cmd[0] == "claude"
+        assert cmd.interactive is True
 
     def test_claude_receives_rendered_prompt(self, fake_runner, fake_renderer):
         _review_with_issues(fake_runner, fake_renderer, _SINGLE_BUG)
         _, cmd, _ = fake_runner.calls[0]
-        assert "template=review-issues.md" in cmd[1]
+        assert "template=review-issues.md" in cmd.prompt
 
     def test_returns_claude_result(self, fake_runner, fake_renderer):
         from i2code.implement.claude_runner import ClaudeResult

@@ -286,17 +286,17 @@ Implements the third secondary scenario from §6.2: a `CommandBuilder.build_task
     - [x] Verify `execute()` already implements `effective_interactive = command.interactive if command.interactive is not None else self._interactive` from Task 2.3; adjust if missing
     - [x] Run targeted pytest, confirm green
 
-- [ ] **Task 7.2: `CommandBuilder.build_task_command` returns a `ClaudeCodeCommand`**
+- [x] **Task 7.2: `CommandBuilder.build_task_command` returns a `ClaudeCodeCommand`**
   - TaskType: OUTCOME
   - Entrypoint: `CommandBuilder().build_task_command(idea_directory, task_description, opts, cwd=working_tree_dir)`
   - Observable: Returns a `ClaudeCodeCommand` whose `prompt` equals the rendered `task_execution.j2`, `cwd == working_tree_dir`, `interactive == opts.interactive` mapped to `Optional[bool]`. Any `--allowedTools <value>` pair found in `opts.extra_cli_args` is routed into `allowed_tools`; any `--add-dir <value>` pair is routed into `add_dirs`; remaining tokens stay in `extra_args`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_command_builder.py -v -m unit -k "build_task_command"` exits 0; new tests `test_build_task_command_returns_dataclass`, `test_build_task_command_splits_allowed_tools_from_extra_cli_args`, `test_build_task_command_splits_add_dir_from_extra_cli_args`.
   - Steps:
-    - [ ] Update existing `test_command_builder.py` `build_task_command` tests to assert `ClaudeCodeCommand` return type and field values; add new tests for the splitter logic
-    - [ ] Add `cwd: str` parameter to `CommandBuilder.build_task_command` at `src/i2code/implement/command_builder.py:80`
-    - [ ] Implement a private `_split_extra_cli_args(extra_cli_args)` helper on `CommandBuilder` that returns `(allowed_tools, add_dirs, extra_args)` by recognising `--allowedTools <value>` and `--add-dir <value>` pairs
-    - [ ] Replace the body of `build_task_command` to render the prompt and return a `ClaudeCodeCommand`
-    - [ ] Run targeted pytest, confirm green
+    - [x] Update existing `test_command_builder.py` `build_task_command` tests to assert `ClaudeCodeCommand` return type and field values; add new tests for the splitter logic
+    - [x] Add `cwd: str` parameter to `CommandBuilder.build_task_command` at `src/i2code/implement/command_builder.py:80`
+    - [x] Implement a private `_split_extra_cli_args(extra_cli_args)` helper on `CommandBuilder` that returns `(allowed_tools, add_dirs, extra_args)` by recognising `--allowedTools <value>` and `--add-dir <value>` pairs
+    - [x] Replace the body of `build_task_command` to render the prompt and return a `ClaudeCodeCommand`
+    - [x] Run targeted pytest, confirm green
 
 - [ ] **Task 7.3: `worktree_mode` and `trunk_mode` invoke `execute()` with the `ClaudeCodeCommand` from `build_task_command`**
   - TaskType: OUTCOME
@@ -670,3 +670,6 @@ ST4 T4.3: brainstorm now builds a ClaudeCodeCommand with session_id, allowed_too
 
 ### 2026-06-16 17:44 - mark-task-complete
 summary_reports migrated to ClaudeCodeCommand.execute() with result_text consumer
+
+### 2026-06-16 18:34 - mark-task-complete
+build_task_command returns ClaudeCodeCommand with cwd, mapped interactive, and split allowed_tools/add_dirs/extra_args

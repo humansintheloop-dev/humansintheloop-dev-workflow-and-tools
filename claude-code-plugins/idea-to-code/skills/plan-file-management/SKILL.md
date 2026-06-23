@@ -1,6 +1,6 @@
 ---
 name: plan-file-management
-description: Guidelines for structural operations on plan files (renumbering). Claude should use this skill when the user asks to renumber or fix numbering in a plan file, or after inserting, deleting, or reordering threads/tasks.
+description: Structural CRUD and reordering operations on plan files via the `i2code plan` CLI — insert/replace/delete/reorder threads and tasks, mark tasks/steps complete or incomplete, fix numbering, and query plan structure (get-next-task, get-thread, get-summary, list-threads). Claude MUST use this skill (not raw file edits) for any change to a plan file's threads, tasks, or steps, and for reading plan structure programmatically.
 ---
 
 # Plan File Management

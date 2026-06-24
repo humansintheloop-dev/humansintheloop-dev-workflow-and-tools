@@ -145,16 +145,16 @@ Inserts a `## Schemas` section into `SKILL.md` so a Claude session reading the s
 
 Runs the full project test suite one more time to confirm no `src/i2code/` source was changed, no existing test was broken, and the new schema tests live alongside the existing tests. Also runs the type checker per the project pre-commit checklist.
 
-- [ ] **Task 5.1: Full project test suite and type checker pass after schema additions**
+- [x] **Task 5.1: Full project test suite and type checker pass after schema additions**
   - TaskType: INFRA
   - Entrypoint: `uv run pytest && uvx pyright --level error src/`
   - Observable: `uv run pytest` exits 0 with at least the baseline test count from Task 1.1 plus the new tests added in Steel Threads 2–4 (12 new tests total: 5 in `test_task_schema.py`, 5 in `test_thread_schema.py`, 3 in `test_skill_md.py`, minus the 1 `schema_file_is_valid` test per file that overlaps the count — net: 13 new tests). `uvx pyright --level error src/` exits 0 with zero errors.
   - Evidence: `uv run pytest && uvx pyright --level error src/` exits 0 from a clean working tree; the pytest output shows the new `tests/plan_file_management_schemas/` tests collected and passing; `git diff --name-only origin/master..HEAD -- src/i2code/ pyproject.toml` prints nothing (no changes under `src/i2code/`, no changes to `pyproject.toml`).
   - Steps:
-    - [ ] Run `uv run pytest` and confirm exit code 0 and the total test count is baseline + 13 (or more, accounting for the validator approach chosen in Task 2.1 step 1)
-    - [ ] Run `uvx pyright --level error src/` and confirm zero errors
-    - [ ] Run `git diff --name-only` against the merge base and confirm the only modified/added paths are `claude-code-plugins/idea-to-code/skills/plan-file-management/SKILL.md`, `claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json`, `claude-code-plugins/idea-to-code/skills/plan-file-management/references/thread.schema.json`, and `tests/plan_file_management_schemas/**`
-    - [ ] Run the CodeScene `pre_commit_code_health_safeguard` per the project memory's pre-commit checklist before the final commit
+    - [x] Run `uv run pytest` and confirm exit code 0 and the total test count is baseline + 13 (or more, accounting for the validator approach chosen in Task 2.1 step 1)
+    - [x] Run `uvx pyright --level error src/` and confirm zero errors
+    - [x] Run `git diff --name-only` against the merge base and confirm the only modified/added paths are `claude-code-plugins/idea-to-code/skills/plan-file-management/SKILL.md`, `claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json`, `claude-code-plugins/idea-to-code/skills/plan-file-management/references/thread.schema.json`, and `tests/plan_file_management_schemas/**`
+    - [x] Run the CodeScene `pre_commit_code_health_safeguard` per the project memory's pre-commit checklist before the final commit
 
 ---
 
@@ -287,3 +287,18 @@ uv run pytest tests/plan_file_management_schemas/test_skill_md.py exited 0 with 
 
 ### 2026-06-24 07:57 - mark-task-complete
 Added ## Schemas section to SKILL.md (after the i2code plan <subcommand> intro, before ## fix-numbering) with both markdown links and the tasks[] array clarification verbatim from spec. 3 new tests in test_skill_md.py pass. Full suite: 1457 passed, 4 xfailed (baseline 1442 + 6 task + 6 thread + 3 skill_md). pyright src/: 0 errors.
+
+### 2026-06-24 08:05 - mark-step-complete
+uv run pytest passed: 1457 passed, 4 xfailed in 154.13s. New tests in tests/plan_file_management_schemas/ collected and passing (test_skill_md.py: 3, test_task_schema.py: 6, test_thread_schema.py: 5).
+
+### 2026-06-24 08:05 - mark-step-complete
+uvx pyright --level error src/ passed: 0 errors, 0 warnings, 0 informations
+
+### 2026-06-24 08:05 - mark-step-complete
+git diff --name-only origin/master..HEAD -- src/i2code/ pyproject.toml printed nothing; modified paths are confined to claude-code-plugins/idea-to-code/skills/plan-file-management/{SKILL.md,references/task.schema.json,references/thread.schema.json}, tests/plan_file_management_schemas/**, and the idea docs.
+
+### 2026-06-24 08:05 - mark-step-complete
+CodeScene pre_commit_code_health_safeguard returned quality_gates: passed with no findings.
+
+### 2026-06-24 08:05 - mark-task-complete
+Full suite and type checker pass. pytest: 1457 passed/4 xfailed. pyright: 0 errors. git diff confirms no changes under src/i2code/ or pyproject.toml. CodeScene safeguard passed.

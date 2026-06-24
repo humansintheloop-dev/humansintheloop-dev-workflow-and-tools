@@ -109,19 +109,19 @@ Adds `claude-code-plugins/idea-to-code/skills/plan-file-management/references/th
     - [x] Create `claude-code-plugins/idea-to-code/skills/plan-file-management/references/thread.schema.json` with the exact content from the spec ("`thread.schema.json` (exact content)" section)
     - [x] Run the test and confirm it passes
 
-- [ ] **Task 3.2: `thread.schema.json` accepts a known-good Thread (resolving `$ref` to `task.schema.json`) and rejects malformed Threads**
+- [x] **Task 3.2: `thread.schema.json` accepts a known-good Thread (resolving `$ref` to `task.schema.json`) and rejects malformed Threads**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/plan_file_management_schemas/test_thread_schema.py`
   - Observable: A Thread JSON object with `title`, `introduction`, and a `tasks` array of one valid Task validates successfully (proving the relative `$ref: "task.schema.json"` resolves against the sibling file); a Thread missing any required field, with an extra property at the Thread level, with `tasks: []`, or whose embedded task is missing a required Task field is rejected.
   - Evidence: `uv run pytest tests/plan_file_management_schemas/test_thread_schema.py` exits 0; the test file validates the known-good Thread JSON from spec Acceptance Criteria item 8 and rejects four malformed variants. Validation uses a validator that resolves the `$ref` against the sibling `task.schema.json` file (in `jsonschema` this is a `Registry` populated from both files; in `check-jsonschema` it works automatically when both files share a directory).
   - Steps:
-    - [ ] Add failing test `test_known_good_thread_validates` that constructs the Thread JSON from spec Acceptance Criteria item 8 (the "Spring Boot Application with Health Check" object containing one task) and asserts it validates against `thread.schema.json`. The test MUST configure the validator so the relative `$ref: "task.schema.json"` resolves to the sibling file; if using `jsonschema`, build a `jsonschema.Registry` containing both schemas keyed by their `$id`; if using `check-jsonschema` via subprocess, pass `--schemafile thread.schema.json` from the `references/` directory so sibling resolution works
-    - [ ] Add failing test `test_missing_required_field_rejected` that deletes `introduction` from the known-good Thread and asserts validation fails
-    - [ ] Add failing test `test_thread_additional_property_rejected` that adds `"summary": "extra"` to the known-good Thread and asserts validation fails
-    - [ ] Add failing test `test_empty_tasks_rejected` that sets `tasks: []` and asserts validation fails
-    - [ ] Add failing test `test_invalid_embedded_task_rejected` that mutates the embedded task to remove its `evidence` field and asserts validation fails (this proves the `$ref` is actually consulted)
-    - [ ] Run the failing tests and confirm they fail in the expected way; if any fail because the schema content is wrong, fix the schema file from Task 3.1 (do not loosen the assertions)
-    - [ ] Confirm all five tests in this file pass
+    - [x] Add failing test `test_known_good_thread_validates` that constructs the Thread JSON from spec Acceptance Criteria item 8 (the "Spring Boot Application with Health Check" object containing one task) and asserts it validates against `thread.schema.json`. The test MUST configure the validator so the relative `$ref: "task.schema.json"` resolves to the sibling file; if using `jsonschema`, build a `jsonschema.Registry` containing both schemas keyed by their `$id`; if using `check-jsonschema` via subprocess, pass `--schemafile thread.schema.json` from the `references/` directory so sibling resolution works
+    - [x] Add failing test `test_missing_required_field_rejected` that deletes `introduction` from the known-good Thread and asserts validation fails
+    - [x] Add failing test `test_thread_additional_property_rejected` that adds `"summary": "extra"` to the known-good Thread and asserts validation fails
+    - [x] Add failing test `test_empty_tasks_rejected` that sets `tasks: []` and asserts validation fails
+    - [x] Add failing test `test_invalid_embedded_task_rejected` that mutates the embedded task to remove its `evidence` field and asserts validation fails (this proves the `$ref` is actually consulted)
+    - [x] Run the failing tests and confirm they fail in the expected way; if any fail because the schema content is wrong, fix the schema file from Task 3.1 (do not loosen the assertions)
+    - [x] Confirm all five tests in this file pass
 
 ## Steel Thread 4: SKILL.md Surfaces the Schemas
 
@@ -239,3 +239,27 @@ uv run pytest tests/plan_file_management_schemas/test_thread_schema.py -k schema
 
 ### 2026-06-24 07:38 - mark-task-complete
 thread.schema.json created at correct path with exact spec content; test_schema_file_is_valid passes (json.load + $schema/$id assertions + uvx check-jsonschema --check-metaschema). Full suite: 1449 passed, 4 xfailed (baseline 1442 + 6 task-schema tests + 1 new). pyright: 0 errors.
+
+### 2026-06-24 07:47 - mark-step-complete
+Added test_known_good_thread_validates that builds the spec AC8 Thread (Spring Boot Application with Health Check) and asserts uvx check-jsonschema (run from references/ via cwd=) returncode 0; sibling task.schema.json resolves automatically
+
+### 2026-06-24 07:47 - mark-step-complete
+Added test_missing_required_field_rejected: deepcopy known-good Thread, delete introduction, assert non-zero validator returncode
+
+### 2026-06-24 07:47 - mark-step-complete
+Added test_thread_additional_property_rejected: add summary=extra and assert non-zero returncode, exercising additionalProperties false
+
+### 2026-06-24 07:47 - mark-step-complete
+Added test_empty_tasks_rejected: tasks=[] and assert non-zero returncode, exercising minItems 1
+
+### 2026-06-24 07:48 - mark-step-complete
+Added test_invalid_embedded_task_rejected: delete evidence from embedded task and assert non-zero returncode, proving the relative ref to task.schema.json is consulted
+
+### 2026-06-24 07:48 - mark-step-complete
+Initial run: 5 passed, 1 failed (test_known_good_thread_validates). Failure cause: check-jsonschema resolves the relative ref against cwd not the schema-file directory (FileNotFoundError task.schema.json at repo root). Fixed by setting cwd=THREAD_SCHEMA_PATH.parent so sibling resolution works per the plan.
+
+### 2026-06-24 07:48 - mark-step-complete
+uv run pytest tests/plan_file_management_schemas/test_thread_schema.py exited 0 with 6 passed (1 from Task 3.1 + 5 new). Full suite: 1454 passed, 4 xfailed (1442 baseline + 6 task tests + 6 thread tests).
+
+### 2026-06-24 07:48 - mark-task-complete
+Added 5 schema-validation tests (known-good Thread, missing introduction, additional summary property, empty tasks array, invalid embedded task) using uvx check-jsonschema with cwd set to references/ so the relative $ref task.schema.json resolves to the sibling file. All 6 tests in test_thread_schema.py pass. Full suite: 1454 passed, 4 xfailed. pyright src/: 0 errors.

@@ -11,6 +11,15 @@ All operations are subcommands of the `i2code` CLI tool, invoked as:
 
     i2code plan <subcommand> <plan_file> [options]
 
+## Schemas
+
+JSON arguments to the commands below MUST conform to these schemas:
+
+- [references/task.schema.json](references/task.schema.json) — the object passed via `--task-file` and the items of the `--tasks` / `--tasks-file` arrays.
+- [references/thread.schema.json](references/thread.schema.json) — the object passed via no single flag today; its `tasks[]` array is what `--tasks` / `--tasks-file` accept, and its `title` / `introduction` fields correspond to the `--title` / `--introduction` flags on `insert-thread-before`, `insert-thread-after`, and `replace-thread`.
+
+The schemas are the source of truth for field names, required-ness, and value constraints (including the `task_type` enum). The per-command sections below describe how each command consumes these objects but do not re-state the schema.
+
 ## fix-numbering
 
 Renumber all threads and tasks sequentially. Run this after arbitrary edits made outside the script.

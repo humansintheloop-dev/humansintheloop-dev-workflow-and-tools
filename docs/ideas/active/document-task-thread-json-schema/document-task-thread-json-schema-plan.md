@@ -127,19 +127,19 @@ Adds `claude-code-plugins/idea-to-code/skills/plan-file-management/references/th
 
 Inserts a `## Schemas` section into `SKILL.md` so a Claude session reading the skill top-to-bottom encounters the schemas before any command that consumes JSON. This is the discoverability acceptance criterion from the spec.
 
-- [ ] **Task 4.1: `SKILL.md` contains a `## Schemas` section before `## fix-numbering` that links to both schema files and clarifies the `--tasks-file` array shape**
+- [x] **Task 4.1: `SKILL.md` contains a `## Schemas` section before `## fix-numbering` that links to both schema files and clarifies the `--tasks-file` array shape**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/plan_file_management_schemas/test_skill_md.py`
   - Observable: `claude-code-plugins/idea-to-code/skills/plan-file-management/SKILL.md` contains a top-level `## Schemas` heading; that heading appears before the `## fix-numbering` heading; the section text links to both `references/task.schema.json` and `references/thread.schema.json` using the relative paths shown in the spec; the section explicitly notes that `--tasks` / `--tasks-file` accept the *array* of Task objects (not a full Thread object).
   - Evidence: `uv run pytest tests/plan_file_management_schemas/test_skill_md.py` exits 0; the test reads `SKILL.md`, asserts the index of `## Schemas` is less than the index of `## fix-numbering`, asserts the section body contains the substrings `[references/task.schema.json](references/task.schema.json)`, `[references/thread.schema.json](references/thread.schema.json)`, and the clarifying phrase about `--tasks` / `--tasks-file` accepting the array.
   - Steps:
-    - [ ] Create `tests/plan_file_management_schemas/test_skill_md.py`
-    - [ ] Add failing test `test_schemas_section_present_before_fix_numbering` that reads `claude-code-plugins/idea-to-code/skills/plan-file-management/SKILL.md`, locates the line `## Schemas` and the line `## fix-numbering`, and asserts the `## Schemas` line index is strictly less than the `## fix-numbering` line index (and both are found)
-    - [ ] Add failing test `test_schemas_section_links_both_files` that asserts the file content contains both `[references/task.schema.json](references/task.schema.json)` and `[references/thread.schema.json](references/thread.schema.json)`
-    - [ ] Add failing test `test_schemas_section_clarifies_tasks_file_is_array` that asserts the section body contains a phrase clarifying that `--tasks` / `--tasks-file` accept the *array* of Task objects (assert the substring `tasks[]` and the word `array` appear in close proximity, OR assert the full sentence from the spec is present verbatim)
-    - [ ] Run the three tests and confirm they fail because the `## Schemas` section has not yet been added
-    - [ ] Edit `claude-code-plugins/idea-to-code/skills/plan-file-management/SKILL.md` to insert the `## Schemas` section verbatim from the spec ("`SKILL.md` modification" section) immediately after the introductory paragraph that ends with `i2code plan <subcommand> <plan_file> [options]` and before the existing `## fix-numbering` section. Do not modify any other text in `SKILL.md`
-    - [ ] Run all three tests and confirm they pass
+    - [x] Create `tests/plan_file_management_schemas/test_skill_md.py`
+    - [x] Add failing test `test_schemas_section_present_before_fix_numbering` that reads `claude-code-plugins/idea-to-code/skills/plan-file-management/SKILL.md`, locates the line `## Schemas` and the line `## fix-numbering`, and asserts the `## Schemas` line index is strictly less than the `## fix-numbering` line index (and both are found)
+    - [x] Add failing test `test_schemas_section_links_both_files` that asserts the file content contains both `[references/task.schema.json](references/task.schema.json)` and `[references/thread.schema.json](references/thread.schema.json)`
+    - [x] Add failing test `test_schemas_section_clarifies_tasks_file_is_array` that asserts the section body contains a phrase clarifying that `--tasks` / `--tasks-file` accept the *array* of Task objects (assert the substring `tasks[]` and the word `array` appear in close proximity, OR assert the full sentence from the spec is present verbatim)
+    - [x] Run the three tests and confirm they fail because the `## Schemas` section has not yet been added
+    - [x] Edit `claude-code-plugins/idea-to-code/skills/plan-file-management/SKILL.md` to insert the `## Schemas` section verbatim from the spec ("`SKILL.md` modification" section) immediately after the introductory paragraph that ends with `i2code plan <subcommand> <plan_file> [options]` and before the existing `## fix-numbering` section. Do not modify any other text in `SKILL.md`
+    - [x] Run all three tests and confirm they pass
 
 ## Steel Thread 5: Confirm No Regressions and Full Suite Passes
 
@@ -263,3 +263,27 @@ uv run pytest tests/plan_file_management_schemas/test_thread_schema.py exited 0 
 
 ### 2026-06-24 07:48 - mark-task-complete
 Added 5 schema-validation tests (known-good Thread, missing introduction, additional summary property, empty tasks array, invalid embedded task) using uvx check-jsonschema with cwd set to references/ so the relative $ref task.schema.json resolves to the sibling file. All 6 tests in test_thread_schema.py pass. Full suite: 1454 passed, 4 xfailed. pyright src/: 0 errors.
+
+### 2026-06-24 07:57 - mark-step-complete
+Created tests/plan_file_management_schemas/test_skill_md.py
+
+### 2026-06-24 07:57 - mark-step-complete
+Added test_schemas_section_present_before_fix_numbering asserting Schemas heading index < fix-numbering heading index
+
+### 2026-06-24 07:57 - mark-step-complete
+Added test_schemas_section_links_both_files asserting both markdown links present
+
+### 2026-06-24 07:57 - mark-step-complete
+Added test_schemas_section_clarifies_tasks_file_is_array asserting tasks[] and array appear in close proximity
+
+### 2026-06-24 07:57 - mark-step-complete
+All 3 tests failed as expected (Schemas heading not found in SKILL.md) - see logs/skill-md-fail.log
+
+### 2026-06-24 07:57 - mark-step-complete
+Inserted ## Schemas section verbatim from spec into SKILL.md between intro paragraph ending with i2code plan <subcommand> <plan_file> [options] and the existing ## fix-numbering section; no other text modified
+
+### 2026-06-24 07:57 - mark-step-complete
+uv run pytest tests/plan_file_management_schemas/test_skill_md.py exited 0 with 3 passed (see logs/skill-md-pass.log)
+
+### 2026-06-24 07:57 - mark-task-complete
+Added ## Schemas section to SKILL.md (after the i2code plan <subcommand> intro, before ## fix-numbering) with both markdown links and the tasks[] array clarification verbatim from spec. 3 new tests in test_skill_md.py pass. Full suite: 1457 passed, 4 xfailed (baseline 1442 + 6 task + 6 thread + 3 skill_md). pyright src/: 0 errors.

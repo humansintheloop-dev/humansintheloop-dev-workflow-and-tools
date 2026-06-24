@@ -97,17 +97,17 @@ Adds `claude-code-plugins/idea-to-code/skills/plan-file-management/references/ta
 
 Adds `claude-code-plugins/idea-to-code/skills/plan-file-management/references/thread.schema.json`, whose `tasks[]` items use `{ "$ref": "task.schema.json" }`. After this thread, a Thread JSON blob can be validated end-to-end, including its embedded tasks, via the relative `$ref`.
 
-- [ ] **Task 3.1: `thread.schema.json` exists, is valid JSON, and is a valid Draft 2020-12 schema**
+- [x] **Task 3.1: `thread.schema.json` exists, is valid JSON, and is a valid Draft 2020-12 schema**
   - TaskType: INFRA
   - Entrypoint: `uv run pytest tests/plan_file_management_schemas/test_thread_schema.py -k schema_file_is_valid`
   - Observable: The file `claude-code-plugins/idea-to-code/skills/plan-file-management/references/thread.schema.json` exists, parses as JSON, declares `"$schema": "https://json-schema.org/draft/2020-12/schema"`, declares `"$id": "thread.schema.json"`, and passes Draft 2020-12 meta-schema validation.
   - Evidence: `uv run pytest tests/plan_file_management_schemas/test_thread_schema.py -k schema_file_is_valid` exits 0; the test asserts `$schema`, `$id`, and meta-schema validity using the same validator approach chosen in Task 2.1.
   - Steps:
-    - [ ] Create `tests/plan_file_management_schemas/test_thread_schema.py`
-    - [ ] Add the failing test `test_schema_file_is_valid` that loads `claude-code-plugins/idea-to-code/skills/plan-file-management/references/thread.schema.json` and asserts `$schema`, `$id`, and meta-schema validity (mirroring the structure of `tests/plan_file_management_schemas/test_task_schema.py:test_schema_file_is_valid`)
-    - [ ] Run the test and confirm it fails because the file does not yet exist
-    - [ ] Create `claude-code-plugins/idea-to-code/skills/plan-file-management/references/thread.schema.json` with the exact content from the spec ("`thread.schema.json` (exact content)" section)
-    - [ ] Run the test and confirm it passes
+    - [x] Create `tests/plan_file_management_schemas/test_thread_schema.py`
+    - [x] Add the failing test `test_schema_file_is_valid` that loads `claude-code-plugins/idea-to-code/skills/plan-file-management/references/thread.schema.json` and asserts `$schema`, `$id`, and meta-schema validity (mirroring the structure of `tests/plan_file_management_schemas/test_task_schema.py:test_schema_file_is_valid`)
+    - [x] Run the test and confirm it fails because the file does not yet exist
+    - [x] Create `claude-code-plugins/idea-to-code/skills/plan-file-management/references/thread.schema.json` with the exact content from the spec ("`thread.schema.json` (exact content)" section)
+    - [x] Run the test and confirm it passes
 
 - [ ] **Task 3.2: `thread.schema.json` accepts a known-good Thread (resolving `$ref` to `task.schema.json`) and rejects malformed Threads**
   - TaskType: OUTCOME
@@ -221,3 +221,21 @@ uv run pytest tests/plan_file_management_schemas/test_task_schema.py exited 0 wi
 
 ### 2026-06-24 07:30 - mark-task-complete
 Added 5 schema-validation tests (known-good, missing-required, additional-property, empty-steps, REFACTOR enum violation) using uvx check-jsonschema subprocess. All 6 tests in test_task_schema.py pass. Full suite: 1448 passed, 4 xfailed (baseline 1442 + 6 schema tests). pyright src/: 0 errors.
+
+### 2026-06-24 07:38 - mark-step-complete
+Created tests/plan_file_management_schemas/test_thread_schema.py
+
+### 2026-06-24 07:38 - mark-step-complete
+Added test_schema_file_is_valid mirroring test_task_schema.py structure: json.load, asserts $schema and $id, invokes uvx check-jsonschema --check-metaschema
+
+### 2026-06-24 07:38 - mark-step-complete
+Test ran and failed as expected (see logs/thread-schema-fail.log: AssertionError: Schema file not found)
+
+### 2026-06-24 07:38 - mark-step-complete
+Created claude-code-plugins/idea-to-code/skills/plan-file-management/references/thread.schema.json with exact content from spec
+
+### 2026-06-24 07:38 - mark-step-complete
+uv run pytest tests/plan_file_management_schemas/test_thread_schema.py -k schema_file_is_valid exited 0 with 1 passed (see logs/thread-schema-pass.log)
+
+### 2026-06-24 07:38 - mark-task-complete
+thread.schema.json created at correct path with exact spec content; test_schema_file_is_valid passes (json.load + $schema/$id assertions + uvx check-jsonschema --check-metaschema). Full suite: 1449 passed, 4 xfailed (baseline 1442 + 6 task-schema tests + 1 new). pyright: 0 errors.

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "thread.schema.json",
+  "title": "Thread",
+  "description": "A complete steel thread accepted by `i2code plan` thread-mutating commands (insert-thread-before/after, replace-thread).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "introduction", "tasks"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Steel thread title (rendered as the text after `Steel Thread N:`)."
+    },
+    "introduction": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Multi-paragraph prose introducing the thread (rendered between the thread header and the first task)."
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "task.schema.json" },
+      "description": "Ordered list of Task objects. Tasks are renumbered automatically by the CLI; the JSON does not carry task numbers."
+    }
+  }
+}

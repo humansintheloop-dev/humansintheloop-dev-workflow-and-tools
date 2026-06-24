@@ -64,19 +64,19 @@ The repository already has a working `uv`-based Python build, a `pytest` test su
 
 Adds `claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json` — the prescriptive contract for the JSON object that `i2code plan` accepts via `--task-file` and as items of `--tasks` / `--tasks-file`. After this thread, a Claude agent (or a developer) can validate a Task JSON blob against the schema and see required-field, type, enum, and minimum-length violations.
 
-- [ ] **Task 2.1: `task.schema.json` exists, is valid JSON, and is a valid Draft 2020-12 schema**
+- [x] **Task 2.1: `task.schema.json` exists, is valid JSON, and is a valid Draft 2020-12 schema**
   - TaskType: INFRA
   - Entrypoint: `uv run pytest tests/plan_file_management_schemas/test_task_schema.py -k schema_file_is_valid`
   - Observable: The file `claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json` exists, parses as JSON, declares `"$schema": "https://json-schema.org/draft/2020-12/schema"`, declares `"$id": "task.schema.json"`, and passes Draft 2020-12 meta-schema validation.
   - Evidence: `uv run pytest tests/plan_file_management_schemas/test_task_schema.py -k schema_file_is_valid` exits 0; the test loads the file with `json.load`, asserts the `$schema` and `$id` values, and calls `jsonschema.Draft202012Validator.check_schema(...)` (using whichever JSON Schema validator is already available in the existing test environment — see step 1).
   - Steps:
-    - [ ] Inspect `pyproject.toml` and confirm whether `jsonschema` is already an installed dependency for tests. If it is not present in `[project]` or `[dependency-groups]`, the test MUST invoke the validator via `subprocess.run(["uvx", "check-jsonschema", "--check-metaschema", path])` instead of importing `jsonschema` directly — this honors the "no new dependencies" constraint.
-    - [ ] Create `tests/plan_file_management_schemas/__init__.py` (empty) and `tests/plan_file_management_schemas/test_task_schema.py`
-    - [ ] In `tests/plan_file_management_schemas/test_task_schema.py`, add the failing test `test_schema_file_is_valid` that resolves the path `claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json` relative to the repository root, loads the file with `json.load`, asserts `data["$schema"] == "https://json-schema.org/draft/2020-12/schema"`, asserts `data["$id"] == "task.schema.json"`, and validates the schema against the Draft 2020-12 meta-schema using the validator chosen in step 1
-    - [ ] Run the test and confirm it fails because the schema file does not yet exist
-    - [ ] Create `claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json` with the exact content from the spec ("`task.schema.json` (exact content)" section)
-    - [ ] Run the test and confirm it passes
-    - [ ] Run `python -m json.tool < claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json` as a manual sanity check and confirm it prints reformatted JSON (no error)
+    - [x] Inspect `pyproject.toml` and confirm whether `jsonschema` is already an installed dependency for tests. If it is not present in `[project]` or `[dependency-groups]`, the test MUST invoke the validator via `subprocess.run(["uvx", "check-jsonschema", "--check-metaschema", path])` instead of importing `jsonschema` directly — this honors the "no new dependencies" constraint.
+    - [x] Create `tests/plan_file_management_schemas/__init__.py` (empty) and `tests/plan_file_management_schemas/test_task_schema.py`
+    - [x] In `tests/plan_file_management_schemas/test_task_schema.py`, add the failing test `test_schema_file_is_valid` that resolves the path `claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json` relative to the repository root, loads the file with `json.load`, asserts `data["$schema"] == "https://json-schema.org/draft/2020-12/schema"`, asserts `data["$id"] == "task.schema.json"`, and validates the schema against the Draft 2020-12 meta-schema using the validator chosen in step 1
+    - [x] Run the test and confirm it fails because the schema file does not yet exist
+    - [x] Create `claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json` with the exact content from the spec ("`task.schema.json` (exact content)" section)
+    - [x] Run the test and confirm it passes
+    - [x] Run `python -m json.tool < claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json` as a manual sanity check and confirm it prints reformatted JSON (no error)
 
 - [ ] **Task 2.2: `task.schema.json` accepts a known-good Task and rejects malformed Tasks**
   - TaskType: OUTCOME
@@ -170,3 +170,27 @@ Baseline test count recorded: 1442 passed, 4 xfailed (no schema-related tests ye
 
 ### 2026-06-24 07:09 - mark-task-complete
 Baseline INFRA task verified: pytest passes (1442 passed, 4 xfailed), pyright passes (0 errors). Baseline test count is 1442.
+
+### 2026-06-24 07:17 - mark-step-complete
+Inspected pyproject.toml: jsonschema not present in [project] or [dependency-groups]; test uses subprocess.run(['uvx', 'check-jsonschema', '--check-metaschema', path])
+
+### 2026-06-24 07:17 - mark-step-complete
+Created tests/plan_file_management_schemas/__init__.py (empty) and tests/plan_file_management_schemas/test_task_schema.py
+
+### 2026-06-24 07:17 - mark-step-complete
+test_schema_file_is_valid loads file with json.load, asserts $schema and $id values, invokes uvx check-jsonschema --check-metaschema for Draft 2020-12 meta-schema validation
+
+### 2026-06-24 07:17 - mark-step-complete
+Test ran and failed as expected because the schema file did not exist (see logs/task-schema-fail.log: AssertionError: Schema file not found)
+
+### 2026-06-24 07:17 - mark-step-complete
+Created claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json with exact content from spec
+
+### 2026-06-24 07:17 - mark-step-complete
+uv run pytest tests/plan_file_management_schemas/test_task_schema.py -k schema_file_is_valid exited 0 with 1 passed (see logs/task-schema-pass.log)
+
+### 2026-06-24 07:17 - mark-step-complete
+uv run python -m json.tool printed reformatted JSON with no error, confirming valid JSON
+
+### 2026-06-24 07:18 - mark-task-complete
+task.schema.json created at correct path with exact spec content; test_schema_file_is_valid passes (json.load + $schema/$id assertions + uvx check-jsonschema --check-metaschema). Full suite: 1443 passed, 4 xfailed (baseline 1442 + 1 new). pyright: 0 errors.

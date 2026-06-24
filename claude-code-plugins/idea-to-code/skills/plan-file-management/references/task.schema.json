@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "task.schema.json",
+  "title": "Task",
+  "description": "A single task accepted by `i2code plan` task-mutating commands. Used as the body of --task-file and as each item of the --tasks / --tasks-file arrays.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "task_type", "entrypoint", "observable", "evidence", "steps"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable, outcome-oriented task title (text after `Task X.Y:` in the rendered plan)."
+    },
+    "task_type": {
+      "type": "string",
+      "enum": ["INFRA", "OUTCOME"],
+      "description": "Verification category of the task. OUTCOME = introduces externally observable behavior. INFRA = enables build/test/run but does not introduce user-visible behavior on its own."
+    },
+    "entrypoint": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exact shell command or execution path that runs the task (rendered as the `Entrypoint:` line, backticked)."
+    },
+    "observable": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Precise, testable description of what changes when the entrypoint runs (stdout, exit code, file written, branch created, etc.)."
+    },
+    "evidence": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exact shell command that proves the observable via the entrypoint (rendered as the `Evidence:` line, backticked)."
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Single implementation step description, rendered as an unchecked `- [ ] ...` sub-bullet."
+      },
+      "description": "Ordered list of implementation step descriptions. Each becomes an unchecked checklist item under the task."
+    }
+  }
+}

@@ -78,20 +78,20 @@ Adds `claude-code-plugins/idea-to-code/skills/plan-file-management/references/ta
     - [x] Run the test and confirm it passes
     - [x] Run `python -m json.tool < claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json` as a manual sanity check and confirm it prints reformatted JSON (no error)
 
-- [ ] **Task 2.2: `task.schema.json` accepts a known-good Task and rejects malformed Tasks**
+- [x] **Task 2.2: `task.schema.json` accepts a known-good Task and rejects malformed Tasks**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/plan_file_management_schemas/test_task_schema.py`
   - Observable: A Task JSON object containing exactly the six required fields with valid values validates successfully; Task JSON missing any required field, with an extra `description` property, with `steps: []`, or with `task_type: "REFACTOR"` is rejected by the schema with a non-zero validator outcome.
   - Evidence: `uv run pytest tests/plan_file_management_schemas/test_task_schema.py` exits 0; the test file contains one passing case (the known-good Task from the spec's Acceptance Criteria item 8) and four failing cases (missing required field, `additionalProperties` violation via extra `description`, empty `steps` array, `task_type: "REFACTOR"` enum violation) — each implemented as a separate `pytest` test that asserts validation succeeds or raises `jsonschema.ValidationError` (or, if using `check-jsonschema` via subprocess, asserts the return code).
   - Steps:
-    - [ ] Add failing test `test_known_good_task_validates` that constructs the Task JSON object from spec Acceptance Criteria item 8 (the "Add health endpoint" object) and asserts it validates against `task.schema.json`
-    - [ ] Add failing test `test_missing_required_field_rejected` that copies the known-good Task, deletes `evidence`, and asserts validation fails
-    - [ ] Add failing test `test_additional_property_rejected` that copies the known-good Task, adds `"description": "extra"`, and asserts validation fails (this exercises `additionalProperties: false`)
-    - [ ] Add failing test `test_empty_steps_rejected` that copies the known-good Task, sets `steps: []`, and asserts validation fails (this exercises `minItems: 1`)
-    - [ ] Add failing test `test_refactor_task_type_rejected` that copies the known-good Task, sets `task_type: "REFACTOR"`, and asserts validation fails (this documents the spec's deliberate two-value enum)
-    - [ ] Run the failing tests and confirm they fail in the expected way (any failure shape that proves the assertion ran; some may already pass if Task 2.1's schema content is correct — that's fine, the test still proves the contract)
-    - [ ] Inspect the test failures; no code change is required if the schema from Task 2.1 already encodes the constraints correctly. If any test fails for a reason other than "validation succeeded when it should have failed" or vice versa, fix the schema (Task 2.1 file) so all five tests pass
-    - [ ] Confirm all five tests in this file pass
+    - [x] Add failing test `test_known_good_task_validates` that constructs the Task JSON object from spec Acceptance Criteria item 8 (the "Add health endpoint" object) and asserts it validates against `task.schema.json`
+    - [x] Add failing test `test_missing_required_field_rejected` that copies the known-good Task, deletes `evidence`, and asserts validation fails
+    - [x] Add failing test `test_additional_property_rejected` that copies the known-good Task, adds `"description": "extra"`, and asserts validation fails (this exercises `additionalProperties: false`)
+    - [x] Add failing test `test_empty_steps_rejected` that copies the known-good Task, sets `steps: []`, and asserts validation fails (this exercises `minItems: 1`)
+    - [x] Add failing test `test_refactor_task_type_rejected` that copies the known-good Task, sets `task_type: "REFACTOR"`, and asserts validation fails (this documents the spec's deliberate two-value enum)
+    - [x] Run the failing tests and confirm they fail in the expected way (any failure shape that proves the assertion ran; some may already pass if Task 2.1's schema content is correct — that's fine, the test still proves the contract)
+    - [x] Inspect the test failures; no code change is required if the schema from Task 2.1 already encodes the constraints correctly. If any test fails for a reason other than "validation succeeded when it should have failed" or vice versa, fix the schema (Task 2.1 file) so all five tests pass
+    - [x] Confirm all five tests in this file pass
 
 ## Steel Thread 3: Thread JSON Schema References Task Schema
 
@@ -194,3 +194,30 @@ uv run python -m json.tool printed reformatted JSON with no error, confirming va
 
 ### 2026-06-24 07:18 - mark-task-complete
 task.schema.json created at correct path with exact spec content; test_schema_file_is_valid passes (json.load + $schema/$id assertions + uvx check-jsonschema --check-metaschema). Full suite: 1443 passed, 4 xfailed (baseline 1442 + 1 new). pyright: 0 errors.
+
+### 2026-06-24 07:29 - mark-step-complete
+Added test_known_good_task_validates: constructs spec AC8 Add health endpoint Task and asserts uvx check-jsonschema returncode 0
+
+### 2026-06-24 07:29 - mark-step-complete
+Added test_missing_required_field_rejected: deletes evidence from known-good Task and asserts non-zero validator returncode
+
+### 2026-06-24 07:29 - mark-step-complete
+Added test_additional_property_rejected: adds description=extra and asserts non-zero returncode, exercising additionalProperties false
+
+### 2026-06-24 07:30 - mark-step-complete
+Added test_empty_steps_rejected: sets steps=[] and asserts non-zero returncode, exercising minItems 1
+
+### 2026-06-24 07:30 - mark-step-complete
+Added test_refactor_task_type_rejected: sets task_type=REFACTOR and asserts non-zero returncode, exercising two-value enum
+
+### 2026-06-24 07:30 - mark-step-complete
+uv run pytest tests/plan_file_management_schemas/test_task_schema.py exited 0 with 6 passed (1 existing schema_file_is_valid + 5 new); per plan, passing on first run is fine since Task 2.1 schema already encodes constraints correctly
+
+### 2026-06-24 07:30 - mark-step-complete
+No schema change required: all five new tests passed on first run, confirming Task 2.1 schema correctly encodes additionalProperties, minItems, enum, and required constraints
+
+### 2026-06-24 07:30 - mark-step-complete
+uv run pytest tests/plan_file_management_schemas/test_task_schema.py exited 0 with all 6 tests passing (1 from Task 2.1 + 5 new from Task 2.2); full suite 1448 passed 4 xfailed (baseline 1442 + 6 schema tests)
+
+### 2026-06-24 07:30 - mark-task-complete
+Added 5 schema-validation tests (known-good, missing-required, additional-property, empty-steps, REFACTOR enum violation) using uvx check-jsonschema subprocess. All 6 tests in test_task_schema.py pass. Full suite: 1448 passed, 4 xfailed (baseline 1442 + 6 schema tests). pyright src/: 0 errors.

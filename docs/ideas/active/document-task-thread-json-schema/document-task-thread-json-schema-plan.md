@@ -50,15 +50,15 @@ The plan never touches Python source under `src/i2code/` and never adds new depe
 
 The repository already has a working `uv`-based Python build, a `pytest` test suite under `tests/`, and CI under `.github/workflows/`. Before adding any schema files, confirm the baseline is green so subsequent commits in this work can be attributed cleanly to the schema additions.
 
-- [ ] **Task 1.1: Existing test suite passes on a clean checkout**
+- [x] **Task 1.1: Existing test suite passes on a clean checkout**
   - TaskType: INFRA
   - Entrypoint: `uv run pytest`
   - Observable: `uv run pytest` collects the existing tests under `tests/` and exits with code 0; no schema-related tests have been added yet.
   - Evidence: `uv run pytest` exits 0 from a clean working tree (run the command, capture the last 20 lines of output, confirm exit code 0).
   - Steps:
-    - [ ] Run `uv run pytest` from the project root and confirm exit code 0
-    - [ ] Run `uvx pyright --level error src/` and confirm zero errors (matches the project pre-commit checklist)
-    - [ ] Record the baseline test count from `pytest` output so later threads can confirm new tests are additive
+    - [x] Run `uv run pytest` from the project root and confirm exit code 0
+    - [x] Run `uvx pyright --level error src/` and confirm zero errors (matches the project pre-commit checklist)
+    - [x] Record the baseline test count from `pytest` output so later threads can confirm new tests are additive
 
 ## Steel Thread 2: Task JSON Schema Validates Task JSON
 
@@ -155,3 +155,18 @@ Runs the full project test suite one more time to confirm no `src/i2code/` sourc
     - [ ] Run `uvx pyright --level error src/` and confirm zero errors
     - [ ] Run `git diff --name-only` against the merge base and confirm the only modified/added paths are `claude-code-plugins/idea-to-code/skills/plan-file-management/SKILL.md`, `claude-code-plugins/idea-to-code/skills/plan-file-management/references/task.schema.json`, `claude-code-plugins/idea-to-code/skills/plan-file-management/references/thread.schema.json`, and `tests/plan_file_management_schemas/**`
     - [ ] Run the CodeScene `pre_commit_code_health_safeguard` per the project memory's pre-commit checklist before the final commit
+
+---
+
+## Change History
+### 2026-06-24 07:09 - mark-step-complete
+uv run pytest exited 0 with 1442 passed, 4 xfailed (see logs/baseline-pytest.log)
+
+### 2026-06-24 07:09 - mark-step-complete
+uvx pyright --level error src/ exited 0 with 0 errors, 0 warnings, 0 informations (see logs/baseline-pyright.log)
+
+### 2026-06-24 07:09 - mark-step-complete
+Baseline test count recorded: 1442 passed, 4 xfailed (no schema-related tests yet)
+
+### 2026-06-24 07:09 - mark-task-complete
+Baseline INFRA task verified: pytest passes (1442 passed, 4 xfailed), pyright passes (0 errors). Baseline test count is 1442.

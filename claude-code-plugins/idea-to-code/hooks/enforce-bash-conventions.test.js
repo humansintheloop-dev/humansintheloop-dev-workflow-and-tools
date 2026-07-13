@@ -9,7 +9,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { isGitDashC, isCdAndGit, isGitCommitHeredoc, isPythonMPytest, isBarePytest, isBashPrefixedScript, isGradlewPipedToTail, handlePreToolUse, GIT_DASH_C_MESSAGE, CD_AND_GIT_MESSAGE, GIT_COMMIT_HEREDOC_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE, BASH_PREFIXED_SCRIPT_MESSAGE, GRADLEW_PIPED_TO_TAIL_MESSAGE } = require('./enforce-bash-conventions.js');
+const { isGitDashC, isCdAndGit, isGitCommitHeredoc, isPythonMPytest, isBarePytest, isBashPrefixedScript, isGradlewPipedToTailOrHead, isPytestPiped, handlePreToolUse, GIT_DASH_C_MESSAGE, CD_AND_GIT_MESSAGE, GIT_COMMIT_HEREDOC_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE, BASH_PREFIXED_SCRIPT_MESSAGE, GRADLEW_PIPED_TO_TAIL_OR_HEAD_MESSAGE, PYTEST_PIPED_MESSAGE } = require('./enforce-bash-conventions.js');
 
 // Test suite
 const tests = [];
@@ -284,30 +284,38 @@ test('blocks Bash tool with bare pytest and flags', () => {
   assert.strictEqual(result.message, BARE_PYTEST_MESSAGE);
 });
 
-// --- Tests for isGradlewPipedToTail ---
+// --- Tests for isGradlewPipedToTailOrHead ---
 
 test('detects ./gradlew piped to tail', () => {
-  assert.strictEqual(isGradlewPipedToTail('./gradlew :customer-management:customer-management-domain:check --no-daemon 2>&1 | tail -5'), true);
+  assert.strictEqual(isGradlewPipedToTailOrHead('./gradlew :customer-management:customer-management-domain:check --no-daemon 2>&1 | tail -5'), true);
 });
 
 test('detects ./gradlew piped to tail -n', () => {
-  assert.strictEqual(isGradlewPipedToTail('./gradlew test | tail -n 20'), true);
+  assert.strictEqual(isGradlewPipedToTailOrHead('./gradlew test | tail -n 20'), true);
 });
 
 test('detects gradlew piped to tail without ./', () => {
-  assert.strictEqual(isGradlewPipedToTail('gradlew build | tail -10'), true);
+  assert.strictEqual(isGradlewPipedToTailOrHead('gradlew build | tail -10'), true);
+});
+
+test('detects ./gradlew piped to head', () => {
+  assert.strictEqual(isGradlewPipedToTailOrHead('./gradlew test | head -20'), true);
+});
+
+test('detects ./gradlew piped to head -n', () => {
+  assert.strictEqual(isGradlewPipedToTailOrHead('./gradlew :customer-management:check --no-daemon 2>&1 | head -n 5'), true);
 });
 
 test('allows ./gradlew without tail', () => {
-  assert.strictEqual(isGradlewPipedToTail('./gradlew test'), false);
+  assert.strictEqual(isGradlewPipedToTailOrHead('./gradlew test'), false);
 });
 
 test('allows tail without gradlew', () => {
-  assert.strictEqual(isGradlewPipedToTail('cat build.log | tail -5'), false);
+  assert.strictEqual(isGradlewPipedToTailOrHead('cat build.log | tail -5'), false);
 });
 
 test('allows non-gradlew commands', () => {
-  assert.strictEqual(isGradlewPipedToTail('npm test'), false);
+  assert.strictEqual(isGradlewPipedToTailOrHead('npm test'), false);
 });
 
 test('blocks Bash tool with gradlew piped to tail', () => {
@@ -316,13 +324,56 @@ test('blocks Bash tool with gradlew piped to tail', () => {
     tool_input: { command: './gradlew :customer-management:customer-management-domain:check --no-daemon 2>&1 | tail -5' }
   });
   assert.strictEqual(result.blocked, true);
-  assert.strictEqual(result.message, GRADLEW_PIPED_TO_TAIL_MESSAGE);
+  assert.strictEqual(result.message, GRADLEW_PIPED_TO_TAIL_OR_HEAD_MESSAGE);
 });
 
 test('allows Bash tool with gradlew without tail', () => {
   const result = handlePreToolUse({
     tool_name: 'Bash',
     tool_input: { command: './gradlew :customer-management:customer-management-domain:check --no-daemon' }
+  });
+  assert.strictEqual(result.blocked, false);
+});
+
+// --- Tests for isPytestPiped ---
+
+test('detects uv run pytest piped to tail', () => {
+  assert.strictEqual(isPytestPiped('uv run pytest tests/msawb/skeleton_cmd/ -x 2>&1 | tail -15'), true);
+});
+
+test('detects uv run pytest piped to head', () => {
+  assert.strictEqual(isPytestPiped('uv run pytest tests/ -v | head -20'), true);
+});
+
+test('detects bare pytest piped to tail', () => {
+  assert.strictEqual(isPytestPiped('pytest tests/ | tail -5'), true);
+});
+
+test('detects uv run python -m pytest piped to grep', () => {
+  assert.strictEqual(isPytestPiped('uv run python -m pytest tests/ 2>&1 | grep FAILED'), true);
+});
+
+test('allows uv run pytest without pipe', () => {
+  assert.strictEqual(isPytestPiped('uv run pytest tests/ -x -v'), false);
+});
+
+test('allows uv run pytest redirected to file', () => {
+  assert.strictEqual(isPytestPiped('uv run pytest tests/ > logs/test.log 2>&1'), false);
+});
+
+test('blocks Bash tool with pytest piped to tail', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'uv run pytest tests/msawb/skeleton_cmd/ -x 2>&1 | tail -15' }
+  });
+  assert.strictEqual(result.blocked, true);
+  assert.strictEqual(result.message, PYTEST_PIPED_MESSAGE);
+});
+
+test('allows Bash tool with pytest without pipe', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'uv run pytest tests/msawb/skeleton_cmd/ -x -v' }
   });
   assert.strictEqual(result.blocked, false);
 });

@@ -11,6 +11,7 @@ const { findProjectRoot, findSessionFile, formatEntryTimestamp } = require('./se
  * - `python -m pytest` — use `uv run python -m pytest` instead
  * - bare `pytest` — use `uv run python -m pytest` instead
  * - `bash script.sh` / `sh script.sh` — run directly when script is executable with shebang
+ * - `uv run pytest ... | tail` — use test-output-to-logfile skill instead
  *
  * Exit codes:
  *   0 - allow the command
@@ -110,17 +111,31 @@ const BASH_PREFIXED_SCRIPT_MESSAGE =
   'Do not prefix scripts with `bash` or `sh` - run them directly: `./script.sh`';
 
 /**
- * Checks whether a Bash command pipes gradlew output to tail.
+ * Checks whether a Bash command pipes gradlew output to tail or head.
  * @param {string} command - The shell command to inspect
- * @returns {boolean} True if the command pipes gradlew to tail
+ * @returns {boolean} True if the command pipes gradlew to tail or head
  */
-function isGradlewPipedToTail(command) {
-  return /\.?\/?\bgradlew\b.*\|\s*tail\b/.test(command);
+function isGradlewPipedToTailOrHead(command) {
+  return /\.?\/?\bgradlew\b.*\|\s*(?:tail|head)\b/.test(command);
 }
 
-const GRADLEW_PIPED_TO_TAIL_MESSAGE =
-  'Do not pipe gradlew output to `tail` - it discards useful output. ' +
-  'Verbose test results are in TEST*.xml files. Run gradlew directly without `| tail`';
+const GRADLEW_PIPED_TO_TAIL_OR_HEAD_MESSAGE =
+  'Do not pipe gradlew output to `tail` or `head` - it discards useful output. ' +
+  'Verbose test results are in TEST*.xml files. Run gradlew directly without `| tail` or `| head`';
+
+/**
+ * Checks whether a Bash command pipes pytest output through another command.
+ * Matches patterns like `uv run pytest ... 2>&1 | tail -15` or `uv run pytest ... | head`.
+ * @param {string} command - The shell command to inspect
+ * @returns {boolean} True if the command pipes pytest output
+ */
+function isPytestPiped(command) {
+  return /\bpytest\b.*\|/.test(command);
+}
+
+const PYTEST_PIPED_MESSAGE =
+  'Do not pipe pytest output — it discards useful output. ' +
+  'Use the idea-to-code:test-output-to-logfile skill to redirect output to a log file instead.';
 
 const BASH_RULES = [
   { test: isGitCommitHeredoc, message: GIT_COMMIT_HEREDOC_MESSAGE },
@@ -129,7 +144,8 @@ const BASH_RULES = [
   { test: isPythonMPytest, message: PYTHON_M_PYTEST_MESSAGE },
   { test: isBarePytest, message: BARE_PYTEST_MESSAGE },
   { test: isBashPrefixedScript, message: BASH_PREFIXED_SCRIPT_MESSAGE },
-  { test: isGradlewPipedToTail, message: GRADLEW_PIPED_TO_TAIL_MESSAGE },
+  { test: isGradlewPipedToTailOrHead, message: GRADLEW_PIPED_TO_TAIL_OR_HEAD_MESSAGE },
+  { test: isPytestPiped, message: PYTEST_PIPED_MESSAGE },
 ];
 
 /**
@@ -190,7 +206,8 @@ module.exports = {
   isPythonMPytest,
   isBarePytest,
   isBashPrefixedScript,
-  isGradlewPipedToTail,
+  isGradlewPipedToTailOrHead,
+  isPytestPiped,
   handlePreToolUse,
   GIT_DASH_C_MESSAGE,
   CD_AND_GIT_MESSAGE,
@@ -198,7 +215,8 @@ module.exports = {
   PYTHON_M_PYTEST_MESSAGE,
   BARE_PYTEST_MESSAGE,
   BASH_PREFIXED_SCRIPT_MESSAGE,
-  GRADLEW_PIPED_TO_TAIL_MESSAGE
+  GRADLEW_PIPED_TO_TAIL_OR_HEAD_MESSAGE,
+  PYTEST_PIPED_MESSAGE
 };
 
 // Main entry point when run as a script

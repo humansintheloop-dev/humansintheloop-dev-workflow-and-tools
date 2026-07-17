@@ -68,50 +68,71 @@ gh run download <run-id> --name <artifact-name> --dir test-reports
 
 ## CircleCI
 
-**IMPORTANT:** The WebFetch tool has a 15-minute cache. To get fresh data on each poll, append a unique query parameter (e.g., `&_ts=1`, `&_ts=2`, incrementing each time).
+Use the `circleci` CLI. It has no caching issues (unlike WebFetch) and returns proper exit codes.
+
+The project slug has the form `gh/<org>/<repo>` (e.g., `gh/eventuate-foundation/eventuate-common`). When run from inside the project's git checkout, the CLI infers the slug from the git remote and `--project` can be omitted.
 
 ### Phase 0: Watch a build
 
-1. Find the latest build:
-```
-WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>?limit=1&branch=<branch>&_ts=1
-```
-Extract the `build_num`.
+`circleci run watch` blocks until the run reaches a terminal state and its exit code reflects the outcome:
+- `0` — all workflows succeeded
+- `1` — one or more workflows failed
+- `6` — cancelled
+- `8` — timed out
 
-2. Poll the build status, incrementing `_ts` each time:
+```bash
+circleci run watch --project gh/<org>/<repo> --branch <branch>
 ```
-WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>?_ts=<N>
+
+Or, from inside the project after `git push`:
+```bash
+circleci run watch --sha $(git rev-parse HEAD)
 ```
-Ask for the `status`, `outcome`, and `stop_time` fields.
 
-3. Repeat every 10-15 seconds until `status` is no longer `running`.
-
-4. Report the final result: `success` or `failed`.
+If you need to poll instead of block (e.g., interleaving other work), use `run list` + `run get`:
+```bash
+circleci run list --project gh/<org>/<repo> --branch <branch> --limit 1 --json --jq '.[0] | {id, phase, outcome}'
+circleci run get <run-id> --json --jq '{phase, workflows: [.workflows[] | {name, phase, jobs: [.jobs[] | {id, name, phase, outcome}]}]}'
+```
 
 If the build failed, proceed to Phase 1.
 
 ### Phase 1: Gather evidence
 
-**Step 1: Get the failed job summary**
+**Step 1: Identify the failing job(s)**
 
-First get the build steps:
-```
-WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>?include=steps
-```
-Then fetch the output for the failed step index:
-```
-WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>/output/<step-index>/0
+```bash
+circleci run get <run-id> --json --jq '.workflows[].jobs[] | select(.outcome == "failed")'
 ```
 
-**Step 2: Download test artifacts**
+**Step 2: Get the failed step and its output**
 
-List artifacts:
+List the job's steps and find the one with a non-zero exit code:
+```bash
+circleci job output list <job-id> --json --jq '.steps[] | select(.exit_code != 0) | {num, name, exit_code}'
 ```
-WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>/artifacts
-```
-Then fetch specific artifact URLs from the response.
 
-**Step 3: Read the TEST-*.xml files** — see "Reading TEST-*.xml files" below.
+Then fetch that step's output. Use `--condensed` for an AI-friendly filtered view:
+```bash
+circleci job output get <job-id> --step-num <N> --condensed
+```
+
+**Step 3: Check parsed test results**
+
+If the job uses `store_test_results`, CircleCI has already parsed them — this may be enough to identify the failing test without downloading anything:
+```bash
+circleci testresult list <job-id>
+```
+
+**Step 4: Download test artifacts**
+
+List artifacts, then download into a project-relative directory:
+```bash
+circleci artifact <job-id> --json
+circleci artifact <job-id> --output test-reports
+```
+
+**Step 5: Read the TEST-*.xml files** — see "Reading TEST-*.xml files" below.
 
 ## Reading TEST-*.xml files
 

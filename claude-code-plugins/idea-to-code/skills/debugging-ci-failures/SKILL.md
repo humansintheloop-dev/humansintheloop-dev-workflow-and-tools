@@ -5,13 +5,21 @@ description: Guidelines for watching CI builds and diagnosing failures. Claude s
 
 # Watching and Debugging CI Builds
 
-This skill covers two scenarios: watching a CI build to completion after a push, and diagnosing failures when a build fails. Start with Phase 0 to monitor the build. If it succeeds, you're done. If it fails, continue to Phase 1 to gather evidence and Phase 2 to analyze and fix.
+This skill covers two scenarios: watching a CI build to completion after a push, and diagnosing failures when a build fails.
 
-## Phase 0: Watch a Running Build
+## Overview
 
-When asked to watch a CI build after a push, actively poll until the build completes.
+Follow these steps in order:
 
-### Detect CI system
+1. **Detect the CI system** the project uses (see "Detect CI system" below).
+2. **Phase 0: Watch the build** — poll until the build completes. If it succeeds, you're done.
+3. **Phase 1: Gather evidence** (only if the build failed) — collect the failed job summary, download test artifacts, and read `TEST-*.xml` files for the full stack trace and container logs.
+4. **Phase 2: Analyze evidence** — identify the root cause (not the symptom), determine whether the failure is related to your changes, and fix the root cause.
+5. **Verify the fix** by running the same command that failed in CI.
+
+Phases 0 and 1 have CI-specific commands — see the "GitHub Actions" and "CircleCI" sections below. Phase 2 is CI-agnostic.
+
+## Detect CI system
 
 Check which CI system the project uses:
 - `.github/workflows/*.yml` → GitHub Actions
@@ -19,9 +27,13 @@ Check which CI system the project uses:
 
 For CircleCI, extract the org and repo from `git remote get-url origin` to construct API URLs.
 
-### GitHub Actions: Watch a build
+## GitHub Actions
 
-Poll using the `gh` CLI (no caching issues):
+Use the `gh` CLI (no caching issues).
+
+### Phase 0: Watch a build
+
+Poll for the latest run on the branch:
 ```bash
 gh run list --branch <branch> --limit 1 --json status,conclusion,databaseId,name
 ```
@@ -33,9 +45,32 @@ gh run view <run-id> --json status,conclusion,jobs
 
 Repeat every 10-15 seconds until `status` is `completed`. Then check `conclusion` for `success` or `failure`.
 
-### CircleCI: Watch a build
+If the build failed, proceed to Phase 1.
+
+### Phase 1: Gather evidence
+
+**Step 1: Get the failed job summary**
+```bash
+gh run view <run-id> --log-failed 2>&1 | grep -i "FAILED\|error\|Exception" | head -30
+```
+
+This gives you the failing task/test name and a high-level error.
+
+**Step 2: Download test artifacts**
+
+Test results are often saved via `actions/upload-artifact`. Check the workflow definition for uploaded artifacts. If artifacts are available:
+
+```bash
+gh run download <run-id> --name <artifact-name> --dir test-reports
+```
+
+**Step 3: Read the TEST-*.xml files** — see "Reading TEST-*.xml files" below.
+
+## CircleCI
 
 **IMPORTANT:** The WebFetch tool has a 15-minute cache. To get fresh data on each poll, append a unique query parameter (e.g., `&_ts=1`, `&_ts=2`, incrementing each time).
+
+### Phase 0: Watch a build
 
 1. Find the latest build:
 ```
@@ -53,22 +88,12 @@ Ask for the `status`, `outcome`, and `stop_time` fields.
 
 4. Report the final result: `success` or `failed`.
 
-If the build failed, proceed to Phase 1 below.
+If the build failed, proceed to Phase 1.
 
-## Phase 1: Gather Evidence (only if the build failed)
+### Phase 1: Gather evidence
 
-Collect all available information before drawing any conclusions.
+**Step 1: Get the failed job summary**
 
-### Step 1: Get the failed job summary
-
-**GitHub Actions:**
-```bash
-gh run view <run-id> --log-failed 2>&1 | grep -i "FAILED\|error\|Exception" | head -30
-```
-
-This gives you the failing task/test name and a high-level error.
-
-**CircleCI:**
 First get the build steps:
 ```
 WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>?include=steps
@@ -78,25 +103,17 @@ Then fetch the output for the failed step index:
 WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>/output/<step-index>/0
 ```
 
-### Step 2: Download test artifacts
+**Step 2: Download test artifacts**
 
-Check the workflow definition for uploaded artifacts.
-
-**GitHub Actions:**
-Test results are often saved via `actions/upload-artifact`. If artifacts are available:
-
-```bash
-gh run download <run-id> --name <artifact-name> --dir test-reports
-```
-
-**CircleCI:**
 List artifacts:
 ```
 WebFetch: https://circleci.com/api/v1.1/project/github/<org>/<repo>/<build-num>/artifacts
 ```
 Then fetch specific artifact URLs from the response.
 
-### Step 3: Read the TEST-*.xml files
+**Step 3: Read the TEST-*.xml files** — see "Reading TEST-*.xml files" below.
+
+## Reading TEST-*.xml files
 
 Find and read the relevant `TEST-*.xml` file for the failing test. These files contain:
 - The full stack trace (not truncated like CI logs)

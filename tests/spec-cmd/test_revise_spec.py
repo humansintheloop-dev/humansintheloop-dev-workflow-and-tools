@@ -125,7 +125,6 @@ class TestReviseSpecAllowedTools:
         _, cmd, cwd = runner.calls[0]
         assert cmd.allowed_tools is not None
         assert f"Read(/{repo_root}/**)" in cmd.allowed_tools
-        assert f"Write(/{idea_dir}/**)" in cmd.allowed_tools
         assert f"Edit(/{idea_dir}/**)" in cmd.allowed_tools
         assert cwd == repo_root
 

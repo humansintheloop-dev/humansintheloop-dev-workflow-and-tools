@@ -42,22 +42,26 @@ def build_allowed_tools_flag(repo_root: str, idea_dir: str) -> str:
     """Build the --allowedTools flag value for claude CLI.
 
     Returns a comma-separated string granting Read access to the repo root
-    and Write/Edit access to the idea directory.
+    and Edit access to the idea directory.
     Uses / prefix for absolute paths per Claude Code permission syntax.
+    Edit(path) rules cover all file-editing tools; Write(path) rules are
+    ignored by Claude Code's file permission checks.
     """
     repo = _resolve_path(repo_root)
     idea = _resolve_path(idea_dir)
     return (
         f"Read(/{repo}/**),"
-        f"Write(/{idea}/**),"
         f"Edit(/{idea}/**)"
     )
 
 
 def calculate_claude_permissions(repo_root: str) -> List[str]:
-    """Calculate the full list of Claude permissions for a repo root."""
+    """Calculate the full list of Claude permissions for a repo root.
+
+    Edit(path) rules cover all file-editing tools; Write(path) rules are
+    ignored by Claude Code's file permission checks.
+    """
     return REQUIRED_PERMISSIONS + [
-        f"Write(/{repo_root}/**)",
         f"Edit(/{repo_root}/**)",
         f"Bash(rm {repo_root}/*)",
     ]
@@ -69,6 +73,21 @@ def _merge_permissions(existing: List[str], required: List[str]) -> List[str]:
         if perm not in existing:
             existing.append(perm)
     return existing
+
+
+def _is_path_scoped_write_rule(permission: str) -> bool:
+    """Report whether a rule is a Write(path) rule that Claude Code cannot match."""
+    return permission.startswith("Write(")
+
+
+def _without_path_scoped_write_rules(permissions: List[str]) -> List[str]:
+    """Drop Write(path) rules left over from earlier versions of this tool.
+
+    Claude Code's file permission checks only match Edit(path) rules, so a
+    Write(path) rule is rejected with a warning at startup. The bare Write
+    tool name (no path) is still a valid rule and is preserved.
+    """
+    return [perm for perm in permissions if not _is_path_scoped_write_rule(perm)]
 
 
 def ensure_claude_permissions(repo_root: str) -> None:
@@ -84,7 +103,8 @@ def ensure_claude_permissions(repo_root: str) -> None:
         config = {}
 
     permissions = config.setdefault("permissions", {})
-    permissions["allow"] = _merge_permissions(permissions.get("allow", []), calculate_claude_permissions(repo_root))
+    existing_allow = _without_path_scoped_write_rules(permissions.get("allow", []))
+    permissions["allow"] = _merge_permissions(existing_allow, calculate_claude_permissions(repo_root))
     permissions["deny"] = _merge_permissions(permissions.get("deny", []), DENIED_PERMISSIONS)
     with open(settings_file, "w") as f:
         json.dump(config, f, indent=2)

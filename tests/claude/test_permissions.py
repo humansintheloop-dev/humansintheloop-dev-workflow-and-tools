@@ -1,11 +1,13 @@
 """Tests for Claude permissions and settings setup."""
 
+import json
 import os
 import tempfile
 import pytest
 from i2code.claude.permissions import (
     calculate_claude_permissions,
     copy_source_settings,
+    ensure_claude_permissions,
     REQUIRED_PERMISSIONS,
 )
 
@@ -20,11 +22,21 @@ class TestCalculateClaudePermissions:
         for req in REQUIRED_PERMISSIONS:
             assert req in perms
 
-    def test_includes_write_and_edit_for_repo_root(self):
+    def test_includes_edit_for_repo_root(self):
         perms = calculate_claude_permissions("/fake/repo")
 
-        assert "Write(//fake/repo/**)" in perms
         assert "Edit(//fake/repo/**)" in perms
+
+    def test_omits_path_scoped_write_rule(self):
+        """Write(path) rules are ignored by Claude Code; Edit(path) covers all file-editing tools."""
+        perms = calculate_claude_permissions("/fake/repo")
+
+        assert not any(perm.startswith("Write(") for perm in perms)
+
+
+def _read_allow_rules(path):
+    with open(path, "r") as f:
+        return json.load(f)["permissions"]["allow"]
 
 
 def _write_settings(path, content):
@@ -79,3 +91,30 @@ class TestCopySourceSettings:
         copy_source_settings(dest_root, source_root=source_root)
 
         assert not os.path.exists(dest_settings)
+
+
+@pytest.mark.unit
+class TestEnsureClaudePermissions:
+    """Test that settings.local.json is kept free of rules Claude Code cannot match."""
+
+    def test_drops_stale_path_scoped_write_rules(self, settings_paths):
+        """Write(path) rules left over from earlier versions are removed, not preserved."""
+        _, dest_root, _, dest_settings = settings_paths
+        _write_settings(dest_settings, json.dumps(
+            {"permissions": {"allow": ["Write(//old/repo/**)", "Bash(ls:*)"]}}
+        ))
+
+        ensure_claude_permissions(dest_root)
+
+        allow = _read_allow_rules(dest_settings)
+        assert "Write(//old/repo/**)" not in allow
+        assert "Bash(ls:*)" in allow
+
+    def test_keeps_bare_write_tool_rule(self, settings_paths):
+        """A bare Write rule (no path) is still a valid tool-level permission."""
+        _, dest_root, _, dest_settings = settings_paths
+        _write_settings(dest_settings, json.dumps({"permissions": {"allow": ["Write"]}}))
+
+        ensure_claude_permissions(dest_root)
+
+        assert "Write" in _read_allow_rules(dest_settings)

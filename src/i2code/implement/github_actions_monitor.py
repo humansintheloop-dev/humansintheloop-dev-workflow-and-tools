@@ -1,5 +1,7 @@
 """GithubActionsMonitor: waits for CI completion and reports results."""
 
+from i2code.implement.console import print_message
+
 
 class GithubActionsMonitor:
     """Monitors GitHub Actions CI status for a branch.
@@ -18,13 +20,13 @@ class GithubActionsMonitor:
     def wait_for_workflow_completion(self, branch, head_sha):
         """Wait for CI completion if configured."""
         if not self._skip_ci_wait:
-            print("Waiting for CI to complete...")
+            print_message("Waiting for CI to complete...")
             ci_success, failing_run = self._gh_client.wait_for_workflow_completion(
                 branch, head_sha, timeout_seconds=self._ci_timeout,
             )
 
             if not ci_success and failing_run:
                 workflow_name = failing_run.get("name", "unknown")
-                print(f"CI failed: {workflow_name}. Will fix on next iteration.")
+                print_message(f"CI failed: {workflow_name}. Will fix on next iteration.")
             elif ci_success:
-                print("CI passed!")
+                print_message("CI passed!")

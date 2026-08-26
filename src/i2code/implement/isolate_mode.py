@@ -6,6 +6,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from i2code.implement.console import print_message
 from i2code.implement.managed_subprocess import ManagedSubprocess
 
 
@@ -71,10 +72,10 @@ class IsolateMode:
 
     def _setup_worktree_and_launch(self):
         idea_branch = self._git_repo.ensure_idea_branch(self._project.name)
-        print(f"Idea branch: {idea_branch}")
+        print_message(f"Idea branch: {idea_branch}")
         wt_git_repo = self._git_repo.ensure_worktree(self._project.name, idea_branch)
         wt_git_repo.set_upstream(idea_branch)
-        print(f"Worktree: {wt_git_repo.working_tree_dir}")
+        print_message(f"Worktree: {wt_git_repo.working_tree_dir}")
         self._project_setup.setup_worktree(wt_git_repo)
 
         work_project = self._project.worktree_idea_project(
@@ -82,7 +83,7 @@ class IsolateMode:
         )
 
         if self._options.skip_scaffolding:
-            print("Scaffolding: skipped (--skip-scaffolding)")
+            print_message("Scaffolding: skipped (--skip-scaffolding)")
         else:
             scaffolder = self._scaffolder_factory(wt_git_repo)
             setup_ok = scaffolder.ensure_scaffolding_setup(
@@ -103,7 +104,7 @@ class IsolateMode:
 
     def _launch(self, cwd):
         cmd = self._build_isolarium_command(clone_dir=cwd)
-        print(f"Running (cwd= {cwd} ): {' '.join(cmd)}", flush=True)
+        print_message(f"Running (cwd= {cwd} ): {' '.join(cmd)}", flush=True)
         return self._subprocess_runner.run(cmd, cwd=cwd)
 
     def _build_isolarium_command(self, clone_dir):

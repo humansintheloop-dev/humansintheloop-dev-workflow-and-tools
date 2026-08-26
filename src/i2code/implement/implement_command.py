@@ -8,6 +8,7 @@ from i2code.implement.timing import Timer, timed
 from i2code.implement.workflow_state import WorkflowState
 from i2code.implement.git_setup import validate_idea_files_committed
 from i2code.implement.worktree_setup import ProjectSetup
+from i2code.implement.console import print_message
 
 
 class ImplementCommand:
@@ -75,16 +76,16 @@ class ImplementCommand:
 
         with timed("ensure_idea_branch"):
             idea_branch = self.git_repo.ensure_idea_branch(self.project.name)
-        print(f"Idea branch: {idea_branch}")
+        print_message(f"Idea branch: {idea_branch}")
 
         if self.opts.isolated:
-            print(f"Worktree: {self.git_repo.working_tree_dir}")
+            print_message(f"Worktree: {self.git_repo.working_tree_dir}")
             ProjectSetup().setup_worktree(self.git_repo)
             work_project = self.project
         else:
             with timed("ensure_worktree"):
                 self.git_repo = self.git_repo.ensure_worktree(self.project.name, idea_branch)
-            print(f"Worktree: {self.git_repo.working_tree_dir}")
+            print_message(f"Worktree: {self.git_repo.working_tree_dir}")
             ProjectSetup().setup_worktree(self.git_repo)
             work_project = self.project.worktree_idea_project(
                 self.git_repo.working_tree_dir, self.git_repo.main_repo_dir
@@ -93,14 +94,14 @@ class ImplementCommand:
         self.git_repo.branch = idea_branch
 
         if self.opts.setup_only:
-            print("Setup complete. Exiting (--setup-only mode).")
+            print_message("Setup complete. Exiting (--setup-only mode).")
             return
 
         with timed("find_pr"):
             existing_pr = self.git_repo.gh_client.find_pr(idea_branch)
         if existing_pr:
             self.git_repo.pr_number = existing_pr
-            print(f"Reusing existing PR #{existing_pr}")
+            print_message(f"Reusing existing PR #{existing_pr}")
         elif self.opts.address_review_comments:
             print(
                 f"Error: --address-review-comments requires an existing PR, "
@@ -132,13 +133,13 @@ class ImplementCommand:
 
     def _all_tasks_already_complete(self):
         if self.project.get_next_task() is None:
-            print("All tasks are already complete.")
+            print_message("All tasks are already complete.")
             return True
         return False
 
     def _all_tasks_already_complete_in_worktree(self):
         if self.project.get_next_task() is None:
-            print("All tasks are already complete in worktree.")
+            print_message("All tasks are already complete in worktree.")
             return True
         return False
 
@@ -150,6 +151,6 @@ class ImplementCommand:
             mode = "isolate"
         else:
             mode = "worktree"
-        print(f"Mode: {mode}")
-        print(f"Idea: {self.project.name}")
-        print(f"Directory: {self.project.directory}")
+        print_message(f"Mode: {mode}")
+        print_message(f"Idea: {self.project.name}")
+        print_message(f"Directory: {self.project.directory}")

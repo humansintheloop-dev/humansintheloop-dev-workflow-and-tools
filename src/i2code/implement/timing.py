@@ -3,6 +3,8 @@
 import time
 from contextlib import contextmanager
 
+from i2code.implement.console import print_message
+
 
 class Timer:
     """Measures elapsed time from creation to print.
@@ -27,7 +29,7 @@ class Timer:
         if not Timer.enabled:
             return
         elapsed = time.monotonic() - self._start
-        print(f"  [timing] {label}: {elapsed:.1f}s")
+        print_message(f"  [timing] {label}: {elapsed:.1f}s")
 
 
 @contextmanager

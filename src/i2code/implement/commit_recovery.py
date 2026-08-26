@@ -4,6 +4,7 @@ import sys
 
 from i2code.implement.claude_runner import check_claude_success, print_task_failure_diagnostics
 from i2code.implement.command_builder import CommandBuilder
+from i2code.implement.console import print_message
 from i2code.plan_domain.parser import parse
 
 
@@ -42,7 +43,7 @@ class TaskCommitRecovery:
             True if recovery succeeded (HEAD advanced and <SUCCESS> tag present),
             False otherwise.
         """
-        print("Detected uncommitted changes from a previous run, attempting to commit...")
+        print_message("Detected uncommitted changes from a previous run, attempting to commit...")
 
         diff_summary = self._git_repo.diff_file_against_head(self._project.plan_file)
         cmd = CommandBuilder().build_recovery_command(
@@ -73,12 +74,12 @@ class TaskCommitRecovery:
         max_attempts = 2
         for attempt in range(1, max_attempts + 1):
             if self.commit_uncommitted_changes():
-                print("Recovery commit successful.")
+                print_message("Recovery commit successful.")
                 return True
             if attempt < max_attempts:
-                print(f"Recovery attempt {attempt} failed, retrying...")
+                print_message(f"Recovery attempt {attempt} failed, retrying...")
 
-        print("Error: Could not commit recovered changes after 2 attempts. Please commit manually and rerun.")
+        print_message("Error: Could not commit recovered changes after 2 attempts. Please commit manually and rerun.")
         sys.exit(1)
 
     def _has_newly_completed_task(self, head_plan, working_tree_plan):

@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from i2code.implement.claude_runner import ClaudeCodeCommand
 from i2code.implement.command_builder import CommandBuilder, FixRequest
+from i2code.implement.console import print_message
 
 
 class PullRequestReviewProcessor:
@@ -142,7 +143,7 @@ class PullRequestReviewProcessor:
         Returns:
             Tuple of (had_feedback=True, made_changes).
         """
-        print(f"Found new feedback: {len(new_reviews)} review(s), "
+        print_message(f"Found new feedback: {len(new_reviews)} review(s), "
               f"{len(new_review_comments)} review comment(s), "
               f"{len(new_conversation)} general comment(s)")
 
@@ -179,7 +180,7 @@ class PullRequestReviewProcessor:
 
         triage = self._parse_triage_result(triage_result.result_text)
         if not triage:
-            print("Warning: Could not parse triage result, marking all as processed")
+            print_message("Warning: Could not parse triage result, marking all as processed")
             return None
 
         return triage
@@ -207,7 +208,7 @@ class PullRequestReviewProcessor:
         will_fix = triage.get("will_fix", [])
         needs_clarification = triage.get("needs_clarification", [])
 
-        print(f"Triage result: {len(will_fix)} fix group(s), "
+        print_message(f"Triage result: {len(will_fix)} fix group(s), "
               f"{len(needs_clarification)} needing clarification")
 
         self._reply_with_clarifications(
@@ -226,7 +227,7 @@ class PullRequestReviewProcessor:
         Returns:
             Tuple of (ClaudeCodeCommand, ClaudeResult).
         """
-        print("Triaging feedback...")
+        print_message("Triaging feedback...")
         cwd = self._git_repo.working_tree_dir
         if self._opts.mock_claude:
             cmd = ClaudeCodeCommand(
@@ -254,16 +255,16 @@ class PullRequestReviewProcessor:
             )
 
             marker = "<!-- i2code -->\n"
-            print(f"Asking for clarification on comment {comment_id}...")
+            print_message(f"Asking for clarification on comment {comment_id}...")
             if comment_type == "review":
                 success = gh_client.reply_to_review_comment(pr_number, comment_id, f"{marker}{question}")
             else:
                 success = gh_client.reply_to_pr_comment(pr_number, f"{marker}Re: comment {comment_id}\n\n{question}")
 
             if success:
-                print(f"  Replied to comment {comment_id}")
+                print_message(f"  Replied to comment {comment_id}")
             else:
-                print(f"  Warning: Failed to reply to comment {comment_id}")
+                print_message(f"  Warning: Failed to reply to comment {comment_id}")
 
     def _apply_fix_groups(self, will_fix, new_feedback):
         """Apply fix groups by invoking Claude, pushing, and replying.
@@ -295,8 +296,8 @@ class PullRequestReviewProcessor:
         if not comment_ids:
             return False
 
-        print(f"\nFixing: {description}")
-        print(f"  Comments: {comment_ids}")
+        print_message(f"\nFixing: {description}")
+        print_message(f"  Comments: {comment_ids}")
 
         all_feedback = new_review_comments + new_reviews + new_conversation
         group_feedback = self._get_feedback_by_ids(all_feedback, comment_ids)
@@ -336,16 +337,16 @@ class PullRequestReviewProcessor:
                 interactive=interactive,
             )
 
-        print("  Invoking Claude to fix...")
+        print_message("  Invoking Claude to fix...")
         self._claude_runner.execute(fix_cmd)
 
         head_after = self._git_repo.head_sha
         if head_before == head_after:
-            print("  Warning: Claude did not make any commits for this fix")
+            print_message("  Warning: Claude did not make any commits for this fix")
             return None
 
         commit_sha = head_after[:8]
-        print(f"  Committed: {commit_sha}")
+        print_message(f"  Committed: {commit_sha}")
         return commit_sha
 
     def _push_and_reply(self, commit_sha, comment_ids, new_review_comments, new_conversation):
@@ -353,7 +354,7 @@ class PullRequestReviewProcessor:
         pr_number = self._git_repo.pr_number
         gh_client = self._git_repo.gh_client
 
-        print("  Pushing...")
+        print_message("  Pushing...")
         if not self._git_repo.push():
             print("  Error: Could not push fix", file=sys.stderr)
             return False
@@ -370,9 +371,9 @@ class PullRequestReviewProcessor:
                 success = gh_client.reply_to_pr_comment(pr_number, f"{marker}Re: comment {comment_id}\n\n{reply_body}")
 
             if success:
-                print(f"  Replied to comment {comment_id}: {reply_body}")
+                print_message(f"  Replied to comment {comment_id}: {reply_body}")
             else:
-                print(f"  Warning: Failed to reply to comment {comment_id}")
+                print_message(f"  Warning: Failed to reply to comment {comment_id}")
 
         return True
 
@@ -383,16 +384,16 @@ class PullRequestReviewProcessor:
 
         gh_client = self._git_repo.gh_client
         head_sha = self._git_repo.head_sha
-        print("  Waiting for CI...")
+        print_message("  Waiting for CI...")
         ci_success, failing_run = gh_client.wait_for_workflow_completion(
             self._git_repo.branch, head_sha, timeout_seconds=self._opts.ci_timeout,
         )
 
         if not ci_success and failing_run:
             workflow_name = failing_run.get("name", "unknown")
-            print(f"  CI failed: {workflow_name}")
+            print_message(f"  CI failed: {workflow_name}")
         elif ci_success:
-            print("  CI passed!")
+            print_message("  CI passed!")
 
     def _mark_all_processed(self, new_review_comments, new_reviews, new_conversation):
         """Mark all feedback items as processed in workflow state."""

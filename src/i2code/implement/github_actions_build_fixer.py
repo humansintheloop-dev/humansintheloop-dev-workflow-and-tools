@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 from i2code.implement.claude_runner import ClaudeCodeCommand
 from i2code.implement.command_builder import CiFixRequest, CommandBuilder
+from i2code.implement.console import print_message
 
 
 class GithubActionsBuildFixerFactory:
@@ -62,8 +63,8 @@ class GithubActionsBuildFixer:
             return False
 
         workflow_name = failing_run.get("name", "unknown")
-        print(f"CI build failing for HEAD ({self._git_repo.head_sha[:8]}): {workflow_name}")
-        print("Attempting to fix CI failure...")
+        print_message(f"CI build failing for HEAD ({self._git_repo.head_sha[:8]}): {workflow_name}")
+        print_message("Attempting to fix CI failure...")
 
         if not self.fix_ci_failure():
             print("Error: Could not fix CI failure after max retries", file=sys.stderr)
@@ -81,27 +82,27 @@ class GithubActionsBuildFixer:
         current_sha = self._git_repo.head_sha
 
         for attempt in range(1, max_retries + 1):
-            print(f"\nCI fix attempt {attempt}/{max_retries}")
+            print_message(f"\nCI fix attempt {attempt}/{max_retries}")
 
             failing_run = self._get_failing_workflow_run(
                 self._git_repo.branch, current_sha,
             )
             if not failing_run:
-                print("No failing workflow found - CI may have passed")
+                print_message("No failing workflow found - CI may have passed")
                 return True
 
             run_id = failing_run.get("databaseId")
             workflow_name = failing_run.get("name", "unknown")
-            print(f"  Workflow '{workflow_name}' failed (run {run_id})")
+            print_message(f"  Workflow '{workflow_name}' failed (run {run_id})")
 
-            print("  Fetching failure logs...")
+            print_message("  Fetching failure logs...")
             failure_logs = self._git_repo.gh_client.get_workflow_failure_logs(run_id)
 
             head_before = self._git_repo.head_sha
             self._invoke_claude_for_fix(run_id, workflow_name, failure_logs)
 
             if not self._git_repo.head_advanced_since(head_before):
-                print("  Claude did not make any commits")
+                print_message("  Claude did not make any commits")
                 continue
 
             passed = self._push_and_wait_for_ci(current_sha)
@@ -109,27 +110,27 @@ class GithubActionsBuildFixer:
                 return True
             current_sha = self._git_repo.head_sha
 
-        print(f"Max retries ({max_retries}) exceeded")
+        print_message(f"Max retries ({max_retries}) exceeded")
         return False
 
     def _push_and_wait_for_ci(self, current_sha):
-        print("  Pushing fix...")
+        print_message("  Pushing fix...")
         if not self._git_repo.push():
             print("  Error: Could not push fix", file=sys.stderr)
             return False
 
         current_sha = self._git_repo.head_sha
-        print("  Waiting for CI to complete...")
+        print_message("  Waiting for CI to complete...")
         ci_success, new_failing_run = self._git_repo.gh_client.wait_for_workflow_completion(
             self._git_repo.branch, current_sha,
         )
 
         if ci_success:
-            print("  CI passed!")
+            print_message("  CI passed!")
             return True
 
         if new_failing_run:
-            print(f"  CI still failing: {new_failing_run.get('name', 'unknown')}")
+            print_message(f"  CI still failing: {new_failing_run.get('name', 'unknown')}")
         return False
 
     def _invoke_claude_for_fix(self, run_id, workflow_name, failure_logs):
@@ -153,5 +154,5 @@ class GithubActionsBuildFixer:
                 interactive=interactive,
             )
 
-        print("  Invoking Claude to fix CI failure...")
+        print_message("  Invoking Claude to fix CI failure...")
         self._claude_runner.execute(claude_cmd)

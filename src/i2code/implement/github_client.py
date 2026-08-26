@@ -5,6 +5,8 @@ import subprocess
 import time
 from typing import Any, Dict, List, Optional
 
+from i2code.implement.console import print_message
+
 
 class GitHubClient:
     """Wraps GitHub CLI (gh) calls for PR operations.
@@ -185,9 +187,9 @@ class GitHubClient:
             if runs:
                 return runs
             if time.time() - start_time >= timeout_seconds:
-                print(f"Timeout waiting for CI runs to appear after {timeout_seconds}s")
+                print_message(f"Timeout waiting for CI runs to appear after {timeout_seconds}s")
                 return None
-            print("  No workflow runs found yet, waiting...")
+            print_message("  No workflow runs found yet, waiting...")
             time.sleep(poll_interval)
 
     def _watch_in_progress_runs(self, runs, timeout_seconds):
@@ -196,7 +198,7 @@ class GitHubClient:
                 continue
             run_id = run.get("databaseId")
             run_name = run.get("name", "unknown")
-            print(f"  Watching workflow '{run_name}' (run {run_id})...")
+            print_message(f"  Watching workflow '{run_name}' (run {run_id})...")
             self._run_gh(
                 ["gh", "run", "watch", str(run_id)],
                 timeout=timeout_seconds,

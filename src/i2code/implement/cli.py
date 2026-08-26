@@ -8,6 +8,7 @@ from i2code.implement.command_assembler import (
     assemble_implement,
     assemble_scaffold,
 )
+from i2code.implement.console import print_message
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.implement.scaffold_opts import ScaffoldOpts
 
@@ -53,7 +54,7 @@ from i2code.implement.scaffold_opts import ScaffoldOpts
 @click.pass_context
 def implement_cmd(ctx, **kwargs):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""
-    print(f"i2code implement: {kwargs['idea_directory']}")
+    print_message(f"i2code implement: {kwargs['idea_directory']}")
     kwargs["idea_directory"] = resolve_idea_directory(kwargs["idea_directory"])
     command = assemble_command(ctx, assemble_implement, ImplementOpts(**kwargs))
     command.execute()

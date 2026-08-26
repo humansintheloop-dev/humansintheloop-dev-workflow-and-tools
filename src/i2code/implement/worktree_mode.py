@@ -16,6 +16,7 @@ from i2code.implement.claude_runner import (
 from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 from i2code.implement.pr_helpers import is_pr_complete
 from i2code.implement.timing import Timer, timed
+from i2code.implement.console import print_message
 
 REVIEW_POLL_INTERVAL_SECONDS = 30
 
@@ -100,35 +101,35 @@ class WorktreeMode:
 
     def _review_poll_loop(self):
         """Poll for review feedback until the PR is merged or closed."""
-        print("Waiting for review feedback...")
+        print_message("Waiting for review feedback...")
         while True:
             if self._loop_steps.build_fixer.check_and_fix_ci():
                 continue
 
             if self._loop_steps.review_processor.process_feedback():
-                print("Waiting for review feedback...")
+                print_message("Waiting for review feedback...")
                 continue
 
             pr_state = self._git_repo.gh_client.get_pr_state(self._git_repo.pr_number)
             if is_pr_complete(pr_state):
-                print(f"PR has been {pr_state.lower()}.")
+                print_message(f"PR has been {pr_state.lower()}.")
                 return
 
             interval = _format_duration(REVIEW_POLL_INTERVAL_SECONDS)
-            print(f"No new feedback. Checking again in {interval}...")
+            print_message(f"No new feedback. Checking again in {interval}...")
             self._sleep(REVIEW_POLL_INTERVAL_SECONDS)
 
     def _execute_task(self, next_task):
         """Execute a single task: run Claude, push, create PR, wait for CI."""
         task_description = next_task.print()
         progress = self._work_project.task_progress()
-        print(f"Executing task {progress.current} of {progress.total}: {task_description}")
+        print_message(f"Executing task {progress.current} of {progress.total}: {task_description}")
 
         start = self._clock()
         self._run_claude_and_validate(next_task, task_description)
         elapsed = self._clock() - start
         duration = _format_duration(elapsed)
-        print(f"Task {progress.current} of {progress.total} completed successfully in {duration}.", flush=True)
+        print_message(f"Task {progress.current} of {progress.total} completed successfully in {duration}.", flush=True)
         self._push_and_ensure_pr()
         self._loop_steps.ci_monitor.wait_for_workflow_completion(self._git_repo.branch, self._git_repo.head_sha)
 
@@ -139,7 +140,7 @@ class WorktreeMode:
         head_before = self._git_repo.head_sha
 
         for attempt in range(1, max_attempts + 1):
-            print(f"Running Claude (attempt {attempt}/{max_attempts})...")
+            print_message(f"Running Claude (attempt {attempt}/{max_attempts})...")
 
             claude_result = self._run_claude(claude_cmd)
             head_after = self._git_repo.head_sha
@@ -168,7 +169,7 @@ class WorktreeMode:
 
     def _push_and_ensure_pr(self):
         """Push changes and create a Draft PR if one doesn't exist."""
-        print("Pushing changes...")
+        print_message("Pushing changes...")
 
         with timed("push"):
             if not self._git_repo.push():
@@ -181,18 +182,18 @@ class WorktreeMode:
                     self._work_project.directory, self._work_project.name,
                 )
             pr_url = self._git_repo.gh_client.get_pr_url(self._git_repo.pr_number)
-            print(f"Created Draft PR #{self._git_repo.pr_number}: {pr_url}")
+            print_message(f"Created Draft PR #{self._git_repo.pr_number}: {pr_url}")
 
     def _print_completion(self):
         """Print completion message with PR URL if available."""
-        print("All tasks completed!")
+        print_message("All tasks completed!")
         if self._git_repo.pr_number:
             with timed("mark_pr_ready"):
                 self._git_repo.gh_client.mark_pr_ready(self._git_repo.pr_number)
-            print("PR marked ready for review")
+            print_message("PR marked ready for review")
             pr_url = self._git_repo.gh_client.get_pr_url(self._git_repo.pr_number)
             if pr_url:
-                print(f"PR: {pr_url}")
+                print_message(f"PR: {pr_url}")
 
     def _build_command(self, task_description):
         cwd = self._git_repo.working_tree_dir

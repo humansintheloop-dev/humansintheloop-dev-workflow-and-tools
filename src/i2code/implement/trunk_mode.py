@@ -9,6 +9,7 @@ from i2code.implement.claude_runner import (
     print_task_failure_diagnostics,
 )
 from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
+from i2code.implement.console import print_message
 
 
 class TrunkMode:
@@ -27,7 +28,7 @@ class TrunkMode:
         while True:
             next_task = self._workspace.project.get_next_task()
             if next_task is None:
-                print("All tasks completed!")
+                print_message("All tasks completed!")
                 return
 
             self._execute_task(next_task)
@@ -40,7 +41,7 @@ class TrunkMode:
         head_before = self._workspace.git_repo.head_sha
 
         for attempt in range(1, max_attempts + 1):
-            print(f"Executing task (attempt {attempt}/{max_attempts}): {task_description}")
+            print_message(f"Executing task (attempt {attempt}/{max_attempts}): {task_description}")
 
             claude_result = self._run_claude(claude_cmd)
             head_after = self._workspace.git_repo.head_sha

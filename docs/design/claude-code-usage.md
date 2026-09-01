@@ -74,6 +74,7 @@ Blocks Bash commands that violate project conventions. Returns exit code 2 with 
 | `git -C <dir>` | cd to root and run git from there |
 | `cd <dir> && git ...` | Run git from the project root |
 | `git commit` with heredoc | Use `git commit -m "..."` |
+| `git commit --no-verify` | Let the pre-commit hooks run; fix what they report |
 | `python -m pytest` | Use `uv run python -m pytest` |
 | Bare `pytest` | Use `uv run python -m pytest` |
 | `bash script.sh` / `sh script.sh` on executable scripts | Run directly: `./script.sh` |

@@ -9,7 +9,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { isGitDashC, isCdAndGit, isGitCommitHeredoc, isPythonMPytest, isBarePytest, isBashPrefixedScript, isGradlewPipedToTailOrHead, isPytestPiped, handlePreToolUse, GIT_DASH_C_MESSAGE, CD_AND_GIT_MESSAGE, GIT_COMMIT_HEREDOC_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE, BASH_PREFIXED_SCRIPT_MESSAGE, GRADLEW_PIPED_TO_TAIL_OR_HEAD_MESSAGE, PYTEST_PIPED_MESSAGE } = require('./enforce-bash-conventions.js');
+const { isGitDashC, isCdAndGit, isGitCommitHeredoc, isGitCommitNoVerify, isPythonMPytest, isBarePytest, isBashPrefixedScript, isGradlewPipedToTailOrHead, isPytestPiped, handlePreToolUse, GIT_DASH_C_MESSAGE, CD_AND_GIT_MESSAGE, GIT_COMMIT_HEREDOC_MESSAGE, GIT_COMMIT_NO_VERIFY_MESSAGE, PYTHON_M_PYTEST_MESSAGE, BARE_PYTEST_MESSAGE, BASH_PREFIXED_SCRIPT_MESSAGE, GRADLEW_PIPED_TO_TAIL_OR_HEAD_MESSAGE, PYTEST_PIPED_MESSAGE } = require('./enforce-bash-conventions.js');
 
 // Test suite
 const tests = [];
@@ -153,6 +153,33 @@ test('blocks Bash tool with git commit cat heredoc', () => {
   });
   assert.strictEqual(result.blocked, true);
   assert.strictEqual(result.message, GIT_COMMIT_HEREDOC_MESSAGE);
+});
+
+// --- Tests for isGitCommitNoVerify ---
+
+test('detects git commit --no-verify', () => {
+  assert.strictEqual(isGitCommitNoVerify('git commit --no-verify -m "message"'), true);
+});
+
+test('detects git commit --no-verify after the message', () => {
+  assert.strictEqual(isGitCommitNoVerify('git commit -m "message" --no-verify'), true);
+});
+
+test('allows git commit without --no-verify', () => {
+  assert.strictEqual(isGitCommitNoVerify('git commit -m "message"'), false);
+});
+
+test('allows --no-verify on non-commit git commands', () => {
+  assert.strictEqual(isGitCommitNoVerify('git push --no-verify'), false);
+});
+
+test('blocks Bash tool with git commit --no-verify', () => {
+  const result = handlePreToolUse({
+    tool_name: 'Bash',
+    tool_input: { command: 'git commit --no-verify -m "Fix bug"' }
+  });
+  assert.strictEqual(result.blocked, true);
+  assert.strictEqual(result.message, GIT_COMMIT_NO_VERIFY_MESSAGE);
 });
 
 // --- Tests for handlePreToolUse ---

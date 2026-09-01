@@ -8,6 +8,7 @@ const { findProjectRoot, findSessionFile, formatEntryTimestamp } = require('./se
  * - `git -C <directory>` — use cd + git instead
  * - `cd <dir> && git ...` — run git from the project root
  * - `git commit` with heredoc — use simple `git commit -m "..."`
+ * - `git commit --no-verify` — do not skip the pre-commit hooks
  * - `python -m pytest` — use `uv run python -m pytest` instead
  * - bare `pytest` — use `uv run python -m pytest` instead
  * - `bash script.sh` / `sh script.sh` — run directly when script is executable with shebang
@@ -55,6 +56,19 @@ function isGitCommitHeredoc(command) {
 
 const GIT_COMMIT_HEREDOC_MESSAGE =
   'Do not use heredoc with git commit - use `git commit -m "message"` instead';
+
+/**
+ * Checks whether a Bash command skips the pre-commit hooks on a git commit.
+ * @param {string} command - The shell command to inspect
+ * @returns {boolean} True if the command contains `git commit` with `--no-verify`
+ */
+function isGitCommitNoVerify(command) {
+  return /\bgit\s+commit\b.*--no-verify\b/.test(command);
+}
+
+const GIT_COMMIT_NO_VERIFY_MESSAGE =
+  'Do not use `--no-verify` with git commit - the pre-commit hooks must run. ' +
+  'Fix what the hooks report instead of skipping them.';
 
 function isPythonMPytest(command) {
   return /^python3?\s+-m\s+pytest\b/.test(command);
@@ -139,6 +153,7 @@ const PYTEST_PIPED_MESSAGE =
 
 const BASH_RULES = [
   { test: isGitCommitHeredoc, message: GIT_COMMIT_HEREDOC_MESSAGE },
+  { test: isGitCommitNoVerify, message: GIT_COMMIT_NO_VERIFY_MESSAGE },
   { test: isGitDashC, message: GIT_DASH_C_MESSAGE },
   { test: isCdAndGit, message: CD_AND_GIT_MESSAGE },
   { test: isPythonMPytest, message: PYTHON_M_PYTEST_MESSAGE },
@@ -203,6 +218,7 @@ module.exports = {
   isGitDashC,
   isCdAndGit,
   isGitCommitHeredoc,
+  isGitCommitNoVerify,
   isPythonMPytest,
   isBarePytest,
   isBashPrefixedScript,
@@ -212,6 +228,7 @@ module.exports = {
   GIT_DASH_C_MESSAGE,
   CD_AND_GIT_MESSAGE,
   GIT_COMMIT_HEREDOC_MESSAGE,
+  GIT_COMMIT_NO_VERIFY_MESSAGE,
   PYTHON_M_PYTEST_MESSAGE,
   BARE_PYTEST_MESSAGE,
   BASH_PREFIXED_SCRIPT_MESSAGE,

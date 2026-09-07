@@ -345,6 +345,20 @@ test('allows non-gradlew commands', () => {
   assert.strictEqual(isGradlewPipedToTailOrHead('npm test'), false);
 });
 
+test('allows searching for the word gradlew, which is not running it', () => {
+  assert.strictEqual(isGradlewPipedToTailOrHead('grep -n "gradlew" SKILL.md | head'), false);
+  assert.strictEqual(isGradlewPipedToTailOrHead('cat notes.md | grep gradlew | tail -3'), false);
+});
+
+test('detects gradlew after a command separator', () => {
+  assert.strictEqual(isGradlewPipedToTailOrHead('cd app && ./gradlew test | tail -5'), true);
+  assert.strictEqual(isGradlewPipedToTailOrHead('model/gradlew -p model build | head'), true);
+});
+
+test('detects gradlew piped through grep and then to tail', () => {
+  assert.strictEqual(isGradlewPipedToTailOrHead('./gradlew build | grep "e:" | tail'), true);
+});
+
 test('blocks Bash tool with gradlew piped to tail', () => {
   const result = handlePreToolUse({
     tool_name: 'Bash',

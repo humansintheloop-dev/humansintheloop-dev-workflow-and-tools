@@ -126,16 +126,23 @@ const BASH_PREFIXED_SCRIPT_MESSAGE =
 
 /**
  * Checks whether a Bash command pipes gradlew output to tail or head.
+ *
+ * gradlew has to sit where a command goes - at the start, or after a `;`, `&&`, `||`, `|`
+ * or `(` - so that searching for the word does not count as running it. Without that,
+ * `grep "gradlew" build.md | head` is rejected, and so is any message quoting this rule.
+ *
  * @param {string} command - The shell command to inspect
  * @returns {boolean} True if the command pipes gradlew to tail or head
  */
 function isGradlewPipedToTailOrHead(command) {
-  return /\.?\/?\bgradlew\b.*\|\s*(?:tail|head)\b/.test(command);
+  return /(?:^|[;|&(]\s*)[^\s;|&(]*gradlew\b.*\|\s*(?:tail|head)\b/.test(command);
 }
 
 const GRADLEW_PIPED_TO_TAIL_OR_HEAD_MESSAGE =
-  'Do not pipe gradlew output to `tail` or `head` - it discards useful output. ' +
-  'Verbose test results are in TEST*.xml files. Run gradlew directly without `| tail` or `| head`';
+  'Do not pipe gradlew output to `tail` or `head` - it discards the errors, ' +
+  'which are what you are running it to see. To bound the output instead: ' +
+  'add `-q` to quieten the build, pipe to `grep` to filter it (grep is allowed), ' +
+  'or redirect to a file and read that. Verbose test results are in TEST*.xml files.';
 
 /**
  * Checks whether a Bash command pipes pytest output through another command.

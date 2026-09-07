@@ -12,6 +12,8 @@ fi
 
 claude plugin marketplace add "$SCRIPT_DIR" 2>/dev/null || echo marketplace already installed
 
-claude plugin uninstall idea-to-code@idea-to-code-marketplace || echo plugin not installed
-
-claude plugin install idea-to-code@idea-to-code-marketplace
+if claude plugin list 2>/dev/null | grep -q "idea-to-code@idea-to-code-marketplace"; then
+  claude plugin update idea-to-code@idea-to-code-marketplace
+else
+  claude plugin install idea-to-code@idea-to-code-marketplace
+fi

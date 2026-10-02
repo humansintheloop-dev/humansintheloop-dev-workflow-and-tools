@@ -158,8 +158,13 @@ i2code invokes the `claude` CLI programmatically in two modes:
 Inherits the terminal so Claude's TUI is visible. Used for tasks where the developer is present.
 
 ```
-claude [--resume <id>] <prompt>
+claude [--allowedTools <rules>] [--resume <id>] -- <prompt>
 ```
+
+The `--` end-of-options separator is required: the CLI declares `--allowedTools`
+and `--add-dir` as variadic (`<tools...>`), so a bare positional prompt after
+either flag is consumed as extra flag values instead of reaching Claude. Batch
+mode needs no separator because `-p` already terminates the variadic list.
 
 ### Non-interactive (batch) mode
 

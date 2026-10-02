@@ -350,12 +350,33 @@ class TestClaudeRunnerExecute:
 
         result = runner.execute(command)
 
-        _assert_argv_and_cwd(mock_run, ["claude", "p"], "/c")
+        _assert_argv_and_cwd(mock_run, ["claude", "--", "p"], "/c")
         argv = mock_run.call_args[0][0]
         assert "--verbose" not in argv
         assert "--output-format=stream-json" not in argv
         assert "-p" not in argv
         assert result.result_text == ""
+
+    def test_execute_interactive_ends_options_before_prompt(self, mocker):
+        """The prompt must follow `--` so variadic options like --allowedTools
+        (declared `<tools...>`) do not swallow it."""
+        mock_run = _patch_interactive_run(mocker)
+
+        runner = ClaudeRunner(interactive=True)
+        command = ClaudeCodeCommand(
+            prompt="p",
+            cwd="/c",
+            interactive=True,
+            allowed_tools="Read(/r/**)",
+        )
+
+        runner.execute(command)
+
+        _assert_argv_and_cwd(
+            mock_run,
+            ["claude", "--allowedTools", "Read(/r/**)", "--", "p"],
+            "/c",
+        )
 
     def test_execute_interactive_with_resume(self, mocker):
         mock_run = _patch_interactive_run(mocker)
@@ -370,7 +391,7 @@ class TestClaudeRunnerExecute:
 
         runner.execute(command)
 
-        _assert_argv_and_cwd(mock_run, ["claude", "--resume", "abc123", "p"], "/c")
+        _assert_argv_and_cwd(mock_run, ["claude", "--resume", "abc123", "--", "p"], "/c")
 
     def test_execute_with_new_session_id(self, mocker):
         mock_run = _patch_interactive_run(mocker)
@@ -385,7 +406,7 @@ class TestClaudeRunnerExecute:
 
         runner.execute(command)
 
-        _assert_argv_and_cwd(mock_run, ["claude", "--session-id", "newid", "p"], "/c")
+        _assert_argv_and_cwd(mock_run, ["claude", "--session-id", "newid", "--", "p"], "/c")
 
     @pytest.mark.parametrize(
         "add_dirs,expected_dir_args",
@@ -428,7 +449,7 @@ class TestClaudeRunnerExecute:
         "runner_interactive,expected_argv",
         [
             (False, ["claude", "--verbose", "--output-format=stream-json", "-p", "p"]),
-            (True, ["claude", "p"]),
+            (True, ["claude", "--", "p"]),
         ],
         ids=["runner_batch", "runner_interactive"],
     )

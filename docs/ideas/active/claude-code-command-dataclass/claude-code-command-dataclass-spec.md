@@ -148,7 +148,9 @@ class ClaudeRunner:
    e. Append every token in `command.extra_args` verbatim.
 
    f. Append the prompt:
-      - Interactive: append `command.prompt`.
+      - Interactive: append `"--"`, `command.prompt`. The end-of-options
+        separator keeps variadic flags (`--allowedTools <tools...>`,
+        `--add-dir <directories...>`) from swallowing the positional prompt.
       - Batch: append `"-p"`, `command.prompt`.
 
 4. **Dispatch.**

@@ -287,6 +287,17 @@ def print_task_failure_diagnostics(
             _format_message(msg)
 
 
+def _positional_prompt_after_end_of_options(prompt: str) -> List[str]:
+    """Guard a positional prompt from variadic options such as --allowedTools.
+
+    The Claude CLI declares --allowedTools and --add-dir as variadic
+    (``<tools...>``), so a bare positional prompt that follows them is
+    consumed as extra values instead of reaching Claude. The ``--``
+    end-of-options separator stops that.
+    """
+    return ["--", prompt]
+
+
 class ClaudeRunner:
     """Delegates to the module-level run functions."""
 
@@ -333,7 +344,7 @@ class ClaudeRunner:
 
         prompt = command.prompt if command.prompt is not None else ""
         if effective_interactive:
-            argv.append(prompt)
+            argv += _positional_prompt_after_end_of_options(prompt)
         else:
             argv += ["-p", prompt]
 

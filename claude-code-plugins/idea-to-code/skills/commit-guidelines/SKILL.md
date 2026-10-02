@@ -44,7 +44,9 @@ When writing commit messages for this project, follow these guidelines:
 
 ## Co-authorship Attribution
 
-Use "Co-authored by Claude Code" in the commit message instead of the standard Claude Code attribution format.
+NEVER Use the standard Claude Code attribution format.
+
+ALWAYS Use "Co-authored by Claude Code" in the commit message.
 
 Specifically, use:
 ```
@@ -53,9 +55,14 @@ Co-authored by Claude Code
 
 Instead of:
 ```
-🤖 Generated with [Claude Code](https://claude.ai/code)
+🤖 Co-Authored-By: Claude <noreply@anthropic.com>
+```
 
-Co-Authored-By: Claude <noreply@anthropic.com>
+or
+
+```
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_...
 ```
 
 ## Special Cases

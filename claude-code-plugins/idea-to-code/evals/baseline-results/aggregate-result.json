@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
   "claudeVersion": "2.1.302",
-  "startedAt": "2026-10-17T06:30:08.162Z",
-  "durationSeconds": 3518,
-  "costUsd": 3.0043168,
+  "startedAt": "2026-10-17T09:56:38.996Z",
+  "durationSeconds": 239,
+  "costUsd": 3.9745652,
   "partial": false,
   "suite": {
     "root": "./claude-code-plugins/idea-to-code",
     "ablation": "none",
     "threshold": 1,
-    "concurrency": 1,
+    "concurrency": 4,
     "plugins": [
       {
         "name": "idea-to-code",
@@ -86,74 +86,15 @@
       "arms": {
         "with": [
           {
-            "score": 0.2,
-            "passed": false,
-            "turns": 4,
-            "costUsd": 0.236882,
-            "judgeCostUsd": 0.00009360000000000003,
-            "durationSeconds": 1066,
-            "startedAt": "2026-10-17T06:30:08.194Z",
-            "error": "timed out after 900s",
-            "tracePath": "/private/tmp/e-zrPYQv/out/trace.jsonl",
-            "skippedPaidGraders": false,
-            "graders": [
-              {
-                "name": "complete-task-blocks",
-                "passed": false,
-                "weight": 1,
-                "explanation": "judge votes: FAIL FAIL FAIL",
-                "withOnly": false,
-                "scored": true,
-                "judgeVotes": [
-                  false,
-                  false,
-                  false
-                ]
-              },
-              {
-                "name": "hard-rule-line",
-                "passed": false,
-                "weight": 1,
-                "explanation": "pattern not found in last_message",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "heading-idea-type",
-                "passed": false,
-                "weight": 1,
-                "explanation": "pattern not found in last_message",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "heading-instructions-for-coding-agent",
-                "passed": false,
-                "weight": 1,
-                "explanation": "pattern not found in last_message",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "valid-task-types",
-                "passed": true,
-                "weight": 1,
-                "explanation": "pattern absent as expected",
-                "withOnly": false,
-                "scored": true
-              }
-            ]
-          },
-          {
             "score": 1,
             "passed": true,
-            "turns": 11,
-            "costUsd": 0.47955480000000006,
-            "judgeCostUsd": 0.0034968,
-            "durationSeconds": 112,
-            "startedAt": "2026-10-17T06:47:54.535Z",
+            "turns": 7,
+            "costUsd": 0.45445650000000004,
+            "judgeCostUsd": 0.0035577000000000004,
+            "durationSeconds": 110,
+            "startedAt": "2026-10-17T09:56:39.027Z",
             "error": null,
-            "tracePath": "/private/tmp/e-FKzpSU/out/trace.jsonl",
+            "tracePath": "/private/tmp/e-eCut4S/out/trace.jsonl",
             "skippedPaidGraders": false,
             "graders": [
               {
@@ -204,51 +145,110 @@
             ]
           },
           {
-            "score": 0.2,
-            "passed": false,
-            "turns": 4,
-            "costUsd": 0.18095229999999998,
-            "judgeCostUsd": 0.00010230000000000005,
-            "durationSeconds": 922,
-            "startedAt": "2026-10-17T06:49:46.286Z",
-            "error": "timed out after 900s",
-            "tracePath": "/private/tmp/e-I6KLmr/out/trace.jsonl",
+            "score": 1,
+            "passed": true,
+            "turns": 14,
+            "costUsd": 0.5884932999999999,
+            "judgeCostUsd": 0.0040935,
+            "durationSeconds": 166,
+            "startedAt": "2026-10-17T09:56:39.027Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-Fmiu3A/out/trace.jsonl",
             "skippedPaidGraders": false,
             "graders": [
               {
                 "name": "complete-task-blocks",
-                "passed": false,
+                "passed": true,
                 "weight": 1,
-                "explanation": "judge votes: FAIL FAIL FAIL",
+                "explanation": "judge votes: PASS PASS PASS",
                 "withOnly": false,
                 "scored": true,
                 "judgeVotes": [
-                  false,
-                  false,
-                  false
+                  true,
+                  true,
+                  true
                 ]
               },
               {
                 "name": "hard-rule-line",
-                "passed": false,
+                "passed": true,
                 "weight": 1,
-                "explanation": "pattern not found in last_message",
+                "explanation": "matched ^- Hard rule: NEVER git commit, git push, or open a PR unless you have successfully run the project's test command and it exits 0",
                 "withOnly": false,
                 "scored": true
               },
               {
                 "name": "heading-idea-type",
-                "passed": false,
+                "passed": true,
                 "weight": 1,
-                "explanation": "pattern not found in last_message",
+                "explanation": "matched ^## Idea Type",
                 "withOnly": false,
                 "scored": true
               },
               {
                 "name": "heading-instructions-for-coding-agent",
-                "passed": false,
+                "passed": true,
                 "weight": 1,
-                "explanation": "pattern not found in last_message",
+                "explanation": "matched ^## Instructions for Coding Agent",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "valid-task-types",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.5674415,
+            "judgeCostUsd": 0.0038905000000000016,
+            "durationSeconds": 153,
+            "startedAt": "2026-10-17T09:56:39.027Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-YbjjrB/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "complete-task-blocks",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ]
+              },
+              {
+                "name": "hard-rule-line",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^- Hard rule: NEVER git commit, git push, or open a PR unless you have successfully run the project's test command and it exits 0",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-idea-type",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^## Idea Type",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-instructions-for-coding-agent",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^## Instructions for Coding Agent",
                 "withOnly": false,
                 "scored": true
               },
@@ -265,8 +265,8 @@
         ]
       },
       "aggregates": {
-        "score": 0.4666666666666666,
-        "passRate": 0.3333333333333333
+        "score": 1,
+        "passRate": 1
       }
     },
     {
@@ -418,20 +418,119 @@
           {
             "score": 0.9,
             "passed": false,
-            "turns": 5,
-            "costUsd": 0.4118026,
-            "judgeCostUsd": 0.00283,
-            "durationSeconds": 110,
-            "startedAt": "2026-10-17T07:05:08.311Z",
+            "turns": 6,
+            "costUsd": 0.38530949999999997,
+            "judgeCostUsd": 0.0027991000000000005,
+            "durationSeconds": 100,
+            "startedAt": "2026-10-17T09:56:39.027Z",
             "error": null,
-            "tracePath": "/private/tmp/e-c7f9aP/out/trace.jsonl",
+            "tracePath": "/private/tmp/e-Dlesze/out/trace.jsonl",
             "skippedPaidGraders": false,
             "graders": [
               {
                 "name": "decisive-no-plan",
                 "passed": false,
                 "weight": 1,
-                "explanation": "judge votes: FAIL FAIL FAIL — note: long file (15935 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "explanation": "judge votes: FAIL PASS FAIL — note: long file (15656 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ]
+              },
+              {
+                "name": "heading-acceptance-criteria",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Acceptance criteria",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-apis-contracts-integration",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*(API|contract|integration)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-capabilities",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Capabilities",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-constraints-and-assumptions",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Constraints and assumptions",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-consumers",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Consumers",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-non-functional",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Non-functional",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-purpose-and-context",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Purpose and context",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-scenarios",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Scenarios",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "spec-exists",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/ideas/active/eval-idea/eval-idea-spec.md exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.9,
+            "passed": false,
+            "turns": 7,
+            "costUsd": 0.3526417,
+            "judgeCostUsd": 0.0025293,
+            "durationSeconds": 88,
+            "startedAt": "2026-10-17T09:58:18.986Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-e6dd2M/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "decisive-no-plan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL — note: long file (13609 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
                 "withOnly": false,
                 "scored": true,
                 "judgeVotes": [
@@ -515,116 +614,22 @@
             ]
           },
           {
-            "score": 0,
-            "passed": false,
-            "turns": 2,
-            "costUsd": 0.1149156,
-            "judgeCostUsd": 0,
-            "durationSeconds": 991,
-            "startedAt": "2026-10-17T07:06:57.930Z",
-            "error": "timed out after 900s",
-            "tracePath": "/private/tmp/e-llTaFr/out/trace.jsonl",
-            "skippedPaidGraders": false,
-            "graders": [
-              {
-                "name": "decisive-no-plan",
-                "passed": false,
-                "weight": 1,
-                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "heading-acceptance-criteria",
-                "passed": false,
-                "weight": 1,
-                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "heading-apis-contracts-integration",
-                "passed": false,
-                "weight": 1,
-                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "heading-capabilities",
-                "passed": false,
-                "weight": 1,
-                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "heading-constraints-and-assumptions",
-                "passed": false,
-                "weight": 1,
-                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "heading-consumers",
-                "passed": false,
-                "weight": 1,
-                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "heading-non-functional",
-                "passed": false,
-                "weight": 1,
-                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "heading-purpose-and-context",
-                "passed": false,
-                "weight": 1,
-                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "heading-scenarios",
-                "passed": false,
-                "weight": 1,
-                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "spec-exists",
-                "passed": false,
-                "weight": 1,
-                "explanation": "docs/ideas/active/eval-idea/eval-idea-spec.md missing (expected present)",
-                "withOnly": false,
-                "scored": true
-              }
-            ]
-          },
-          {
             "score": 0.9,
             "passed": false,
-            "turns": 4,
-            "costUsd": 0.4157017,
-            "judgeCostUsd": 0.0031238999999999998,
-            "durationSeconds": 115,
-            "startedAt": "2026-10-17T07:23:28.669Z",
+            "turns": 10,
+            "costUsd": 0.43030850000000004,
+            "judgeCostUsd": 0.0029419000000000008,
+            "durationSeconds": 123,
+            "startedAt": "2026-10-17T09:58:29.199Z",
             "error": null,
-            "tracePath": "/private/tmp/e-j5SV5U/out/trace.jsonl",
+            "tracePath": "/private/tmp/e-JLHL1o/out/trace.jsonl",
             "skippedPaidGraders": false,
             "graders": [
               {
                 "name": "decisive-no-plan",
                 "passed": false,
                 "weight": 1,
-                "explanation": "judge votes: FAIL FAIL FAIL — note: long file (18334 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "explanation": "judge votes: FAIL FAIL FAIL — note: long file (16249 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
                 "withOnly": false,
                 "scored": true,
                 "judgeVotes": [
@@ -710,7 +715,7 @@
         ]
       },
       "aggregates": {
-        "score": 0.6,
+        "score": 0.9,
         "passRate": 0
       }
     },
@@ -718,7 +723,7 @@
       "name": "revise-plan",
       "dir": "evals/baseline/revise-plan",
       "source": "mixed",
-      "promptMarkdown": "I want to revise the implementation plan for this application:\n\n* Idea - @docs/ideas/active/eval-idea/eval-idea-idea.md\n* Specification - @docs/ideas/active/eval-idea/eval-idea-spec.md\n* Implementation plan - @docs/ideas/active/eval-idea/eval-idea-plan.md\n\nFollow the plan-file-management skill for structural operations (inserting, deleting, reordering threads/tasks, and fixing numbering).\n\nWhen revising, also resolve any \"X or Y\" / \"X (or Y)\" alternatives in tasks or steps — every decision must be committed to a single action, not left ambiguous for the coding agent.\n\nYou must record any changes to the plan requested during a conversation in the ## Change History section.\n\nChange the plan: add a task to the last steel thread that adds a README section describing how to run the evals.",
+      "promptMarkdown": "I want to revise the implementation plan for this application:\n\n* Idea - @docs/ideas/active/eval-idea/eval-idea-idea.md\n* Specification - @docs/ideas/active/eval-idea/eval-idea-spec.md\n* Implementation plan - @docs/ideas/active/eval-idea/eval-idea-plan.md\n\nFollow the plan-file-management skill for structural operations (inserting, deleting, reordering threads/tasks, and fixing numbering).\n\nWhen revising, also resolve any \"X or Y\" / \"X (or Y)\" alternatives in tasks or steps — every decision must be committed to a single action, not left ambiguous for the coding agent.\n\nYou must record any changes to the plan requested during a conversation in the ## Change History section.\n\nChange the plan: add a task to the last steel thread that returns a grey `unknown` badge when the GitHub API rate limit is exceeded.",
       "runsPerCase": 3,
       "timeoutSeconds": 900,
       "maxTurns": 40,
@@ -770,13 +775,56 @@
           {
             "score": 0.6666666666666666,
             "passed": false,
-            "turns": 9,
-            "costUsd": 0.23412980000000003,
-            "judgeCostUsd": 0.00028859999999999823,
-            "durationSeconds": 39,
-            "startedAt": "2026-10-17T07:25:23.765Z",
+            "turns": 8,
+            "costUsd": 0.24323560000000002,
+            "judgeCostUsd": 0.0003396000000000024,
+            "durationSeconds": 43,
+            "startedAt": "2026-10-17T09:59:12.013Z",
             "error": null,
-            "tracePath": "/private/tmp/e-fX6bIK/out/trace.jsonl",
+            "tracePath": "/private/tmp/e-Wuq3Tn/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "change-history-entry",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in file docs/ideas/active/eval-idea/eval-idea-plan.md",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "complete-task-blocks",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ]
+              },
+              {
+                "name": "valid-task-types",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.22861369999999998,
+            "judgeCostUsd": 0.0003401000000000029,
+            "durationSeconds": 40,
+            "startedAt": "2026-10-17T09:59:25.002Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-vIXMo5/out/trace.jsonl",
             "skippedPaidGraders": false,
             "graders": [
               {
@@ -814,55 +862,12 @@
             "score": 0.6666666666666666,
             "passed": false,
             "turns": 10,
-            "costUsd": 0.2611378,
-            "judgeCostUsd": 0.00028859999999999823,
-            "durationSeconds": 58,
-            "startedAt": "2026-10-17T07:26:03.215Z",
-            "error": null,
-            "tracePath": "/private/tmp/e-owltjA/out/trace.jsonl",
-            "skippedPaidGraders": false,
-            "graders": [
-              {
-                "name": "change-history-entry",
-                "passed": false,
-                "weight": 1,
-                "explanation": "pattern not found in file docs/ideas/active/eval-idea/eval-idea-plan.md",
-                "withOnly": false,
-                "scored": true
-              },
-              {
-                "name": "complete-task-blocks",
-                "passed": true,
-                "weight": 1,
-                "explanation": "judge votes: PASS PASS PASS",
-                "withOnly": false,
-                "scored": true,
-                "judgeVotes": [
-                  true,
-                  true,
-                  true
-                ]
-              },
-              {
-                "name": "valid-task-types",
-                "passed": true,
-                "weight": 1,
-                "explanation": "pattern absent as expected",
-                "withOnly": false,
-                "scored": true
-              }
-            ]
-          },
-          {
-            "score": 0.6666666666666666,
-            "passed": false,
-            "turns": 11,
-            "costUsd": 0.2669752,
-            "judgeCostUsd": 0.00032659999999999807,
+            "costUsd": 0.2521543,
+            "judgeCostUsd": 0.0012099000000000033,
             "durationSeconds": 51,
-            "startedAt": "2026-10-17T07:27:01.516Z",
+            "startedAt": "2026-10-17T09:59:46.714Z",
             "error": null,
-            "tracePath": "/private/tmp/e-DE6V9G/out/trace.jsonl",
+            "tracePath": "/private/tmp/e-ZncRXI/out/trace.jsonl",
             "skippedPaidGraders": false,
             "graders": [
               {
@@ -907,7 +912,7 @@
       "name": "revise-spec",
       "dir": "evals/baseline/revise-spec",
       "source": "mixed",
-      "promptMarkdown": "Here are three files:\n\n* docs/ideas/active/eval-idea/eval-idea-idea.md - the file containing the idea description\n* docs/ideas/active/eval-idea/eval-idea-discussion.md - the file where questions and answers were saved when brainstorming the idea\n* docs/ideas/active/eval-idea/eval-idea-spec.md  - a comprehensive, developer-ready specification that was generated as a result of brainstorming\n\nI will ask you to make changes to the specification\n\nChange the specification: add a non-functional requirement that a full eval run costs at most USD 25.",
+      "promptMarkdown": "Here are three files:\n\n* docs/ideas/active/eval-idea/eval-idea-idea.md - the file containing the idea description\n* docs/ideas/active/eval-idea/eval-idea-discussion.md - the file where questions and answers were saved when brainstorming the idea\n* docs/ideas/active/eval-idea/eval-idea-spec.md  - a comprehensive, developer-ready specification that was generated as a result of brainstorming\n\nI will ask you to make changes to the specification\n\nChange the specification: add a non-functional requirement that an uncached badge response is returned in under 500 ms.",
       "runsPerCase": 3,
       "timeoutSeconds": 900,
       "maxTurns": 40,
@@ -930,66 +935,66 @@
       "arms": {
         "with": [
           {
-            "score": 0,
-            "passed": false,
-            "turns": 5,
-            "costUsd": 0.14679319999999998,
+            "score": 1,
+            "passed": true,
+            "turns": 7,
+            "costUsd": 0.159179,
             "judgeCostUsd": 0,
-            "durationSeconds": 22,
-            "startedAt": "2026-10-17T07:27:52.865Z",
+            "durationSeconds": 15,
+            "startedAt": "2026-10-17T09:59:54.519Z",
             "error": null,
-            "tracePath": "/private/tmp/e-U1aMwn/out/trace.jsonl",
+            "tracePath": "/private/tmp/e-oFy6Qm/out/trace.jsonl",
             "skippedPaidGraders": false,
             "graders": [
               {
                 "name": "change-history-entry",
-                "passed": false,
+                "passed": true,
                 "weight": 1,
-                "explanation": "pattern not found in file docs/ideas/active/eval-idea/eval-idea-spec.md",
+                "explanation": "matched ## Change History\\s+(.|\\n)*### \\d{4}-\\d{2}-\\d{2}: ",
                 "withOnly": false,
                 "scored": true
               }
             ]
           },
           {
-            "score": 0,
-            "passed": false,
-            "turns": 3,
-            "costUsd": 0.129913,
+            "score": 1,
+            "passed": true,
+            "turns": 7,
+            "costUsd": 0.15870459999999997,
             "judgeCostUsd": 0,
-            "durationSeconds": 18,
-            "startedAt": "2026-10-17T07:28:14.853Z",
+            "durationSeconds": 21,
+            "startedAt": "2026-10-17T10:00:05.069Z",
             "error": null,
-            "tracePath": "/private/tmp/e-Gf7MMg/out/trace.jsonl",
+            "tracePath": "/private/tmp/e-ObhB1S/out/trace.jsonl",
             "skippedPaidGraders": false,
             "graders": [
               {
                 "name": "change-history-entry",
-                "passed": false,
+                "passed": true,
                 "weight": 1,
-                "explanation": "pattern not found in file docs/ideas/active/eval-idea/eval-idea-spec.md",
+                "explanation": "matched ## Change History\\s+(.|\\n)*### \\d{4}-\\d{2}-\\d{2}: ",
                 "withOnly": false,
                 "scored": true
               }
             ]
           },
           {
-            "score": 0,
-            "passed": false,
-            "turns": 3,
-            "costUsd": 0.1255588,
+            "score": 1,
+            "passed": true,
+            "turns": 7,
+            "costUsd": 0.15402700000000003,
             "judgeCostUsd": 0,
-            "durationSeconds": 14,
-            "startedAt": "2026-10-17T07:28:32.770Z",
+            "durationSeconds": 17,
+            "startedAt": "2026-10-17T10:00:09.866Z",
             "error": null,
-            "tracePath": "/private/tmp/e-ThPi1a/out/trace.jsonl",
+            "tracePath": "/private/tmp/e-H5CSAz/out/trace.jsonl",
             "skippedPaidGraders": false,
             "graders": [
               {
                 "name": "change-history-entry",
-                "passed": false,
+                "passed": true,
                 "weight": 1,
-                "explanation": "pattern not found in file docs/ideas/active/eval-idea/eval-idea-spec.md",
+                "explanation": "matched ## Change History\\s+(.|\\n)*### \\d{4}-\\d{2}-\\d{2}: ",
                 "withOnly": false,
                 "scored": true
               }
@@ -998,15 +1003,15 @@
         ]
       },
       "aggregates": {
-        "score": 0,
-        "passRate": 0
+        "score": 1,
+        "passRate": 1
       }
     }
   ],
   "aggregates": {
     "casesTotal": 4,
-    "casesPassed": 0,
-    "overallScore": 0.43333333333333335,
-    "overallPassRate": 0.08333333333333333
+    "casesPassed": 2,
+    "overallScore": 0.8916666666666666,
+    "overallPassRate": 0.5
   }
 }

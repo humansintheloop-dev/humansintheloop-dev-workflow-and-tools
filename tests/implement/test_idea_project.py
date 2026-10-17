@@ -75,6 +75,24 @@ class TestIdeaProjectConstruction:
                 project.directory, "my-feature-wt-state.json"
             )
 
+    def test_relative_directory_gives_absolute_paths(self, tmp_path, monkeypatch):
+        """A relative idea path should yield an absolute directory and file paths."""
+        monkeypatch.chdir(tmp_path)
+
+        project = IdeaProject("docs/ideas/active/foo")
+
+        assert project.directory == os.path.abspath("docs/ideas/active/foo")
+        assert project.name == "foo"
+        file_properties = [
+            name for name in dir(IdeaProject)
+            if name.endswith("_file") and isinstance(getattr(IdeaProject, name), property)
+        ]
+        assert file_properties
+        for name in file_properties:
+            path = getattr(project, name)
+            assert os.path.isabs(path), f"{name} is not absolute: {path}"
+            assert path.startswith(project.directory + os.sep)
+
 
 @pytest.mark.unit
 class TestIdeaProjectValidation:

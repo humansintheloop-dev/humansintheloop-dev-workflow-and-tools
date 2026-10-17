@@ -130,15 +130,15 @@ Decisions made at plan time:
 
 ## Steel Thread 4: IdeaProject stores an absolute directory
 
-- [ ] **Task 4.1: A relative idea path gives absolute directory and file paths**
+- [x] **Task 4.1: A relative idea path gives absolute directory and file paths**
   - TaskType: OUTCOME
   - Entrypoint: `IdeaProject(directory)` in `src/i2code/implement/idea_project.py:18`, constructed by `i2code spec create docs/ideas/active/foo`
   - Observable: `IdeaProject("docs/ideas/active/foo").directory == os.path.abspath("docs/ideas/active/foo")`, `name == "foo"`, and every `*_file` property is an absolute path under that directory. `worktree_idea_project()` still maps the directory into the worktree.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_idea_project.py -v -m unit`. A new test in `TestIdeaProjectConstruction` uses `monkeypatch.chdir(tmp_path)`, builds `IdeaProject("docs/ideas/active/foo")`, and asserts that `directory` and every `*_file` property satisfy `os.path.isabs`. The existing `TestWorktreeIdeaDirectory` tests still pass.
   - Steps:
-    - [ ] Write the failing test in `tests/implement/test_idea_project.py`
-    - [ ] Store `os.path.abspath(directory)` in `IdeaProject.__init__` (`src/i2code/implement/idea_project.py:19`)
-    - [ ] Run `./test-scripts/test-unit.sh` and fix any test that compared `project.directory` with a relative path
+    - [x] Write the failing test in `tests/implement/test_idea_project.py`
+    - [x] Store `os.path.abspath(directory)` in `IdeaProject.__init__` (`src/i2code/implement/idea_project.py:19`)
+    - [x] Run `./test-scripts/test-unit.sh` and fix any test that compared `project.directory` with a relative path
 
 ---
 

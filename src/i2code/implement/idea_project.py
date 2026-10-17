@@ -16,8 +16,8 @@ class IdeaProject:
     """
 
     def __init__(self, directory: str):
-        self._directory = directory
-        self._name = os.path.basename(os.path.normpath(directory))
+        self._directory = os.path.abspath(directory)
+        self._name = os.path.basename(self._directory)
 
     @property
     def directory(self) -> str:

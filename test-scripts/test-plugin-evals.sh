@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Runs the idea-to-code plugin's skill-based eval suite with `claude plugin eval`.
-# Results go to logs/plugin-evals/<timestamp>/. Runs real Claude sessions and costs
+# Results go to logs/plugin-evals/<timestamp>/, with each run's transcript copied to
+# traces/<case>-<run>.jsonl in that directory. Runs real Claude sessions and costs
 # money, so it is run manually and is not part of test-end-to-end.sh or CI.
 #
 # Usage: test-plugin-evals.sh [--baseline] [--case <glob>]
@@ -68,11 +69,25 @@ run_plugin_evals() {
         --scaffold \
         --ablation none \
         --concurrency 4 \
+        --keep-temp \
         ${CASE_OPTIONS[@]+"${CASE_OPTIONS[@]}"} \
         --allow-tools Read,Write,Edit,Glob,Grep,Bash,Skill \
         --max-cost-usd "${EVAL_MAX_COST_USD:-25}" \
         --output-dir "$OUTPUT_DIR" \
         --json "$OUTPUT_DIR/eval-result.json"
+}
+
+copy_run_traces() {
+    local aggregate_result="$OUTPUT_DIR/aggregate-result.json"
+    [[ -f "$aggregate_result" ]] || return 0
+    mkdir -p "$OUTPUT_DIR/traces"
+    jq -r '.cases[] | .name as $case | .arms.with | to_entries[]
+           | select(.value.tracePath) | "\($case)-\(.key + 1)\t\(.value.tracePath)"' "$aggregate_result" |
+        while IFS=$'\t' read -r run_name trace_path; do
+            if [[ -f "$trace_path" ]]; then
+                cp "$trace_path" "$OUTPUT_DIR/traces/$run_name.jsonl"
+            fi
+        done
 }
 
 parse_arguments "$@"
@@ -87,6 +102,7 @@ mkdir -p "$OUTPUT_DIR"
 
 status=0
 run_plugin_evals || status=$?
+copy_run_traces
 
 if [[ "$BASELINE" == true ]]; then
     "$SCRIPT_DIR/save-baseline-result.sh" "$OUTPUT_DIR"

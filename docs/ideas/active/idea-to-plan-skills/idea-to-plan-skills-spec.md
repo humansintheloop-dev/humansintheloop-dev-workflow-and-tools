@@ -293,7 +293,7 @@ For the interactive steps, the case prompt is the rendered prompt followed by a 
 
 1. Checks that `claude` and `i2code` are on `PATH` (revise-plan's `plan-file-management` skill runs `i2code plan`). Exits 1 with a message if either is missing.
 2. Renders the skill-based prompts into `claude-code-plugins/idea-to-code/evals/skills/`.
-3. Runs `claude plugin eval` on the plugin with `--eval-dir` pointing at `evals/skills`, `--no-publish`, `--trust-plugin`, `--json`, `--allow-tools Read,Write,Edit,Glob,Grep,Bash,Skill`, `--max-cost-usd ${EVAL_MAX_COST_USD:-25}` and the default 3 runs. Output goes to `logs/plugin-evals/<timestamp>/`.
+3. Runs `claude plugin eval` on the plugin with `--eval-dir` pointing at `evals/skills`, `--no-publish`, `--trust-plugin`, `--json`, `--allow-tools Read,Write,Edit,Glob,Grep,Bash,Skill`, `--max-cost-usd ${EVAL_MAX_COST_USD:-25}`, `--concurrency 4`, `--keep-temp` and the default 3 runs. `--case <glob>` is passed through to run only the matching cases. Output goes to `logs/plugin-evals/<timestamp>/`, and each run's trace is copied from its kept workspace to `traces/<case>-<run>.jsonl` there, because `claude plugin eval` otherwise deletes it.
 4. With `--baseline`, runs the same command on `evals/baseline` instead, and copies `aggregate-result.json` to `evals/baseline-results/`.
 5. Exits with the eval command's exit code.
 
@@ -387,3 +387,7 @@ Rationale: keeping the method in the template contradicted Q8 (skills work in an
 ### 2026-10-17: Replace the revise-spec and revise-plan eval requests with changes to the badge service
 
 Section 5.2's appended requests asked for a requirement on the cost of an eval run and a task for a README section about running the evals. Neither relates to the eval fixture, a build status badge service. In the revise-spec eval, Claude asked what "eval run" meant instead of editing the spec, so the case scored 0 whatever the prompt said. The requests now ask for a 500 ms limit on an uncached badge response, and for a task that returns a grey `unknown` badge when the GitHub API rate limit is exceeded.
+
+### 2026-10-17: test-plugin-evals.sh runs cases in parallel, accepts --case and keeps traces
+
+Section 5.4 now lists `--concurrency 4`, `--keep-temp` and `--case <glob>`, and the copying of each run's trace to `logs/plugin-evals/<timestamp>/traces/`. One session at a time, a full run took 817 seconds. Three baseline sessions timed out at 900 seconds after 2 to 4 turns, and their traces were deleted with the eval workspace, so the cause could not be found.

@@ -9,7 +9,8 @@ def revise_plan(project: IdeaProject, claude_runner, template_renderer, *, repo_
     """Revise an existing implementation plan interactively via Claude.
 
     Validates that idea, spec, and plan files exist, renders the
-    revise-plan.md template, and invokes Claude interactively.
+    revise-plan.md template with the IDEA_DIRECTORY variable, and
+    invokes Claude interactively.
 
     Args:
         project: The idea project containing file paths
@@ -27,11 +28,7 @@ def revise_plan(project: IdeaProject, claude_runner, template_renderer, *, repo_
     project.validate_spec()
     project.validate_plan()
 
-    prompt = template_renderer("revise-plan.md", {
-        "IDEA_FILE": project.idea_file,
-        "SPEC_FILE": project.spec_file,
-        "PLAN_WITHOUT_STORIES_FILE": project.plan_file,
-    })
+    prompt = template_renderer("revise-plan.md", {"IDEA_DIRECTORY": project.directory})
 
     allowed_tools = (
         build_allowed_tools_flag(repo_root, project.directory)

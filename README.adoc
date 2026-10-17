@@ -220,6 +220,30 @@ uv tool install -e .
 ./uninstall-plugin.sh
 ----
 
+== Running the plugin evals
+
+The `idea-to-code` plugin has an eval suite in `claude-code-plugins/idea-to-code/evals/`.
+It runs the `create-spec`, `revise-spec`, `create-plan` and `revise-plan` cases with `claude plugin eval`.
+Each case renders the prompt that `i2code` would send, runs a real Claude session against a fixture idea, and grades the result.
+The evals cost money, so they are run manually and are not part of `test-end-to-end.sh` or CI.
+
+The script needs `claude`, `i2code` and `jq` on the `PATH`.
+Run every case:
+
+[source,bash]
+----
+./test-scripts/test-plugin-evals.sh
+----
+
+The script exits 0 when every case scores 1.0.
+Results are written to `logs/plugin-evals/<timestamp>/aggregate-result.json`, and each run's transcript is copied to `traces/<case>-<run>.jsonl` in that directory.
+
+Options:
+
+* `--case <glob>` runs only the cases whose name matches `<glob>`, for example `./test-scripts/test-plugin-evals.sh --case revise-plan`.
+* `--baseline` runs the frozen prompts in `evals/baseline` without re-rendering them, and saves the result to `evals/baseline-results/`.
+* `EVAL_MAX_COST_USD` sets the maximum cost of a run in USD. The default is 25, for example `EVAL_MAX_COST_USD=10 ./test-scripts/test-plugin-evals.sh`.
+
 == Acknowledgement
 
 The original inspiration and some prompts came from this https://harper.blog/2025/02/16/my-llm-codegen-workflow-atm/[excellent post].

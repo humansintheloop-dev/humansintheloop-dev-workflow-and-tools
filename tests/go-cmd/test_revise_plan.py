@@ -12,6 +12,7 @@ from fake_claude_runner import FakeClaudeRunner
 
 from i2code.implement.idea_project import IdeaProject
 from i2code.go_cmd.revise_plan import revise_plan
+from i2code.template_renderer import render_template
 
 
 def _create_all_files(project):
@@ -71,13 +72,30 @@ class TestRevisePlanValidation:
 @pytest.mark.unit
 class TestRevisePlanTemplateRendering:
 
-    def test_renders_template_with_idea_spec_and_plan(self):
+    def _rendered_prompt(self, project):
+        _create_all_files(project)
+        runner = FakeClaudeRunner()
+        revise_plan(project, runner, render_template)
+        return runner.calls[0][1].prompt
+
+    def test_prompt_contains_idea_directory(self):
         with TempIdeaProject("my-feature") as project:
-            _, _, cmd, _ = _run_revise_plan(project)
-            assert "revise-plan.md" in cmd.prompt
-            assert project.idea_file in cmd.prompt
-            assert project.spec_file in cmd.prompt
-            assert project.plan_file in cmd.prompt
+            assert project.directory in self._rendered_prompt(project)
+
+    def test_prompt_names_skills(self):
+        with TempIdeaProject("my-feature") as project:
+            prompt = self._rendered_prompt(project)
+            assert "idea-to-code:idea-organization" in prompt
+            assert "idea-to-code:plan-format" in prompt
+            assert "idea-to-code:plan-file-management" in prompt
+
+    def test_prompt_asks_for_changes_to_plan(self):
+        with TempIdeaProject("my-feature") as project:
+            assert "I will ask you to make changes to the plan" in self._rendered_prompt(project)
+
+    def test_prompt_has_no_file_references(self):
+        with TempIdeaProject("my-feature") as project:
+            assert "@" not in self._rendered_prompt(project)
 
 
 @pytest.mark.unit

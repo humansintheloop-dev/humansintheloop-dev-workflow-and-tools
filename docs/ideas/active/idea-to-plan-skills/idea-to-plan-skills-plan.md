@@ -225,11 +225,11 @@ Decisions made at plan time:
   - Observable: The prompt contains `project.directory`, `idea-to-code:idea-organization`, `idea-to-code:plan-format`, `idea-to-code:plan-file-management` and `I will ask you to make changes to the plan`, and no `@`. After Claude adds a task, the plan file still passes `validate_plan`, every `TaskType:` line is `OUTCOME`, `INFRA` or `REFACTOR`, and the plan has `## Change History`. All four skill-based eval cases score 1.0.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/test_revise_plan.py -v -m unit` passes. `TestRevisePlanTemplateRendering` (`tests/go-cmd/test_revise_plan.py:72`) uses the real `render_template` and asserts the strings above and the absence of `@`. Then `./test-scripts/test-plugin-evals.sh` exits 0, which means every case scored 1.0 at the default threshold.
   - Steps:
-    - [ ] Update `tests/go-cmd/test_revise_plan.py:72` to the assertions above, and confirm the test fails
-    - [ ] Reduce `src/i2code/prompt-templates/revise-plan.md` to `${IDEA_DIRECTORY}`, the three skill names and `I will ask you to make changes to the plan`
-    - [ ] Change `src/i2code/go_cmd/revise_plan.py:30` to pass only `{"IDEA_DIRECTORY": project.directory}`
+    - [x] Update `tests/go-cmd/test_revise_plan.py:72` to the assertions above, and confirm the test fails
+    - [x] Reduce `src/i2code/prompt-templates/revise-plan.md` to `${IDEA_DIRECTORY}`, the three skill names and `I will ask you to make changes to the plan`
+    - [x] Change `src/i2code/go_cmd/revise_plan.py:30` to pass only `{"IDEA_DIRECTORY": project.directory}`
     - [ ] Run `./test-scripts/test-plugin-evals.sh`; it exits 0 with all four cases at 1.0
-    - [ ] Add a README section that describes how to run `./test-scripts/test-plugin-evals.sh`, `--case`, `--baseline` and `EVAL_MAX_COST_USD`
+    - [x] Add a README section that describes how to run `./test-scripts/test-plugin-evals.sh`, `--case`, `--baseline` and `EVAL_MAX_COST_USD`
 
 ---
 
@@ -269,3 +269,15 @@ Froze evals/baseline (prompts, case.yaml, scaffold.sh, graders), added --baselin
 
 ### 2026-10-17 18:48 - mark-task-complete
 revise-spec.md names idea-organization and write-spec. The revise-spec eval scores 1.0 (3 of 3 runs) once its request asks for a change to the badge service fixture.
+
+### 2026-10-17 19:20 - mark-step-complete
+TestRevisePlanTemplateRendering renders with render_template and failed before the template change
+
+### 2026-10-17 19:20 - mark-step-complete
+revise-plan.md names the idea directory, the three skills and the change request
+
+### 2026-10-17 19:20 - mark-step-complete
+revise_plan passes only IDEA_DIRECTORY
+
+### 2026-10-17 19:20 - mark-step-complete
+README.adoc has a Running the plugin evals section

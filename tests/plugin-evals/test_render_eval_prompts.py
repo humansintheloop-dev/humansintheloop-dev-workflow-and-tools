@@ -16,6 +16,7 @@ TEMPLATE_MARKERS = {
     "create-spec": "idea-to-code:write-spec",
     "revise-spec": "idea-to-code:write-spec",
     "create-plan": "idea-to-code:create-plan",
+    "revise-plan": "idea-to-code:plan-format",
 }
 
 APPENDED_REQUESTS = {

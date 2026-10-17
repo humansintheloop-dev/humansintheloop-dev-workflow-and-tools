@@ -1,11 +1,5 @@
-I want to revise the implementation plan for this application:
+The idea directory is ${IDEA_DIRECTORY}.
 
-* Idea - @${IDEA_FILE}
-* Specification - @${SPEC_FILE}
-* Implementation plan - @${PLAN_WITHOUT_STORIES_FILE}
+Use `idea-to-code:idea-organization`, `idea-to-code:plan-format` and `idea-to-code:plan-file-management`.
 
-Follow the plan-file-management skill for structural operations (inserting, deleting, reordering threads/tasks, and fixing numbering).
-
-When revising, also resolve any "X or Y" / "X (or Y)" alternatives in tasks or steps — every decision must be committed to a single action, not left ambiguous for the coding agent.
-
-You must record any changes to the plan requested during a conversation in the ## Change History section.
+I will ask you to make changes to the plan in its plan file in the idea directory.

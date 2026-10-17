@@ -263,7 +263,7 @@ TEST_TASK_TYPE_PLAN = """\
 @pytest.mark.unit
 class TestCreatePlanRepairsInvalidTaskType:
 
-    def _run_with_test_task_type_then_valid(self, project):
+    def _run_with_test_task_type_then_valid(self, project, template_renderer=_fake_renderer):
         _create_idea_and_spec(project)
         runner = FakeClaudeRunner()
         runner.set_results([
@@ -271,12 +271,26 @@ class TestCreatePlanRepairsInvalidTaskType:
             _valid_result(),
         ])
         services = PlanServices(
-            template_renderer=_fake_renderer,
+            template_renderer=template_renderer,
             plugin_skills_fn=lambda: "idea-to-code:tdd",
             validator_fn=validate_plan,
         )
         create_plan(project, runner, services)
         return runner
+
+    def test_rendered_repair_prompt_names_plan_format_instead_of_restating_task_format(self):
+        with TempIdeaProject("my-feature") as project:
+            runner = self._run_with_test_task_type_then_valid(project, template_renderer=render_template)
+            repair_command = runner.calls[1][1]
+            assert isinstance(repair_command, ClaudeCodeCommand)
+            prompt = repair_command.prompt or ""
+            assert "idea-to-code:plan-format" in prompt
+            assert "Invalid TaskType 'TEST'" in prompt
+            assert TEST_TASK_TYPE_PLAN in prompt
+            assert "Fix ONLY the listed validation errors." in prompt
+            assert "TaskType: OUTCOME | INFRA | REFACTOR" not in prompt
+            with open(project.plan_file) as f:
+                assert f.read() == VALID_PLAN
 
     def test_repair_prompt_contains_invalid_task_type_error(self):
         with TempIdeaProject("my-feature") as project:

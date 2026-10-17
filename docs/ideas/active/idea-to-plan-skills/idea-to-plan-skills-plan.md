@@ -206,14 +206,14 @@ Decisions made at plan time:
     - [x] Change `src/i2code/go_cmd/create_plan.py:64` to pass `{"IDEA_DIRECTORY": project.directory, "PLAN_SKILLS": skills}`
     - [x] Run `./test-scripts/test-plugin-evals.sh --case create-plan` and confirm `create-plan` scores 1.0
 
-- [ ] **Task 8.2: The repair prompt names plan-format and no longer restates the task format**
+- [x] **Task 8.2: The repair prompt names plan-format and no longer restates the task format**
   - TaskType: OUTCOME
   - Entrypoint: `create_plan()` in `src/i2code/go_cmd/create_plan.py` when the first plan fails validation
   - Observable: The second (repair) prompt contains `idea-to-code:plan-format`, the repair constraints, the validation errors and the plan text. It does not contain `TaskType: OUTCOME | INFRA | REFACTOR`. A repaired valid plan is written to `project.plan_file`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/test_create_plan.py -v -m unit`. A new test uses a `FakeClaudeRunner` that returns an invalid plan and then a valid plan, with the real `render_template`. It asserts the second call's prompt contains `idea-to-code:plan-format` and `Invalid TaskType 'TEST'`, does not contain `TaskType: OUTCOME | INFRA | REFACTOR`, and that `project.plan_file` holds the valid plan.
   - Steps:
-    - [ ] Write the failing test in `tests/go-cmd/test_create_plan.py`
-    - [ ] Reduce `src/i2code/prompt-templates/repair-plan.md` to: "Use `idea-to-code:plan-format`", the repair constraints (fix only the listed errors, no new threads, preserve numbering, resolve "X or Y" alternatives, full plan on stdout, no commentary), `$VALIDATION_ERRORS` and `$PLAN_TEXT`. Remove the restated task format at `:9`–`17`.
+    - [x] Write the failing test in `tests/go-cmd/test_create_plan.py`
+    - [x] Reduce `src/i2code/prompt-templates/repair-plan.md` to: "Use `idea-to-code:plan-format`", the repair constraints (fix only the listed errors, no new threads, preserve numbering, resolve "X or Y" alternatives, full plan on stdout, no commentary), `$VALIDATION_ERRORS` and `$PLAN_TEXT`. Remove the restated task format at `:9`–`17`.
 
 ---
 

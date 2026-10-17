@@ -143,7 +143,6 @@ Key skills include:
 
 Key commands are:
 
-* `commit-changes` - commits staged and unstaged changes
 * `claude-issue-report` - described below
 
 There are also session tracking hooks, which are described below.

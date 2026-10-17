@@ -40,6 +40,12 @@ repos:
         language: script
         pass_filenames: false
         files: ^(src/|test-scripts/|tests/)
+      - id: validate-idea-to-code-plugin
+        name: Validate idea-to-code plugin
+        entry: claude plugin validate --strict claude-code-plugins/idea-to-code
+        language: system
+        pass_filenames: false
+        files: ^claude-code-plugins/idea-to-code/
   - repo: local
     hooks:
       - id: block-claude-coauthor

@@ -46,14 +46,11 @@ All skills live under `claude-code-plugins/idea-to-code/skills/<name>/SKILL.md`.
 ## Custom Slash Commands
 
 Custom commands are markdown prompts that users invoke via `/idea-to-code:<command>`.
-The plugin registers five commands.
+The plugin registers two commands.
 
 | Command | Purpose |
 |---|---|
 | `claude-issue-report` | Capture a mistake or improvement opportunity with 5-whys analysis |
-| `commit-changes` | Stage all changes, review, and commit |
-| `commit-staged-changes` | Review staged changes and commit |
-| `precommit-check` | Run `./gradlew precommitCheck` |
 | `review-design-doc` | Walk through design decisions interactively |
 
 All commands live under `claude-code-plugins/idea-to-code/commands/<name>.md`.

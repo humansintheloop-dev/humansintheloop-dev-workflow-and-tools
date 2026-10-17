@@ -1,3 +1,8 @@
+---
+name: github-actions-gradle-cache
+description: Diagnose and fix stale Gradle dependency caches in GitHub Actions by deleting the setup-gradle gradle-home caches. Claude should use this skill when a Gradle build in GitHub Actions cannot resolve a SNAPSHOT dependency, or resolves an outdated SNAPSHOT, that resolves correctly locally.
+---
+
 # Fixing Stale SNAPSHOT Dependency Caches in GitHub Actions
 
 When a Gradle build in GitHub Actions fails to resolve a SNAPSHOT dependency that works locally, the cause is usually stale dependency resolution metadata in the `gradle/actions/setup-gradle` cache.

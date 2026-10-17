@@ -1,3 +1,8 @@
+---
+description: Walk through a design document's decisions, risks, and open questions one at a time, updating the document on request
+argument-hint: "[design-doc-path]"
+---
+
 Walk me through the design decisions in the design document one by one. This includes:
 - Key Design Decisions (section 8)
 - Technical Risks and Mitigations (section 9)

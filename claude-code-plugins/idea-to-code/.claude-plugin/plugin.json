@@ -11,9 +11,6 @@
   "keywords": ["workflow", "planning", "implementation", "tdd", "steel-thread"],
   "commands": [
     "./commands/claude-issue-report.md",
-    "./commands/commit-changes.md",
-    "./commands/commit-staged-changes.md",
-    "./commands/precommit-check.md",
     "./commands/review-design-doc.md"
   ],
   "skills": [

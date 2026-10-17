@@ -289,7 +289,6 @@ i2code uses Jinja2 templates to construct Claude prompts for different task type
 | `triage_feedback.j2` | Triaging PR review comments |
 | `fix_feedback.j2` | Addressing specific PR feedback |
 | `commit_recovery.j2` | Committing recovered uncommitted changes |
-| `address_feedback.j2` | Handling PR feedback in worktree mode |
 
 Templates live in `src/i2code/implement/templates/`.
 

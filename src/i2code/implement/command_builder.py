@@ -190,25 +190,3 @@ class CommandBuilder:
             workflow_name=request.workflow_name,
             failure_logs=failure_logs,
         )
-
-    def build_feedback_command(
-        self,
-        pr_url: str,
-        feedback_type: str,
-        feedback_content: str,
-        cwd: str = "",
-    ) -> ClaudeCodeCommand:
-        prompt = render_template(
-            "address_feedback.j2",
-            package="i2code.implement",
-            pr_url=pr_url,
-            feedback_type=feedback_type,
-            feedback_content=feedback_content,
-        )
-
-        return ClaudeCodeCommand(
-            prompt=prompt,
-            cwd=cwd,
-            interactive=False,
-            extra_args=["--print", "wt-handle-feedback.md"],
-        )

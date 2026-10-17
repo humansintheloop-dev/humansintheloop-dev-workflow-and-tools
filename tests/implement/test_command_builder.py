@@ -1,6 +1,5 @@
 """Tests for CommandBuilder: consolidates all Claude command-building functions."""
 
-import os
 import pytest
 
 from i2code.implement.claude_runner import ClaudeCodeCommand
@@ -87,25 +86,6 @@ def _build_ci_fix_cmd(**overrides):
     )
     defaults.update(overrides)
     return CommandBuilder().build_ci_fix_command(**defaults)
-
-
-def _build_feedback_cmd(**overrides):
-    defaults = dict(
-        pr_url="https://github.com/owner/repo/pull/123",
-        feedback_type="review_comment",
-        feedback_content="Please fix the typo",
-        cwd="/cwd",
-    )
-    defaults.update(overrides)
-    return CommandBuilder().build_feedback_command(**defaults)
-
-
-FEEDBACK_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), '../../prompt-templates/wt-handle-feedback.md')
-
-
-def _read_feedback_template():
-    with open(FEEDBACK_TEMPLATE_PATH, 'r') as f:
-        return f.read()
 
 
 @pytest.mark.unit
@@ -321,65 +301,3 @@ class TestCommandBuilderCiFixCommand:
             failure_logs="Error: test failed",
         )
 
-
-@pytest.mark.unit
-class TestCommandBuilderFeedbackCommand:
-    """Test building feedback commands."""
-
-    def test_build_feedback_command_returns_dataclass(self):
-        cmd = _build_feedback_cmd(cwd="/work/tree")
-        assert isinstance(cmd, ClaudeCodeCommand)
-        assert cmd.cwd == "/work/tree"
-        assert cmd.interactive is False
-        assert cmd.prompt is not None
-
-    def test_extra_args_preserves_issue_40_two_token_shape(self):
-        """extra_args carries the verbatim broken --print sequence (issue #40)."""
-        cmd = _build_feedback_cmd()
-        assert cmd.extra_args == ["--print", "wt-handle-feedback.md"]
-
-    def test_includes_pr_url_in_prompt(self):
-        cmd = _build_feedback_cmd()
-        assert "https://github.com/owner/repo/pull/123" in cmd.prompt
-
-    def test_includes_feedback_content_in_prompt(self):
-        cmd = _build_feedback_cmd()
-        assert "Please fix the typo" in cmd.prompt
-
-    def test_build_feedback_command_preserves_issue_40_via_extra_args(self):
-        """Cross-check: argv emitted by ClaudeRunner._build_argv matches the
-        broken 2-token --print shape exactly."""
-        from i2code.implement.claude_runner import ClaudeRunner
-
-        cmd = _build_feedback_cmd(cwd="/work/tree")
-        runner = ClaudeRunner(interactive=False)
-        argv = runner._build_argv(cmd, effective_interactive=False)
-
-        assert argv == [
-            "claude",
-            "--verbose",
-            "--output-format=stream-json",
-            "--print", "wt-handle-feedback.md",
-            "-p", cmd.prompt,
-        ]
-
-
-@pytest.mark.unit
-class TestFeedbackTemplate:
-    """Test wt-handle-feedback.md prompt template."""
-
-    def test_feedback_template_exists(self):
-        """Template file should exist in prompt-templates directory."""
-        assert os.path.exists(FEEDBACK_TEMPLATE_PATH), f"Template not found at {FEEDBACK_TEMPLATE_PATH}"
-
-    def test_feedback_template_has_pr_url_placeholder(self):
-        """Template should have placeholder for PR URL."""
-        assert 'PR_URL' in _read_feedback_template(), "Template should have PR_URL placeholder"
-
-    def test_feedback_template_has_feedback_content_placeholder(self):
-        """Template should have placeholder for feedback content."""
-        assert 'FEEDBACK_CONTENT' in _read_feedback_template(), "Template should have FEEDBACK_CONTENT placeholder"
-
-    def test_feedback_template_has_feedback_type_placeholder(self):
-        """Template should have placeholder for feedback type."""
-        assert 'FEEDBACK_TYPE' in _read_feedback_template(), "Template should have FEEDBACK_TYPE placeholder"

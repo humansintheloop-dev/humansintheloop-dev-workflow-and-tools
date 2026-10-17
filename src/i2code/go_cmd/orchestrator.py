@@ -64,6 +64,8 @@ MOVE_TO_WIP = "Move idea to wip"
 EXIT = "Exit"
 RETRY = "Retry"
 ABORT = "Abort workflow"
+CONTINUE_WITH_UNCOMMITTED = "Continue with uncommitted changes"
+BACK_TO_MENU = "Back to menu"
 
 _LIFECYCLE_MOVE_OPTIONS = {
     "draft": MOVE_TO_READY,
@@ -400,6 +402,10 @@ class Orchestrator:
         config = self._ensure_implement_config()
         self._display_implement_config(config)
         flags = build_implement_flags(config)
+        if "--trunk" in flags and self._has_uncommitted_changes():
+            if not self._confirm_continue_with_uncommitted_changes():
+                return
+            flags.append("--ignore-uncommitted-idea-changes")
         print("", file=self._deps.output)
         print("Implementing plan...", file=self._deps.output)
         print("", file=self._deps.output)
@@ -408,6 +414,14 @@ class Orchestrator:
             self._check_plan_completion()
         else:
             self._handle_error()
+
+    def _confirm_continue_with_uncommitted_changes(self):
+        choice = get_user_choice(
+            "Idea files have uncommitted changes. What would you like to do?", 1,
+            [CONTINUE_WITH_UNCOMMITTED, BACK_TO_MENU],
+            config=self._deps.menu_config,
+        )
+        return choice == 1
 
     def _configure_implement(self):
         menu_fn = self._menu_fn_for_prompts()

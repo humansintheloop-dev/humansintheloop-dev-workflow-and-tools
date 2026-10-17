@@ -12,8 +12,8 @@ from i2code.go_cmd.implement_config import (
     INTERACTIVE, ISOLATION_CHOICES, NON_INTERACTIVE, TRUNK_MODE, WORKTREE_MODE,
 )
 from i2code.go_cmd.orchestrator import (
-    CONFIGURE_IMPLEMENT, EXIT, IMPLEMENT_PLAN, REVISE_IMPLEMENT,
-    Orchestrator, OrchestratorDeps,
+    ABORT, BACK_TO_MENU, CONFIGURE_IMPLEMENT, CONTINUE_WITH_UNCOMMITTED, EXIT, IMPLEMENT_PLAN,
+    REVISE_IMPLEMENT, Orchestrator, OrchestratorDeps,
 )
 
 
@@ -29,6 +29,12 @@ def _success_result():
 
 def _clean_git():
     return MagicMock(return_value=MagicMock(stdout="", returncode=0))
+
+
+def _git_with_uncommitted_idea_changes():
+    return MagicMock(return_value=MagicMock(
+        stdout=" M docs/ideas/my-feature/my-feature-plan.md\n", returncode=0,
+    ))
 
 
 def _setup_has_plan(project, plan_content="- [ ] **Task 1.1: Do something**\n"):
@@ -183,6 +189,60 @@ class TestImplementRunnerReceivesConfig:
             for flag in expected_flags:
                 assert flag in flags
             assert directory == project.directory
+
+
+def _run_with_uncommitted_idea_changes(project, menu_labels, *,
+                                       trunk, implement_runner):
+    """Run a has-plan orchestrator whose idea directory has uncommitted changes."""
+    from i2code.go_cmd.implement_config import write_implement_config
+    _setup_has_plan(project)
+    write_implement_config(
+        project.implement_config_file,
+        interactive=False, isolation_type="none", trunk=trunk,
+    )
+    config = menu_config_by_label(menu_labels)
+    output = io.StringIO()
+    deps = OrchestratorDeps(
+        menu_config=config,
+        git_runner=_git_with_uncommitted_idea_changes(),
+        implement_runner=implement_runner,
+        output=output,
+    )
+    return _drive_orchestrator(project, deps, config, output)
+
+
+@pytest.mark.unit
+class TestTrunkImplementWithUncommittedIdeaChanges:
+
+    def test_continue_passes_ignore_uncommitted_flag(self):
+        with TempIdeaProject("my-feature") as project:
+            mock_implement = MagicMock(return_value=_success_result())
+            _run_with_uncommitted_idea_changes(
+                project, [IMPLEMENT_PLAN, CONTINUE_WITH_UNCOMMITTED, EXIT],
+                trunk=True, implement_runner=mock_implement,
+            )
+            flags, _ = mock_implement.call_args[0]
+            assert "--ignore-uncommitted-idea-changes" in flags
+
+    def test_back_to_menu_does_not_run_implement(self):
+        with TempIdeaProject("my-feature") as project:
+            mock_implement = MagicMock(return_value=_success_result())
+            _run_with_uncommitted_idea_changes(
+                project, [IMPLEMENT_PLAN, BACK_TO_MENU, EXIT],
+                trunk=True, implement_runner=mock_implement,
+            )
+            mock_implement.assert_not_called()
+
+    def test_worktree_mode_does_not_ask_or_ignore_uncommitted(self):
+        with TempIdeaProject("my-feature") as project:
+            mock_implement = MagicMock(return_value=MagicMock(returncode=1))
+            result = _run_with_uncommitted_idea_changes(
+                project, [IMPLEMENT_PLAN, ABORT],
+                trunk=False, implement_runner=mock_implement,
+            )
+            flags, _ = mock_implement.call_args[0]
+            assert "--ignore-uncommitted-idea-changes" not in flags
+            assert CONTINUE_WITH_UNCOMMITTED not in result.menu_displayed
 
 
 # ---------------------------------------------------------------------------

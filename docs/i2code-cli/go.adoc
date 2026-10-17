@@ -40,6 +40,13 @@ All workflow stages have been finished.
 At every state the menu displays the available actions as numbered choices.
 Select a number to proceed.
 
+== Implementing on Trunk with Uncommitted Idea Files
+
+When the implement options use trunk mode and the idea directory has uncommitted changes, such as plan updates left by an interrupted implementation, the orchestrator asks before running `i2code implement`:
+
+* *Continue with uncommitted changes* -- run `i2code implement` with `--ignore-uncommitted-idea-changes`.
+* *Back to menu* -- return to the menu, where *Commit changes* is available.
+
 == Error Handling
 
 If a step fails, the orchestrator presents two options:

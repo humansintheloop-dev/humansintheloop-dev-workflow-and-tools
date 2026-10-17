@@ -13,15 +13,27 @@ _REQUIRED_FIELDS = [
     ("evidence", "Evidence"),
 ]
 
+_VALID_TASK_TYPES = ("OUTCOME", "INFRA", "REFACTOR")
+_EXPECTED_TASK_TYPES = f"{', '.join(_VALID_TASK_TYPES[:-1])} or {_VALID_TASK_TYPES[-1]}"
+
+
+def _has_invalid_task_type(task):
+    return bool(task.task_type) and task.task_type not in _VALID_TASK_TYPES
+
 
 def _task_errors(thread_num, task_num, task):
-    """Return error messages for missing fields or steps in *task*."""
+    """Return error messages for missing fields, invalid values or steps in *task*."""
     task_id = f"Task {thread_num}.{task_num}"
     errors = [
         f"Missing {label} in {task_id}"
         for attr, label in _REQUIRED_FIELDS
         if not getattr(task, attr)
     ]
+    if _has_invalid_task_type(task):
+        errors.append(
+            f"Invalid TaskType '{task.task_type}' in {task_id}"
+            f" (expected {_EXPECTED_TASK_TYPES})"
+        )
     if not task.steps:
         errors.append(f"{task_id} must contain at least one step")
     return errors

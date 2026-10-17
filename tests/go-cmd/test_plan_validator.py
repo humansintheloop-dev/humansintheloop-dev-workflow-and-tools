@@ -71,6 +71,46 @@ class TestMissingTaskTypeFails:
         assert any("Task 1.1" in e for e in errors)
 
 
+def _plan_with_task_type(task_type):
+    return f"""\
+## Steel Thread 1: Setup
+
+- [ ] **Task 1.1: Set up**
+  - TaskType: INFRA
+  - Entrypoint: `command`
+  - Observable: Something
+  - Evidence: Something
+  - Steps:
+    - [ ] Step one
+
+## Steel Thread 2: Feature
+
+- [ ] **Task 2.1: Typed task**
+  - TaskType: {task_type}
+  - Entrypoint: `command`
+  - Observable: Something
+  - Evidence: Something
+  - Steps:
+    - [ ] Step one
+"""
+
+
+@pytest.mark.unit
+class TestTaskTypeValues:
+
+    def test_invalid_task_type_reports_error(self):
+        is_valid, errors = validate_plan(_plan_with_task_type("TEST"))
+
+        assert is_valid is False
+        assert errors == [
+            "Invalid TaskType 'TEST' in Task 2.1 (expected OUTCOME, INFRA or REFACTOR)"
+        ]
+
+    @pytest.mark.parametrize("task_type", ["OUTCOME", "INFRA", "REFACTOR"])
+    def test_valid_task_type_passes(self, task_type):
+        assert validate_plan(_plan_with_task_type(task_type)) == (True, [])
+
+
 @pytest.mark.unit
 class TestMissingEvidenceFails:
 

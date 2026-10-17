@@ -114,17 +114,17 @@ Decisions made at plan time:
 
 ## Steel Thread 3: The plan validator rejects TaskType values outside OUTCOME, INFRA and REFACTOR
 
-- [ ] **Task 3.1: create-plan reports an invalid TaskType and passes it to the repair pass**
+- [x] **Task 3.1: create-plan reports an invalid TaskType and passes it to the repair pass**
   - TaskType: OUTCOME
   - Entrypoint: `create_plan()` in `src/i2code/go_cmd/create_plan.py`, reached by `i2code plan create <idea-dir>`
   - Observable: A generated plan containing `TaskType: TEST` in Task 2.1 makes stderr print `PLAN_VALIDATION_ERROR: Invalid TaskType 'TEST' in Task 2.1 (expected OUTCOME, INFRA or REFACTOR)`. The repair prompt contains that error. When the repaired plan is valid, it is written to `<name>-plan.md`. A plan whose task types are only `OUTCOME`, `INFRA` and `REFACTOR` passes without repair.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/test_plan_validator.py tests/go-cmd/test_create_plan.py -v -m unit`. New tests: `validate_plan` on a plan with `TaskType: TEST` returns the exact error above; `validate_plan` accepts each of the three valid values; and `create_plan` with a `FakeClaudeRunner` that first returns a `TaskType: TEST` plan and then a valid plan issues a second call whose prompt contains `Invalid TaskType 'TEST' in Task 2.1`, then writes `project.plan_file`.
   - Steps:
-    - [ ] Write the failing tests in `tests/go-cmd/test_plan_validator.py` and `tests/go-cmd/test_create_plan.py`
-    - [ ] Add a `_VALID_TASK_TYPES` check to `_task_errors` in `src/i2code/go_cmd/plan_validator.py:17`, applied only when `task.task_type` is present (missing types keep the existing `Missing TaskType` error)
-    - [ ] Change the `--task-type` help text in `src/i2code/plan/task_cli.py:19` to `Task type (OUTCOME, INFRA or REFACTOR)`
-    - [ ] Replace every `--task-type <INFRA|OUTCOME>` in `claude-code-plugins/idea-to-code/skills/plan-file-management/SKILL.md` (lines 138, 148, 188) with `--task-type <OUTCOME|INFRA|REFACTOR>`
-    - [ ] Grep the whole repository for `INFRA or OUTCOME` and `INFRA|OUTCOME` and fix every remaining occurrence in the same commit
+    - [x] Write the failing tests in `tests/go-cmd/test_plan_validator.py` and `tests/go-cmd/test_create_plan.py`
+    - [x] Add a `_VALID_TASK_TYPES` check to `_task_errors` in `src/i2code/go_cmd/plan_validator.py:17`, applied only when `task.task_type` is present (missing types keep the existing `Missing TaskType` error)
+    - [x] Change the `--task-type` help text in `src/i2code/plan/task_cli.py:19` to `Task type (OUTCOME, INFRA or REFACTOR)`
+    - [x] Replace every `--task-type <INFRA|OUTCOME>` in `claude-code-plugins/idea-to-code/skills/plan-file-management/SKILL.md` (lines 138, 148, 188) with `--task-type <OUTCOME|INFRA|REFACTOR>`
+    - [x] Grep the whole repository for `INFRA or OUTCOME` and `INFRA|OUTCOME` and fix every remaining occurrence in the same commit
 
 ---
 

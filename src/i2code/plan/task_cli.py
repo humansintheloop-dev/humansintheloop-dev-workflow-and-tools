@@ -16,7 +16,7 @@ def _task_spec_options(fn):
     """Apply the shared Click options for specifying a new task."""
     for option in reversed([
         click.option("--title", required=False, default=None, help="Task title"),
-        click.option("--task-type", required=False, default=None, help="Task type (INFRA or OUTCOME)"),
+        click.option("--task-type", required=False, default=None, help="Task type (OUTCOME, INFRA or REFACTOR)"),
         click.option("--entrypoint", required=False, default=None, help="Entrypoint command"),
         click.option("--observable", required=False, default=None, help="Observable outcome"),
         click.option("--evidence", required=False, default=None, help="Evidence command"),

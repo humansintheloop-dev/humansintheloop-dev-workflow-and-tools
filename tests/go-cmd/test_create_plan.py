@@ -10,6 +10,7 @@ from i2code.claude.permissions import build_read_only_tools_flag
 from i2code.implement.claude_runner import ClaudeCodeCommand, ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 from i2code.go_cmd.create_plan import PlanServices, create_plan
+from i2code.go_cmd.plan_validator import validate_plan
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "implement"))
 from fake_claude_runner import FakeClaudeRunner
@@ -202,6 +203,72 @@ class TestCreatePlanRepairOnValidationFailure:
             runner = FakeClaudeRunner()
             runner.set_results([_invalid_result(), _valid_result()])
             create_plan(project, runner, _counting_validator_services())
+            with open(project.plan_file) as f:
+                assert f.read() == VALID_PLAN
+
+
+TEST_TASK_TYPE_PLAN = """\
+# Implementation Plan
+
+## Steel Thread 1: Setup
+
+- [ ] **Task 1.1: Set up**
+  - TaskType: INFRA
+  - Entrypoint: `command`
+  - Observable: Something
+  - Evidence: Something
+  - Steps:
+    - [ ] Step one
+
+## Steel Thread 2: Feature
+
+- [ ] **Task 2.1: Test something**
+  - TaskType: TEST
+  - Entrypoint: `command`
+  - Observable: Something
+  - Evidence: Something
+  - Steps:
+    - [ ] Step one
+"""
+
+
+@pytest.mark.unit
+class TestCreatePlanRepairsInvalidTaskType:
+
+    def _run_with_test_task_type_then_valid(self, project):
+        _create_idea_and_spec(project)
+        runner = FakeClaudeRunner()
+        runner.set_results([
+            ClaudeResult(returncode=0, result_text=TEST_TASK_TYPE_PLAN),
+            _valid_result(),
+        ])
+        services = PlanServices(
+            template_renderer=_fake_renderer,
+            plugin_skills_fn=lambda: "idea-to-code:tdd",
+            validator_fn=validate_plan,
+        )
+        create_plan(project, runner, services)
+        return runner
+
+    def test_repair_prompt_contains_invalid_task_type_error(self):
+        with TempIdeaProject("my-feature") as project:
+            runner = self._run_with_test_task_type_then_valid(project)
+            assert len(runner.calls) == 2
+            repair_command = runner.calls[1][1]
+            assert isinstance(repair_command, ClaudeCodeCommand)
+            assert "Invalid TaskType 'TEST' in Task 2.1" in (repair_command.prompt or "")
+
+    def test_prints_invalid_task_type_error_to_stderr(self, capsys):
+        with TempIdeaProject("my-feature") as project:
+            self._run_with_test_task_type_then_valid(project)
+            assert (
+                "PLAN_VALIDATION_ERROR: Invalid TaskType 'TEST' in Task 2.1"
+                " (expected OUTCOME, INFRA or REFACTOR)"
+            ) in capsys.readouterr().err
+
+    def test_writes_repaired_plan(self):
+        with TempIdeaProject("my-feature") as project:
+            self._run_with_test_task_type_then_valid(project)
             with open(project.plan_file) as f:
                 assert f.read() == VALID_PLAN
 

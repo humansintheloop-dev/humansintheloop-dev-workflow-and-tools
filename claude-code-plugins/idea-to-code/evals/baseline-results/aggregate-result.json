@@ -1,0 +1,1012 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.302",
+  "startedAt": "2026-10-17T06:30:08.162Z",
+  "durationSeconds": 3518,
+  "costUsd": 3.0043168,
+  "partial": false,
+  "suite": {
+    "root": "./claude-code-plugins/idea-to-code",
+    "ablation": "none",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "idea-to-code",
+        "version": "1.0.20260911200121",
+        "path": "./claude-code-plugins/idea-to-code"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "create-plan",
+      "dir": "evals/baseline/create-plan",
+      "source": "mixed",
+      "promptMarkdown": "# Create plan\n\nGiven the idea, specification, and (when applicable) user-stories files in\n@docs/ideas/active/eval-idea/eval-idea-idea.md @docs/ideas/active/eval-idea/eval-idea-spec.md, create a detailed steel-thread implementation plan\nthat will be used by an LLM/GenAI coding agent.\n\nThe plan will be read directly by an LLM/GenAI coding agent (for example, Claude Code).\nSeparate skills control TDD execution and task progression, so the plan does NOT need\nto restate how to do TDD/BDD or how to mark tasks complete.\nIt should note that the steps should be implemented using TDD.\n\nIMPORTANT: Output the plan to stdout in MARKDOWN format only.\nDO NOT use the Write tool or Edit tool to create or modify any files.\nDO NOT ask for write permission. The calling program captures your stdout and writes the file itself.\nYour ONLY job is to output the plan text — nothing else.\n\n---\n\n## Skills to Follow\n\nBefore generating the plan, invoke and follow the guidance from these skills:\nidea-to-code:apply-design-patterns, idea-to-code:ask-a-friend, idea-to-code:commit-guidelines, idea-to-code:debugging-ci-failures, idea-to-code:dockerfile-guidelines, idea-to-code:file-organization, idea-to-code:find-usage, idea-to-code:git-conflict-resolution, idea-to-code:github-actions-gradle-cache, idea-to-code:github-workflow-gradle-template, idea-to-code:incremental-development, idea-to-code:plan-file-management, idea-to-code:plan-tracking, idea-to-code:tdd, idea-to-code:test-output-to-logfile, idea-to-code:test-runner-java-gradle, idea-to-code:testing-scripts-and-infrastructure, idea-to-code:write-design-pattern, idea-to-code:write-idea\n\nEnsure the generated plan incorporates the requirements from each skill.\n\n---\n\n## Idea type\n\nFirst, determine the idea type from the specification:\n\n- A. User-facing feature\n- B. Architecture POC\n- C. Platform/infrastructure capability\n- D. Educational/example repo\n\n---\n\n## Implementation context (CRITICAL)\n\nThe implementation agent runs from the project root directory (the working directory).\n\n**Path rules:**\n- All file paths must be relative to the project root\n- Use `./docker-compose.yml` or `docker-compose.yml`, NOT the full path from the spec/idea file location\n- Use `./scripts/init.sh`, NOT `tests/foo/scripts/init.sh`\n- The directory path in `@docs/ideas/active/eval-idea/eval-idea-idea.md` is irrelevant—do NOT include it in paths\n\n**Command rules:**\n- Commands execute from the project root—no `cd <project-dir> &&` prefix needed\n- Use `docker compose up` NOT `cd tests/foo && docker compose up`\n- Use `./scripts/test.sh` NOT `cd tests/foo && ./scripts/test.sh`\n\n**Do NOT:**\n- Include the idea/spec file directory path in any file paths or commands\n- Create tasks to create the project root directory (it already exists)\n\n---\n\n## Analyze existing code BEFORE planning (CRITICAL)\n\nBefore writing any plan, examine the existing codebase to understand what already exists:\n\n1. **Read project structure:** build configuration, module/package layout, existing source directories\n2. **Read existing source files:** identify which classes, functions, and tests already exist and what state they are in\n3. **Read existing infrastructure:** CI workflows, Dockerfiles, deployment configs, test scripts\n4. **Identify placeholder vs. real content:** skeleton-generated code often has boilerplate that needs to be fleshed out — not replaced from scratch\n\n**Plan tasks must reflect what actually exists:**\n- If a file exists with placeholder content → plan to **modify/flesh out** the file, not create it\n- If CI, Dockerfile, or build config already exists → do NOT plan to create them again\n- If Steel Thread 1 infrastructure (build, CI, deployment) already works → Steel Thread 1 should verify it builds, not recreate it\n- Use \"flesh out\", \"update\", \"modify\" language for existing files — reserve \"create\" for files that genuinely don't exist\n\n**Plan tasks must only cover what the idea/spec defines:**\n- Only plan work for adapters, events, entities, and operations that appear in the spec or referenced YAML files\n- Do NOT invent operations (e.g., `updateX`) or events (e.g., `XUpdated`) that are not defined in the source of truth\n- Do NOT plan work for adapter types the service does not have (e.g., no web-api adapter → no REST controller tasks)\n\n---\n\n## General principles\n\n- Each steel thread is one very narrow end-to-end flow that delivers some value.\n- **Steel Thread 1 MUST prove three things work together** before adding features:\n  1. End-to-end flow through application architecture (e.g., REST → Service → DB)\n  2. Deployment pipeline (CI validates all commits)\n  3. Deployment architecture (e.g., Docker, docker-compose)\n  - Use recommended starter/template/skeletons for the technology stack\n  - Do NOT add multiple features before proving all three work together\n  - Rationale: Catch integration issues immediately, not after building features that may all fail\n  - Ensure proper .gitignore; add only minimal dependencies required for each task\n  - See **Task 1.1 Requirements** section below for mandatory contents\n- Subsequent steel threads implement exactly ONE scenario each:\n  - If idea type A (user-facing feature):\n    - Each steel thread implements exactly one user-story scenario.\n  - If idea type B/C/D (architecture POC, platform capability, educational example):\n    - Each steel thread implements exactly one validation scenario or example scenario.\n- Implement happy-path scenarios first, then add error handling and edge cases.\n- Organize the steel threads by causal dependencies and architectural priority.\n- Build test scripts incrementally: each task includes adding its failing test as part of that task.\n- When appropriate, incrementally update README.md as part of tasks.\n  - Do NOT create a separate \"update documentation\" task at the end.\n\n### Incremental build-up (dependencies, directories, configuration)\n\nAdd dependencies, directories, and configuration only when a task requires them—not upfront.\n\n**Dependencies:**\n- **Bad**: Task 1.1 adds all dependencies (web, JPA, validation, testcontainers, actuator)\n- **Good**: Task 1.1 adds only spring-boot-starter-web; Task 2.1 adds JPA + testcontainers when persistence is needed\n\n**Directories:**\n- **Bad**: Task 1.1 creates entire project structure (domain/, repository/, service/, controller/)\n- **Good**: Task 1.1 creates only the application entry point; Task 2.1 creates domain/ when adding entities\n\n**Dockerfiles for Gradle/Maven projects:**\n- Use simple Dockerfiles that copy a pre-built JAR (built by CI or locally)\n- Do NOT use multi-stage builds that run Gradle/Maven inside Docker unless explicitly requested\n- Multi-stage builds are slow (re-downloads dependencies) and complicate caching\n\nThis keeps each task focused and makes it clear why each element exists.\n\n---\n\n## Task 1.1 Requirements (MANDATORY)\n\nTask 1.1 is special. It MUST ensure CI exists so that every commit after Task 1.1 is validated.\n\n**WHY:** If CI is created in Task 1.2, Task 1.1's commit is unvalidated—this defeats the purpose of steel threads.\n\n**If the project already has a working build and CI** (e.g., generated from a skeleton/template), Task 1.1 should verify the existing build passes — not recreate infrastructure that already exists. In this case, Task 1.1 may be as simple as running the build and confirming all existing tests pass.\n\n### For Java/Gradle Projects\n\nTask 1.1 MUST include:\n1. Application entry point with health check endpoint\n2. JUnit test that verifies the health endpoint (e.g., `@SpringBootTest` with `TestRestTemplate`)\n3. `.github/workflows/ci.yml` that runs `./gradlew build`\n\n**Evidence:** \"CI runs `./gradlew build` which executes JUnit tests and passes\"\n\nIMPORTANT: Do NOT create shell scripts to test Java applications. Use JUnit tests executed by Gradle.\n\n### For Java/Gradle Projects with Docker Compose\n\nWhen Task 1.1 includes both Java app AND Docker Compose infrastructure, Task 1.1 MUST include:\n1. Application entry point with health check endpoint\n2. JUnit test that verifies the health endpoint\n3. `test-scripts/test-cleanup.sh` for cleaning up Docker state\n4. `test-scripts/test-docker-health.sh` that runs `docker compose up`, curls health, runs `docker compose down`\n5. `test-scripts/test-end-to-end.sh` that runs cleanup then all test scripts\n6. `.github/workflows/ci.yml` that runs `./gradlew build` AND `./test-scripts/test-end-to-end.sh`\n\n**Evidence:** \"CI runs `./gradlew build` and `./test-scripts/test-end-to-end.sh` and both pass\"\n\n### For Infrastructure-Only Projects (no Java)\n\nTask 1.1 MUST include:\n1. The infrastructure scripts/configuration\n2. `test-scripts/test-cleanup.sh` for cleaning up test state\n3. `test-scripts/test-<behavior>.sh` that validates the behavior\n4. `test-scripts/test-end-to-end.sh` that runs cleanup then all test scripts\n5. `.github/workflows/ci.yml` that runs `./test-scripts/test-end-to-end.sh`\n\n**Evidence:** \"CI runs `./test-scripts/test-end-to-end.sh` and passes\"\n\n### Task 1.1 Anti-patterns (INVALID)\n\n```\n❌ Task 1.1: Create Spring Boot app\n   Task 1.2: Add CI workflow\n   (CI not in Task 1.1 - Task 1.1 commit is unvalidated)\n```\n\n```\n❌ Task 1.1: Create Spring Boot app with health check\n   Steps:\n     - Create test-scripts/test-health.sh that curls the health endpoint\n   (WRONG: Java apps must use JUnit tests, not shell scripts)\n```\n\n```\n❌ Task 1.1: Create app with health check\n   Steps:\n     - Create CustomerServiceApplicationTest.java with @SpringBootTest context load test\n   (Step tests context loading, not the health endpoint - doesn't match Observable)\n```\n\n### Valid Task 1.1 Example (Java/Gradle)\n\n```\n- [ ] **Task 1.1: Spring Boot application starts and responds to health check**\n  - TaskType: INFRA\n  - Entrypoint: `./gradlew build`\n  - Observable: Health endpoint returns 200 OK with `{\"status\":\"UP\"}`\n  - Evidence: CI runs `./gradlew build` which executes JUnit tests and passes\n  - Steps:\n    - [ ] Create `build.gradle` with Spring Boot, web, actuator, test dependencies\n    - [ ] Create application entry point and health configuration\n    - [ ] Create `HealthCheckTest.java` that uses TestRestTemplate to GET /actuator/health and asserts 200 with status UP\n    - [ ] Create `.github/workflows/ci.yml` that runs `./gradlew build`\n```\n\n---\n\n## Task model (IMPORTANT)\n\nA task has **two layers**:\n\n1. **Task contract** – why the task exists (externally observable)\n2. **Task steps** – how the task is implemented (internal details)\n\nTasks MUST define their contract explicitly.\nInternal work (helpers, parsing, DTOs, utilities, configuration files)\nMUST appear only as steps under a task with a contract.\nThey MUST NOT be standalone tasks.\n\n---\n\n## Task types (strict definitions)\n\nEvery task MUST declare exactly one TaskType.\nAllowed values are: OUTCOME, INFRA, REFACTOR.\nNo other task types are permitted.\n\n### OUTCOME\n\nIntroduces or changes externally observable behavior reachable from the primary entrypoint.\n\nAn OUTCOME task MUST define:\n- Entrypoint: exact CLI command or execution path\n- Observable: stdout, stderr, exit code, file, branch, PR, etc.\n- Evidence: the test/command that proves the observable via the entrypoint\n\nObservable descriptions must be precise and testable.\nIf an Observable mentions creation, modification, or selection of state\n(files, directories, branches, worktrees, PRs),\nit must specify the key properties that distinguish correct behavior\n(e.g. path, branch name, idempotence, ownership).\n\n### INFRA\n\nEnables building, testing, or running the system, but does not introduce user-visible behavior by itself.\n\nINFRA tasks MUST still define:\n- Entrypoint\n- Observable\n- Evidence\n\nINFRA tasks MUST create test scripts following the `testing-scripts-and-infrastructure` skill:\n- Create `test-scripts/test-*.sh` scripts for infrastructure behaviors\n- If you need to test more infrastructure behavior OR another end-to-end flow, create a new script—do NOT append to an existing one\n- Add new test scripts to `test-scripts/test-end-to-end.sh`\n- GitHub Actions workflow MUST call `test-scripts/test-end-to-end.sh`\n- Manual verification instructions are NOT valid Evidence\n\n**Shell scripts vs JUnit tests:**\n- JUnit integration tests thoroughly verify REST endpoints (all CRUD operations, validation, error handling)\n- Shell scripts are smoke tests for Docker/infrastructure—verify the deployment works, not the application logic\n- Do NOT create shell scripts that mirror JUnit tests (no `test-create-customer.sh`, `test-get-customer.sh`, etc.)\n- ONE shell script with a simple end-to-end flow (e.g., POST then GET) is sufficient to prove the containerized app works\n- Additional shell scripts are only for testing different infrastructure behaviors (e.g., `test-docker-health.sh`, `test-docker-crud-smoke.sh`)\n\nINFRA tasks MUST NOT introduce business logic except as required to enable execution.\n\n### REFACTOR\n\nChanges code structure without changing behavior.\n\nREFACTOR tasks:\n- MUST reference existing OUTCOME behavior\n- MUST state Observable: “no behavior change”\n- MUST use existing tests as Evidence\n- MUST appear only after at least one OUTCOME task in the same steel thread\n\n---\n\n## Steel thread heading format (MANDATORY)\n\nSteel thread headings MUST use this exact format:\n\n```\n## Steel Thread N: Description\n```\n\nExample:\n```\n## Steel Thread 1: Spring Boot Application with Health Check\n## Steel Thread 2: Create Customer Endpoint\n```\n\nDo NOT use `## Thread N:` — it must be `## Steel Thread N:`.\n\n---\n\n## Task structure (MANDATORY FORMAT)\n\nEach task MUST use this exact format:\n\n- [ ] **Task X.Y: Outcome-oriented description**\n  - TaskType: OUTCOME | INFRA | REFACTOR\n  - Entrypoint:\n  - Observable:\n  - Evidence:\n  - Steps:\n    - [ ] ...\n\nRules:\n- Tasks MUST use checkbox format (`- [ ] **Task X.Y:**`), NOT markdown headers (`### Task X.Y:`)\n- Entrypoint, Observable, and Evidence MUST NOT be empty.\n- Do NOT use placeholders such as “N/A”.\n- If you cannot define Entrypoint, Observable, and Evidence for a task,\n  that task must not exist.\n\n## Code reference formatting in steps\n\n- File references: use relative path with suffix, wrapped in backticks — e.g., `src/i2code/implement/cli.py`\n- Location references: use relative path:linenumber, wrapped in backticks — e.g., `src/i2code/implement/cli.py:55`\n- Do NOT use bare filenames (e.g., `cli.py`) or separate \"(line N)\" annotations\n\n## Evidence requirements (IMPORTANT)\n\nEvidence is not a description of a test; it is a concrete command or test that proves\nthe Observable occurred **as a result of running the Entrypoint**.\n\nEvidence MUST follow these rules:\n\n- Evidence MUST invoke the Entrypoint.\n- Evidence MUST fail if the Entrypoint is not executed.\n- Evidence MUST validate the specific Observable stated for the task.\n- Evidence MUST NOT rely solely on checking existing state that could have been created earlier.\n\nFor stateful operations (files, directories, git branches, worktrees, PRs):\n\n- Evidence must show causality:\n  - run the Entrypoint\n  - then assert the expected state exists or changed\n- If idempotence is a requirement, Evidence must demonstrate it\n  (for example: running the Entrypoint twice does not create duplicates).\n\nInvalid Evidence examples:\n- Checking git state without invoking the Entrypoint\n- Unit tests of helper functions\n- Assertions that could pass even if the Entrypoint was never run\n\nValid Evidence examples:\n- `command && assert-state`\n- End-to-end tests that invoke the CLI and verify results\n\n---\n\n## Test-first task structure\n\n- Do NOT create separate “create test” tasks.\n- Each task implicitly includes:\n  - writing a failing test\n  - implementing code to make it pass\n- Name tasks by the observable outcome, not the implementation artifact.\n\n### Bad example:\n\n```\n- Task 1.1: Create init-ca.sh script\n- Task 1.2: Create stepca service\n- Task 1.3: Create test script\n```\n\n### Good example:\n\n```\n- Task 1.1: init-ca.sh creates CA and .env file\n- Task 1.2: stepca service starts and becomes healthy\n```\n\n---\n\n## No ambiguous alternatives in tasks or steps\n\nTasks and steps MUST NOT contain \"X or Y\", \"X (or Y)\", or \"X / Y\" alternatives.\nEvery decision must be resolved at plan-creation time so the coding agent has a\nsingle unambiguous action to take.\n\n- **Bad**: `Add re-export shim OR delete the old file if grep confirms no imports`\n- **Good**: `Delete the old file (grep confirms no remaining imports)`\n- **Bad**: `Write test in tests/foo/test_bar.py (or new tests/baz/test_bar.py)`\n- **Good**: `Write test in tests/baz/test_bar.py`\n- **Bad**: `Add function build_spec_prompt() (or similar) to prompt_builder.py`\n- **Good**: `Add function build_spec_prompt() to prompt_builder.py`\n\nIf you cannot decide between alternatives without more information, investigate\nfirst (e.g., grep for imports, check existing file structure) and then commit\nto one option.\n\n---\n\n## Task granularity guidelines\n\n- Meaningful tasks represent independently testable, deliverable units of functionality.\n- NOT standalone tasks: DTOs, helper classes, utility methods, config files.\n  - These MUST be listed only as steps under a task with a contract.\n- Good task: “Implement LocationController REST endpoint”\n- Bad task: “Create CreateLocationRequest DTO”\n- Heuristic: Would you make a separate git commit for just this task?\n  If not, it is not a standalone task.\n\n---\n\n## Goal\n\nThe final plan should be a sequence of steel threads, each with clearly defined\ntasks and steps that a coding LLM can follow to implement the idea incrementally,\nstarting from the initial setup thread through all chosen scenarios.\n\nTasks must be outcome-driven, testable via the entrypoint, and structured so\nthat unused code and unused tests cannot exist.\n\n---\n\n## Instructions section (MUST BE INCLUDED VERBATIM)\n\nEvery generated plan MUST include the following section at the top, after the\nIdea Type section, exactly as written:\n\n```markdown\n## Instructions for Coding Agent\n\n- IMPORTANT: Use simple commands that you have permission to execute. Avoid complex commands that may fail due to permission issues.\n\n### Required Skills\n\nUse these skills by invoking them before the relevant action:\n\n| Skill | When to Use |\n|-------|-------------|\n| `idea-to-code:plan-tracking` | ALWAYS - track task completion in the plan file |\n| `idea-to-code:tdd` | When implementing code - write failing tests first |\n| `idea-to-code:commit-guidelines` | Before creating any git commit |\n| `idea-to-code:incremental-development` | When writing multiple similar files (tests, classes, configs) |\n| `idea-to-code:testing-scripts-and-infrastructure` | When building shell scripts or test infrastructure |\n| `idea-to-code:dockerfile-guidelines` | When creating or modifying Dockerfiles |\n| `idea-to-code:file-organization` | When moving, renaming, or reorganizing files |\n| `idea-to-code:debugging-ci-failures` | When investigating CI build failures |\n| `idea-to-code:test-runner-java-gradle` | When running tests in Java/Gradle projects |\n\n### TDD Requirements\n\n- NEVER write production code (`src/main/java/**/*.java`) without first writing a failing test\n- Before using Write on any `.java` file in `src/main/`, ask: \"Do I have a failing test?\" If not, write the test first\n- When task direction changes mid-implementation, return to TDD PLANNING state and write a test first\n\n### Verification Requirements\n\n- Hard rule: NEVER git commit, git push, or open a PR unless you have successfully run the project's test command and it exits 0\n- Hard rule: If running tests is blocked for any reason (including permissions), ALWAYS STOP immediately. Print the failing command, the exact error output, and the permission/path required\n- Before committing, ALWAYS print a Verification section containing the exact test command (NOT an ad-hoc command - it must be a proper test command such as `./test-scripts/*.sh`, `./scripts/test.sh`, or `./gradlew build`/`./gradlew check`), its exit code, and the last 20 lines of output\n```",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "complete-task-blocks",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Every task block has TaskType, Entrypoint, Observable, Evidence and at least one step.\n\nA task block starts with a line like `- [ ] **Task X.Y: ...**`. PASS if every task block has a `TaskType:` line, an `Entrypoint:` line, an `Observable:` line, an `Evidence:` line, and a `Steps:` line followed by at least one `- [ ]` step. FAIL if any task block is missing one of these. Judge only whether the lines are present, not the quality of their content.",
+          "config": {
+            "criteria": "Every task block has TaskType, Entrypoint, Observable, Evidence and at least one step.\n\nA task block starts with a line like `- [ ] **Task X.Y: ...**`. PASS if every task block has a `TaskType:` line, an `Entrypoint:` line, an `Observable:` line, an `Evidence:` line, and a `Steps:` line followed by at least one `- [ ]` step. FAIL if any task block is missing one of these. Judge only whether the lines are present, not the quality of their content.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "hard-rule-line",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "last_message",
+            "pattern": "^- Hard rule: NEVER git commit, git push, or open a PR unless you have successfully run the project's test command and it exits 0",
+            "flags": "m",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "heading-idea-type",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "last_message",
+            "pattern": "^## Idea Type",
+            "flags": "m",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "heading-instructions-for-coding-agent",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "last_message",
+            "pattern": "^## Instructions for Coding Agent",
+            "flags": "m",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "valid-task-types",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "last_message",
+            "pattern": "TaskType:(?! (OUTCOME|INFRA|REFACTOR)\\s*$)",
+            "flags": "m",
+            "match": "not_contains"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.2,
+            "passed": false,
+            "turns": 4,
+            "costUsd": 0.236882,
+            "judgeCostUsd": 0.00009360000000000003,
+            "durationSeconds": 1066,
+            "startedAt": "2026-10-17T06:30:08.194Z",
+            "error": "timed out after 900s",
+            "tracePath": "/private/tmp/e-zrPYQv/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "complete-task-blocks",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ]
+              },
+              {
+                "name": "hard-rule-line",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in last_message",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-idea-type",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in last_message",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-instructions-for-coding-agent",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in last_message",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "valid-task-types",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.47955480000000006,
+            "judgeCostUsd": 0.0034968,
+            "durationSeconds": 112,
+            "startedAt": "2026-10-17T06:47:54.535Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-FKzpSU/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "complete-task-blocks",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ]
+              },
+              {
+                "name": "hard-rule-line",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^- Hard rule: NEVER git commit, git push, or open a PR unless you have successfully run the project's test command and it exits 0",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-idea-type",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^## Idea Type",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-instructions-for-coding-agent",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^## Instructions for Coding Agent",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "valid-task-types",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.2,
+            "passed": false,
+            "turns": 4,
+            "costUsd": 0.18095229999999998,
+            "judgeCostUsd": 0.00010230000000000005,
+            "durationSeconds": 922,
+            "startedAt": "2026-10-17T06:49:46.286Z",
+            "error": "timed out after 900s",
+            "tracePath": "/private/tmp/e-I6KLmr/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "complete-task-blocks",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ]
+              },
+              {
+                "name": "hard-rule-line",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in last_message",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-idea-type",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in last_message",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-instructions-for-coding-agent",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in last_message",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "valid-task-types",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.4666666666666666,
+        "passRate": 0.3333333333333333
+      }
+    },
+    {
+      "name": "create-spec",
+      "dir": "evals/baseline/create-spec",
+      "source": "mixed",
+      "promptMarkdown": "The following files contain the idea and discussion:\n\n- idea-file: @docs/ideas/active/eval-idea/eval-idea-idea.md\n- discussion-file: @docs/ideas/active/eval-idea/eval-idea-discussion.md\n\nNow that we've wrapped up the brainstorming process, compile our findings into a comprehensive, developer-ready specification.\nThis document will later serve as input to a steel-thread implementation plan, but in **this step you must NOT generate any plan**.\nYour output is the specification only.\n\nFirst, read the discussion-file and determine the idea type:\n\n- A. User-facing feature\n- B. Architecture POC\n- C. Platform/infrastructure capability\n- D. Educational/example repo\n\nThen, based on the type, produce the corresponding specification:\n\nA. If it is a **user-facing feature**, produce a PRD-style spec that includes:\n   - Purpose and background\n   - Target users and personas\n   - Problem statement and goals\n   - In-scope and out-of-scope\n   - High-level functional requirements\n   - **Security requirements** - For each endpoint/operation, specify:\n     - Who can perform this operation (role/persona)\n     - What authorization checks are required\n     - Any additional constraints (e.g., can only operate on own resources)\n   - Non-functional requirements (UX, performance, reliability, etc.)\n   - Success metrics\n   - Epics and user stories\n   - A set of user-facing scenarios appropriate for defining a later steel-thread plan\n     (identify the main end-to-end scenario, but do NOT generate a plan)\n\nB. If it is an **architecture POC**, produce an Architecture Validation Requirements document that includes:\n   - Architectural concern / risk being addressed\n   - Architectural goals (quality attributes such as security, performance, etc.)\n   - Required architectural capabilities\n   - Validation scenarios (quality attribute scenarios)\n   - One primary end-to-end thread the POC must demonstrate\n   - Identify any possible refinements to that thread (but do NOT generate steel-thread stages or a plan)\n   - Constraints and assumptions\n   - Acceptance criteria for declaring the POC successful\n\nC. If it is a **platform/infrastructure capability**, produce a Platform Capability Specification that includes:\n   - Purpose and context\n   - Consumers (teams, services, or systems that will use the platform capability)\n   - Capabilities and behaviors the platform must provide\n   - High-level APIs, contracts, or integration points\n   - Non-functional requirements and SLAs\n   - Scenarios and workflows (including one primary end-to-end scenario)\n     These prepare for a later steel-thread plan but do NOT create that plan.\n   - Constraints and assumptions\n   - Acceptance criteria\n\nD. If it is an **educational/example repo**, produce a Didactic Example Specification that includes:\n   - Learning goals\n   - Concepts and patterns the example must demonstrate\n   - End-to-end example flows\n   - Capabilities and constraints\n   - Scenarios that a user of the example should be able to run (including a primary scenario)\n     These scenarios support a later steel-thread plan but do NOT create that plan.\n\nOutput:\n\n- Save the specification as a markdown document in the same directory as the idea file.\n- Use the naming convention:\n  - For the idea file '<idea-name>-idea.md', call the specification file '<idea-name>-spec.md'.\n\n## Specification Quality Guidelines\n\n- **Be decisive** — A spec must not say \"do X or Y\". Every decision point needs a single answer. If something is undecided, resolve it during discussion before it enters the spec.\n- **Be concrete** — Don't use vague placeholders or internal jargon without explanation. Reference actual values, formats, and names from the existing codebase. For example, specify the exact payload format a template produces, not \"add a payload description\".\n\n## Specification Update Guidelines\n\nWhen modifying a specification after initial creation:\n\n1. Add or update the `## Change History` section at the end of the document\n2. For each change, record:\n   - Date of change\n   - Brief description of what changed\n   - Rationale for the change\n3. Format: `### YYYY-MM-DD: <brief description>`\n\nThis ensures specifications maintain an audit trail of how requirements evolved.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "decisive-no-plan",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Every decision point has a single answer; the document never offers 'X or Y' alternatives and contains no implementation plan.",
+          "config": {
+            "criteria": "Every decision point has a single answer; the document never offers 'X or Y' alternatives and contains no implementation plan.",
+            "focus": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-spec.md"
+            }
+          }
+        },
+        {
+          "name": "heading-acceptance-criteria",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-spec.md"
+            },
+            "pattern": "^#{1,6} .*Acceptance criteria",
+            "flags": "mi",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "heading-apis-contracts-integration",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-spec.md"
+            },
+            "pattern": "^#{1,6} .*(API|contract|integration)",
+            "flags": "mi",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "heading-capabilities",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-spec.md"
+            },
+            "pattern": "^#{1,6} .*Capabilities",
+            "flags": "mi",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "heading-constraints-and-assumptions",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-spec.md"
+            },
+            "pattern": "^#{1,6} .*Constraints and assumptions",
+            "flags": "mi",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "heading-consumers",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-spec.md"
+            },
+            "pattern": "^#{1,6} .*Consumers",
+            "flags": "mi",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "heading-non-functional",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-spec.md"
+            },
+            "pattern": "^#{1,6} .*Non-functional",
+            "flags": "mi",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "heading-purpose-and-context",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-spec.md"
+            },
+            "pattern": "^#{1,6} .*Purpose and context",
+            "flags": "mi",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "heading-scenarios",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-spec.md"
+            },
+            "pattern": "^#{1,6} .*Scenarios",
+            "flags": "mi",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "spec-exists",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "docs/ideas/active/eval-idea/eval-idea-spec.md",
+            "exists": true
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.9,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.4118026,
+            "judgeCostUsd": 0.00283,
+            "durationSeconds": 110,
+            "startedAt": "2026-10-17T07:05:08.311Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-c7f9aP/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "decisive-no-plan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL — note: long file (15935 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ]
+              },
+              {
+                "name": "heading-acceptance-criteria",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Acceptance criteria",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-apis-contracts-integration",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*(API|contract|integration)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-capabilities",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Capabilities",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-constraints-and-assumptions",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Constraints and assumptions",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-consumers",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Consumers",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-non-functional",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Non-functional",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-purpose-and-context",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Purpose and context",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-scenarios",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Scenarios",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "spec-exists",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/ideas/active/eval-idea/eval-idea-spec.md exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.1149156,
+            "judgeCostUsd": 0,
+            "durationSeconds": 991,
+            "startedAt": "2026-10-17T07:06:57.930Z",
+            "error": "timed out after 900s",
+            "tracePath": "/private/tmp/e-llTaFr/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "decisive-no-plan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-acceptance-criteria",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-apis-contracts-integration",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-capabilities",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-constraints-and-assumptions",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-consumers",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-non-functional",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-purpose-and-context",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-scenarios",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"create-spec\" grader focus file \"docs/ideas/active/eval-idea/eval-idea-spec.md\": path \"docs/ideas/active/eval-idea/eval-idea-spec.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "spec-exists",
+                "passed": false,
+                "weight": 1,
+                "explanation": "docs/ideas/active/eval-idea/eval-idea-spec.md missing (expected present)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.9,
+            "passed": false,
+            "turns": 4,
+            "costUsd": 0.4157017,
+            "judgeCostUsd": 0.0031238999999999998,
+            "durationSeconds": 115,
+            "startedAt": "2026-10-17T07:23:28.669Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-j5SV5U/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "decisive-no-plan",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL — note: long file (18334 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ]
+              },
+              {
+                "name": "heading-acceptance-criteria",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Acceptance criteria",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-apis-contracts-integration",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*(API|contract|integration)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-capabilities",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Capabilities",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-constraints-and-assumptions",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Constraints and assumptions",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-consumers",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Consumers",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-non-functional",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Non-functional",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-purpose-and-context",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Purpose and context",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "heading-scenarios",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^#{1,6} .*Scenarios",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "spec-exists",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/ideas/active/eval-idea/eval-idea-spec.md exists as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.6,
+        "passRate": 0
+      }
+    },
+    {
+      "name": "revise-plan",
+      "dir": "evals/baseline/revise-plan",
+      "source": "mixed",
+      "promptMarkdown": "I want to revise the implementation plan for this application:\n\n* Idea - @docs/ideas/active/eval-idea/eval-idea-idea.md\n* Specification - @docs/ideas/active/eval-idea/eval-idea-spec.md\n* Implementation plan - @docs/ideas/active/eval-idea/eval-idea-plan.md\n\nFollow the plan-file-management skill for structural operations (inserting, deleting, reordering threads/tasks, and fixing numbering).\n\nWhen revising, also resolve any \"X or Y\" / \"X (or Y)\" alternatives in tasks or steps — every decision must be committed to a single action, not left ambiguous for the coding agent.\n\nYou must record any changes to the plan requested during a conversation in the ## Change History section.\n\nChange the plan: add a task to the last steel thread that adds a README section describing how to run the evals.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "change-history-entry",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-plan.md"
+            },
+            "pattern": "^## Change History[ \\t]*\\n\\s*\\S",
+            "flags": "m",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "complete-task-blocks",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "Every task block has TaskType, Entrypoint, Observable, Evidence and at least one step.\n\nA task block starts with a line like `- [ ] **Task X.Y: ...**`. PASS if every task block has a `TaskType:` line, an `Entrypoint:` line, an `Observable:` line, an `Evidence:` line, and a `Steps:` line followed by at least one `- [ ]` step. FAIL if any task block is missing one of these. Judge only whether the lines are present, not the quality of their content.",
+          "config": {
+            "criteria": "Every task block has TaskType, Entrypoint, Observable, Evidence and at least one step.\n\nA task block starts with a line like `- [ ] **Task X.Y: ...**`. PASS if every task block has a `TaskType:` line, an `Entrypoint:` line, an `Observable:` line, an `Evidence:` line, and a `Steps:` line followed by at least one `- [ ]` step. FAIL if any task block is missing one of these. Judge only whether the lines are present, not the quality of their content.",
+            "focus": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-plan.md"
+            }
+          }
+        },
+        {
+          "name": "valid-task-types",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-plan.md"
+            },
+            "pattern": "TaskType:(?! (OUTCOME|INFRA|REFACTOR)\\s*$)",
+            "flags": "m",
+            "match": "not_contains"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.23412980000000003,
+            "judgeCostUsd": 0.00028859999999999823,
+            "durationSeconds": 39,
+            "startedAt": "2026-10-17T07:25:23.765Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-fX6bIK/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "change-history-entry",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in file docs/ideas/active/eval-idea/eval-idea-plan.md",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "complete-task-blocks",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ]
+              },
+              {
+                "name": "valid-task-types",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 10,
+            "costUsd": 0.2611378,
+            "judgeCostUsd": 0.00028859999999999823,
+            "durationSeconds": 58,
+            "startedAt": "2026-10-17T07:26:03.215Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-owltjA/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "change-history-entry",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in file docs/ideas/active/eval-idea/eval-idea-plan.md",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "complete-task-blocks",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ]
+              },
+              {
+                "name": "valid-task-types",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 11,
+            "costUsd": 0.2669752,
+            "judgeCostUsd": 0.00032659999999999807,
+            "durationSeconds": 51,
+            "startedAt": "2026-10-17T07:27:01.516Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-DE6V9G/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "change-history-entry",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in file docs/ideas/active/eval-idea/eval-idea-plan.md",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "complete-task-blocks",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ]
+              },
+              {
+                "name": "valid-task-types",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.6666666666666666,
+        "passRate": 0
+      }
+    },
+    {
+      "name": "revise-spec",
+      "dir": "evals/baseline/revise-spec",
+      "source": "mixed",
+      "promptMarkdown": "Here are three files:\n\n* docs/ideas/active/eval-idea/eval-idea-idea.md - the file containing the idea description\n* docs/ideas/active/eval-idea/eval-idea-discussion.md - the file where questions and answers were saved when brainstorming the idea\n* docs/ideas/active/eval-idea/eval-idea-spec.md  - a comprehensive, developer-ready specification that was generated as a result of brainstorming\n\nI will ask you to make changes to the specification\n\nChange the specification: add a non-functional requirement that a full eval run costs at most USD 25.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "change-history-entry",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "docs/ideas/active/eval-idea/eval-idea-spec.md"
+            },
+            "pattern": "## Change History\\s+(.|\\n)*### \\d{4}-\\d{2}-\\d{2}: ",
+            "flags": "",
+            "match": "contains"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.14679319999999998,
+            "judgeCostUsd": 0,
+            "durationSeconds": 22,
+            "startedAt": "2026-10-17T07:27:52.865Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-U1aMwn/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "change-history-entry",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in file docs/ideas/active/eval-idea/eval-idea-spec.md",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 3,
+            "costUsd": 0.129913,
+            "judgeCostUsd": 0,
+            "durationSeconds": 18,
+            "startedAt": "2026-10-17T07:28:14.853Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-Gf7MMg/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "change-history-entry",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in file docs/ideas/active/eval-idea/eval-idea-spec.md",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 3,
+            "costUsd": 0.1255588,
+            "judgeCostUsd": 0,
+            "durationSeconds": 14,
+            "startedAt": "2026-10-17T07:28:32.770Z",
+            "error": null,
+            "tracePath": "/private/tmp/e-ThPi1a/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "change-history-entry",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in file docs/ideas/active/eval-idea/eval-idea-spec.md",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0,
+        "passRate": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 4,
+    "casesPassed": 0,
+    "overallScore": 0.43333333333333335,
+    "overallPassRate": 0.08333333333333333
+  }
+}

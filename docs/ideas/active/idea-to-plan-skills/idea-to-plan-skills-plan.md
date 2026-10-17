@@ -99,16 +99,16 @@ Decisions made at plan time:
     - [x] Run `claude plugin validate --strict claude-code-plugins/idea-to-code` and confirm the `evals/` directory passes the pre-commit plugin validation
     - [x] Do not add the script to `test-scripts/test-end-to-end.sh`, `test-scripts/test-all.sh` or `.github/workflows/ci.yml`
 
-- [ ] **Task 2.3: test-plugin-evals.sh --baseline runs the frozen baseline suite and commits its aggregate result**
+- [x] **Task 2.3: test-plugin-evals.sh --baseline runs the frozen baseline suite and commits its aggregate result**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-plugin-evals.sh --baseline`
   - Observable: The script runs `claude plugin eval` with `--eval-dir evals/baseline` and the same flags, without re-rendering prompts. It copies the run's `aggregate-result.json` to `claude-code-plugins/idea-to-code/evals/baseline-results/aggregate-result.json`. The frozen prompts in `claude-code-plugins/idea-to-code/evals/baseline/<case>/prompt.md` contain the current templates' text, including `@` references and the inline idea types.
   - Evidence: Delete `claude-code-plugins/idea-to-code/evals/baseline-results/aggregate-result.json` if it exists, then run `./test-scripts/test-plugin-evals.sh --baseline`. The file is recreated and lists the four cases. `revise-spec` is expected to score below 1.0, so a non-zero exit code is recorded, not treated as a failure.
   - Steps:
-    - [ ] Freeze the baseline: run `uv run python test-scripts/render_eval_prompts.py claude-code-plugins/idea-to-code/evals/baseline`, then copy each case's `case.yaml` and `graders/*.md` from `evals/skills/<case>/` into `evals/baseline/<case>/` one file at a time
-    - [ ] Add the `--baseline` option to `test-scripts/test-plugin-evals.sh`: skip rendering, use `--eval-dir evals/baseline`, and copy `aggregate-result.json` to `evals/baseline-results/`
-    - [ ] Run the baseline and commit `evals/baseline/` and `evals/baseline-results/aggregate-result.json` before any template in `src/i2code/prompt-templates/` changes
-    - [ ] Record each baseline case's score in the commit message
+    - [x] Freeze the baseline: run `uv run python test-scripts/render_eval_prompts.py claude-code-plugins/idea-to-code/evals/baseline`, then copy each case's `case.yaml` and `graders/*.md` from `evals/skills/<case>/` into `evals/baseline/<case>/` one file at a time
+    - [x] Add the `--baseline` option to `test-scripts/test-plugin-evals.sh`: skip rendering, use `--eval-dir evals/baseline`, and copy `aggregate-result.json` to `evals/baseline-results/`
+    - [x] Run the baseline and commit `evals/baseline/` and `evals/baseline-results/aggregate-result.json` before any template in `src/i2code/prompt-templates/` changes
+    - [x] Record each baseline case's score in the commit message
 
 ---
 
@@ -258,3 +258,6 @@ Decisions made at plan time:
 - The revise-plan Change History grader matches `^## Change History[ \t]*\n\s*\S` instead of `^## Change History`. The fixture plan already ends with an empty `## Change History` heading, so the spec's pattern passed even when the run added no entry.
 - The two `complete-task-blocks` llm graders keep the spec's rubric sentence and add explicit PASS and FAIL conditions. With the bare sentence, the haiku judge voted FAIL on the unchanged fixture plan, whose task blocks are all complete.
 - Each case's `case.yaml` sets `execution.timeout_seconds: 900` instead of the default 300, because single create-spec and create-plan runs took about 110 and 120 seconds. One create-spec run in the first full run still timed out at 900 seconds.
+
+### 2026-10-17 16:29 - mark-task-complete
+Froze evals/baseline (prompts, case.yaml, scaffold.sh, graders), added --baseline to test-plugin-evals.sh and committed the first baseline aggregate result. scaffold.sh is copied too because case.yaml names it as the scaffold_script.

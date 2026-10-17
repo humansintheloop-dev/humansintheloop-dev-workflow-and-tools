@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: create-plan
+description: create-plan returns a steel-thread plan for the eval idea in its final message
+execution:
+  timeout_seconds: 900
+context:
+  scaffold_script: scaffold.sh

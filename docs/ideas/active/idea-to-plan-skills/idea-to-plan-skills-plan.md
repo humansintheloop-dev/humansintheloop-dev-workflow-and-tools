@@ -192,19 +192,19 @@ Decisions made at plan time:
 
 ## Steel Thread 8: create-plan through the create-plan and plan-format skills
 
-- [ ] **Task 8.1: i2code plan create renders a skill-based prompt and the plan contains the Instructions block**
+- [x] **Task 8.1: i2code plan create renders a skill-based prompt and the plan contains the Instructions block**
   - TaskType: OUTCOME
   - Entrypoint: `create_plan()` in `src/i2code/go_cmd/create_plan.py`, reached by `i2code plan create <idea-dir>`
   - Observable: The create prompt contains `project.directory`, `idea-to-code:idea-organization`, `idea-to-code:create-plan`, `idea-to-code:plan-format`, `## Skills to Follow` with the plugin skill list, and the stdout mechanics. It contains no `@`, `## General principles`, `## Task 1.1 Requirements`, `TaskType: OUTCOME | INFRA | REFACTOR` or `Architecture POC`. The plan Claude returns has `## Idea Type`, `## Instructions for Coding Agent` and the `Hard rule: NEVER git commit` line. Every `TaskType:` line is `OUTCOME`, `INFRA` or `REFACTOR`. The `create-plan` eval case scores 1.0.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/test_create_plan.py -v -m unit` passes. `TestCreatePlanTemplateRendering` (`tests/go-cmd/test_create_plan.py:137`) asserts the included and excluded strings above against the prompt rendered by the real `render_template`. Then `./test-scripts/test-plugin-evals.sh --case create-plan` shows `create-plan` at 1.0.
   - Steps:
-    - [ ] Update `tests/go-cmd/test_create_plan.py:137` with a test that uses the real `render_template` and asserts the strings above, and confirm it fails
-    - [ ] Create `claude-code-plugins/idea-to-code/skills/plan-format/SKILL.md` per spec section 3.4. It contains: the plan skeleton (`# Implementation Plan:`, `## Idea Type`, `## Instructions for Coding Agent`, `## Overview`, steel threads, `## Change History`); the task model and task types moved from `src/i2code/prompt-templates/create-implementation-plan.md:207`–`275`; the steel thread heading format; the task structure; the rules moved from `:316`–`405`; the Instructions for Coding Agent block copied verbatim from `:426`–`456`, with the instruction that every plan contains it unchanged after `## Idea Type`; and the revision rules
-    - [ ] Create `claude-code-plugins/idea-to-code/skills/create-plan/SKILL.md` per spec section 3.6. It contains: inputs (read the type from the discussion `**Type:**` line); the sections moved from `create-implementation-plan.md:39`–`203` and `:409`–`416` (Implementation context, Analyze existing code, General principles with Incremental build-up, Task 1.1 Requirements, Goal); and "the plan follows `plan-format`". It does not say where the plan is written.
-    - [ ] Add `./skills/create-plan` and `./skills/plan-format` to `claude-code-plugins/idea-to-code/.claude-plugin/plugin.json`
-    - [ ] Reduce `src/i2code/prompt-templates/create-implementation-plan.md` to: the idea directory `${IDEA_DIRECTORY}`, "Use `idea-to-code:idea-organization`, `idea-to-code:create-plan` and `idea-to-code:plan-format`", `## Skills to Follow` with `${PLAN_SKILLS}`, and the stdout mechanics now at `:12`–`15`
-    - [ ] Change `src/i2code/go_cmd/create_plan.py:64` to pass `{"IDEA_DIRECTORY": project.directory, "PLAN_SKILLS": skills}`
-    - [ ] Run `./test-scripts/test-plugin-evals.sh --case create-plan` and confirm `create-plan` scores 1.0
+    - [x] Update `tests/go-cmd/test_create_plan.py:137` with a test that uses the real `render_template` and asserts the strings above, and confirm it fails
+    - [x] Create `claude-code-plugins/idea-to-code/skills/plan-format/SKILL.md` per spec section 3.4. It contains: the plan skeleton (`# Implementation Plan:`, `## Idea Type`, `## Instructions for Coding Agent`, `## Overview`, steel threads, `## Change History`); the task model and task types moved from `src/i2code/prompt-templates/create-implementation-plan.md:207`–`275`; the steel thread heading format; the task structure; the rules moved from `:316`–`405`; the Instructions for Coding Agent block copied verbatim from `:426`–`456`, with the instruction that every plan contains it unchanged after `## Idea Type`; and the revision rules
+    - [x] Create `claude-code-plugins/idea-to-code/skills/create-plan/SKILL.md` per spec section 3.6. It contains: inputs (read the type from the discussion `**Type:**` line); the sections moved from `create-implementation-plan.md:39`–`203` and `:409`–`416` (Implementation context, Analyze existing code, General principles with Incremental build-up, Task 1.1 Requirements, Goal); and "the plan follows `plan-format`". It does not say where the plan is written.
+    - [x] Add `./skills/create-plan` and `./skills/plan-format` to `claude-code-plugins/idea-to-code/.claude-plugin/plugin.json`
+    - [x] Reduce `src/i2code/prompt-templates/create-implementation-plan.md` to: the idea directory `${IDEA_DIRECTORY}`, "Use `idea-to-code:idea-organization`, `idea-to-code:create-plan` and `idea-to-code:plan-format`", `## Skills to Follow` with `${PLAN_SKILLS}`, and the stdout mechanics now at `:12`–`15`
+    - [x] Change `src/i2code/go_cmd/create_plan.py:64` to pass `{"IDEA_DIRECTORY": project.directory, "PLAN_SKILLS": skills}`
+    - [x] Run `./test-scripts/test-plugin-evals.sh --case create-plan` and confirm `create-plan` scores 1.0
 
 - [ ] **Task 8.2: The repair prompt names plan-format and no longer restates the task format**
   - TaskType: OUTCOME

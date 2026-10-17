@@ -62,8 +62,7 @@ def create_plan(project: IdeaProject, claude_runner, services: PlanServices, *, 
 
     skills = services.plugin_skills_fn()
     rendered_prompt = services.template_renderer("create-implementation-plan.md", {
-        "IDEA_FILE": project.idea_file,
-        "SPEC_FILE": project.spec_file,
+        "IDEA_DIRECTORY": project.directory,
         "PLAN_SKILLS": skills,
     })
 

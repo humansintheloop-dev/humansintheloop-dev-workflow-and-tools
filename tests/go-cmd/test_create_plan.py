@@ -11,6 +11,7 @@ from i2code.implement.claude_runner import ClaudeCodeCommand, ClaudeResult
 from i2code.implement.idea_project import IdeaProject
 from i2code.go_cmd.create_plan import PlanServices, create_plan
 from i2code.go_cmd.plan_validator import validate_plan
+from i2code.template_renderer import render_template
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "implement"))
 from fake_claude_runner import FakeClaudeRunner
@@ -134,19 +135,46 @@ class TestCreatePlanValidation:
             assert len(runner.calls) == 0
 
 
+PLUGIN_SKILLS = "idea-to-code:tdd, idea-to-code:commit-guidelines"
+
+
+def _real_renderer_services():
+    return PlanServices(
+        template_renderer=render_template,
+        plugin_skills_fn=lambda: PLUGIN_SKILLS,
+        validator_fn=lambda text: (True, []),
+    )
+
+
 @pytest.mark.unit
 class TestCreatePlanTemplateRendering:
 
-    def test_renders_template_with_idea_spec_and_skills(self):
+    def _rendered_prompt(self, project):
+        runner = _run_create_plan(project, services=_real_renderer_services())
+        command = runner.calls[0][1]
+        assert isinstance(command, ClaudeCodeCommand)
+        return command.prompt or ""
+
+    def test_prompt_names_idea_directory_skills_and_stdout_mechanics(self):
         with TempIdeaProject("my-feature") as project:
-            runner = _run_create_plan(project)
-            command = runner.calls[0][1]
-            assert isinstance(command, ClaudeCodeCommand)
-            prompt = command.prompt or ""
-            assert "create-implementation-plan.md" in prompt
-            assert project.idea_file in prompt
-            assert project.spec_file in prompt
-            assert "idea-to-code:tdd" in prompt
+            prompt = self._rendered_prompt(project)
+            assert project.directory in prompt
+            assert "idea-to-code:idea-organization" in prompt
+            assert "idea-to-code:create-plan" in prompt
+            assert "idea-to-code:plan-format" in prompt
+            assert "## Skills to Follow" in prompt
+            assert PLUGIN_SKILLS in prompt
+            assert "Output the plan to stdout in MARKDOWN format only." in prompt
+            assert "DO NOT use the Write tool or Edit tool" in prompt
+
+    def test_prompt_omits_planning_method_moved_to_skills(self):
+        with TempIdeaProject("my-feature") as project:
+            prompt = self._rendered_prompt(project)
+            assert "@" not in prompt
+            assert "## General principles" not in prompt
+            assert "## Task 1.1 Requirements" not in prompt
+            assert "TaskType: OUTCOME | INFRA | REFACTOR" not in prompt
+            assert "Architecture POC" not in prompt
 
 
 @pytest.mark.unit

@@ -57,16 +57,18 @@ Decisions made at plan time:
 
 ## Steel Thread 1: Existing build and CI pass
 
-- [ ] **Task 1.1: The existing test suite passes on master before any change**
+- [x] **Task 1.1: The existing test suite passes on master before any change**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-end-to-end.sh`
   - Observable: The script exits 0 and prints `=== All Tests Passed ===`
   - Evidence: Run `./test-scripts/test-end-to-end.sh` with output redirected to `logs/test-end-to-end.log` (per `idea-to-code:test-output-to-logfile`); it exits 0 and the log ends with `=== All Tests Passed ===`
   - Steps:
-    - [ ] Run `./test-scripts/test-end-to-end.sh` and confirm it exits 0
-    - [ ] Run `uvx pyright --level error src/` and confirm it reports no errors
-    - [ ] Run `claude plugin validate --strict claude-code-plugins/idea-to-code` and confirm it passes
-    - [ ] Confirm `.github/workflows/ci.yml` runs `./test-scripts/test-end-to-end.sh` in the `test` job. CI already exists, so do not create it
+    - [x] Run `./test-scripts/test-end-to-end.sh` and confirm it exits 0
+    - [x] Run `uvx pyright --level error src/` and confirm it reports no errors
+    - [x] Run `claude plugin validate --strict claude-code-plugins/idea-to-code` and confirm it passes
+    - [x] Confirm `.github/workflows/ci.yml` runs `./test-scripts/test-end-to-end.sh` in the `test` job. CI already exists, so do not create it
+
+---
 
 ## Steel Thread 2: Eval suite and frozen baseline for the current templates
 
@@ -108,6 +110,8 @@ Decisions made at plan time:
     - [ ] Run the baseline and commit `evals/baseline/` and `evals/baseline-results/aggregate-result.json` before any template in `src/i2code/prompt-templates/` changes
     - [ ] Record each baseline case's score in the commit message
 
+---
+
 ## Steel Thread 3: The plan validator rejects TaskType values outside OUTCOME, INFRA and REFACTOR
 
 - [ ] **Task 3.1: create-plan reports an invalid TaskType and passes it to the repair pass**
@@ -122,6 +126,8 @@ Decisions made at plan time:
     - [ ] Replace every `--task-type <INFRA|OUTCOME>` in `claude-code-plugins/idea-to-code/skills/plan-file-management/SKILL.md` (lines 138, 148, 188) with `--task-type <OUTCOME|INFRA|REFACTOR>`
     - [ ] Grep the whole repository for `INFRA or OUTCOME` and `INFRA|OUTCOME` and fix every remaining occurrence in the same commit
 
+---
+
 ## Steel Thread 4: IdeaProject stores an absolute directory
 
 - [ ] **Task 4.1: A relative idea path gives absolute directory and file paths**
@@ -133,6 +139,8 @@ Decisions made at plan time:
     - [ ] Write the failing test in `tests/implement/test_idea_project.py`
     - [ ] Store `os.path.abspath(directory)` in `IdeaProject.__init__` (`src/i2code/implement/idea_project.py:19`)
     - [ ] Run `./test-scripts/test-unit.sh` and fix any test that compared `project.directory` with a relative path
+
+---
 
 ## Steel Thread 5: idea-organization skill kept in step with IdeaProject
 
@@ -147,6 +155,8 @@ Decisions made at plan time:
     - [ ] Add `./skills/idea-organization` to `skills` in `claude-code-plugins/idea-to-code/.claude-plugin/plugin.json`
     - [ ] Update `claude-code-plugins/idea-to-code/skills/write-idea/SKILL.md:9` and step 2 (`:17`) to refer to `idea-to-code:idea-organization` for the directory layout and metadata instead of restating them
     - [ ] Run `claude plugin validate --strict claude-code-plugins/idea-to-code`
+
+---
 
 ## Steel Thread 6: create-spec through the write-spec skill
 
@@ -163,6 +173,8 @@ Decisions made at plan time:
     - [ ] Change `src/i2code/spec_cmd/create_spec.py:36` to pass only `{"IDEA_DIRECTORY": project.directory}`
     - [ ] Run `./test-scripts/test-plugin-evals.sh` and confirm `create-spec` scores 1.0. If it does not, revise the skill and template and rerun before committing.
 
+---
+
 ## Steel Thread 7: revise-spec records Change History
 
 - [ ] **Task 7.1: i2code spec revise renders revise-spec.md naming the write-spec skill**
@@ -175,6 +187,8 @@ Decisions made at plan time:
     - [ ] Create `src/i2code/prompt-templates/revise-spec.md` with `${IDEA_DIRECTORY}`, the two skill names and `I will ask you to make changes to the specification`
     - [ ] Replace the inline prompt in `src/i2code/spec_cmd/revise_spec.py:35` with `render_template("revise-spec.md", {"IDEA_DIRECTORY": project.directory})`, and update the module docstring
     - [ ] Run `./test-scripts/test-plugin-evals.sh` and confirm `revise-spec` scores 1.0
+
+---
 
 ## Steel Thread 8: create-plan through the create-plan and plan-format skills
 
@@ -201,6 +215,8 @@ Decisions made at plan time:
     - [ ] Write the failing test in `tests/go-cmd/test_create_plan.py`
     - [ ] Reduce `src/i2code/prompt-templates/repair-plan.md` to: "Use `idea-to-code:plan-format`", the repair constraints (fix only the listed errors, no new threads, preserve numbering, resolve "X or Y" alternatives, full plan on stdout, no commentary), `$VALIDATION_ERRORS` and `$PLAN_TEXT`. Remove the restated task format at `:9`–`17`.
 
+---
+
 ## Steel Thread 9: revise-plan keeps the task format
 
 - [ ] **Task 9.1: i2code plan revise renders a skill-based prompt and the revised plan keeps the format**
@@ -214,6 +230,8 @@ Decisions made at plan time:
     - [ ] Change `src/i2code/go_cmd/revise_plan.py:30` to pass only `{"IDEA_DIRECTORY": project.directory}`
     - [ ] Run `./test-scripts/test-plugin-evals.sh`; it exits 0 with all four cases at 1.0
     - [ ] Add a README section that describes how to run `./test-scripts/test-plugin-evals.sh`, `--baseline` and `EVAL_MAX_COST_USD`
+
+---
 
 ## Steel Thread 10: brainstorm through the brainstorm-idea skill
 
@@ -230,5 +248,7 @@ Decisions made at plan time:
     - [ ] Change `src/i2code/idea_cmd/brainstorm.py:83` to pass only `{"IDEA_DIRECTORY": project.directory}`
     - [ ] Grep `src/` and `tests/` for `IDEA_FILE`, `DISCUSSION_FILE`, `SPEC_FILE` and `PLAN_WITHOUT_STORIES_FILE` and remove every remaining use from the section-3.5 templates and their call sites
     - [ ] Run `./test-scripts/test-end-to-end.sh`, `uvx pyright --level error src/` and `claude plugin validate --strict claude-code-plugins/idea-to-code`, and confirm all pass
+
+---
 
 ## Change History

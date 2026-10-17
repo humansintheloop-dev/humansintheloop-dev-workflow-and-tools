@@ -20,7 +20,7 @@ This POC validates that a Spring Boot application can securely communicate with 
 
 - Docker Compose deployment environment
 - Apache Kafka with KRaft mode (no Zookeeper)
-- Builds on patterns from `~/src/smallstep-cert-example`
+- Builds on patterns from `~/project/smallstep-cert-example`
 - PEM certificates with Spring Boot SSL Bundles
 - Simple JSON message format
 

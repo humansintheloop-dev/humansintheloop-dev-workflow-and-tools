@@ -166,10 +166,10 @@ Renumber all threads and tasks sequentially. Takes no options beyond the plan fi
 [source,shell]
 ----
 # Create a plan from an existing spec
-i2code plan create ~/ideas/my-app
+i2code plan create ~/project/ideas/my-app
 
 # Revise an existing plan
-i2code plan revise ~/ideas/my-app
+i2code plan revise ~/project/ideas/my-app
 
 # Get the next uncompleted task
 i2code plan get-next-task path/to/plan.md

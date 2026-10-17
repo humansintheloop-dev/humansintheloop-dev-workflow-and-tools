@@ -74,7 +74,7 @@ NOTE: The `plan` group also includes plan-file-management subcommands used by th
 
 [source,bash]
 ----
-i2code go ~/ideas/my-app
+i2code go ~/project/ideas/my-app
 ----
 
 The orchestrator detects your current workflow state, presents appropriate options at each step, and guides you through the entire process interactively.
@@ -84,14 +84,14 @@ The orchestrator detects your current workflow state, presents appropriate optio
 [source,bash]
 ----
 # 1. Brainstorm your idea
-i2code idea brainstorm ~/ideas/my-app
+i2code idea brainstorm ~/project/ideas/my-app
 
 # 2. Create specification
-i2code spec create ~/ideas/my-app
+i2code spec create ~/project/ideas/my-app
 
 # 3. Create implementation plan
-i2code plan create ~/ideas/my-app
+i2code plan create ~/project/ideas/my-app
 
 # 4. Implement the plan
-i2code implement ~/ideas/my-app
+i2code implement ~/project/ideas/my-app
 ----

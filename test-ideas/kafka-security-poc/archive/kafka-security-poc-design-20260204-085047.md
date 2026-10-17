@@ -13,7 +13,7 @@ This POC validates that a Spring Boot application can securely communicate with 
 
 1. Demonstrate mTLS authentication between Spring Boot and Kafka
 2. Prove ACL enforcement blocks unauthorized clients (valid cert, wrong CN)
-3. Build on existing Smallstep certificate infrastructure patterns from `~/src/smallstep-cert-example`
+3. Build on existing Smallstep certificate infrastructure patterns from `~/project/smallstep-cert-example`
 4. Provide a reusable pattern for secure Kafka deployments
 
 ### Constraints

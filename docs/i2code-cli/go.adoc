@@ -58,7 +58,7 @@ If a step fails, the orchestrator presents two options:
 
 [source,shell]
 ----
-i2code go ~/ideas/my-feature
+i2code go ~/project/ideas/my-feature
 ----
 
 == See Also

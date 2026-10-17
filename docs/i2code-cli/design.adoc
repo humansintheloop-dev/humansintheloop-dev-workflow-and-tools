@@ -40,7 +40,7 @@ The `create` subcommand generates a design document based on an existing specifi
 
 [source,shell]
 ----
-i2code design create ~/ideas/my-app
+i2code design create ~/project/ideas/my-app
 ----
 
 == See Also

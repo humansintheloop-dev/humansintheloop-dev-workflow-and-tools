@@ -52,7 +52,7 @@ A Markdown file capturing the full brainstorming discussion.
 
 [source,shell]
 ----
-i2code idea brainstorm ~/ideas/my-new-idea
+i2code idea brainstorm ~/project/ideas/my-new-idea
 ----
 
 == See Also

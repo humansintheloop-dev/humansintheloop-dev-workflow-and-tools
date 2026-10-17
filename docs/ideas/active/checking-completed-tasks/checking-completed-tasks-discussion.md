@@ -99,7 +99,7 @@ Reference: `src/i2code/implement/git_repository.py:140-189`,
   (`isolate_mode.py:96-107`). The clone's origin is the GitHub remote.
 
   How the isolated process sees the clone directory depends on the backend
-  (per `~/src/isolarium/README.md` and source):
+  (per `~/project/isolarium/README.md` and source):
 
   - **nono**: command runs on the host with syscall-level sandboxing. The
     host's clone directory IS the agent's working tree (read-write). After the

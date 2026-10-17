@@ -70,8 +70,8 @@ The `revise` subcommand updates an existing specification in place.
 
 [source,shell]
 ----
-i2code spec create ~/ideas/my-app
-i2code spec revise ~/ideas/my-app
+i2code spec create ~/project/ideas/my-app
+i2code spec revise ~/project/ideas/my-app
 ----
 
 == See Also

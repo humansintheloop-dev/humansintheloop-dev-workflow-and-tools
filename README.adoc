@@ -45,10 +45,10 @@ To use this workflow simply run `i2code go`:
 
 [source,bash]
 ----
-i2code go ~/ideas/some-feature
+i2code go ~/project/ideas/some-feature
 ----
 
-where `~/ideas/some-feature` is a directory that will contain the idea, spec, and implementation plan.
+where `~/project/ideas/some-feature` is a directory that will contain the idea, spec, and implementation plan.
 
 The workflow creates the following files in that directory:
 

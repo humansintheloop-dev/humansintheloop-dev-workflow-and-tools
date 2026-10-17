@@ -65,7 +65,7 @@ CASES = [
     EvalCase(
         "revise-spec",
         lambda project, runner: revise_spec(project, runner),
-        "Change the specification: add a non-functional requirement that a full eval run costs at most USD 25.",
+        "Change the specification: add a non-functional requirement that an uncached badge response is returned in under 500 ms.",
     ),
     EvalCase(
         "create-plan",
@@ -78,7 +78,7 @@ CASES = [
     EvalCase(
         "revise-plan",
         lambda project, runner: revise_plan(project, runner, render_template),
-        "Change the plan: add a task to the last steel thread that adds a README section describing how to run the evals.",
+        "Change the plan: add a task to the last steel thread that returns a grey `unknown` badge when the GitHub API rate limit is exceeded.",
     ),
 ]
 

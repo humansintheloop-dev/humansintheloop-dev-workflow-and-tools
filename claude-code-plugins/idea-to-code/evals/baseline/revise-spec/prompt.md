@@ -11,4 +11,4 @@ Here are three files:
 
 I will ask you to make changes to the specification
 
-Change the specification: add a non-functional requirement that a full eval run costs at most USD 25.
+Change the specification: add a non-functional requirement that an uncached badge response is returned in under 500 ms.

@@ -14,12 +14,13 @@ CASES = ["create-spec", "revise-spec", "create-plan", "revise-plan"]
 
 TEMPLATE_MARKERS = {
     "create-spec": "idea-to-code:write-spec",
+    "revise-spec": "idea-to-code:write-spec",
     "create-plan": "## Task model",
 }
 
 APPENDED_REQUESTS = {
-    "revise-spec": "add a non-functional requirement that a full eval run costs at most USD 25.",
-    "revise-plan": "adds a README section describing how to run the evals.",
+    "revise-spec": "add a non-functional requirement that an uncached badge response is returned in under 500 ms.",
+    "revise-plan": "returns a grey `unknown` badge when the GitHub API rate limit is exceeded.",
 }
 
 

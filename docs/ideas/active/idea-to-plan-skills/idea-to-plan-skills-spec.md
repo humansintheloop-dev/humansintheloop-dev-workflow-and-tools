@@ -274,9 +274,9 @@ For the interactive steps, the case prompt is the rendered prompt followed by a 
 | Case | Appended request |
 |------|------------------|
 | `create-spec` | none |
-| `revise-spec` | `Change the specification: add a non-functional requirement that a full eval run costs at most USD 25.` |
+| `revise-spec` | `Change the specification: add a non-functional requirement that an uncached badge response is returned in under 500 ms.` |
 | `create-plan` | none |
-| `revise-plan` | `Change the plan: add a task to the last steel thread that adds a README section describing how to run the evals.` |
+| `revise-plan` | `Change the plan: add a task to the last steel thread that returns a grey `unknown` badge when the GitHub API rate limit is exceeded.` |
 
 ### 5.3 Graders
 
@@ -383,3 +383,7 @@ The first version kept the planning method (Implementation context, Analyze exis
 
 Rationale: keeping the method in the template contradicted Q8 (skills work in an ordinary Claude Code session) and the Goal (templates reduced to the idea directory, the skills and i2code mechanics). The user chose the name `create-plan` to match the i2code step.
 
+
+### 2026-10-17: Replace the revise-spec and revise-plan eval requests with changes to the badge service
+
+Section 5.2's appended requests asked for a requirement on the cost of an eval run and a task for a README section about running the evals. Neither relates to the eval fixture, a build status badge service. In the revise-spec eval, Claude asked what "eval run" meant instead of editing the spec, so the case scored 0 whatever the prompt said. The requests now ask for a 500 ms limit on an uncached badge response, and for a task that returns a grey `unknown` badge when the GitHub API rate limit is exceeded.

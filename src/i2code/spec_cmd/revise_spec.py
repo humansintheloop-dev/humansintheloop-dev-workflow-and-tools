@@ -3,6 +3,7 @@
 from i2code.claude.permissions import build_allowed_tools_flag
 from i2code.implement.claude_runner import ClaudeCodeCommand, ClaudeResult
 from i2code.implement.idea_project import IdeaProject
+from i2code.template_renderer import render_template
 
 
 def revise_spec(
@@ -13,8 +14,8 @@ def revise_spec(
 ) -> ClaudeResult:
     """Revise an existing specification interactively via Claude.
 
-    Validates that both idea and spec files exist, constructs an inline
-    prompt referencing the idea, discussion, and spec file paths, and
+    Validates that both idea and spec files exist, renders the
+    revise-spec.md template with the IDEA_DIRECTORY variable, and
     invokes Claude interactively.
 
     Args:
@@ -32,17 +33,7 @@ def revise_spec(
     project.validate_idea()
     project.validate_spec()
 
-    prompt = (
-        "Here are three files:\n"
-        "\n"
-        f"* {project.idea_file} - the file containing the idea description\n"
-        f"* {project.discussion_file} - the file where questions and answers "
-        "were saved when brainstorming the idea\n"
-        f"* {project.spec_file}  - a comprehensive, developer-ready "
-        "specification that was generated as a result of brainstorming\n"
-        "\n"
-        "I will ask you to make changes to the specification\n"
-    )
+    prompt = render_template("revise-spec.md", {"IDEA_DIRECTORY": project.directory})
 
     allowed_tools = (
         build_allowed_tools_flag(repo_root, project.directory)

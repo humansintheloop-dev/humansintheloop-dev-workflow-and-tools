@@ -177,16 +177,16 @@ Decisions made at plan time:
 
 ## Steel Thread 7: revise-spec records Change History
 
-- [ ] **Task 7.1: i2code spec revise renders revise-spec.md naming the write-spec skill**
+- [x] **Task 7.1: i2code spec revise renders revise-spec.md naming the write-spec skill**
   - TaskType: OUTCOME
   - Entrypoint: `revise_spec()` in `src/i2code/spec_cmd/revise_spec.py`, reached by `i2code spec revise <idea>`
   - Observable: The prompt is rendered from `revise-spec.md`. It contains `project.directory`, `idea-to-code:idea-organization`, `idea-to-code:write-spec` and `I will ask you to make changes to the specification`, and no `@`. Claude, asked for a change, adds a `### YYYY-MM-DD: ` entry under `## Change History`. The `revise-spec` eval case scores 1.0.
-  - Evidence: `uv run --python 3.12 python3 -m pytest tests/spec-cmd/test_revise_spec.py -v -m unit` passes. `TestReviseSpecPromptContent` (`tests/spec-cmd/test_revise_spec.py:61`) is replaced with tests that assert the strings above and `"@" not in cmd.prompt`. One test monkeypatches `render_template` to record the template name and asserts it is `revise-spec.md`. Then `./test-scripts/test-plugin-evals.sh` shows `revise-spec` at 1.0.
+  - Evidence: `uv run --python 3.12 python3 -m pytest tests/spec-cmd/test_revise_spec.py -v -m unit` passes. `TestReviseSpecPromptContent` (`tests/spec-cmd/test_revise_spec.py:61`) is replaced with tests that assert the strings above and `"@" not in cmd.prompt`. One test monkeypatches `render_template` to record the template name and asserts it is `revise-spec.md`. Then `./test-scripts/test-plugin-evals.sh --case revise-spec` shows `revise-spec` at 1.0.
   - Steps:
-    - [ ] Replace the `three files` and per-file-path tests in `tests/spec-cmd/test_revise_spec.py` with the tests above, and confirm they fail
-    - [ ] Create `src/i2code/prompt-templates/revise-spec.md` with `${IDEA_DIRECTORY}`, the two skill names and `I will ask you to make changes to the specification`
-    - [ ] Replace the inline prompt in `src/i2code/spec_cmd/revise_spec.py:35` with `render_template("revise-spec.md", {"IDEA_DIRECTORY": project.directory})`, and update the module docstring
-    - [ ] Run `./test-scripts/test-plugin-evals.sh` and confirm `revise-spec` scores 1.0
+    - [x] Replace the `three files` and per-file-path tests in `tests/spec-cmd/test_revise_spec.py` with the tests above, and confirm they fail
+    - [x] Create `src/i2code/prompt-templates/revise-spec.md` with `${IDEA_DIRECTORY}`, the two skill names and `I will ask you to make changes to the specification`
+    - [x] Replace the inline prompt in `src/i2code/spec_cmd/revise_spec.py:35` with `render_template("revise-spec.md", {"IDEA_DIRECTORY": project.directory})`, and update the module docstring
+    - [x] Run `./test-scripts/test-plugin-evals.sh --case revise-spec` and confirm `revise-spec` scores 1.0
 
 ---
 
@@ -196,7 +196,7 @@ Decisions made at plan time:
   - TaskType: OUTCOME
   - Entrypoint: `create_plan()` in `src/i2code/go_cmd/create_plan.py`, reached by `i2code plan create <idea-dir>`
   - Observable: The create prompt contains `project.directory`, `idea-to-code:idea-organization`, `idea-to-code:create-plan`, `idea-to-code:plan-format`, `## Skills to Follow` with the plugin skill list, and the stdout mechanics. It contains no `@`, `## General principles`, `## Task 1.1 Requirements`, `TaskType: OUTCOME | INFRA | REFACTOR` or `Architecture POC`. The plan Claude returns has `## Idea Type`, `## Instructions for Coding Agent` and the `Hard rule: NEVER git commit` line. Every `TaskType:` line is `OUTCOME`, `INFRA` or `REFACTOR`. The `create-plan` eval case scores 1.0.
-  - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/test_create_plan.py -v -m unit` passes. `TestCreatePlanTemplateRendering` (`tests/go-cmd/test_create_plan.py:137`) asserts the included and excluded strings above against the prompt rendered by the real `render_template`. Then `./test-scripts/test-plugin-evals.sh` shows `create-plan` at 1.0.
+  - Evidence: `uv run --python 3.12 python3 -m pytest tests/go-cmd/test_create_plan.py -v -m unit` passes. `TestCreatePlanTemplateRendering` (`tests/go-cmd/test_create_plan.py:137`) asserts the included and excluded strings above against the prompt rendered by the real `render_template`. Then `./test-scripts/test-plugin-evals.sh --case create-plan` shows `create-plan` at 1.0.
   - Steps:
     - [ ] Update `tests/go-cmd/test_create_plan.py:137` with a test that uses the real `render_template` and asserts the strings above, and confirm it fails
     - [ ] Create `claude-code-plugins/idea-to-code/skills/plan-format/SKILL.md` per spec section 3.4. It contains: the plan skeleton (`# Implementation Plan:`, `## Idea Type`, `## Instructions for Coding Agent`, `## Overview`, steel threads, `## Change History`); the task model and task types moved from `src/i2code/prompt-templates/create-implementation-plan.md:207`–`275`; the steel thread heading format; the task structure; the rules moved from `:316`–`405`; the Instructions for Coding Agent block copied verbatim from `:426`–`456`, with the instruction that every plan contains it unchanged after `## Idea Type`; and the revision rules
@@ -204,7 +204,7 @@ Decisions made at plan time:
     - [ ] Add `./skills/create-plan` and `./skills/plan-format` to `claude-code-plugins/idea-to-code/.claude-plugin/plugin.json`
     - [ ] Reduce `src/i2code/prompt-templates/create-implementation-plan.md` to: the idea directory `${IDEA_DIRECTORY}`, "Use `idea-to-code:idea-organization`, `idea-to-code:create-plan` and `idea-to-code:plan-format`", `## Skills to Follow` with `${PLAN_SKILLS}`, and the stdout mechanics now at `:12`–`15`
     - [ ] Change `src/i2code/go_cmd/create_plan.py:64` to pass `{"IDEA_DIRECTORY": project.directory, "PLAN_SKILLS": skills}`
-    - [ ] Run `./test-scripts/test-plugin-evals.sh` and confirm `create-plan` scores 1.0
+    - [ ] Run `./test-scripts/test-plugin-evals.sh --case create-plan` and confirm `create-plan` scores 1.0
 
 - [ ] **Task 8.2: The repair prompt names plan-format and no longer restates the task format**
   - TaskType: OUTCOME
@@ -229,7 +229,7 @@ Decisions made at plan time:
     - [ ] Reduce `src/i2code/prompt-templates/revise-plan.md` to `${IDEA_DIRECTORY}`, the three skill names and `I will ask you to make changes to the plan`
     - [ ] Change `src/i2code/go_cmd/revise_plan.py:30` to pass only `{"IDEA_DIRECTORY": project.directory}`
     - [ ] Run `./test-scripts/test-plugin-evals.sh`; it exits 0 with all four cases at 1.0
-    - [ ] Add a README section that describes how to run `./test-scripts/test-plugin-evals.sh`, `--baseline` and `EVAL_MAX_COST_USD`
+    - [ ] Add a README section that describes how to run `./test-scripts/test-plugin-evals.sh`, `--case`, `--baseline` and `EVAL_MAX_COST_USD`
 
 ---
 
@@ -261,3 +261,11 @@ Decisions made at plan time:
 
 ### 2026-10-17 16:29 - mark-task-complete
 Froze evals/baseline (prompts, case.yaml, scaffold.sh, graders), added --baseline to test-plugin-evals.sh and committed the first baseline aggregate result. scaffold.sh is copied too because case.yaml names it as the scaffold_script.
+
+### 2026-10-17: Faster eval runs and badge-service revise requests
+
+- `test-plugin-evals.sh` passes `--concurrency 4` and accepts `--case <glob>`. A full run of 12 sessions in sequence took 817 seconds. Tasks 7.1 and 8.1 check one case each, so their Evidence and steps now run only that case with `--case`. Task 9.1 still runs all four cases, and its README step also documents `--case`.
+- The revise-spec and revise-plan requests (spec section 5.2) now ask for changes to the badge service fixture. The old requests asked about eval costs and a README section on running the evals, which have nothing to do with the fixture. In revise-spec, Claude asked what "eval run" meant instead of editing the spec.
+
+### 2026-10-17 18:48 - mark-task-complete
+revise-spec.md names idea-organization and write-spec. The revise-spec eval scores 1.0 (3 of 3 runs) once its request asks for a change to the badge service fixture.

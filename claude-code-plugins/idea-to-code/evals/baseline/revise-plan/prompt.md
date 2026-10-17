@@ -15,4 +15,4 @@ When revising, also resolve any "X or Y" / "X (or Y)" alternatives in tasks or s
 
 You must record any changes to the plan requested during a conversation in the ## Change History section.
 
-Change the plan: add a task to the last steel thread that adds a README section describing how to run the evals.
+Change the plan: add a task to the last steel thread that returns a grey `unknown` badge when the GitHub API rate limit is exceeded.

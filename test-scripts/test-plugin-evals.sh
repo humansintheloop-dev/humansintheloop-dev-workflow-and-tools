@@ -3,10 +3,11 @@
 # Results go to logs/plugin-evals/<timestamp>/. Runs real Claude sessions and costs
 # money, so it is run manually and is not part of test-end-to-end.sh or CI.
 #
-# Usage: test-plugin-evals.sh [--baseline]
-#   --baseline  runs the frozen prompts in evals/baseline without re-rendering them
-#               and saves aggregate-result.json to evals/baseline-results/ with
-#               save-baseline-result.sh
+# Usage: test-plugin-evals.sh [--baseline] [--case <glob>]
+#   --baseline     runs the frozen prompts in evals/baseline without re-rendering them
+#                  and saves aggregate-result.json to evals/baseline-results/ with
+#                  save-baseline-result.sh
+#   --case <glob>  runs only the cases whose name matches <glob>
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -15,17 +16,28 @@ PLUGIN_DIR="$PROJECT_ROOT/claude-code-plugins/idea-to-code"
 EVAL_DIR="evals/skills"
 OUTPUT_DIR="$PROJECT_ROOT/logs/plugin-evals/$(date +%Y%m%d-%H%M%S)"
 BASELINE=false
+CASE_OPTIONS=()
+
+usage() {
+    echo "Usage: $0 [--baseline] [--case <glob>]" >&2
+    exit 2
+}
 
 parse_arguments() {
-    for argument in "$@"; do
-        case "$argument" in
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
             --baseline)
                 BASELINE=true
                 EVAL_DIR="evals/baseline"
+                shift
+                ;;
+            --case)
+                [[ $# -ge 2 ]] || usage
+                CASE_OPTIONS=(--case "$2")
+                shift 2
                 ;;
             *)
-                echo "Usage: $0 [--baseline]" >&2
-                exit 2
+                usage
                 ;;
         esac
     done
@@ -55,6 +67,8 @@ run_plugin_evals() {
         --trust-plugin \
         --scaffold \
         --ablation none \
+        --concurrency 4 \
+        ${CASE_OPTIONS[@]+"${CASE_OPTIONS[@]}"} \
         --allow-tools Read,Write,Edit,Glob,Grep,Bash,Skill \
         --max-cost-usd "${EVAL_MAX_COST_USD:-25}" \
         --output-dir "$OUTPUT_DIR" \

@@ -60,25 +60,41 @@ class TestReviseSpecValidation:
 @pytest.mark.unit
 class TestReviseSpecPromptContent:
 
-    def test_prompt_contains_idea_file_path(self):
-        with TempIdeaProject("my-feature") as project:
-            _, _, _, cmd, _ = _run_revise_spec(project)
-            assert project.idea_file in cmd.prompt
+    def test_renders_revise_spec_template(self, monkeypatch):
+        rendered_templates = []
 
-    def test_prompt_contains_discussion_file_path(self):
-        with TempIdeaProject("my-feature") as project:
-            _, _, _, cmd, _ = _run_revise_spec(project)
-            assert project.discussion_file in cmd.prompt
+        def recording_render_template(name, variables):
+            rendered_templates.append(name)
+            return "rendered prompt"
 
-    def test_prompt_contains_spec_file_path(self):
+        monkeypatch.setattr(
+            "i2code.spec_cmd.revise_spec.render_template", recording_render_template,
+        )
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_revise_spec(project)
-            assert project.spec_file in cmd.prompt
+            assert rendered_templates == ["revise-spec.md"]
+            assert cmd.prompt == "rendered prompt"
 
-    def test_prompt_describes_three_files(self):
+    def test_prompt_contains_idea_directory(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_revise_spec(project)
-            assert "three files" in cmd.prompt.lower()
+            assert project.directory in cmd.prompt
+
+    def test_prompt_names_skills(self):
+        with TempIdeaProject("my-feature") as project:
+            _, _, _, cmd, _ = _run_revise_spec(project)
+            assert "idea-to-code:idea-organization" in cmd.prompt
+            assert "idea-to-code:write-spec" in cmd.prompt
+
+    def test_prompt_asks_for_changes_to_specification(self):
+        with TempIdeaProject("my-feature") as project:
+            _, _, _, cmd, _ = _run_revise_spec(project)
+            assert "I will ask you to make changes to the specification" in cmd.prompt
+
+    def test_prompt_has_no_file_references(self):
+        with TempIdeaProject("my-feature") as project:
+            _, _, _, cmd, _ = _run_revise_spec(project)
+            assert "@" not in cmd.prompt
 
 
 @pytest.mark.unit

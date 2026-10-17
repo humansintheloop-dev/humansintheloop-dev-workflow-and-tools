@@ -58,7 +58,13 @@ This gives you the failing task/test name and a high-level error.
 
 **Step 2: Download test artifacts**
 
-Test results are often saved via `actions/upload-artifact`. Check the workflow definition for uploaded artifacts. If artifacts are available:
+Test results are often saved via `actions/upload-artifact`, frequently inside a composite or reusable action rather than the workflow file itself. Do not decide whether artifacts exist by reading the workflow definition. List the run's artifacts:
+
+```bash
+gh api repos/<owner>/<repo>/actions/runs/<run-id>/artifacts --jq '.artifacts[] | {name, size_in_bytes}'
+```
+
+Then download the one containing test results:
 
 ```bash
 gh run download <run-id> --name <artifact-name> --dir test-reports

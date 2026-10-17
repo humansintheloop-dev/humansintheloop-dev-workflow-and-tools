@@ -6,7 +6,8 @@ user-invokable: true
 
 # Write Idea File
 
-Summarize the current discussion into an idea file at `docs/ideas/active/<name>/<name>-idea.md`.
+Summarize the current discussion into an idea file `<name>-idea.md` in a new idea directory.
+Use the `idea-to-code:idea-organization` skill for the idea directory layout and the lifecycle metadata.
 
 ## Steps
 
@@ -14,12 +15,9 @@ Summarize the current discussion into an idea file at `docs/ideas/active/<name>/
    "What name should I use for the idea directory? (e.g., `claude-runner-run`)"
    Suggest a kebab-case name based on the discussion topic.
 
-2. **Create the metadata file** — `docs/ideas/active/<name>/<name>-metadata.yaml` with:
-   ```yaml
-   state: draft
-   ```
+2. **Create the metadata file** — create the active idea directory and its metadata file for a new idea, as described by `idea-to-code:idea-organization`.
 
-3. **Write the idea file** — `docs/ideas/active/<name>/<name>-idea.md` with these sections:
+3. **Write the idea file** — `<name>-idea.md` in the idea directory, with these sections:
 
 ### Problem
 What's wrong, duplicated, or missing. Include a short code example if the discussion involved one.

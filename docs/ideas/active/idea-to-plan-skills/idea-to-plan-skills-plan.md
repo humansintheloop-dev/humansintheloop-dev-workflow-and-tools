@@ -144,17 +144,17 @@ Decisions made at plan time:
 
 ## Steel Thread 5: idea-organization skill kept in step with IdeaProject
 
-- [ ] **Task 5.1: The idea-organization skill's file table matches IdeaProject's file properties**
+- [x] **Task 5.1: The idea-organization skill's file table matches IdeaProject's file properties**
   - TaskType: OUTCOME
   - Entrypoint: `uv run --python 3.12 python3 -m pytest tests/plugin-skills/test_idea_organization_skill.py -v -m unit`
   - Observable: The test passes when the `## Idea files` table in `claude-code-plugins/idea-to-code/skills/idea-organization/SKILL.md` lists exactly the suffixes of IdeaProject's 12 `*_file` properties. It fails and names the missing suffix when a row or a property is removed.
   - Evidence: Run the Entrypoint; it passes. Then temporarily delete the `<name>-design.md` row from the skill table and run the Entrypoint again; it fails with a message containing `design.md`. Restore the row.
   - Steps:
-    - [ ] Write the failing test `tests/plugin-skills/test_idea_organization_skill.py` (marker `unit`, per spec section 4.3). It parses the `## Idea files` table and extracts the suffix after `<name>-` from each `File` cell. It builds `IdeaProject("/tmp/x/x")`, takes every `*_file` property, and extracts the suffix after `x-`, mapping `idea_file` to `idea.md`. It asserts the two sets are equal and reports the set difference.
-    - [ ] Create `claude-code-plugins/idea-to-code/skills/idea-organization/SKILL.md` with the frontmatter description from spec section 3.1. Its contents are: the directory layout; the lifecycle metadata (`state` values `draft`, `ready`, `wip`, `completed`, `abandoned`); the `## Idea files` table with columns `File`, `Purpose` and `Written by` and the 12 rows from spec section 3.1; the four idea types with one-paragraph definitions (`A. User-facing feature`, `B. Architecture POC`, `C. Platform/infrastructure capability`, `D. Educational/example repository`); and the `## Classification` / `**Type:** <letter>. <name>` recording rule. The recording rule includes this instruction: when the `**Type:**` line is missing, tell the user the type is not recorded and ask for it before continuing.
-    - [ ] Add `./skills/idea-organization` to `skills` in `claude-code-plugins/idea-to-code/.claude-plugin/plugin.json`
-    - [ ] Update `claude-code-plugins/idea-to-code/skills/write-idea/SKILL.md:9` and step 2 (`:17`) to refer to `idea-to-code:idea-organization` for the directory layout and metadata instead of restating them
-    - [ ] Run `claude plugin validate --strict claude-code-plugins/idea-to-code`
+    - [x] Write the failing test `tests/plugin-skills/test_idea_organization_skill.py` (marker `unit`, per spec section 4.3). It parses the `## Idea files` table and extracts the suffix after `<name>-` from each `File` cell. It builds `IdeaProject("/tmp/x/x")`, takes every `*_file` property, and extracts the suffix after `x-`, mapping `idea_file` to `idea.md`. It asserts the two sets are equal and reports the set difference.
+    - [x] Create `claude-code-plugins/idea-to-code/skills/idea-organization/SKILL.md` with the frontmatter description from spec section 3.1. Its contents are: the directory layout; the lifecycle metadata (`state` values `draft`, `ready`, `wip`, `completed`, `abandoned`); the `## Idea files` table with columns `File`, `Purpose` and `Written by` and the 12 rows from spec section 3.1; the four idea types with one-paragraph definitions (`A. User-facing feature`, `B. Architecture POC`, `C. Platform/infrastructure capability`, `D. Educational/example repository`); and the `## Classification` / `**Type:** <letter>. <name>` recording rule. The recording rule includes this instruction: when the `**Type:**` line is missing, tell the user the type is not recorded and ask for it before continuing.
+    - [x] Add `./skills/idea-organization` to `skills` in `claude-code-plugins/idea-to-code/.claude-plugin/plugin.json`
+    - [x] Update `claude-code-plugins/idea-to-code/skills/write-idea/SKILL.md:9` and step 2 (`:17`) to refer to `idea-to-code:idea-organization` for the directory layout and metadata instead of restating them
+    - [x] Run `claude plugin validate --strict claude-code-plugins/idea-to-code`
 
 ---
 

@@ -21,6 +21,7 @@
     "./skills/dockerfile-guidelines",
     "./skills/file-organization",
     "./skills/github-workflow-gradle-template",
+    "./skills/idea-organization",
     "./skills/incremental-development",
     "./skills/plan-file-management",
     "./skills/plan-tracking",

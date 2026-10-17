@@ -32,6 +32,7 @@
     "./skills/find-usage",
     "./skills/git-conflict-resolution",
     "./skills/write-idea",
+    "./skills/write-spec",
     "./skills/test-output-to-logfile",
     "./skills/github-actions-gradle-cache"
   ],

@@ -160,18 +160,18 @@ Decisions made at plan time:
 
 ## Steel Thread 6: create-spec through the write-spec skill
 
-- [ ] **Task 6.1: i2code spec create renders a skill-based prompt with the absolute idea directory**
+- [x] **Task 6.1: i2code spec create renders a skill-based prompt with the absolute idea directory**
   - TaskType: OUTCOME
   - Entrypoint: `create_spec()` in `src/i2code/spec_cmd/create_spec.py`, reached by `i2code spec create docs/ideas/active/foo`
   - Observable: The prompt passed to Claude contains `project.directory`, `idea-to-code:idea-organization` and `idea-to-code:write-spec`, and does not contain `@`. Claude, given that prompt, writes `docs/ideas/active/eval-idea/eval-idea-spec.md` with the Platform Capability Specification sections. The `create-spec` eval case scores 1.0 (3 of 3 runs).
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/spec-cmd/test_create_spec.py -v -m unit` passes. The updated `TestCreateSpecTemplateRendering` asserts `project.directory` is in the prompt, both skill names are in the prompt, and `"@" not in cmd.prompt`. Then `./test-scripts/test-plugin-evals.sh` produces a `logs/plugin-evals/<timestamp>/aggregate-result.json` in which `create-spec` scores 1.0.
   - Steps:
-    - [ ] Update `tests/spec-cmd/test_create_spec.py:50` to the assertions above, and confirm the new tests fail
-    - [ ] Create `claude-code-plugins/idea-to-code/skills/write-spec/SKILL.md` with the description and contents from spec section 3.3: inputs (read the type from the `**Type:**` line, following `idea-organization`); the four per-type section lists moved unchanged from `src/i2code/prompt-templates/create-spec.md:19`–`62`; naming; quality rules; and Change History rules
-    - [ ] Add `./skills/write-spec` to `claude-code-plugins/idea-to-code/.claude-plugin/plugin.json`
-    - [ ] Reduce `src/i2code/prompt-templates/create-spec.md` to: the idea directory `${IDEA_DIRECTORY}`, "Use `idea-to-code:idea-organization` and `idea-to-code:write-spec`", and "write the specification; do not write a plan"
-    - [ ] Change `src/i2code/spec_cmd/create_spec.py:36` to pass only `{"IDEA_DIRECTORY": project.directory}`
-    - [ ] Run `./test-scripts/test-plugin-evals.sh` and confirm `create-spec` scores 1.0. If it does not, revise the skill and template and rerun before committing.
+    - [x] Update `tests/spec-cmd/test_create_spec.py:50` to the assertions above, and confirm the new tests fail
+    - [x] Create `claude-code-plugins/idea-to-code/skills/write-spec/SKILL.md` with the description and contents from spec section 3.3: inputs (read the type from the `**Type:**` line, following `idea-organization`); the four per-type section lists moved unchanged from `src/i2code/prompt-templates/create-spec.md:19`–`62`; naming; quality rules; and Change History rules
+    - [x] Add `./skills/write-spec` to `claude-code-plugins/idea-to-code/.claude-plugin/plugin.json`
+    - [x] Reduce `src/i2code/prompt-templates/create-spec.md` to: the idea directory `${IDEA_DIRECTORY}`, "Use `idea-to-code:idea-organization` and `idea-to-code:write-spec`", and "write the specification; do not write a plan"
+    - [x] Change `src/i2code/spec_cmd/create_spec.py:36` to pass only `{"IDEA_DIRECTORY": project.directory}`
+    - [x] Run `./test-scripts/test-plugin-evals.sh` and confirm `create-spec` scores 1.0. If it does not, revise the skill and template and rerun before committing.
 
 ---
 

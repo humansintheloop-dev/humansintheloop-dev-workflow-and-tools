@@ -11,18 +11,15 @@ class TestRenderTemplate:
         from i2code.template_renderer import render_template
 
         result = render_template("create-spec.md", {
-            "IDEA_FILE": "docs/my-idea.md",
-            "DISCUSSION_FILE": "docs/my-discussion.md",
+            "IDEA_DIRECTORY": "docs/ideas/active/my-idea",
         })
-        assert "docs/my-idea.md" in result
-        assert "docs/my-discussion.md" in result
+        assert "docs/ideas/active/my-idea" in result
 
     def test_template_contains_original_content(self):
         from i2code.template_renderer import render_template
 
         result = render_template("create-spec.md", {
-            "IDEA_FILE": "some-idea.md",
-            "DISCUSSION_FILE": "some-discussion.md",
+            "IDEA_DIRECTORY": "docs/ideas/active/some-idea",
         })
         assert "specification" in result.lower()
 
@@ -37,10 +34,8 @@ class TestRenderTemplate:
         from i2code.template_renderer import render_template
 
         result = render_template("create-spec.md", {
-            "IDEA_FILE": "idea.md",
-            "DISCUSSION_FILE": "disc.md",
+            "IDEA_DIRECTORY": "docs/ideas/active/idea",
         })
-        # The template uses ${IDEA_FILE} and ${DISCUSSION_FILE} syntax
-        # After substitution, those should be replaced
-        assert "${IDEA_FILE}" not in result
-        assert "${DISCUSSION_FILE}" not in result
+        # The template uses ${IDEA_DIRECTORY} syntax
+        # After substitution, it should be replaced
+        assert "${IDEA_DIRECTORY}" not in result

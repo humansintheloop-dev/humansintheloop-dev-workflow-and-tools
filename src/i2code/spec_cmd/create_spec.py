@@ -16,7 +16,7 @@ def create_spec(
     """Generate a specification from an idea file using Claude.
 
     Validates the idea file exists, renders the create-spec.md template
-    with IDEA_FILE and DISCUSSION_FILE variables, resumes an existing
+    with the IDEA_DIRECTORY variable, resumes an existing
     session if present, and invokes Claude interactively.
 
     Args:
@@ -33,10 +33,7 @@ def create_spec(
     """
     project.validate_idea()
 
-    prompt = render_template("create-spec.md", {
-        "IDEA_FILE": project.idea_file,
-        "DISCUSSION_FILE": project.discussion_file,
-    })
+    prompt = render_template("create-spec.md", {"IDEA_DIRECTORY": project.directory})
 
     allowed_tools = (
         build_allowed_tools_flag(repo_root, project.directory)

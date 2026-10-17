@@ -44,11 +44,21 @@ class TestCreateSpecValidation:
 @pytest.mark.unit
 class TestCreateSpecTemplateRendering:
 
-    def test_renders_template_with_idea_and_discussion_files(self):
+    def test_renders_template_with_idea_directory(self):
         with TempIdeaProject("my-feature") as project:
             _, _, _, cmd, _ = _run_create_spec(project)
-            assert project.idea_file in cmd.prompt
-            assert project.discussion_file in cmd.prompt
+            assert project.directory in cmd.prompt
+
+    def test_renders_template_naming_skills(self):
+        with TempIdeaProject("my-feature") as project:
+            _, _, _, cmd, _ = _run_create_spec(project)
+            assert "idea-to-code:idea-organization" in cmd.prompt
+            assert "idea-to-code:write-spec" in cmd.prompt
+
+    def test_renders_template_without_file_references(self):
+        with TempIdeaProject("my-feature") as project:
+            _, _, _, cmd, _ = _run_create_spec(project)
+            assert "@" not in cmd.prompt
 
 
 @pytest.mark.unit

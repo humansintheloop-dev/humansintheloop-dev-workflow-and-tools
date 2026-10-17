@@ -13,7 +13,7 @@ SCRIPT = PROJECT_ROOT / "test-scripts" / "render_eval_prompts.py"
 CASES = ["create-spec", "revise-spec", "create-plan", "revise-plan"]
 
 TEMPLATE_MARKERS = {
-    "create-spec": "Specification Quality Guidelines",
+    "create-spec": "idea-to-code:write-spec",
     "create-plan": "## Task model",
 }
 

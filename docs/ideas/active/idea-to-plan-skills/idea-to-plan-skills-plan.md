@@ -72,19 +72,19 @@ Decisions made at plan time:
 
 ## Steel Thread 2: Eval suite and frozen baseline for the current templates
 
-- [ ] **Task 2.1: render_eval_prompts.py renders the four case prompts from the current templates**
+- [x] **Task 2.1: render_eval_prompts.py renders the four case prompts from the current templates**
   - TaskType: INFRA
   - Entrypoint: `uv run python test-scripts/render_eval_prompts.py <out-dir>`
   - Observable: The script writes `<out-dir>/create-spec/prompt.md`, `<out-dir>/revise-spec/prompt.md`, `<out-dir>/create-plan/prompt.md` and `<out-dir>/revise-plan/prompt.md`. Each file contains the prompt that the real step function (`create_spec`, `revise_spec`, `create_plan`, `revise_plan`) passed to Claude. The absolute fixture-copy directory is replaced by `docs/ideas/active/eval-idea`. The revise-spec and revise-plan prompts end with the fixed appended request from spec section 5.2. No Claude process is started.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/plugin-evals/test_render_eval_prompts.py -v -m unit`. The test runs the script with `subprocess` into a `tmp_path` and asserts the following for each of the four `prompt.md` files: it exists; it contains `docs/ideas/active/eval-idea`; it does not contain the temporary fixture-copy path; it contains the template marker (`create-spec` contains `Specification Quality Guidelines`, `create-plan` contains `## Task model`); `revise-spec` ends with `add a non-functional requirement that a full eval run costs at most USD 25.`; and `revise-plan` ends with `adds a README section describing how to run the evals.`
   - Steps:
-    - [ ] Write the failing test `tests/plugin-evals/test_render_eval_prompts.py` (marker `unit`) as described in Evidence
-    - [ ] Create the synthetic type-C fixture `claude-code-plugins/idea-to-code/evals/fixtures/eval-idea/` with these files: `eval-idea-idea.md`, `eval-idea-discussion.md` (ending with `## Classification`, `**Type:** C. Platform/infrastructure capability` and a `**Rationale:**` line), `eval-idea-spec.md`, `eval-idea-plan.md` (a small valid plan with one steel thread, two tasks using `TaskType: OUTCOME` and `TaskType: INFRA`, and a `## Change History` heading), and `eval-idea-metadata.yaml` (`state: draft`). Keep the files small and invented. Do not copy a real idea.
-    - [ ] Create `test-scripts/render_eval_prompts.py`. It copies the fixture into a temporary directory `.../docs/ideas/active/eval-idea`, builds `IdeaProject` on that copy, and calls each step function with a capturing runner. The runner's `execute()` records `command.prompt` and raises a private `_PromptCaptured` sentinel exception, which the script catches.
-    - [ ] Call `create_plan` with `PlanServices(template_renderer=render_template, plugin_skills_fn=list_plugin_skills, validator_fn=validate_plan)`. Call `revise_plan` with `render_template`.
-    - [ ] Replace the copy's absolute directory with `docs/ideas/active/eval-idea`, append the fixed requests for `revise-spec` and `revise-plan`, and write `<out-dir>/<case>/prompt.md`
-    - [ ] Write the case frontmatter that `claude plugin eval` expects at the top of `prompt.md`. First confirm the format by running `claude plugin eval init --bare scratch-case` inside a temporary plugin copy under `logs/`, and do not keep that output in the repo.
-    - [ ] Confirm `test-scripts/render_eval_prompts.py` is not in the wheel by running `./test-scripts/test-wheel-contents.sh` (it builds from `src/` only)
+    - [x] Write the failing test `tests/plugin-evals/test_render_eval_prompts.py` (marker `unit`) as described in Evidence
+    - [x] Create the synthetic type-C fixture `claude-code-plugins/idea-to-code/evals/fixtures/eval-idea/` with these files: `eval-idea-idea.md`, `eval-idea-discussion.md` (ending with `## Classification`, `**Type:** C. Platform/infrastructure capability` and a `**Rationale:**` line), `eval-idea-spec.md`, `eval-idea-plan.md` (a small valid plan with one steel thread, two tasks using `TaskType: OUTCOME` and `TaskType: INFRA`, and a `## Change History` heading), and `eval-idea-metadata.yaml` (`state: draft`). Keep the files small and invented. Do not copy a real idea.
+    - [x] Create `test-scripts/render_eval_prompts.py`. It copies the fixture into a temporary directory `.../docs/ideas/active/eval-idea`, builds `IdeaProject` on that copy, and calls each step function with a capturing runner. The runner's `execute()` records `command.prompt` and raises a private `_PromptCaptured` sentinel exception, which the script catches.
+    - [x] Call `create_plan` with `PlanServices(template_renderer=render_template, plugin_skills_fn=list_plugin_skills, validator_fn=validate_plan)`. Call `revise_plan` with `render_template`.
+    - [x] Replace the copy's absolute directory with `docs/ideas/active/eval-idea`, append the fixed requests for `revise-spec` and `revise-plan`, and write `<out-dir>/<case>/prompt.md`
+    - [x] Write the case frontmatter that `claude plugin eval` expects at the top of `prompt.md`. First confirm the format by running `claude plugin eval init --bare scratch-case` inside a temporary plugin copy under `logs/`, and do not keep that output in the repo.
+    - [x] Confirm `test-scripts/render_eval_prompts.py` is not in the wheel by running `./test-scripts/test-wheel-contents.sh` (it builds from `src/` only)
 
 - [ ] **Task 2.2: test-plugin-evals.sh runs the skill-based eval suite and writes results under logs/plugin-evals/**
   - TaskType: INFRA

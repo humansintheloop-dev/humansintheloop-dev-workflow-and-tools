@@ -18,3 +18,4 @@ debug.log
 pytest-of-*/
 .env.local
 logs/
+claude-code-plugins/idea-to-code/evals/skills/*/prompt.md

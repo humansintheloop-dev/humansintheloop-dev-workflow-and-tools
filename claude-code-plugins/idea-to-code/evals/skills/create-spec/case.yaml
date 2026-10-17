@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: create-spec
+description: create-spec writes a Platform Capability spec for the type-C eval idea
+execution:
+  timeout_seconds: 900
+context:
+  scaffold_script: scaffold.sh

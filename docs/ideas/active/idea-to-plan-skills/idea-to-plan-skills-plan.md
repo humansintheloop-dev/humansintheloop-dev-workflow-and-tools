@@ -86,18 +86,18 @@ Decisions made at plan time:
     - [x] Write the case frontmatter that `claude plugin eval` expects at the top of `prompt.md`. First confirm the format by running `claude plugin eval init --bare scratch-case` inside a temporary plugin copy under `logs/`, and do not keep that output in the repo.
     - [x] Confirm `test-scripts/render_eval_prompts.py` is not in the wheel by running `./test-scripts/test-wheel-contents.sh` (it builds from `src/` only)
 
-- [ ] **Task 2.2: test-plugin-evals.sh runs the skill-based eval suite and writes results under logs/plugin-evals/**
+- [x] **Task 2.2: test-plugin-evals.sh runs the skill-based eval suite and writes results under logs/plugin-evals/**
   - TaskType: INFRA
   - Entrypoint: `./test-scripts/test-plugin-evals.sh`
   - Observable: With `claude` or `i2code` missing from `PATH`, the script exits 1 and prints which command is missing. Otherwise it renders prompts into `claude-code-plugins/idea-to-code/evals/skills/<case>/prompt.md` and runs `claude plugin eval` on `claude-code-plugins/idea-to-code` with these flags: `--eval-dir evals/skills --no-publish --trust-plugin --scaffold --ablation none --json --allow-tools Read,Write,Edit,Glob,Grep,Bash,Skill --max-cost-usd ${EVAL_MAX_COST_USD:-25}`, and `--output-dir logs/plugin-evals/<timestamp>`. It writes `logs/plugin-evals/<timestamp>/aggregate-result.json` with scores for the cases `create-spec`, `revise-spec`, `create-plan` and `revise-plan`, and exits with the eval command's exit code.
   - Evidence: Run `PATH=/usr/bin:/bin ./test-scripts/test-plugin-evals.sh`; it exits 1 with a missing-command message. Then run `./test-scripts/test-plugin-evals.sh`; the newest `logs/plugin-evals/<timestamp>/aggregate-result.json` exists, was created by this run, and lists all four cases. Then run `git status --porcelain claude-code-plugins/idea-to-code/evals/skills`; it shows no `prompt.md` files.
   - Steps:
-    - [ ] Create `claude-code-plugins/idea-to-code/evals/skills/<case>/case.yaml` for the four cases, one at a time (per `idea-to-code:incremental-development`). Each `scaffold_script` copies the fixture files the case needs into `docs/ideas/active/eval-idea/` in the workspace: `create-spec` gets idea, discussion and metadata (no spec); `revise-spec` and `create-plan` get idea, discussion, spec and metadata; `revise-plan` gets all five fixture files.
-    - [ ] Create the graders under `claude-code-plugins/idea-to-code/evals/skills/<case>/graders/` exactly as listed in spec section 5.3 (`file_exists`, `regex` and `llm` graders for each case)
-    - [ ] Create `test-scripts/test-plugin-evals.sh` (with `set -euo pipefail`, shellcheck clean): the PATH check, the render step (`uv run python test-scripts/render_eval_prompts.py claude-code-plugins/idea-to-code/evals/skills`), the `claude plugin eval` command with the flags above, and output to `logs/plugin-evals/<timestamp>/`
-    - [ ] Add `claude-code-plugins/idea-to-code/evals/skills/*/prompt.md` to `.gitignore`
-    - [ ] Run `claude plugin validate --strict claude-code-plugins/idea-to-code` and confirm the `evals/` directory passes the pre-commit plugin validation
-    - [ ] Do not add the script to `test-scripts/test-end-to-end.sh`, `test-scripts/test-all.sh` or `.github/workflows/ci.yml`
+    - [x] Create `claude-code-plugins/idea-to-code/evals/skills/<case>/case.yaml` for the four cases, one at a time (per `idea-to-code:incremental-development`). Each `scaffold_script` copies the fixture files the case needs into `docs/ideas/active/eval-idea/` in the workspace: `create-spec` gets idea, discussion and metadata (no spec); `revise-spec` and `create-plan` get idea, discussion, spec and metadata; `revise-plan` gets all five fixture files.
+    - [x] Create the graders under `claude-code-plugins/idea-to-code/evals/skills/<case>/graders/` exactly as listed in spec section 5.3 (`file_exists`, `regex` and `llm` graders for each case)
+    - [x] Create `test-scripts/test-plugin-evals.sh` (with `set -euo pipefail`, shellcheck clean): the PATH check, the render step (`uv run python test-scripts/render_eval_prompts.py claude-code-plugins/idea-to-code/evals/skills`), the `claude plugin eval` command with the flags above, and output to `logs/plugin-evals/<timestamp>/`
+    - [x] Add `claude-code-plugins/idea-to-code/evals/skills/*/prompt.md` to `.gitignore`
+    - [x] Run `claude plugin validate --strict claude-code-plugins/idea-to-code` and confirm the `evals/` directory passes the pre-commit plugin validation
+    - [x] Do not add the script to `test-scripts/test-end-to-end.sh`, `test-scripts/test-all.sh` or `.github/workflows/ci.yml`
 
 - [ ] **Task 2.3: test-plugin-evals.sh --baseline runs the frozen baseline suite and commits its aggregate result**
   - TaskType: INFRA
@@ -252,3 +252,9 @@ Decisions made at plan time:
 ---
 
 ## Change History
+
+### 2026-10-17: Task 2.2 eval cases differ from spec section 5.3
+
+- The revise-plan Change History grader matches `^## Change History[ \t]*\n\s*\S` instead of `^## Change History`. The fixture plan already ends with an empty `## Change History` heading, so the spec's pattern passed even when the run added no entry.
+- The two `complete-task-blocks` llm graders keep the spec's rubric sentence and add explicit PASS and FAIL conditions. With the bare sentence, the haiku judge voted FAIL on the unchanged fixture plan, whose task blocks are all complete.
+- Each case's `case.yaml` sets `execution.timeout_seconds: 900` instead of the default 300, because single create-spec and create-plan runs took about 110 and 120 seconds. One create-spec run in the first full run still timed out at 900 seconds.

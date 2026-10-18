@@ -219,7 +219,7 @@ Decisions made at plan time:
 
 ## Steel Thread 9: revise-plan keeps the task format
 
-- [ ] **Task 9.1: i2code plan revise renders a skill-based prompt and the revised plan keeps the format**
+- [x] **Task 9.1: i2code plan revise renders a skill-based prompt and the revised plan keeps the format**
   - TaskType: OUTCOME
   - Entrypoint: `revise_plan()` in `src/i2code/go_cmd/revise_plan.py`, reached by `i2code plan revise <idea>`
   - Observable: The prompt contains `project.directory`, `idea-to-code:idea-organization`, `idea-to-code:plan-format`, `idea-to-code:plan-file-management` and `I will ask you to make changes to the plan`, and no `@`. After Claude adds a task, the plan file still passes `validate_plan`, every `TaskType:` line is `OUTCOME`, `INFRA` or `REFACTOR`, and the plan has `## Change History`. All four skill-based eval cases score 1.0.
@@ -228,7 +228,7 @@ Decisions made at plan time:
     - [x] Update `tests/go-cmd/test_revise_plan.py:72` to the assertions above, and confirm the test fails
     - [x] Reduce `src/i2code/prompt-templates/revise-plan.md` to `${IDEA_DIRECTORY}`, the three skill names and `I will ask you to make changes to the plan`
     - [x] Change `src/i2code/go_cmd/revise_plan.py:30` to pass only `{"IDEA_DIRECTORY": project.directory}`
-    - [ ] Run `./test-scripts/test-plugin-evals.sh`; it exits 0 with all four cases at 1.0
+    - [x] Run `./test-scripts/test-plugin-evals.sh`; it exits 0 with all four cases at 1.0
     - [x] Add a README section that describes how to run `./test-scripts/test-plugin-evals.sh`, `--case`, `--baseline` and `EVAL_MAX_COST_USD`
 
 ---
@@ -281,3 +281,6 @@ revise_plan passes only IDEA_DIRECTORY
 
 ### 2026-10-17 19:20 - mark-step-complete
 README.adoc has a Running the plugin evals section
+
+### 2026-10-18 10:40 - mark-task-complete
+Task 9.1, Step 4: test-plugin-evals.sh exits 0 with all four cases at 1.0 (3 of 3 runs each). The eval sandbox denies reads under $HOME except PATH entries, so revise-plan could not run i2code plan. test-plugin-evals.sh now builds a self-contained i2code install in ~/.cache/i2code-plugin-evals (copied uv Python, venv, wrapper naming a non-Apple git) and puts it first on PATH.

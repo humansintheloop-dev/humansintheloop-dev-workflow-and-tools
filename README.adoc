@@ -235,6 +235,10 @@ Run every case:
 ./test-scripts/test-plugin-evals.sh
 ----
 
+Before running the cases, the script rebuilds `~/.cache/i2code-plugin-evals` from the working tree.
+It holds a copy of uv's Python 3.12, a venv with `i2code` installed, and an `i2code` wrapper, and the script puts it first on the `PATH` of the eval sessions.
+The eval sandbox denies reads under your home directory except for `PATH` entries, so this is the `i2code` the `plan-file-management` skill can run during the `revise-plan` case.
+
 The script exits 0 when every case scores 1.0.
 Results are written to `logs/plugin-evals/<timestamp>/aggregate-result.json`, and each run's transcript is copied to `traces/<case>-<run>.jsonl` in that directory.
 

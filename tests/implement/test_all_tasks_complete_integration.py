@@ -58,7 +58,7 @@ commit recovery bug (#36). See implement_command.py for details.
 #                  os.stat(mock_claude_script).st_mode | stat.S_IEXEC)
 #
 #         # Run i2code implement
-#         result = run_script(idea_dir, cwd=tmpdir, mock_claude=mock_claude_script)
+#         result = run_script(idea_dir, cwd=tmpdir, extra_args=["--mock-claude", mock_claude_script])
 #
 #         # (a) Zero returncode
 #         assert result.returncode == 0, (

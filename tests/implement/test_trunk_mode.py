@@ -3,6 +3,7 @@
 import os
 import tempfile
 from contextlib import contextmanager
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -168,6 +169,37 @@ class TestTrunkModeExecute:
         assert isinstance(cmd, ClaudeCodeCommand)
         assert cmd.mock_command is not None
         assert cmd.mock_command[0] == "/path/to/mock-script"
+
+
+@pytest.mark.unit
+class TestTrunkModeSelectedThread:
+    """TrunkMode.execute() with opts.thread runs only that thread's tasks."""
+
+    def test_runs_only_selected_thread_after_commit_recovery(self, capsys):
+        tasks = [(1, 1, "Task A", False), (1, 2, "Task B", False), (2, 1, "Task C", False)]
+        with _trunk_mode_setup(tasks) as (project, fake_repo, fake_runner, plan_path):
+            events = []
+            commit_recovery = MagicMock()
+            commit_recovery.commit_if_needed.side_effect = lambda: events.append("commit_if_needed")
+            mode = TrunkMode(
+                opts=_opts(idea_directory=project.directory, thread=1),
+                workspace=Workspace(fake_repo, project),
+                claude_runner=fake_runner,
+                commit_recovery=commit_recovery,
+            )
+            fake_runner.set_side_effects([
+                combined(lambda: events.append("task 1.1"), advance_head(fake_repo, "bbb"),
+                         mark_task_complete(plan_path, 1, 1, "Task A")),
+                combined(lambda: events.append("task 1.2"), advance_head(fake_repo, "ccc"),
+                         mark_task_complete(plan_path, 1, 2, "Task B")),
+            ])
+
+            mode.execute()
+
+            commit_recovery.commit_if_needed.assert_called_once()
+            assert events == ["commit_if_needed", "task 1.1", "task 1.2"]
+            assert not project.is_task_completed(2, 1)
+            assert "Thread 1 (Thread 1) is complete." in capsys.readouterr().out
 
 
 PLAN_WITH_INCOMPLETE_TASK = """\

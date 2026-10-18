@@ -10,6 +10,7 @@ from i2code.implement.claude_runner import (
 )
 from i2code.implement.command_builder import CommandBuilder, TaskCommandOpts
 from i2code.implement.console import print_message
+from i2code.implement.task_selection import AllTasksSelection, ThreadSelection
 
 
 class TrunkMode:
@@ -22,16 +23,21 @@ class TrunkMode:
         self._commit_recovery = commit_recovery
 
     def execute(self):
-        """Run the task loop until all tasks are complete."""
+        """Run the task loop until the selected tasks are complete."""
+        selection = self._task_selection()
+        selection.validate()
         self._commit_recovery.commit_if_needed()
 
-        while True:
-            next_task = self._workspace.project.get_next_task()
-            if next_task is None:
-                print_message("All tasks completed!")
-                return
-
+        while (next_task := selection.next_task()) is not None:
             self._execute_task(next_task)
+
+        selection.report_completion()
+
+    def _task_selection(self):
+        project = self._workspace.project
+        if self._opts.thread is None:
+            return AllTasksSelection(project)
+        return ThreadSelection(project, self._opts.thread, self._opts.idea_directory)
 
     def _execute_task(self, task):
         max_attempts = 3

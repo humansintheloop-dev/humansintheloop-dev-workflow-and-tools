@@ -192,6 +192,49 @@ class TestGetNextTask:
         assert result is None
 
 
+PLAN_WITH_TWO_THREADS = """\
+# Implementation Plan
+
+## Steel Thread 1: Setup
+
+- [ ] **Task 1.1: Create project structure**
+
+## Steel Thread 2: Feature
+
+- [x] **Task 2.1: Add endpoint**
+
+- [ ] **Task 2.2: Add persistence**
+"""
+
+
+@pytest.mark.unit
+class TestGetNextTaskInThread:
+
+    def test_returns_first_incomplete_task_of_thread(self, tmp_path):
+        project = _make_project_with_plan(tmp_path, PLAN_WITH_TWO_THREADS)
+
+        result = project.get_next_task_in_thread(2)
+
+        assert result is not None
+        assert result.number.thread == 2
+        assert result.number.task == 2
+        assert result.task.title == "Add persistence"
+
+    def test_returns_none_when_thread_complete(self, tmp_path):
+        project = _make_project_with_plan(tmp_path, PLAN_ALL_COMPLETED)
+
+        assert project.get_next_task_in_thread(1) is None
+
+
+@pytest.mark.unit
+class TestThreadTitle:
+
+    def test_returns_title_of_thread(self, tmp_path):
+        project = _make_project_with_plan(tmp_path, PLAN_WITH_TWO_THREADS)
+
+        assert project.thread_title(2) == "Feature"
+
+
 @pytest.mark.unit
 class TestIsTaskCompleted:
 

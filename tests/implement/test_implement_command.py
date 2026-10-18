@@ -374,7 +374,7 @@ class TestNoModuleLevelFunctions:
 class TestImplementCmd:
     """Test implement CLI command uses command_factory from context."""
 
-    def test_uses_command_factory_and_forwards_opts(self):
+    def _invoke(self, args):
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
@@ -386,15 +386,22 @@ class TestImplementCmd:
             return mock_command
 
         runner = CliRunner(catch_exceptions=False)
-        runner.invoke(
-            implement_cmd, ["/tmp/fake-idea", "--setup-only", "--trunk"],
-            obj={"command_factory": fake_factory},
-        )
-
-        assert received_opts[0].idea_directory == "/tmp/fake-idea"
-        assert received_opts[0].setup_only is True
-        assert received_opts[0].trunk is True
+        result = runner.invoke(implement_cmd, args, obj={"command_factory": fake_factory})
+        assert result.exit_code == 0, result.output
         mock_command.execute.assert_called_once()
+        return received_opts[0]
+
+    def test_uses_command_factory_and_forwards_opts(self):
+        opts = self._invoke(["/tmp/fake-idea", "--setup-only", "--trunk"])
+
+        assert opts.idea_directory == "/tmp/fake-idea"
+        assert opts.setup_only is True
+        assert opts.trunk is True
+
+    def test_forwards_thread_option(self):
+        opts = self._invoke(["/tmp/fake-idea", "--trunk", "--thread", "3"])
+
+        assert opts.thread == 3
 
 
 @pytest.mark.unit

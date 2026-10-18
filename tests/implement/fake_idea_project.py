@@ -16,6 +16,7 @@ class FakeIdeaProject:
         self._idea_files = []
         self._worktree_project = None
         self._next_task = None
+        self._threads = {}
 
     @property
     def name(self):
@@ -65,3 +66,12 @@ class FakeIdeaProject:
 
     def get_next_task(self):
         return self._next_task
+
+    def set_thread(self, thread, title, next_task):
+        self._threads[thread] = (title, next_task)
+
+    def get_next_task_in_thread(self, thread):
+        return self._threads[thread][1]
+
+    def thread_title(self, thread):
+        return self._threads[thread][0]

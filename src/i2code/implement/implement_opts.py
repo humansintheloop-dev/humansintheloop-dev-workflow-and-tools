@@ -28,6 +28,7 @@ class ImplementOpts:
     address_review_comments: bool = False
     skip_scaffolding: bool = False
     debug_claude: bool = False
+    thread: int | None = None
 
     _INNER_FORWARDED = {
         "cleanup",
@@ -52,6 +53,7 @@ class ImplementOpts:
         "dry_run",
         "ignore_uncommitted_idea_changes",
         "skip_scaffolding",
+        "thread",
     }
 
     _TRUNK_INCOMPATIBLE = [

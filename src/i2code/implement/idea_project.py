@@ -133,6 +133,14 @@ class IdeaProject:
         with with_plan_file(self.plan_file) as plan:
             return plan.get_next_task()
 
+    def get_next_task_in_thread(self, thread: int):
+        with with_plan_file(self.plan_file) as plan:
+            return plan.get_next_task_in_thread(thread)
+
+    def thread_title(self, thread: int) -> str:
+        with with_plan_file(self.plan_file) as plan:
+            return plan.get_thread(thread).title
+
     def task_progress(self) -> TaskProgress:
         with with_plan_file(self.plan_file) as plan:
             return plan.task_progress()

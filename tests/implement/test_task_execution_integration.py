@@ -5,7 +5,6 @@ These tests use real git/GitHub but mock Claude invocation.
 
 import os
 import shutil
-import stat
 import subprocess
 import tempfile
 import time
@@ -15,7 +14,12 @@ from dataclasses import dataclass
 import pytest
 from git import Repo
 
-from conftest import SCRIPT_CMD, create_github_repo, delete_github_repo
+from conftest import (
+    SCRIPT_CMD,
+    create_github_repo,
+    create_mock_claude_script_that_marks_tasks_complete,
+    delete_github_repo,
+)
 from i2code.plan_domain.parser import parse as parse_plan
 from i2code.plan_domain.task import Task, TaskMetadata
 
@@ -30,67 +34,6 @@ class GitHubTestRepo:
     worktree_path: str
     worktree_plan_path: str
     repo: Repo
-
-
-def create_mock_claude_script_that_marks_tasks_complete(tmpdir, idea_name):
-    """Create a mock Claude script that marks tasks complete and commits.
-
-    This script simulates what real Claude would do:
-    1. Mark the current task as complete in the plan file
-    2. Create a commit with the changes
-
-    Args:
-        tmpdir: Directory to create the script in
-        idea_name: Name of the idea (used to find plan file)
-
-    Returns:
-        Path to the mock script
-    """
-    mock_script = os.path.join(tmpdir, "mock-claude-complete.sh")
-    with open(mock_script, "w") as f:
-        # The script runs in the worktree, so use relative path to find plan file
-        # Use awk for portable first-occurrence replacement
-        f.write(f"""#!/bin/bash
-set -e  # Exit on error
-
-# Mock Claude script that marks tasks complete
-# Receives task description as $1
-# Runs in the worktree directory
-
-TASK_DESC="$1"
-IDEA_NAME="{idea_name}"
-
-# Ensure CI workflow exists (required by the script before pushing)
-mkdir -p .github/workflows
-if [ ! -f .github/workflows/ci.yml ]; then
-    cat > .github/workflows/ci.yml << 'CIEOF'
-name: CI
-on: [push]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: echo "ok"
-CIEOF
-    git add .github/workflows/ci.yml
-fi
-
-# Find the plan file in the worktree (relative path from worktree root)
-PLAN_FILE="$IDEA_NAME/$IDEA_NAME-plan.md"
-
-# Mark the first unchecked task as complete using awk
-# This replaces only the first occurrence of "- [ ] **Task" with "- [x] **Task"
-awk '!done && /- \\[ \\] \\*\\*Task [0-9]+\\.[0-9]+:/ {{sub(/- \\[ \\] \\*\\*Task/, "- [x] **Task"); done=1}} 1' "$PLAN_FILE" > "$PLAN_FILE.tmp"
-mv "$PLAN_FILE.tmp" "$PLAN_FILE"
-
-# Stage and commit the change
-git add "$PLAN_FILE"
-git commit -m "Complete task: $TASK_DESC"
-""")
-    # Make executable
-    os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
-    return mock_script
 
 
 # Simple plan content for testing sequential execution

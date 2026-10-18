@@ -62,6 +62,8 @@ Projects created outside `i2code go` (e.g., via `i2code idea`/`i2code spec`/`i2c
     - [ ] Modify `_read_lifecycle_state()` in `src/i2code/go_cmd/orchestrator.py:298` to auto-create metadata when the metadata file does not exist: call `write_metadata(metadata_path, {"state": "draft"})` and return `"draft"`. Import `write_metadata` from `i2code.idea.metadata`
     - [ ] Run tests and verify both new tests pass and all existing tests still pass
 
+---
+
 ## Steel Thread 2: Fix ready-state default to advance workflow when config exists
 
 When the implement config file already exists and the project is in `ready` state, the default is "Revise implement options" instead of "Move idea to wip". The user should advance through the workflow, not revisit already-completed configuration.
@@ -77,6 +79,8 @@ When the implement config file already exists and the project is in `ready` stat
     - [ ] Modify `_lifecycle_default()` in `src/i2code/go_cmd/orchestrator.py:332`: for `state == "ready"`, check if config file exists (`os.path.isfile(self._project.implement_config_file)`). If config exists and `MOVE_TO_WIP` is in options, return `options.index(MOVE_TO_WIP) + 1`. Otherwise, return the configure label index as before.
     - [ ] Run all tests in `tests/go-cmd/test_orchestrator_lifecycle_menu.py` — verify all pass
 
+---
+
 ## Steel Thread 3: Fix fallback default for unknown lifecycle state
 
 After Steel Thread 1, the `None`-state fallback in `_lifecycle_default()` (lines 342-344) is mostly unreachable for HAS_PLAN projects, but projects in `wip/` directories without metadata (used in `test_orchestrator_default_selection.py`) still hit it. The fallback should use configure → commit → implement priority.
@@ -91,3 +95,25 @@ After Steel Thread 1, the `None`-state fallback in `_lifecycle_default()` (lines
     - [ ] Verify all tests in `tests/go-cmd/test_orchestrator_default_selection.py` pass with the changes from Steel Threads 1 and 2. The `_wip_project()` helper creates projects in a `wip/` directory path — confirm whether auto-creation fires or not for these projects and adjust if needed
     - [ ] If the fallback logic needs adjustment to maintain correct defaults for unknown-state projects, update the fallback in `_lifecycle_default()` to follow configure → commit → implement priority: first check for the configure label, then COMMIT_CHANGES, then implement
     - [ ] Run the full test suite: `pytest tests/go-cmd/test_orchestrator_default_selection.py tests/go-cmd/test_orchestrator_lifecycle_menu.py -x` — verify all tests pass
+
+---
+
+## Steel Thread 4: Default Claude run mode to non-interactive
+When the user chooses "Configure implement options", the "How should Claude run?" question defaults to "Interactive". The user normally runs Claude non-interactively, so they have to type 2 instead of pressing Enter. This thread makes "Non-interactive" the default answer without changing the option order.
+
+- [ ] **Task 4.1: Configure implement options defaults "How should Claude run?" to Non-interactive**
+  - TaskType: OUTCOME
+  - Entrypoint: `uv run pytest tests/go-cmd/test_implement_config.py`
+  - Observable: prompt_implement_config() asks "How should Claude run?" with default 2 and options [Interactive, Non-interactive], so the menu shows "2) Non-interactive [default]" and pressing Enter returns interactive=False. The option order is unchanged and choosing 1 still returns interactive=True.
+  - Evidence: `uv run pytest tests/go-cmd/test_implement_config.py`
+  - Steps:
+    - [ ] Add `test_run_mode_question_defaults_to_non_interactive` to `TestPromptImplementConfig` in `tests/go-cmd/test_implement_config.py`: call `prompt_implement_config()` with a `menu_fn` that records `(prompt, default, options)` and returns `default`, then assert the "How should Claude run?" call has default `2` and options `[INTERACTIVE, NON_INTERACTIVE]`, and the result is `(False, "none", False)`
+    - [ ] Run the test and verify it fails because the default is `1`
+    - [ ] In `prompt_implement_config()` at `src/i2code/go_cmd/implement_config.py:58`, change the default passed to `menu_fn` for "How should Claude run?" from `1` to `2`
+    - [ ] Run `uv run pytest tests/go-cmd/` and verify all tests pass
+
+---
+
+## Change History
+### 2026-10-19 07:23 - insert-thread-after
+Default "How should Claude run?" to Non-interactive, added to the spec as FR-4

@@ -4,11 +4,13 @@
 
 The `i2code go` command provides an interactive menu that guides users through the idea-to-implementation workflow: drafting, readying, configuring, committing, and implementing. The menu highlights a `[default]` option so the user can press Enter to take the natural next step.
 
-Currently, the default selection logic has two problems:
+Currently, the default selection logic has three problems:
 
 1. **Missing metadata file** — When idea/spec/plan files are created outside `i2code go` (e.g., manually or via `i2code idea`/`i2code spec`/`i2code plan`), no metadata file exists. Without metadata, lifecycle move options ("Move idea to ready/wip") don't appear, and the fallback default logic picks the wrong option.
 
 2. **Incorrect defaults in ready state** — When the implement config file already exists, the ready-state default remains "Revise implement options" instead of advancing to "Move idea to wip".
+
+3. **Interactive run mode is the default** — When the user chooses "Configure implement options", the first question, "How should Claude run?", defaults to "Interactive" (`src/i2code/go_cmd/implement_config.py:58`). The user normally runs Claude non-interactively, so they have to type `2` instead of pressing Enter.
 
 ## Target users
 
@@ -27,13 +29,16 @@ Developers using `i2code go` to manage idea lifecycle and implementation workflo
 
 - Auto-creation of metadata file with `state: draft` when `i2code go` detects HAS_PLAN state with no metadata
 - Fixing `_lifecycle_default()` in `orchestrator.py` to follow the correct progression
+- Changing the default answer to "How should Claude run?" in `prompt_implement_config()` to "Non-interactive"
 - Updating existing tests and adding new tests for the fixed behavior
 
 ## Out-of-scope
 
 - Changes to lifecycle transition rules in `transition_rules.py`
 - Changes to the menu option labels or ordering
-- Changes to the implement config prompting flow
+- Changes to the questions asked when configuring implement options, their order, or the defaults of the "What isolation type?" and "Where should implementation happen?" questions
+- Changes to `i2code implement`, which stays interactive unless `--non-interactive` is passed
+- Changes to `read_implement_config()`, which treats a config file without an `interactive:` key as interactive
 - Auto-creation of metadata in states other than HAS_PLAN (NO_IDEA, HAS_IDEA_NO_SPEC, HAS_SPEC)
 
 ## Functional requirements
@@ -65,6 +70,20 @@ The current fallback path (lines 342-344) for unknown/missing state becomes unre
 
 The `_build_has_plan_options()` method remains unchanged. Only the default selection index changes.
 
+### FR-4: "How should Claude run?" defaults to Non-interactive
+
+`prompt_implement_config()` in `src/i2code/go_cmd/implement_config.py:58` must pass `2` as the default when it asks "How should Claude run?". The options stay `[INTERACTIVE, NON_INTERACTIVE]`, so the menu shows:
+
+```
+How should Claude run?
+  1) Interactive
+  2) Non-interactive [default]
+
+Enter your choice (1-2) [default: 2]:
+```
+
+Pressing Enter writes `interactive: false` to the implement config file, and the HAS_PLAN menu then shows "Implement the entire plan: i2code implement --non-interactive". Typing `1` still selects interactive mode.
+
 ## Security requirements
 
 Not applicable — this is a local CLI tool with no authentication, authorization, or network operations.
@@ -78,6 +97,7 @@ Not applicable — this is a local CLI tool with no authentication, authorizatio
 ## Success metrics
 
 - All five workflow progression scenarios (draft, ready-no-config, ready-with-config, wip-dirty, wip-clean) select the correct default
+- Pressing Enter at every implement options question produces a non-interactive configuration
 - Projects created outside `i2code go` show lifecycle move options on first run
 
 ## Epics and user stories
@@ -89,6 +109,8 @@ Not applicable — this is a local CLI tool with no authentication, authorizatio
 **US-2:** As a developer in draft state, the default is "Move to ready" so I can advance by pressing Enter.
 
 **US-3:** As a developer in ready state who hasn't configured implement options, the default is "Configure implement options" so I set up before implementing.
+
+**US-3a:** As a developer configuring implement options, the default answer to "How should Claude run?" is "Non-interactive" so I can accept it by pressing Enter.
 
 **US-4:** As a developer in ready state who has already configured implement options, the default is "Move to wip" so I can advance to implementation.
 
@@ -103,10 +125,10 @@ Not applicable — this is a local CLI tool with no authentication, authorizatio
 A developer creates idea, spec, and plan files manually (not via `i2code go`). They then run `i2code go` repeatedly, pressing Enter each time:
 
 1. First run — no metadata exists. Auto-created with `state: draft`. Menu shows "Move idea to ready" as default. User presses Enter → state moves to draft→ready.
-2. Second run — state is ready, no config file. Menu shows "Configure implement options" as default. User presses Enter → configures options.
+2. Second run — state is ready, no config file. Menu shows "Configure implement options" as default. User presses Enter, then presses Enter at each implement options question → the config file contains `interactive: false`, `isolation_type: none` and `trunk: false`.
 3. Third run — state is ready, config exists. Menu shows "Move idea to wip" as default. User presses Enter → state moves to ready→wip.
 4. Fourth run — state is wip, uncommitted changes from state transition. Menu shows "Commit changes" as default. User presses Enter → changes committed.
-5. Fifth run — state is wip, clean tree. Menu shows "Implement the entire plan: i2code implement [flags]" as default. User presses Enter → implementation begins.
+5. Fifth run — state is wip, clean tree. Menu shows "Implement the entire plan: i2code implement --non-interactive" as default. User presses Enter → implementation begins.
 
 ### Scenario: Project already has metadata
 
@@ -128,4 +150,11 @@ A project with metadata containing an unrecognized state (e.g., `state: archived
 - Auto-creation of metadata file when none exists in HAS_PLAN state
 - Verify metadata is not overwritten when it already exists
 - Ready state with config file defaults to `MOVE_TO_WIP`
+- `prompt_implement_config()` passes `2` (Non-interactive) as the default for "How should Claude run?", in `tests/go-cmd/test_implement_config.py`
 - Full progression scenario (optional integration-level test)
+
+## Change History
+
+### 2026-10-19: Default "How should Claude run?" to Non-interactive
+
+Added problem 3, FR-4, US-3a, a success metric and a test expectation, and updated the primary scenario. The user had to type `2` at "How should Claude run?" when running `i2code go` on `implement-selected-thread`, because the question defaults to "Interactive". Narrowed the out-of-scope item about the implement config prompts so it excludes only the other questions and defaults.

@@ -85,16 +85,16 @@ When the implement config file already exists and the project is in `ready` stat
 
 After Steel Thread 1, the `None`-state fallback in `_lifecycle_default()` (lines 342-344) is mostly unreachable for HAS_PLAN projects, but projects in `wip/` directories without metadata (used in `test_orchestrator_default_selection.py`) still hit it. The fallback should use configure → commit → implement priority.
 
-- [ ] **Task 3.1: Fallback default prefers configure over commit when no config exists**
+- [x] **Task 3.1: Fallback default prefers configure over commit when no config exists**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/go-cmd/test_orchestrator_default_selection.py -x`
   - Observable: When lifecycle state is unknown/None, config file exists, and working tree is clean, the fallback default is the configure/revise label (not COMMIT_CHANGES, not option index 2).
   - Evidence: `test_config_exists_no_changes_defaults_to_revise` in `tests/go-cmd/test_orchestrator_default_selection.py:108` continues to pass (fallback picks the configure/revise label). All other tests in this file pass.
   - Steps:
-    - [ ] Review current fallback logic in `src/i2code/go_cmd/orchestrator.py:342-344` and the test expectations in `tests/go-cmd/test_orchestrator_default_selection.py`
-    - [ ] Verify all tests in `tests/go-cmd/test_orchestrator_default_selection.py` pass with the changes from Steel Threads 1 and 2. The `_wip_project()` helper creates projects in a `wip/` directory path — confirm whether auto-creation fires or not for these projects and adjust if needed
-    - [ ] If the fallback logic needs adjustment to maintain correct defaults for unknown-state projects, update the fallback in `_lifecycle_default()` to follow configure → commit → implement priority: first check for the configure label, then COMMIT_CHANGES, then implement
-    - [ ] Run the full test suite: `pytest tests/go-cmd/test_orchestrator_default_selection.py tests/go-cmd/test_orchestrator_lifecycle_menu.py -x` — verify all tests pass
+    - [x] Review current fallback logic in `src/i2code/go_cmd/orchestrator.py:342-344` and the test expectations in `tests/go-cmd/test_orchestrator_default_selection.py`
+    - [x] Verify all tests in `tests/go-cmd/test_orchestrator_default_selection.py` pass with the changes from Steel Threads 1 and 2. The `_wip_project()` helper creates projects in a `wip/` directory path — confirm whether auto-creation fires or not for these projects and adjust if needed
+    - [x] If the fallback logic needs adjustment to maintain correct defaults for unknown-state projects, update the fallback in `_lifecycle_default()` to follow configure → commit → implement priority: first check for the configure label, then COMMIT_CHANGES, then implement
+    - [x] Run the full test suite: `pytest tests/go-cmd/test_orchestrator_default_selection.py tests/go-cmd/test_orchestrator_lifecycle_menu.py -x` — verify all tests pass
 
 ---
 

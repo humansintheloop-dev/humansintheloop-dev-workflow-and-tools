@@ -348,7 +348,7 @@ class Orchestrator:
             return self._implement_option_index(options)
         if COMMIT_CHANGES in options:
             return options.index(COMMIT_CHANGES) + 1
-        return 2
+        return options.index(self._configure_implement_label()) + 1
 
     def _ready_default(self, options):
         if os.path.isfile(self._project.implement_config_file) and MOVE_TO_WIP in options:

@@ -96,7 +96,7 @@ def _run_script_with_fake_claude(tmp_path, *args):
     _write_fake_command(git_dir, "git")
     result = subprocess.run(
         [str(SCRIPT), *args],
-        env={**os.environ, "PATH": f"{bin_dir}:/usr/bin:/bin:{git_dir}", "HOME": str(home)},
+        env={**os.environ, "PATH": f"{bin_dir}:/usr/bin:{git_dir}:/bin", "HOME": str(home)},
         capture_output=True,
         text=True,
     )

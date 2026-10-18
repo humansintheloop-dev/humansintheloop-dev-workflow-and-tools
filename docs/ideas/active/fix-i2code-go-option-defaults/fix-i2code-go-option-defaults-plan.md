@@ -50,17 +50,17 @@ Use these skills by invoking them before the relevant action:
 
 Projects created outside `i2code go` (e.g., via `i2code idea`/`i2code spec`/`i2code plan`) have no metadata file. Without metadata, `_read_lifecycle_state()` returns `None`, lifecycle move options don't appear, and the fallback default picks the wrong option. This thread adds auto-creation of metadata with `state: draft`.
 
-- [ ] **Task 1.1: Auto-create metadata file with state draft when no metadata exists in HAS_PLAN**
+- [x] **Task 1.1: Auto-create metadata file with state draft when no metadata exists in HAS_PLAN**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/go-cmd/test_orchestrator_lifecycle_menu.py -x`
   - Observable: When `_read_lifecycle_state()` encounters a project in HAS_PLAN state (idea, spec, plan files exist) with no metadata file, it creates metadata with `state: draft` and returns `"draft"`. The menu then shows "Move idea to ready" and defaults to it. When metadata already exists, it is NOT overwritten.
   - Evidence: New tests in `tests/go-cmd/test_orchestrator_lifecycle_menu.py` verify: (1) a project without metadata gets auto-created metadata and defaults to MOVE_TO_READY, (2) a project with existing metadata is not overwritten.
   - Steps:
-    - [ ] Add a new test class `TestAutoCreateMetadata` in `tests/go-cmd/test_orchestrator_lifecycle_menu.py` with two tests:
+    - [x] Add a new test class `TestAutoCreateMetadata` in `tests/go-cmd/test_orchestrator_lifecycle_menu.py` with two tests:
       - `test_no_metadata_auto_creates_draft_and_defaults_to_move_to_ready` — creates a project with plan files but no metadata file, runs orchestrator, asserts default is MOVE_TO_READY and metadata file now exists with `state: draft`
       - `test_existing_metadata_not_overwritten` — creates a project with metadata `state: ready`, runs orchestrator, asserts metadata still contains `state: ready`
-    - [ ] Modify `_read_lifecycle_state()` in `src/i2code/go_cmd/orchestrator.py:298` to auto-create metadata when the metadata file does not exist: call `write_metadata(metadata_path, {"state": "draft"})` and return `"draft"`. Import `write_metadata` from `i2code.idea.metadata`
-    - [ ] Run tests and verify both new tests pass and all existing tests still pass
+    - [x] Modify `_read_lifecycle_state()` in `src/i2code/go_cmd/orchestrator.py:298` to auto-create metadata when the metadata file does not exist: call `write_metadata(metadata_path, {"state": "draft"})` and return `"draft"`. Import `write_metadata` from `i2code.idea.metadata`
+    - [x] Run tests and verify both new tests pass and all existing tests still pass
 
 ---
 
@@ -117,3 +117,6 @@ When the user chooses "Configure implement options", the "How should Claude run?
 ## Change History
 ### 2026-10-19 07:23 - insert-thread-after
 Default "How should Claude run?" to Non-interactive, added to the spec as FR-4
+
+### 2026-10-19 07:30 - mark-task-complete
+Auto-create draft metadata; default-selection tests now use an unrecognized-state metadata fixture since missing metadata no longer reaches the fallback

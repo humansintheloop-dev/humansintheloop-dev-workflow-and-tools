@@ -16,11 +16,14 @@ from i2code.implement.idea_project import IdeaProject
 
 
 @contextmanager
-def _wip_project(name):
-    """Create a TempIdeaProject in a wip directory (no lifecycle move option)."""
+def _unknown_state_project(name):
+    """Create a TempIdeaProject whose metadata has an unrecognized lifecycle state."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        idea_dir = os.path.join(tmpdir, "docs", "ideas", "wip", name)
+        idea_dir = os.path.join(tmpdir, "docs", "ideas", "active", name)
         os.makedirs(idea_dir)
+        metadata_path = os.path.join(idea_dir, f"{name}-metadata.yaml")
+        with open(metadata_path, "w") as f:
+            f.write("state: archived\n")
         yield IdeaProject(idea_dir)
 
 
@@ -85,28 +88,28 @@ def _get_menu_display(project, *, git_runner=None):
 class TestDefaultSelectionByConfig:
 
     def test_no_config_defaults_to_configure(self):
-        with _wip_project("my-feature") as project:
+        with _unknown_state_project("my-feature") as project:
             _setup_has_plan(project)
             # No config file created
             displayed = _get_menu_display(project)
             assert _find_default(displayed) == CONFIGURE_IMPLEMENT
 
     def test_config_exists_with_uncommitted_changes_defaults_to_commit(self):
-        with _wip_project("my-feature") as project:
+        with _unknown_state_project("my-feature") as project:
             _setup_has_plan(project)
             _create_file(project, f"{project.name}-implement-config.yaml", "model: opus")
             displayed = _get_menu_display(project, git_runner=_dirty_git())
             assert _find_default(displayed) == COMMIT_CHANGES
 
     def test_unknown_state_defaults_to_configure(self):
-        with _wip_project("my-feature") as project:
+        with _unknown_state_project("my-feature") as project:
             _setup_has_plan(project)
             _create_file(project, f"{project.name}-metadata.yaml", "state: archived\n")
             displayed = _get_menu_display(project)
             assert _find_default(displayed) == CONFIGURE_IMPLEMENT
 
     def test_config_exists_no_changes_defaults_to_revise(self):
-        with _wip_project("my-feature") as project:
+        with _unknown_state_project("my-feature") as project:
             _setup_has_plan(project)
             _create_file(project, f"{project.name}-implement-config.yaml", "model: opus")
             displayed = _get_menu_display(project)

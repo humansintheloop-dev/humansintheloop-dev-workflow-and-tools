@@ -27,7 +27,7 @@ from i2code.go_cmd.plugin_skills import list_plugin_skills
 from i2code.go_cmd.revise_plan import revise_plan
 from i2code.idea_cmd.brainstorm import brainstorm_idea
 from i2code.idea_cmd.state_cmd import execute_transition
-from i2code.idea.metadata import read_metadata
+from i2code.idea.metadata import read_metadata, write_metadata
 from i2code.implement.claude_runner import ClaudeResult, ClaudeRunner
 from i2code.implement.idea_project import IdeaProject
 from i2code.plan_domain.parser import parse
@@ -305,7 +305,8 @@ class Orchestrator:
     def _read_lifecycle_state(self):
         metadata_path = Path(self._project.metadata_file)
         if not metadata_path.is_file():
-            return None
+            write_metadata(metadata_path, {"state": "draft"})
+            return "draft"
         try:
             metadata = read_metadata(metadata_path)
         except (OSError, ValueError):

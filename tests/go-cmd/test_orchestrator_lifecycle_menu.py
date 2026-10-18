@@ -3,6 +3,7 @@
 import os
 from contextlib import contextmanager
 import tempfile
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,6 +14,7 @@ from i2code.go_cmd.orchestrator import (
     REVISE_IMPLEMENT,
     Orchestrator, OrchestratorDeps,
 )
+from i2code.idea.metadata import read_metadata
 from i2code.implement.idea_project import IdeaProject
 
 
@@ -23,12 +25,18 @@ MOVE_TO_WIP = "Move idea to wip"
 @contextmanager
 def _lifecycle_project(name, state):
     """Create a TempIdeaProject with a metadata file containing the state."""
+    with _project_without_metadata(name) as project:
+        with open(project.metadata_file, "w") as f:
+            f.write(f"state: {state}\n")
+        yield project
+
+
+@contextmanager
+def _project_without_metadata(name):
+    """Create a TempIdeaProject with no metadata file."""
     with tempfile.TemporaryDirectory() as tmpdir:
         idea_dir = os.path.join(tmpdir, "docs", "ideas", "active", name)
         os.makedirs(idea_dir)
-        metadata_path = os.path.join(idea_dir, f"{name}-metadata.yaml")
-        with open(metadata_path, "w") as f:
-            f.write(f"state: {state}\n")
         yield IdeaProject(idea_dir)
 
 
@@ -194,6 +202,23 @@ class TestWipIdeaMenu:
             _setup_has_plan(project)
             displayed = _get_menu_display(project, git_runner=_dirty_git())
             assert _find_default(displayed) == COMMIT_CHANGES
+
+
+@pytest.mark.unit
+class TestAutoCreateMetadata:
+
+    def test_no_metadata_auto_creates_draft_and_defaults_to_move_to_ready(self):
+        with _project_without_metadata("my-feature") as project:
+            _setup_has_plan(project)
+            displayed = _get_menu_display(project)
+            assert _find_default(displayed) == MOVE_TO_READY
+            assert read_metadata(Path(project.metadata_file)) == {"state": "draft"}
+
+    def test_existing_metadata_not_overwritten(self):
+        with _lifecycle_project("my-feature", "ready") as project:
+            _setup_has_plan(project)
+            _get_menu_display(project)
+            assert read_metadata(Path(project.metadata_file)) == {"state": "ready"}
 
 
 @pytest.mark.unit

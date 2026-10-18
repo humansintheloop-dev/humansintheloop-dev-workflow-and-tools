@@ -77,12 +77,12 @@ This thread replaces `_commit_default()` with lifecycle-aware logic. The option 
   - Observable: When idea is in `draft` state, the default menu option is "Move idea to ready" instead of "Configure implement options"
   - Evidence: `pytest tests/go-cmd/test_orchestrator_default_selection.py tests/go-cmd/test_orchestrator_lifecycle_menu.py -v` passes with new/updated tests asserting draft state defaults to "Move idea to ready"
   - Steps:
-    - [ ] Update `tests/go-cmd/test_orchestrator_lifecycle_menu.py`: Change `TestDraftIdeaMenu.test_draft_idea_no_config_defaults_to_configure` to assert default is `MOVE_TO_READY` instead of `CONFIGURE_IMPLEMENT`. Rename to `test_draft_idea_defaults_to_move_to_ready`.
-    - [ ] Add a new test in `TestDraftIdeaMenu`: `test_draft_idea_with_uncommitted_changes_defaults_to_move_to_ready` — verifies that even with dirty git, draft state defaults to "Move idea to ready" (lifecycle takes precedence over uncommitted changes).
-    - [ ] In `src/i2code/go_cmd/orchestrator.py`, refactor metadata reading: extract a `_read_lifecycle_state()` method that reads metadata and returns the state string (or `None`). Have `_lifecycle_move_label()` call `_read_lifecycle_state()` internally.
-    - [ ] Replace `_commit_default()` with `_lifecycle_default(options)` that calls `_read_lifecycle_state()` and implements the default logic table. For now, handle the `draft` case: if state is `"draft"` and `MOVE_TO_READY` is in options, return its 1-based index. Otherwise fall back to option 2.
-    - [ ] Update the caller at `src/i2code/go_cmd/orchestrator.py:270` to call `_lifecycle_default(options)` instead of `_commit_default(options)`.
-    - [ ] Run tests to verify draft default changed and no regressions.
+    - [x] Update `tests/go-cmd/test_orchestrator_lifecycle_menu.py`: Change `TestDraftIdeaMenu.test_draft_idea_no_config_defaults_to_configure` to assert default is `MOVE_TO_READY` instead of `CONFIGURE_IMPLEMENT`. Rename to `test_draft_idea_defaults_to_move_to_ready`.
+    - [x] Add a new test in `TestDraftIdeaMenu`: `test_draft_idea_with_uncommitted_changes_defaults_to_move_to_ready` — verifies that even with dirty git, draft state defaults to "Move idea to ready" (lifecycle takes precedence over uncommitted changes).
+    - [x] In `src/i2code/go_cmd/orchestrator.py`, refactor metadata reading: extract a `_read_lifecycle_state()` method that reads metadata and returns the state string (or `None`). Have `_lifecycle_move_label()` call `_read_lifecycle_state()` internally.
+    - [x] Replace `_commit_default()` with `_lifecycle_default(options)` that calls `_read_lifecycle_state()` and implements the default logic table. For now, handle the `draft` case: if state is `"draft"` and `MOVE_TO_READY` is in options, return its 1-based index. Otherwise fall back to option 2.
+    - [x] Update the caller at `src/i2code/go_cmd/orchestrator.py:270` to call `_lifecycle_default(options)` instead of `_commit_default(options)`.
+    - [x] Run tests to verify draft default changed and no regressions.
 
 ### Task 1.2: Ready state defaults to "Configure/Revise implement options"
 
@@ -126,6 +126,8 @@ This thread replaces `_commit_default()` with lifecycle-aware logic. The option 
     - [x] Add a test with metadata containing an unrecognized state (e.g., `state: archived`) — assert default is option 2 (configure/revise).
     - [x] Verify `_lifecycle_default()` handles `None` state and unknown states by falling back to `return 2`.
     - [x] Run all go-cmd tests to confirm no regressions.
+
+---
 
 ## Steel Thread 2: Optimize Metadata Reading
 
@@ -182,3 +184,21 @@ Added test for unknown state fallback; verified existing implementation handles 
 
 ### 2026-03-14 16:33 - mark-task-complete
 Refactored to read metadata once per menu build
+
+### 2026-10-19 07:14 - mark-step-complete
+Implemented in 430706d; task was marked complete without ticking its steps
+
+### 2026-10-19 07:14 - mark-step-complete
+Implemented in 430706d; task was marked complete without ticking its steps
+
+### 2026-10-19 07:14 - mark-step-complete
+Implemented in 430706d; task was marked complete without ticking its steps
+
+### 2026-10-19 07:14 - mark-step-complete
+Implemented in 430706d; task was marked complete without ticking its steps
+
+### 2026-10-19 07:14 - mark-step-complete
+Implemented in 430706d; task was marked complete without ticking its steps
+
+### 2026-10-19 07:14 - mark-step-complete
+Implemented in 430706d; task was marked complete without ticking its steps

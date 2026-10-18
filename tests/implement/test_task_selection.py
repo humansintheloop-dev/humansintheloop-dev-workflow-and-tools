@@ -53,3 +53,14 @@ class TestThreadSelection:
         lines = capsys.readouterr().out.splitlines()
         assert lines[0].endswith("Thread 1 (Setup) is complete.")
         assert lines[1].endswith("Next: i2code implement --trunk --thread 3 /ideas/x")
+
+    def test_report_completion_prints_only_all_tasks_completed_when_no_tasks_remain(self, capsys):
+        project = FakeIdeaProject()
+        project.set_thread(3, "Finish", None)
+        project.set_next_task(None)
+
+        ThreadSelection(project, 3, "/ideas/x").report_completion()
+
+        lines = capsys.readouterr().out.splitlines()
+        assert len(lines) == 1
+        assert lines[0].endswith("All tasks completed!")

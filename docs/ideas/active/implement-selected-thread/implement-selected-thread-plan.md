@@ -84,15 +84,15 @@ The developer runs `i2code implement --trunk --thread 1 <idea-directory>` on a p
     - [x] Add `--thread N` to the `### Additional Flags` section and the `## 3. Trunk Mode (`--trunk`)` section of `docs/design/implement-steps.md`
     - [x] Run `./test-scripts/test-unit.sh`, `./test-scripts/test-integration.sh` and `uvx pyright --level error src/`, and run the CodeScene `pre_commit_code_health_safeguard` on the staged changes
 
-- [ ] **Task 1.2: Finishing the last incomplete thread reports that all tasks are complete**
+- [x] **Task 1.2: Finishing the last incomplete thread reports that all tasks are complete**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement --trunk --thread 3 --mock-claude <script> <idea-directory>`
   - Observable: With threads 1 and 2 complete, every task of thread 3 is marked `[x]`. Stdout contains `All tasks completed!` and contains neither `Thread 3 (Thread 3) is complete.` nor a `Next:` line. Exit status 0.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_trunk_thread_integration.py::TestRunSelectedThread::test_last_thread_reports_all_tasks_completed -v -m integration` runs the CLI as a subprocess, then asserts the exit status, the plan file checkboxes and stdout
   - Steps:
-    - [ ] Write the failing acceptance test `test_last_thread_reports_all_tasks_completed` in `tests/implement/test_trunk_thread_integration.py`. Its plan has threads 1 and 2 complete and thread 3 incomplete.
-    - [ ] Write a unit test in `tests/implement/test_task_selection.py`: when `project.get_next_task()` returns `None`, `ThreadSelection.report_completion()` prints `All tasks completed!` and nothing else. Implement it in `src/i2code/implement/task_selection.py`.
-    - [ ] Run the acceptance test and confirm it passes
+    - [x] Write the failing acceptance test `test_last_thread_reports_all_tasks_completed` in `tests/implement/test_trunk_thread_integration.py`. Its plan has threads 1 and 2 complete and thread 3 incomplete.
+    - [x] Write a unit test in `tests/implement/test_task_selection.py`: when `project.get_next_task()` returns `None`, `ThreadSelection.report_completion()` prints `All tasks completed!` and nothing else. Implement it in `src/i2code/implement/task_selection.py`.
+    - [x] Run the acceptance test and confirm it passes
 
 ---
 

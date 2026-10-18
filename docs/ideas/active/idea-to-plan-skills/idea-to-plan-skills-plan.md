@@ -235,19 +235,19 @@ Decisions made at plan time:
 
 ## Steel Thread 10: brainstorm through the brainstorm-idea skill
 
-- [ ] **Task 10.1: i2code idea brainstorm renders a skill-based prompt with no inline idea types**
+- [x] **Task 10.1: i2code idea brainstorm renders a skill-based prompt with no inline idea types**
   - TaskType: OUTCOME
   - Entrypoint: `brainstorm_idea()` in `src/i2code/idea_cmd/brainstorm.py`, reached by `i2code idea brainstorm <idea-dir>`
   - Observable: The prompt contains `project.directory`, `idea-to-code:idea-organization` and `idea-to-code:brainstorm-idea`. It contains no `@` and no `Architecture POC`. `grep -r "Architecture POC" src/i2code/prompt-templates/` finds nothing, and no template listed in spec section 3.5 contains `@`.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/idea-cmd/test_brainstorm.py -v -m unit` passes. `test_claude_prompt_contains_idea_and_discussion_files` (`tests/idea-cmd/test_brainstorm.py:162`) is replaced by a test that asserts the strings above and the absence of `@` and `Architecture POC`. A new test in `tests/plugin-skills/test_prompt_templates.py` renders each of the six section-3.5 templates with `render_template` and asserts none contains `@` or `Architecture POC`.
   - Steps:
-    - [ ] Update `tests/idea-cmd/test_brainstorm.py:162` and write `tests/plugin-skills/test_prompt_templates.py` (marker `unit`), and confirm they fail
-    - [ ] Create `claude-code-plugins/idea-to-code/skills/brainstorm-idea/SKILL.md` with the description and contents from spec section 3.2. The process moves from `src/i2code/prompt-templates/brainstorm-idea.md:33`–`67`, with the idea types replaced by a reference to `idea-to-code:idea-organization` and the `## Classification` section written to the discussion file.
-    - [ ] Add `./skills/brainstorm-idea` to `claude-code-plugins/idea-to-code/.claude-plugin/plugin.json`
-    - [ ] Reduce `src/i2code/prompt-templates/brainstorm-idea.md` to `${IDEA_DIRECTORY}`, "Use `idea-to-code:idea-organization` and `idea-to-code:brainstorm-idea`", and "refine the idea in this directory"
-    - [ ] Change `src/i2code/idea_cmd/brainstorm.py:83` to pass only `{"IDEA_DIRECTORY": project.directory}`
-    - [ ] Grep `src/` and `tests/` for `IDEA_FILE`, `DISCUSSION_FILE`, `SPEC_FILE` and `PLAN_WITHOUT_STORIES_FILE` and remove every remaining use from the section-3.5 templates and their call sites
-    - [ ] Run `./test-scripts/test-end-to-end.sh`, `uvx pyright --level error src/` and `claude plugin validate --strict claude-code-plugins/idea-to-code`, and confirm all pass
+    - [x] Update `tests/idea-cmd/test_brainstorm.py:162` and write `tests/plugin-skills/test_prompt_templates.py` (marker `unit`), and confirm they fail
+    - [x] Create `claude-code-plugins/idea-to-code/skills/brainstorm-idea/SKILL.md` with the description and contents from spec section 3.2. The process moves from `src/i2code/prompt-templates/brainstorm-idea.md:33`–`67`, with the idea types replaced by a reference to `idea-to-code:idea-organization` and the `## Classification` section written to the discussion file.
+    - [x] Add `./skills/brainstorm-idea` to `claude-code-plugins/idea-to-code/.claude-plugin/plugin.json`
+    - [x] Reduce `src/i2code/prompt-templates/brainstorm-idea.md` to `${IDEA_DIRECTORY}`, "Use `idea-to-code:idea-organization` and `idea-to-code:brainstorm-idea`", and "refine the idea in this directory"
+    - [x] Change `src/i2code/idea_cmd/brainstorm.py:83` to pass only `{"IDEA_DIRECTORY": project.directory}`
+    - [x] Grep `src/` and `tests/` for `IDEA_FILE`, `DISCUSSION_FILE`, `SPEC_FILE` and `PLAN_WITHOUT_STORIES_FILE` and remove every remaining use from the section-3.5 templates and their call sites
+    - [x] Run `./test-scripts/test-end-to-end.sh`, `uvx pyright --level error src/` and `claude plugin validate --strict claude-code-plugins/idea-to-code`, and confirm all pass
 
 ---
 

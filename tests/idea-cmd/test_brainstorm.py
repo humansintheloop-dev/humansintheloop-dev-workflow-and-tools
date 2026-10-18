@@ -154,13 +154,16 @@ class TestClaudeInvocation:
         assert isinstance(cmd, ClaudeCodeCommand)
         assert cmd.interactive is True
 
-    def test_claude_prompt_contains_idea_and_discussion_files(self, tmp_path):
+    def test_claude_prompt_names_idea_directory_and_skills_without_inline_idea_types(self, tmp_path):
         project, runner, _, _ = run_brainstorm(tmp_path)
         _, cmd, _ = runner.calls[0]
         assert isinstance(cmd, ClaudeCodeCommand)
         prompt = cmd.prompt or ""
-        assert project.idea_file in prompt
-        assert project.discussion_file in prompt
+        assert project.directory in prompt
+        assert "idea-to-code:idea-organization" in prompt
+        assert "idea-to-code:brainstorm-idea" in prompt
+        assert "@" not in prompt
+        assert "Architecture POC" not in prompt
 
     def test_returns_claude_result(self, tmp_path):
         from i2code.implement.claude_runner import ClaudeResult

@@ -80,10 +80,7 @@ def brainstorm_idea(
         else:
             subprocess.run(full_cmd, check=False)
 
-    prompt = render_template("brainstorm-idea.md", {
-        "IDEA_FILE": project.idea_file,
-        "DISCUSSION_FILE": project.discussion_file,
-    })
+    prompt = render_template("brainstorm-idea.md", {"IDEA_DIRECTORY": project.directory})
 
     allowed_tools = (
         build_allowed_tools_flag(repo_root, project.directory)

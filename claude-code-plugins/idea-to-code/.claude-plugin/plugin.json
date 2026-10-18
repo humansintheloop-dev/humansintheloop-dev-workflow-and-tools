@@ -16,6 +16,7 @@
   "skills": [
     "./skills/apply-design-patterns",
     "./skills/ask-a-friend",
+    "./skills/brainstorm-idea",
     "./skills/commit-guidelines",
     "./skills/create-plan",
     "./skills/debugging-ci-failures",

@@ -136,6 +136,26 @@ class TestPromptImplementConfig:
         assert isolation_type == "none"
         assert trunk is True
 
+    def test_run_mode_question_defaults_to_non_interactive(self):
+        from i2code.go_cmd.implement_config import (
+            INTERACTIVE,
+            NON_INTERACTIVE,
+            prompt_implement_config,
+        )
+
+        calls = []
+
+        def menu_fn(prompt, default, options):
+            calls.append((prompt, default, options))
+            return default
+
+        result = prompt_implement_config(menu_fn)
+
+        run_mode_call = next(c for c in calls if c[0] == "How should Claude run?")
+        assert run_mode_call[1] == 2
+        assert run_mode_call[2] == [INTERACTIVE, NON_INTERACTIVE]
+        assert result == (False, "none", False)
+
 
 @pytest.mark.unit
 class TestPromptImplementConfigWithIsolation:

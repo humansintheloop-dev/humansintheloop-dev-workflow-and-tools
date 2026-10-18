@@ -101,16 +101,16 @@ After Steel Thread 1, the `None`-state fallback in `_lifecycle_default()` (lines
 ## Steel Thread 4: Default Claude run mode to non-interactive
 When the user chooses "Configure implement options", the "How should Claude run?" question defaults to "Interactive". The user normally runs Claude non-interactively, so they have to type 2 instead of pressing Enter. This thread makes "Non-interactive" the default answer without changing the option order.
 
-- [ ] **Task 4.1: Configure implement options defaults "How should Claude run?" to Non-interactive**
+- [x] **Task 4.1: Configure implement options defaults "How should Claude run?" to Non-interactive**
   - TaskType: OUTCOME
   - Entrypoint: `uv run pytest tests/go-cmd/test_implement_config.py`
   - Observable: prompt_implement_config() asks "How should Claude run?" with default 2 and options [Interactive, Non-interactive], so the menu shows "2) Non-interactive [default]" and pressing Enter returns interactive=False. The option order is unchanged and choosing 1 still returns interactive=True.
   - Evidence: `uv run pytest tests/go-cmd/test_implement_config.py`
   - Steps:
-    - [ ] Add `test_run_mode_question_defaults_to_non_interactive` to `TestPromptImplementConfig` in `tests/go-cmd/test_implement_config.py`: call `prompt_implement_config()` with a `menu_fn` that records `(prompt, default, options)` and returns `default`, then assert the "How should Claude run?" call has default `2` and options `[INTERACTIVE, NON_INTERACTIVE]`, and the result is `(False, "none", False)`
-    - [ ] Run the test and verify it fails because the default is `1`
-    - [ ] In `prompt_implement_config()` at `src/i2code/go_cmd/implement_config.py:58`, change the default passed to `menu_fn` for "How should Claude run?" from `1` to `2`
-    - [ ] Run `uv run pytest tests/go-cmd/` and verify all tests pass
+    - [x] Add `test_run_mode_question_defaults_to_non_interactive` to `TestPromptImplementConfig` in `tests/go-cmd/test_implement_config.py`: call `prompt_implement_config()` with a `menu_fn` that records `(prompt, default, options)` and returns `default`, then assert the "How should Claude run?" call has default `2` and options `[INTERACTIVE, NON_INTERACTIVE]`, and the result is `(False, "none", False)`
+    - [x] Run the test and verify it fails because the default is `1`
+    - [x] In `prompt_implement_config()` at `src/i2code/go_cmd/implement_config.py:58`, change the default passed to `menu_fn` for "How should Claude run?" from `1` to `2`
+    - [x] Run `uv run pytest tests/go-cmd/` and verify all tests pass
 
 ---
 

@@ -55,7 +55,7 @@ def prompt_implement_config(menu_fn):
     Returns:
         (interactive, isolation_type, trunk) tuple.
     """
-    mode_choice = menu_fn("How should Claude run?", 1, [INTERACTIVE, NON_INTERACTIVE])
+    mode_choice = menu_fn("How should Claude run?", 2, [INTERACTIVE, NON_INTERACTIVE])
     interactive = mode_choice == 1
 
     isolation_choice = menu_fn("What isolation type?", 1, ISOLATION_CHOICES)

@@ -236,6 +236,15 @@ class TestThreadTitle:
 
 
 @pytest.mark.unit
+class TestThreadCount:
+
+    def test_returns_number_of_threads(self, tmp_path):
+        project = _make_project_with_plan(tmp_path, PLAN_WITH_TWO_THREADS)
+
+        assert project.thread_count() == 2
+
+
+@pytest.mark.unit
 class TestIsTaskCompleted:
 
     def test_completed_task_returns_true(self, tmp_path):

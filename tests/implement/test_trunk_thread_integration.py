@@ -147,3 +147,27 @@ class TestThreadRequiresTrunk:
         assert "Error: --thread requires --trunk" in result.stderr
         assert f"idea/{IDEA_NAME}" not in [head.name for head in idea.repo.heads]
         assert not os.path.exists(_worktree_dir(idea.tmpdir))
+
+
+def _read_file(path):
+    with open(path) as f:
+        return f.read()
+
+
+@pytest.mark.integration
+class TestThreadOutOfRange:
+
+    @pytest.mark.parametrize("thread", ["4", "0"])
+    def test_out_of_range_thread_is_usage_error_naming_valid_range(self, three_thread_idea, tmp_path, thread):
+        idea = three_thread_idea
+        script = create_mock_claude_script_that_marks_tasks_complete(str(tmp_path), IDEA_NAME)
+        head_before = idea.repo.head.commit.hexsha
+        plan_before = _read_file(idea.plan_path)
+
+        result = run_script(idea.idea_dir, cwd=idea.tmpdir,
+                            extra_args=["--mock-claude", script, "--trunk", "--thread", thread])
+
+        assert result.returncode == 2, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        assert "Error: --thread must be between 1 and 3" in result.stderr
+        assert idea.repo.head.commit.hexsha == head_before
+        assert _read_file(idea.plan_path) == plan_before

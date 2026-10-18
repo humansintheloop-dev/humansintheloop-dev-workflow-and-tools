@@ -141,6 +141,10 @@ class IdeaProject:
         with with_plan_file(self.plan_file) as plan:
             return plan.get_thread(thread).title
 
+    def thread_count(self) -> int:
+        with with_plan_file(self.plan_file) as plan:
+            return len(plan.threads)
+
     def task_progress(self) -> TaskProgress:
         with with_plan_file(self.plan_file) as plan:
             return plan.task_progress()

@@ -1,5 +1,6 @@
 """Tests for the task selections that TrunkMode iterates over."""
 
+import click
 import pytest
 
 from i2code.implement.task_selection import AllTasksSelection, ThreadSelection
@@ -64,3 +65,12 @@ class TestThreadSelection:
         lines = capsys.readouterr().out.splitlines()
         assert len(lines) == 1
         assert lines[0].endswith("All tasks completed!")
+
+    @pytest.mark.parametrize("thread", [0, 4])
+    def test_validate_rejects_thread_outside_plan(self, thread):
+        project = FakeIdeaProject()
+        for thread_number in [1, 2, 3]:
+            project.set_thread(thread_number, f"Thread {thread_number}", None)
+
+        with pytest.raises(click.UsageError, match="^--thread must be between 1 and 3$"):
+            ThreadSelection(project, thread, "/ideas/x").validate()

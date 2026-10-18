@@ -75,3 +75,6 @@ class FakeIdeaProject:
 
     def thread_title(self, thread):
         return self._threads[thread][0]
+
+    def thread_count(self):
+        return max(self._threads, default=0)

@@ -117,17 +117,17 @@ The developer runs `--thread` in worktree or isolate mode. i2code reports a usag
 
 The developer gives a thread number the plan does not have. i2code reports the valid range and runs no task.
 
-- [ ] **Task 3.1: An out-of-range thread number exits with a usage error naming the valid range**
+- [x] **Task 3.1: An out-of-range thread number exits with a usage error naming the valid range**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement --trunk --thread 4 --mock-claude <script> <idea-directory>` and `i2code implement --trunk --thread 0 --mock-claude <script> <idea-directory>`
   - Observable: On a three-thread plan, each command writes `Error: --thread must be between 1 and 3` to stderr and exits with status 2. HEAD is unchanged and the plan file is unchanged.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_trunk_thread_integration.py::TestThreadOutOfRange -v -m integration` records HEAD and the plan file contents, runs each command as a subprocess, then asserts the exit status, stderr, HEAD and the plan file contents
   - Steps:
-    - [ ] Write the failing acceptance test `TestThreadOutOfRange`, parametrized over `4` and `0`
-    - [ ] Write a unit test in `tests/implement/test_idea_project.py` for `IdeaProject.thread_count()`, which returns `len(plan.threads)` read with `with_plan_file`. Implement it in `src/i2code/implement/idea_project.py`.
-    - [ ] Write unit tests in `tests/implement/test_task_selection.py`: `ThreadSelection.validate()` raises `click.UsageError("--thread must be between 1 and 3")` for thread 0 and thread 4 on a three-thread plan. Implement the range check in `ThreadSelection.validate()`.
-    - [ ] Write a unit test in `tests/implement/test_trunk_mode.py` with `opts.thread=4`. It asserts that `TrunkMode.execute()` raises `click.UsageError`, that the recording commit recovery's `commit_if_needed` is not called (`assert_not_called`), and that `FakeClaudeRunner` ran no command.
-    - [ ] Run the acceptance test and confirm it passes
+    - [x] Write the failing acceptance test `TestThreadOutOfRange`, parametrized over `4` and `0`
+    - [x] Write a unit test in `tests/implement/test_idea_project.py` for `IdeaProject.thread_count()`, which returns `len(plan.threads)` read with `with_plan_file`. Implement it in `src/i2code/implement/idea_project.py`.
+    - [x] Write unit tests in `tests/implement/test_task_selection.py`: `ThreadSelection.validate()` raises `click.UsageError("--thread must be between 1 and 3")` for thread 0 and thread 4 on a three-thread plan. Implement the range check in `ThreadSelection.validate()`.
+    - [x] Write a unit test in `tests/implement/test_trunk_mode.py` with `opts.thread=4`. It asserts that `TrunkMode.execute()` raises `click.UsageError`, that the recording commit recovery's `commit_if_needed` is not called (`assert_not_called`), and that `FakeClaudeRunner` ran no command.
+    - [x] Run the acceptance test and confirm it passes
 
 ---
 

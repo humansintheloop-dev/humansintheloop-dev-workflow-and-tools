@@ -145,6 +145,10 @@ class IdeaProject:
         with with_plan_file(self.plan_file) as plan:
             return len(plan.threads)
 
+    def incomplete_threads_before(self, thread: int) -> list[int]:
+        with with_plan_file(self.plan_file) as plan:
+            return plan.incomplete_threads_before(thread)
+
     def task_progress(self) -> TaskProgress:
         with with_plan_file(self.plan_file) as plan:
             return plan.task_progress()

@@ -245,6 +245,15 @@ class TestThreadCount:
 
 
 @pytest.mark.unit
+class TestIncompleteThreadsBefore:
+
+    def test_returns_earlier_threads_with_incomplete_tasks(self, tmp_path):
+        project = _make_project_with_plan(tmp_path, PLAN_WITH_TWO_THREADS)
+
+        assert project.incomplete_threads_before(2) == [1]
+
+
+@pytest.mark.unit
 class TestIsTaskCompleted:
 
     def test_completed_task_returns_true(self, tmp_path):

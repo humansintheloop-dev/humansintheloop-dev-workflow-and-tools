@@ -78,3 +78,7 @@ class FakeIdeaProject:
 
     def thread_count(self):
         return max(self._threads, default=0)
+
+    def incomplete_threads_before(self, thread):
+        return [number for number, (_, next_task) in sorted(self._threads.items())
+                if number < thread and next_task is not None]

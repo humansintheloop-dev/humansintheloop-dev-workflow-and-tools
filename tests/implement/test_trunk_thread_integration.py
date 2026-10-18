@@ -171,3 +171,28 @@ class TestThreadOutOfRange:
         assert "Error: --thread must be between 1 and 3" in result.stderr
         assert idea.repo.head.commit.hexsha == head_before
         assert _read_file(idea.plan_path) == plan_before
+
+
+@pytest.mark.integration
+class TestThreadOrder:
+
+    @pytest.mark.parametrize("completed_threads, incomplete_threads", [
+        ([], "1, 2"),
+        ([1], "2"),
+    ])
+    def test_thread_with_incomplete_earlier_threads_is_error_naming_them(
+            self, test_git_repo_with_commit, tmp_path, completed_threads, incomplete_threads):
+        tmpdir, repo = test_git_repo_with_commit
+        idea = _create_three_thread_idea(tmpdir, repo, completed_threads=completed_threads)
+        script = create_mock_claude_script_that_marks_tasks_complete(str(tmp_path), IDEA_NAME)
+        head_before = idea.repo.head.commit.hexsha
+        plan_before = _read_file(idea.plan_path)
+
+        result = run_script(idea.idea_dir, cwd=idea.tmpdir,
+                            extra_args=["--mock-claude", script, "--trunk", "--thread", "3"])
+
+        assert result.returncode == 1, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        assert (f"Error: Cannot run thread 3: earlier threads have incomplete tasks: {incomplete_threads}"
+                in result.stderr)
+        assert idea.repo.head.commit.hexsha == head_before
+        assert _read_file(idea.plan_path) == plan_before

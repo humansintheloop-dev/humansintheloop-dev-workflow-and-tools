@@ -202,18 +202,22 @@ class TestTrunkModeSelectedThread:
             assert not project.is_task_completed(2, 1)
             assert "Thread 1 (Thread 1) is complete." in capsys.readouterr().out
 
-    def test_out_of_range_thread_is_usage_error_before_commit_recovery(self):
+    @pytest.mark.parametrize("thread, expected_error", [
+        (4, click.UsageError),
+        (3, SystemExit),
+    ], ids=["out-of-range", "incomplete-earlier-threads"])
+    def test_invalid_thread_fails_before_commit_recovery(self, thread, expected_error):
         tasks = [(1, 1, "Task A", False), (2, 1, "Task B", False), (3, 1, "Task C", False)]
         with _trunk_mode_setup(tasks) as (project, fake_repo, fake_runner, _):
             commit_recovery = MagicMock()
             mode = TrunkMode(
-                opts=_opts(idea_directory=project.directory, thread=4),
+                opts=_opts(idea_directory=project.directory, thread=thread),
                 workspace=Workspace(fake_repo, project),
                 claude_runner=fake_runner,
                 commit_recovery=commit_recovery,
             )
 
-            with pytest.raises(click.UsageError):
+            with pytest.raises(expected_error):
                 mode.execute()
 
             commit_recovery.commit_if_needed.assert_not_called()

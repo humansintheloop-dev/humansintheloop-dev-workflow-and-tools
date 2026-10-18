@@ -74,3 +74,15 @@ class TestThreadSelection:
 
         with pytest.raises(click.UsageError, match="^--thread must be between 1 and 3$"):
             ThreadSelection(project, thread, "/ideas/x").validate()
+
+    def test_validate_exits_when_earlier_threads_are_incomplete(self, capsys):
+        project = FakeIdeaProject()
+        for thread_number in [1, 2, 3]:
+            project.set_thread(thread_number, f"Thread {thread_number}", _numbered_task(thread_number, 1))
+
+        with pytest.raises(SystemExit) as exit_info:
+            ThreadSelection(project, 3, "/ideas/x").validate()
+
+        assert exit_info.value.code == 1
+        assert capsys.readouterr().err == (
+            "Error: Cannot run thread 3: earlier threads have incomplete tasks: 1, 2\n")

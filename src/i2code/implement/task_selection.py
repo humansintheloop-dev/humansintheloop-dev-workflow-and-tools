@@ -1,5 +1,7 @@
 """Task selections: which plan tasks TrunkMode runs and how it reports completion."""
 
+import sys
+
 import click
 
 from i2code.implement.console import print_message
@@ -34,9 +36,21 @@ class ThreadSelection:
         self._idea_directory = idea_directory
 
     def validate(self):
+        self._validate_thread_in_range()
+        self._validate_earlier_threads_complete()
+
+    def _validate_thread_in_range(self):
         thread_count = self._project.thread_count()
         if not 1 <= self._thread <= thread_count:
             raise click.UsageError(f"--thread must be between 1 and {thread_count}")
+
+    def _validate_earlier_threads_complete(self):
+        incomplete_threads = self._project.incomplete_threads_before(self._thread)
+        if incomplete_threads:
+            thread_list = ", ".join(str(thread) for thread in incomplete_threads)
+            print(f"Error: Cannot run thread {self._thread}: earlier threads have incomplete tasks: {thread_list}",
+                  file=sys.stderr)
+            sys.exit(1)
 
     def next_task(self):
         return self._project.get_next_task_in_thread(self._thread)

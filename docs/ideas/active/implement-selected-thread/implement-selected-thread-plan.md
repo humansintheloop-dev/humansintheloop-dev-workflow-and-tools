@@ -135,18 +135,18 @@ The developer gives a thread number the plan does not have. i2code reports the v
 
 The developer selects a thread while an earlier thread still has incomplete tasks. i2code names the incomplete earlier threads and runs no task.
 
-- [ ] **Task 4.1: Selecting a thread with incomplete earlier threads exits with an error naming them**
+- [x] **Task 4.1: Selecting a thread with incomplete earlier threads exits with an error naming them**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement --trunk --thread 3 --mock-claude <script> <idea-directory>`
   - Observable: With thread 1 incomplete and thread 2 incomplete, stderr contains `Error: Cannot run thread 3: earlier threads have incomplete tasks: 1, 2` and the exit status is 1. With thread 1 complete and thread 2 incomplete, stderr contains `Error: Cannot run thread 3: earlier threads have incomplete tasks: 2`. In both cases HEAD and the plan file are unchanged.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_trunk_thread_integration.py::TestThreadOrder -v -m integration` records HEAD and the plan file contents, runs the command as a subprocess for each plan state, then asserts the exit status, stderr, HEAD and the plan file contents
   - Steps:
-    - [ ] Write the failing acceptance test `TestThreadOrder`, parametrized over the two plan states
-    - [ ] Write unit tests in `tests/plan-domain/test_plan_incomplete_threads_before.py` for `Plan.incomplete_threads_before(thread)`. It returns, in ascending order, the numbers of threads below `thread` that have at least one incomplete task, and returns an empty list for thread 1. Implement it in `src/i2code/plan_domain/plan.py`.
-    - [ ] Write a unit test in `tests/implement/test_idea_project.py` for `IdeaProject.incomplete_threads_before(thread)`, which delegates to the plan read with `with_plan_file`. Implement it in `src/i2code/implement/idea_project.py`.
-    - [ ] Write a unit test in `tests/implement/test_task_selection.py`: when earlier threads are incomplete, `ThreadSelection.validate()` prints `Error: Cannot run thread 3: earlier threads have incomplete tasks: 1, 2` to stderr and calls `sys.exit(1)`. Implement the order check in `ThreadSelection.validate()` after the range check.
-    - [ ] Write a unit test in `tests/implement/test_trunk_mode.py`: when the order check fails, the recording commit recovery's `commit_if_needed` is not called (`assert_not_called`) and `FakeClaudeRunner` ran no command
-    - [ ] Run the acceptance test and confirm it passes
+    - [x] Write the failing acceptance test `TestThreadOrder`, parametrized over the two plan states
+    - [x] Write unit tests in `tests/plan-domain/test_plan_incomplete_threads_before.py` for `Plan.incomplete_threads_before(thread)`. It returns, in ascending order, the numbers of threads below `thread` that have at least one incomplete task, and returns an empty list for thread 1. Implement it in `src/i2code/plan_domain/plan.py`.
+    - [x] Write a unit test in `tests/implement/test_idea_project.py` for `IdeaProject.incomplete_threads_before(thread)`, which delegates to the plan read with `with_plan_file`. Implement it in `src/i2code/implement/idea_project.py`.
+    - [x] Write a unit test in `tests/implement/test_task_selection.py`: when earlier threads are incomplete, `ThreadSelection.validate()` prints `Error: Cannot run thread 3: earlier threads have incomplete tasks: 1, 2` to stderr and calls `sys.exit(1)`. Implement the order check in `ThreadSelection.validate()` after the range check.
+    - [x] Write a unit test in `tests/implement/test_trunk_mode.py`: when the order check fails, the recording commit recovery's `commit_if_needed` is not called (`assert_not_called`) and `FakeClaudeRunner` ran no command
+    - [x] Run the acceptance test and confirm it passes
 
 ---
 

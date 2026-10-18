@@ -71,6 +71,10 @@ class Plan:
                 )
         return None
 
+    def incomplete_threads_before(self, thread: int) -> list[int]:
+        return [thread_num for thread_num in range(1, thread)
+                if self.get_next_task_in_thread(thread_num) is not None]
+
     def task_progress(self) -> TaskProgress:
         """Return progress for display: current is 1-based (completed_count + 1)."""
         total = 0

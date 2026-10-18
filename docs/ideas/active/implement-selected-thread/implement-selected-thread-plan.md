@@ -187,15 +187,15 @@ The developer runs a dry run with `--thread`. i2code shows the selected thread w
 
 A task in the selected thread fails all three attempts. The developer reruns the same thread, and i2code resumes at the thread's first incomplete task.
 
-- [ ] **Task 7.1: Rerunning a thread after a failed task resumes at the thread's first incomplete task**
+- [x] **Task 7.1: Rerunning a thread after a failed task resumes at the thread's first incomplete task**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement --trunk --thread 2 --non-interactive --mock-claude <script> <idea-directory>`, run twice
   - Observable: With thread 1 complete, the first run uses a mock script that exits 1 without committing. Stderr contains `Error: Task failed after 3 attempts.`, the exit status is 1 and the plan file is unchanged. The second run uses the completing mock script. It marks every task of thread 2 `[x]`, leaves thread 3 `[ ]`, prints `Thread 2 (Thread 2) is complete.` and exits with status 0.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_trunk_thread_integration.py::TestThreadResumeAfterFailure -v -m integration` runs the command as a subprocess twice and asserts the exit status, stderr, stdout and plan file checkboxes after each run
   - Steps:
-    - [ ] Add `create_failing_mock_claude_script(tmpdir)` to `tests/implement/conftest.py`. It writes an executable script that exits 1 without changing any file.
-    - [ ] Write the acceptance test `TestThreadResumeAfterFailure` and run it. If it passes without production changes, the behavior already comes from `ThreadSelection.next_task()` and the existing retry loop in `TrunkMode._execute_task` (`src/i2code/implement/trunk_mode.py:36`); record this in the commit message. If it fails, write a failing unit test in `tests/implement/test_trunk_mode.py` that reproduces the failure, then fix `src/i2code/implement/trunk_mode.py`.
-    - [ ] Run `./test-scripts/test-unit.sh`, `./test-scripts/test-integration.sh` and `uvx pyright --level error src/`, and run the CodeScene `pre_commit_code_health_safeguard` on the staged changes
+    - [x] Add `create_failing_mock_claude_script(tmpdir)` to `tests/implement/conftest.py`. It writes an executable script that exits 1 without changing any file.
+    - [x] Write the acceptance test `TestThreadResumeAfterFailure` and run it. If it passes without production changes, the behavior already comes from `ThreadSelection.next_task()` and the existing retry loop in `TrunkMode._execute_task` (`src/i2code/implement/trunk_mode.py:36`); record this in the commit message. If it fails, write a failing unit test in `tests/implement/test_trunk_mode.py` that reproduces the failure, then fix `src/i2code/implement/trunk_mode.py`.
+    - [x] Run `./test-scripts/test-unit.sh`, `./test-scripts/test-integration.sh` and `uvx pyright --level error src/`, and run the CodeScene `pre_commit_code_health_safeguard` on the staged changes
 
 ---
 

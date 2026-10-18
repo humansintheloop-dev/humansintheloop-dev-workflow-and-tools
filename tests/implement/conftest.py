@@ -115,6 +115,7 @@ def create_mock_claude_script_that_marks_tasks_complete(tmpdir, idea_name):
     This script simulates what real Claude would do:
     1. Mark the current task as complete in the plan file
     2. Create a commit with the changes
+    3. Print the <SUCCESS> tag that --non-interactive requires
 
     Args:
         tmpdir: Directory to create the script in
@@ -164,8 +165,30 @@ mv "$PLAN_FILE.tmp" "$PLAN_FILE"
 # Stage and commit the change
 git add "$PLAN_FILE"
 git commit -m "Complete task: $TASK_DESC"
+
+# Report success the way non-interactive Claude does
+echo "<SUCCESS>task implemented: $(git rev-parse HEAD)</SUCCESS>"
 """)
     # Make executable
+    os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
+    return mock_script
+
+
+def create_failing_mock_claude_script(tmpdir):
+    """Create a mock Claude script that exits 1 without changing any file.
+
+    Args:
+        tmpdir: Directory to create the script in
+
+    Returns:
+        Path to the mock script
+    """
+    mock_script = os.path.join(tmpdir, "mock-claude-fail.sh")
+    with open(mock_script, "w") as f:
+        f.write("""#!/bin/bash
+# Mock Claude script that fails without committing
+exit 1
+""")
     os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
     return mock_script
 

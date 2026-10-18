@@ -11,6 +11,7 @@ import pytest
 from git import Repo
 
 from conftest import (
+    create_failing_mock_claude_script,
     create_mock_claude_script_that_marks_tasks_complete,
     run_script,
     write_plan_file,
@@ -218,6 +219,45 @@ class TestThreadAlreadyComplete:
         ]), result.stdout
         assert idea.repo.head.commit.hexsha == head_before
         assert _read_file(idea.plan_path) == plan_before
+
+
+@pytest.fixture
+def three_thread_idea_with_first_thread_complete(test_git_repo_with_commit):
+    """A committed idea directory whose plan has thread 1 complete and threads 2 and 3 incomplete."""
+    tmpdir, repo = test_git_repo_with_commit
+    return _create_three_thread_idea(tmpdir, repo, completed_threads=[1])
+
+
+def _run_thread_non_interactive(idea, script, thread):
+    return run_script(idea.idea_dir, cwd=idea.tmpdir,
+                      extra_args=["--mock-claude", script, "--trunk", "--thread", thread,
+                                  "--non-interactive"])
+
+
+@pytest.mark.integration
+class TestThreadResumeAfterFailure:
+
+    def test_rerun_after_failed_task_completes_thread(
+            self, three_thread_idea_with_first_thread_complete, tmp_path):
+        idea = three_thread_idea_with_first_thread_complete
+        plan_before = _read_file(idea.plan_path)
+
+        failed = _run_thread_non_interactive(idea, create_failing_mock_claude_script(str(tmp_path)), "2")
+
+        assert failed.returncode == 1, f"stdout:\n{failed.stdout}\nstderr:\n{failed.stderr}"
+        assert "Error: Task failed after 3 attempts." in failed.stderr
+        assert _read_file(idea.plan_path) == plan_before
+
+        completing_script = create_mock_claude_script_that_marks_tasks_complete(str(tmp_path), IDEA_NAME)
+        resumed = _run_thread_non_interactive(idea, completing_script, "2")
+
+        assert resumed.returncode == 0, f"stdout:\n{resumed.stdout}\nstderr:\n{resumed.stderr}"
+        assert _completion_by_thread(idea.plan_path) == {
+            1: [True, True],
+            2: [True, True],
+            3: [False, False],
+        }
+        assert "Thread 2 (Thread 2) is complete." in resumed.stdout
 
 
 def _assert_trunk_dry_run_succeeds_printing(idea, extra_args, trailing_lines):

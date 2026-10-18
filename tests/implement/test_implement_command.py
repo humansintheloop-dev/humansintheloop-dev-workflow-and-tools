@@ -431,6 +431,19 @@ class TestImplementCommandIsolationTypeImplied:
 
 
 @pytest.mark.unit
+class TestImplementCommandThreadRequiresTrunk:
+    """execute() rejects --thread without --trunk before any mode is set up."""
+
+    def test_thread_with_isolation_type_raises_before_isolate_mode(self):
+        cmd, *_ = _make_command(
+            isolation_type="docker", thread=2, ignore_uncommitted_idea_changes=True
+        )
+        with pytest.raises(click.UsageError, match="--thread requires --trunk"):
+            cmd.execute()
+        cmd.mode_factory.make_isolate_mode.assert_not_called()
+
+
+@pytest.mark.unit
 class TestDeferredPRCreation:
     """Test that PR creation is deferred until after first push."""
 

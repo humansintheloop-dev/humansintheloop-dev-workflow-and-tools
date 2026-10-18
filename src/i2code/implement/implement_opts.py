@@ -80,6 +80,11 @@ class ImplementOpts:
                 f"--trunk cannot be combined with: {', '.join(incompatible)}"
             )
 
+    def validate_thread_option(self):
+        """Raise click.UsageError if --thread is used without --trunk."""
+        if self.thread is not None and not self.trunk:
+            raise click.UsageError("--thread requires --trunk")
+
     def inner_cli_flags(self):
         """Return CLI flags to pass to the inner i2code implement command."""
         result = []

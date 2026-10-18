@@ -54,6 +54,24 @@ class TestValidateTrunkOptions:
 
 
 @pytest.mark.unit
+class TestValidateThreadOption:
+    """validate_thread_option() rejects --thread without --trunk."""
+
+    def test_thread_without_trunk_raises_usage_error(self):
+        opts = ImplementOpts(idea_directory="/tmp", thread=2)
+        with pytest.raises(click.UsageError, match="^--thread requires --trunk$"):
+            opts.validate_thread_option()
+
+    @pytest.mark.parametrize("kwargs", [
+        {},
+        {"thread": 2, "trunk": True},
+    ])
+    def test_no_thread_or_thread_with_trunk_passes(self, kwargs):
+        opts = ImplementOpts(idea_directory="/tmp", **kwargs)
+        opts.validate_thread_option()  # should not raise
+
+
+@pytest.mark.unit
 class TestInnerCliFlags:
     """inner_cli_flags() returns CLI args for flags passed to the inner i2code command."""
 

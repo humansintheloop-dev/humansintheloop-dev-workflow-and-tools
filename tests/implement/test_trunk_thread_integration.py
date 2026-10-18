@@ -124,3 +124,26 @@ class TestRunSelectedThread:
         assert "All tasks completed!" in result.stdout
         assert "Thread 3 (Thread 3) is complete." not in result.stdout
         assert "Next:" not in result.stdout
+
+
+def _worktree_dir(repo_dir):
+    return f"{repo_dir}-wt-{IDEA_NAME}"
+
+
+@pytest.mark.integration
+class TestThreadRequiresTrunk:
+
+    @pytest.mark.parametrize("extra_args", [
+        ["--thread", "2"],
+        ["--isolate", "--thread", "2"],
+        ["--shell", "--thread", "2"],
+    ])
+    def test_thread_without_trunk_is_usage_error_before_setup(self, three_thread_idea, extra_args):
+        idea = three_thread_idea
+
+        result = run_script(idea.idea_dir, cwd=idea.tmpdir, extra_args=extra_args)
+
+        assert result.returncode == 2, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        assert "Error: --thread requires --trunk" in result.stderr
+        assert f"idea/{IDEA_NAME}" not in [head.name for head in idea.repo.heads]
+        assert not os.path.exists(_worktree_dir(idea.tmpdir))

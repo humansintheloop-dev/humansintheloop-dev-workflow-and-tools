@@ -100,16 +100,16 @@ The developer runs `i2code implement --trunk --thread 1 <idea-directory>` on a p
 
 The developer runs `--thread` in worktree or isolate mode. i2code reports a usage error before it creates any branch, worktree, clone or PR.
 
-- [ ] **Task 2.1: `--thread` without `--trunk` exits with a usage error before any setup**
+- [x] **Task 2.1: `--thread` without `--trunk` exits with a usage error before any setup**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement --thread 2 <idea-directory>`, `i2code implement --isolate --thread 2 <idea-directory>` and `i2code implement --shell --thread 2 <idea-directory>`
   - Observable: Each command writes `Error: --thread requires --trunk` to stderr and exits with status 2. After each run, the repository has no `idea/test-feature` branch and no `-wt-test-feature` worktree directory next to the repository.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_trunk_thread_integration.py::TestThreadRequiresTrunk -v -m integration` runs each command as a subprocess, then asserts the exit status, stderr, the branch list and the absence of the worktree directory
   - Steps:
-    - [ ] Write the failing acceptance test `TestThreadRequiresTrunk`, parametrized over the three argument lists
-    - [ ] Write unit tests in `tests/implement/test_implement_opts.py` for `ImplementOpts.validate_thread_option()`. It raises `click.UsageError("--thread requires --trunk")` when `thread` is set and `trunk` is false, and passes when `thread` is `None` or `trunk` is true. Implement it in `src/i2code/implement/implement_opts.py` next to `validate_trunk_options` (`src/i2code/implement/implement_opts.py:66`).
-    - [ ] Write a unit test in `tests/implement/test_implement_command.py`: with `isolation_type` set and `thread=2`, `execute()` raises `click.UsageError` and `mode_factory.make_isolate_mode` is not called. Call `self.opts.validate_thread_option()` at the end of `_validate_and_apply_defaults` (`src/i2code/implement/implement_command.py:122`), after `isolation_type` and `shell` have set `isolate`.
-    - [ ] Run the acceptance test and confirm it passes
+    - [x] Write the failing acceptance test `TestThreadRequiresTrunk`, parametrized over the three argument lists
+    - [x] Write unit tests in `tests/implement/test_implement_opts.py` for `ImplementOpts.validate_thread_option()`. It raises `click.UsageError("--thread requires --trunk")` when `thread` is set and `trunk` is false, and passes when `thread` is `None` or `trunk` is true. Implement it in `src/i2code/implement/implement_opts.py` next to `validate_trunk_options` (`src/i2code/implement/implement_opts.py:66`).
+    - [x] Write a unit test in `tests/implement/test_implement_command.py`: with `isolation_type` set and `thread=2`, `execute()` raises `click.UsageError` and `mode_factory.make_isolate_mode` is not called. Call `self.opts.validate_thread_option()` at the end of `_validate_and_apply_defaults` (`src/i2code/implement/implement_command.py:122`), after `isolation_type` and `shell` have set `isolate`.
+    - [x] Run the acceptance test and confirm it passes
 
 ---
 

@@ -154,16 +154,16 @@ The developer selects a thread while an earlier thread still has incomplete task
 
 The developer selects a thread that has no incomplete tasks. i2code reports it, names the next thread and runs no task.
 
-- [ ] **Task 5.1: Selecting an already complete thread reports it and names the next thread**
+- [x] **Task 5.1: Selecting an already complete thread reports it and names the next thread**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement --trunk --thread 2 --mock-claude <script> <idea-directory>`
   - Observable: With threads 1 and 2 complete and thread 3 incomplete, stdout contains `Thread 2 (Thread 2) is already complete.` followed by `Next: i2code implement --trunk --thread 3 <idea-directory>`. The exit status is 0. HEAD and the plan file are unchanged.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_trunk_thread_integration.py::TestThreadAlreadyComplete -v -m integration` records HEAD and the plan file contents, runs the command as a subprocess, then asserts the exit status, stdout, HEAD and the plan file contents
   - Steps:
-    - [ ] Write the failing acceptance test `TestThreadAlreadyComplete`
-    - [ ] Write unit tests in `tests/implement/test_task_selection.py` for `ThreadSelection.is_already_complete()` and `ThreadSelection.report_already_complete()`. The second prints `Thread N (<title>) is already complete.` followed by the same next-thread line that `report_completion()` prints. Extract that shared line into a private method of `ThreadSelection`. Add `is_already_complete()` returning `False` to `AllTasksSelection`.
-    - [ ] Write a unit test in `tests/implement/test_trunk_mode.py`: with `opts.thread=2` on an already complete thread 2, `TrunkMode.execute()` prints the already-complete message, the recording commit recovery's `commit_if_needed` is not called (`assert_not_called`), and `FakeClaudeRunner` ran no command. In `TrunkMode.execute`, after `selection.validate()`, call `selection.report_already_complete()` and return when `selection.is_already_complete()` is true.
-    - [ ] Run the acceptance test and confirm it passes
+    - [x] Write the failing acceptance test `TestThreadAlreadyComplete`
+    - [x] Write unit tests in `tests/implement/test_task_selection.py` for `ThreadSelection.is_already_complete()` and `ThreadSelection.report_already_complete()`. The second prints `Thread N (<title>) is already complete.` followed by the same next-thread line that `report_completion()` prints. Extract that shared line into a private method of `ThreadSelection`. Add `is_already_complete()` returning `False` to `AllTasksSelection`.
+    - [x] Write a unit test in `tests/implement/test_trunk_mode.py`: with `opts.thread=2` on an already complete thread 2, `TrunkMode.execute()` prints the already-complete message, the recording commit recovery's `commit_if_needed` is not called (`assert_not_called`), and `FakeClaudeRunner` ran no command. In `TrunkMode.execute`, after `selection.validate()`, call `selection.report_already_complete()` and return when `selection.is_already_complete()` is true.
+    - [x] Run the acceptance test and confirm it passes
 
 ---
 

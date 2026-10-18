@@ -196,3 +196,25 @@ class TestThreadOrder:
                 in result.stderr)
         assert idea.repo.head.commit.hexsha == head_before
         assert _read_file(idea.plan_path) == plan_before
+
+
+@pytest.mark.integration
+class TestThreadAlreadyComplete:
+
+    def test_already_complete_thread_is_reported_and_names_next_thread(
+            self, three_thread_idea_with_last_thread_incomplete, tmp_path):
+        idea = three_thread_idea_with_last_thread_incomplete
+        script = create_mock_claude_script_that_marks_tasks_complete(str(tmp_path), IDEA_NAME)
+        head_before = idea.repo.head.commit.hexsha
+        plan_before = _read_file(idea.plan_path)
+
+        result = run_script(idea.idea_dir, cwd=idea.tmpdir,
+                            extra_args=["--mock-claude", script, "--trunk", "--thread", "2"])
+
+        assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        assert _lines_in_order(result.stdout, [
+            "Thread 2 (Thread 2) is already complete.",
+            f"Next: i2code implement --trunk --thread 3 {idea.idea_dir}",
+        ]), result.stdout
+        assert idea.repo.head.commit.hexsha == head_before
+        assert _read_file(idea.plan_path) == plan_before

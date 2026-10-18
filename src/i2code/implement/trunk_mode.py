@@ -26,6 +26,9 @@ class TrunkMode:
         """Run the task loop until the selected tasks are complete."""
         selection = self._task_selection()
         selection.validate()
+        if selection.is_already_complete():
+            selection.report_already_complete()
+            return
         self._commit_recovery.commit_if_needed()
 
         while (next_task := selection.next_task()) is not None:

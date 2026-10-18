@@ -32,6 +32,14 @@ class TestAllTasksSelection:
 
         assert "All tasks completed!" in capsys.readouterr().out
 
+    def test_is_never_already_complete(self):
+        assert not AllTasksSelection(FakeIdeaProject()).is_already_complete()
+
+    def test_report_already_complete_prints_all_tasks_completed(self, capsys):
+        AllTasksSelection(FakeIdeaProject()).report_already_complete()
+
+        assert "All tasks completed!" in capsys.readouterr().out
+
 
 @pytest.mark.unit
 class TestThreadSelection:
@@ -65,6 +73,41 @@ class TestThreadSelection:
         lines = capsys.readouterr().out.splitlines()
         assert len(lines) == 1
         assert lines[0].endswith("All tasks completed!")
+
+    def test_is_already_complete_when_selected_thread_has_no_incomplete_task(self):
+        project = FakeIdeaProject()
+        project.set_thread(2, "Feature", None)
+
+        assert ThreadSelection(project, 2, "/ideas/x").is_already_complete()
+
+    def test_is_not_already_complete_when_selected_thread_has_incomplete_task(self):
+        project = FakeIdeaProject()
+        project.set_thread(2, "Feature", _numbered_task(2, 1))
+
+        assert not ThreadSelection(project, 2, "/ideas/x").is_already_complete()
+
+    def test_report_already_complete_names_next_incomplete_thread(self, capsys):
+        project = FakeIdeaProject()
+        project.set_thread(2, "Feature", None)
+        project.set_next_task(_numbered_task(3, 1))
+
+        ThreadSelection(project, 2, "/ideas/x").report_already_complete()
+
+        lines = capsys.readouterr().out.splitlines()
+        assert lines[0].endswith("Thread 2 (Feature) is already complete.")
+        assert lines[1].endswith("Next: i2code implement --trunk --thread 3 /ideas/x")
+
+    def test_report_already_complete_prints_all_tasks_completed_when_no_tasks_remain(self, capsys):
+        project = FakeIdeaProject()
+        project.set_thread(3, "Finish", None)
+        project.set_next_task(None)
+
+        ThreadSelection(project, 3, "/ideas/x").report_already_complete()
+
+        lines = capsys.readouterr().out.splitlines()
+        assert len(lines) == 2
+        assert lines[0].endswith("Thread 3 (Finish) is already complete.")
+        assert lines[1].endswith("All tasks completed!")
 
     @pytest.mark.parametrize("thread", [0, 4])
     def test_validate_rejects_thread_outside_plan(self, thread):

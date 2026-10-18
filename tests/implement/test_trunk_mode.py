@@ -223,6 +223,23 @@ class TestTrunkModeSelectedThread:
             commit_recovery.commit_if_needed.assert_not_called()
             assert fake_runner.calls == []
 
+    def test_already_complete_thread_is_reported_without_commit_recovery(self, capsys):
+        tasks = [(1, 1, "Task A", True), (2, 1, "Task B", True), (3, 1, "Task C", False)]
+        with _trunk_mode_setup(tasks) as (project, fake_repo, fake_runner, _):
+            commit_recovery = MagicMock()
+            mode = TrunkMode(
+                opts=_opts(idea_directory=project.directory, thread=2),
+                workspace=Workspace(fake_repo, project),
+                claude_runner=fake_runner,
+                commit_recovery=commit_recovery,
+            )
+
+            mode.execute()
+
+            commit_recovery.commit_if_needed.assert_not_called()
+            assert fake_runner.calls == []
+            assert "Thread 2 (Thread 2) is already complete." in capsys.readouterr().out
+
 
 PLAN_WITH_INCOMPLETE_TASK = """\
 # Implementation Plan: Test Feature

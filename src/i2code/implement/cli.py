@@ -51,6 +51,8 @@ from i2code.implement.scaffold_opts import ScaffoldOpts
               help="Skip project scaffolding step")
 @click.option("--debug-claude", is_flag=True,
               help="Show full Claude output instead of progress dots")
+@click.option("--thread", type=int, metavar="N",
+              help="Implement only the incomplete tasks of thread N, then stop (requires --trunk)")
 @click.pass_context
 def implement_cmd(ctx, **kwargs):
     """Implement a development plan using Git worktrees and GitHub Draft PRs."""

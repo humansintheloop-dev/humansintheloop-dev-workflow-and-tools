@@ -28,6 +28,7 @@ class ImplementOpts:
     address_review_comments: bool = False
     skip_scaffolding: bool = False
     debug_claude: bool = False
+    thread: int | None = None
 
     _INNER_FORWARDED = {
         "cleanup",
@@ -52,6 +53,7 @@ class ImplementOpts:
         "dry_run",
         "ignore_uncommitted_idea_changes",
         "skip_scaffolding",
+        "thread",
     }
 
     _TRUNK_INCOMPATIBLE = [
@@ -77,6 +79,11 @@ class ImplementOpts:
             raise click.UsageError(
                 f"--trunk cannot be combined with: {', '.join(incompatible)}"
             )
+
+    def validate_thread_option(self):
+        """Raise click.UsageError if --thread is used without --trunk."""
+        if self.thread is not None and not self.trunk:
+            raise click.UsageError("--thread requires --trunk")
 
     def inner_cli_flags(self):
         """Return CLI flags to pass to the inner i2code implement command."""

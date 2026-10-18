@@ -56,14 +56,24 @@ class Plan:
         return self.threads[thread - 1]
 
     def get_next_task(self) -> NumberedTask | None:
-        for thread_num, thread in enumerate(self.threads, 1):
-            for task_num, task in enumerate(thread.tasks, 1):
-                if not task.is_completed:
-                    return NumberedTask(
-                        number=TaskNumber(thread=thread_num, task=task_num),
-                        task=task,
-                    )
+        for thread_num in range(1, len(self.threads) + 1):
+            next_task = self.get_next_task_in_thread(thread_num)
+            if next_task is not None:
+                return next_task
         return None
+
+    def get_next_task_in_thread(self, thread: int) -> NumberedTask | None:
+        for task_num, task in enumerate(self.get_thread(thread).tasks, 1):
+            if not task.is_completed:
+                return NumberedTask(
+                    number=TaskNumber(thread=thread, task=task_num),
+                    task=task,
+                )
+        return None
+
+    def incomplete_threads_before(self, thread: int) -> list[int]:
+        return [thread_num for thread_num in range(1, thread)
+                if self.get_next_task_in_thread(thread_num) is not None]
 
     def task_progress(self) -> TaskProgress:
         """Return progress for display: current is 1-based (completed_count + 1)."""

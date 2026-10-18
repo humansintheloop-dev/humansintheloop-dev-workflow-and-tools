@@ -1,6 +1,7 @@
 """Shared fixtures and utilities for implement tests."""
 
 import os
+import stat
 import subprocess
 import sys
 import tempfile
@@ -83,14 +84,14 @@ def delete_github_repo(repo_full_name):
     )
 
 
-def run_script(idea_dir, cwd=None, setup_only=False, mock_claude=None):
+def run_script(idea_dir, cwd=None, setup_only=False, extra_args=None):
     """Run the i2code implement command.
 
     Args:
         idea_dir: Path to the idea directory
         cwd: Working directory for the script (optional)
         setup_only: If True, add --setup-only flag (skip task execution)
-        mock_claude: Path to mock Claude script (optional)
+        extra_args: Additional CLI arguments, e.g. ["--mock-claude", script, "--trunk"] (optional)
 
     Returns:
         subprocess.CompletedProcess with stdout, stderr, and returncode
@@ -98,14 +99,98 @@ def run_script(idea_dir, cwd=None, setup_only=False, mock_claude=None):
     cmd = SCRIPT_CMD + [idea_dir]
     if setup_only:
         cmd.append("--setup-only")
-    if mock_claude:
-        cmd.extend(["--mock-claude", mock_claude])
+    if extra_args:
+        cmd.extend(extra_args)
     return subprocess.run(
         cmd,
         capture_output=True,
         text=True,
         cwd=cwd
     )
+
+
+def create_mock_claude_script_that_marks_tasks_complete(tmpdir, idea_name):
+    """Create a mock Claude script that marks tasks complete and commits.
+
+    This script simulates what real Claude would do:
+    1. Mark the current task as complete in the plan file
+    2. Create a commit with the changes
+    3. Print the <SUCCESS> tag that --non-interactive requires
+
+    Args:
+        tmpdir: Directory to create the script in
+        idea_name: Name of the idea (used to find plan file)
+
+    Returns:
+        Path to the mock script
+    """
+    mock_script = os.path.join(tmpdir, "mock-claude-complete.sh")
+    with open(mock_script, "w") as f:
+        # The script runs in the worktree, so use relative path to find plan file
+        # Use awk for portable first-occurrence replacement
+        f.write(f"""#!/bin/bash
+set -e  # Exit on error
+
+# Mock Claude script that marks tasks complete
+# Receives task description as $1
+# Runs in the worktree directory
+
+TASK_DESC="$1"
+IDEA_NAME="{idea_name}"
+
+# Ensure CI workflow exists (required by the script before pushing)
+mkdir -p .github/workflows
+if [ ! -f .github/workflows/ci.yml ]; then
+    cat > .github/workflows/ci.yml << 'CIEOF'
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "ok"
+CIEOF
+    git add .github/workflows/ci.yml
+fi
+
+# Find the plan file in the worktree (relative path from worktree root)
+PLAN_FILE="$IDEA_NAME/$IDEA_NAME-plan.md"
+
+# Mark the first unchecked task as complete using awk
+# This replaces only the first occurrence of "- [ ] **Task" with "- [x] **Task"
+awk '!done && /- \\[ \\] \\*\\*Task [0-9]+\\.[0-9]+:/ {{sub(/- \\[ \\] \\*\\*Task/, "- [x] **Task"); done=1}} 1' "$PLAN_FILE" > "$PLAN_FILE.tmp"
+mv "$PLAN_FILE.tmp" "$PLAN_FILE"
+
+# Stage and commit the change
+git add "$PLAN_FILE"
+git commit -m "Complete task: $TASK_DESC"
+
+# Report success the way non-interactive Claude does
+echo "<SUCCESS>task implemented: $(git rev-parse HEAD)</SUCCESS>"
+""")
+    # Make executable
+    os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
+    return mock_script
+
+
+def create_failing_mock_claude_script(tmpdir):
+    """Create a mock Claude script that exits 1 without changing any file.
+
+    Args:
+        tmpdir: Directory to create the script in
+
+    Returns:
+        Path to the mock script
+    """
+    mock_script = os.path.join(tmpdir, "mock-claude-fail.sh")
+    with open(mock_script, "w") as f:
+        f.write("""#!/bin/bash
+# Mock Claude script that fails without committing
+exit 1
+""")
+    os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
+    return mock_script
 
 
 @contextmanager

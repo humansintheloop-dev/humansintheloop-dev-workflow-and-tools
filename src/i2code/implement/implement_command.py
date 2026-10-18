@@ -126,6 +126,7 @@ class ImplementCommand:
             self.opts.isolate = True
         if self.opts.shell:
             self.opts.isolate = True
+        self.opts.validate_thread_option()
 
     def _check_idea_files_committed(self):
         if not self.opts.isolated and not self.opts.ignore_uncommitted_idea_changes:
@@ -154,3 +155,5 @@ class ImplementCommand:
         print_message(f"Mode: {mode}")
         print_message(f"Idea: {self.project.name}")
         print_message(f"Directory: {self.project.directory}")
+        if self.opts.thread is not None:
+            print_message(f"Thread: {self.opts.thread}")

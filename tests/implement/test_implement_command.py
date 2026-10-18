@@ -54,6 +54,18 @@ class TestImplementCommandDryRun:
         cmd.execute()
         assert "worktree" in capsys.readouterr().out.lower()
 
+    def test_dry_run_prints_thread_after_directory(self, capsys):
+        cmd, project, _ = _make_command(dry_run=True, trunk=True, thread=5)
+        cmd.execute()
+        lines = capsys.readouterr().out.splitlines()
+        assert lines[-2].endswith(f"Directory: {project.directory}")
+        assert lines[-1].endswith("Thread: 5")
+
+    def test_dry_run_without_thread_prints_no_thread_line(self, capsys):
+        cmd, *_ = _make_command(dry_run=True, trunk=True)
+        cmd.execute()
+        assert "Thread:" not in capsys.readouterr().out
+
     def test_dry_run_does_not_execute(self):
         cmd, *_ = _make_command(dry_run=True, trunk=True)
         with patch.object(cmd, '_trunk_mode') as mock_trunk:
@@ -374,7 +386,7 @@ class TestNoModuleLevelFunctions:
 class TestImplementCmd:
     """Test implement CLI command uses command_factory from context."""
 
-    def test_uses_command_factory_and_forwards_opts(self):
+    def _invoke(self, args):
         from click.testing import CliRunner
         from i2code.implement.cli import implement_cmd
 
@@ -386,15 +398,22 @@ class TestImplementCmd:
             return mock_command
 
         runner = CliRunner(catch_exceptions=False)
-        runner.invoke(
-            implement_cmd, ["/tmp/fake-idea", "--setup-only", "--trunk"],
-            obj={"command_factory": fake_factory},
-        )
-
-        assert received_opts[0].idea_directory == "/tmp/fake-idea"
-        assert received_opts[0].setup_only is True
-        assert received_opts[0].trunk is True
+        result = runner.invoke(implement_cmd, args, obj={"command_factory": fake_factory})
+        assert result.exit_code == 0, result.output
         mock_command.execute.assert_called_once()
+        return received_opts[0]
+
+    def test_uses_command_factory_and_forwards_opts(self):
+        opts = self._invoke(["/tmp/fake-idea", "--setup-only", "--trunk"])
+
+        assert opts.idea_directory == "/tmp/fake-idea"
+        assert opts.setup_only is True
+        assert opts.trunk is True
+
+    def test_forwards_thread_option(self):
+        opts = self._invoke(["/tmp/fake-idea", "--trunk", "--thread", "3"])
+
+        assert opts.thread == 3
 
 
 @pytest.mark.unit
@@ -421,6 +440,19 @@ class TestImplementCommandIsolationTypeImplied:
         cmd.execute()
         output = capsys.readouterr().out
         assert "Mode: isolate" in output
+
+
+@pytest.mark.unit
+class TestImplementCommandThreadRequiresTrunk:
+    """execute() rejects --thread without --trunk before any mode is set up."""
+
+    def test_thread_with_isolation_type_raises_before_isolate_mode(self):
+        cmd, *_ = _make_command(
+            isolation_type="docker", thread=2, ignore_uncommitted_idea_changes=True
+        )
+        with pytest.raises(click.UsageError, match="--thread requires --trunk"):
+            cmd.execute()
+        cmd.mode_factory.make_isolate_mode.assert_not_called()
 
 
 @pytest.mark.unit

@@ -39,6 +39,7 @@ The command selects one of three execution modes based on flags. Mode instances 
 | `--mock-claude SCRIPT` | Use mock script instead of Claude (for testing) |
 | `--extra-prompt TEXT` | Extra text to append to Claude's prompt |
 | `--skip-ci-wait` | Skip waiting for CI after push (for testing) |
+| `--thread N` | Implement only the incomplete tasks of thread N, then stop (requires `--trunk`) |
 
 ## 3. Trunk Mode (`--trunk`)
 
@@ -48,12 +49,13 @@ Simplest mode — runs tasks directly on the current branch. See [`trunk_mode.py
 
 ### Steps
 
-1. **Commit recovery** — checks if a previous run left uncommitted changes from a completed task. If found, invokes Claude to commit them (up to 2 attempts). See [`commit_recovery.py`](../../src/i2code/implement/commit_recovery.py).
-2. **Task loop** — for each incomplete task in the plan file:
+1. **Task selection** — without `--thread`, every incomplete task is selected. With `--thread N`, only the incomplete tasks of thread N are selected. See [`task_selection.py`](../../src/i2code/implement/task_selection.py).
+2. **Commit recovery** — checks if a previous run left uncommitted changes from a completed task. If found, invokes Claude to commit them (up to 2 attempts). See [`commit_recovery.py`](../../src/i2code/implement/commit_recovery.py).
+3. **Task loop** — for each selected incomplete task in the plan file:
     a. Build a Claude command with the task description from `task_execution.j2`. See [`command_builder.py`](../../src/i2code/implement/command_builder.py).
     b. Run Claude (up to 3 attempts per task). See [`claude_runner.py`](../../src/i2code/implement/claude_runner.py).
     c. Validate success (see [Success Criteria](#success-criteria)).
-3. Print "All tasks completed!" when done.
+4. **Completion** — without `--thread`, print "All tasks completed!". With `--thread N`, print `Thread N (<title>) is complete.` followed by `Next: i2code implement --trunk --thread M <idea-directory>`, where M is the next thread with an incomplete task.
 
 ## 4. Worktree Mode (default)
 

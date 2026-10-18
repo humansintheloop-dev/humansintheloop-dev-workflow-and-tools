@@ -3,7 +3,9 @@
 import os
 import tempfile
 from contextlib import contextmanager
+from unittest.mock import MagicMock
 
+import click
 import pytest
 
 from i2code.implement.claude_runner import CapturedOutput, ClaudeCodeCommand, ClaudeResult
@@ -168,6 +170,75 @@ class TestTrunkModeExecute:
         assert isinstance(cmd, ClaudeCodeCommand)
         assert cmd.mock_command is not None
         assert cmd.mock_command[0] == "/path/to/mock-script"
+
+
+@pytest.mark.unit
+class TestTrunkModeSelectedThread:
+    """TrunkMode.execute() with opts.thread runs only that thread's tasks."""
+
+    def test_runs_only_selected_thread_after_commit_recovery(self, capsys):
+        tasks = [(1, 1, "Task A", False), (1, 2, "Task B", False), (2, 1, "Task C", False)]
+        with _trunk_mode_setup(tasks) as (project, fake_repo, fake_runner, plan_path):
+            events = []
+            commit_recovery = MagicMock()
+            commit_recovery.commit_if_needed.side_effect = lambda: events.append("commit_if_needed")
+            mode = TrunkMode(
+                opts=_opts(idea_directory=project.directory, thread=1),
+                workspace=Workspace(fake_repo, project),
+                claude_runner=fake_runner,
+                commit_recovery=commit_recovery,
+            )
+            fake_runner.set_side_effects([
+                combined(lambda: events.append("task 1.1"), advance_head(fake_repo, "bbb"),
+                         mark_task_complete(plan_path, 1, 1, "Task A")),
+                combined(lambda: events.append("task 1.2"), advance_head(fake_repo, "ccc"),
+                         mark_task_complete(plan_path, 1, 2, "Task B")),
+            ])
+
+            mode.execute()
+
+            commit_recovery.commit_if_needed.assert_called_once()
+            assert events == ["commit_if_needed", "task 1.1", "task 1.2"]
+            assert not project.is_task_completed(2, 1)
+            assert "Thread 1 (Thread 1) is complete." in capsys.readouterr().out
+
+    @pytest.mark.parametrize("thread, expected_error", [
+        (4, click.UsageError),
+        (3, SystemExit),
+    ], ids=["out-of-range", "incomplete-earlier-threads"])
+    def test_invalid_thread_fails_before_commit_recovery(self, thread, expected_error):
+        tasks = [(1, 1, "Task A", False), (2, 1, "Task B", False), (3, 1, "Task C", False)]
+        with _trunk_mode_setup(tasks) as (project, fake_repo, fake_runner, _):
+            commit_recovery = MagicMock()
+            mode = TrunkMode(
+                opts=_opts(idea_directory=project.directory, thread=thread),
+                workspace=Workspace(fake_repo, project),
+                claude_runner=fake_runner,
+                commit_recovery=commit_recovery,
+            )
+
+            with pytest.raises(expected_error):
+                mode.execute()
+
+            commit_recovery.commit_if_needed.assert_not_called()
+            assert fake_runner.calls == []
+
+    def test_already_complete_thread_is_reported_without_commit_recovery(self, capsys):
+        tasks = [(1, 1, "Task A", True), (2, 1, "Task B", True), (3, 1, "Task C", False)]
+        with _trunk_mode_setup(tasks) as (project, fake_repo, fake_runner, _):
+            commit_recovery = MagicMock()
+            mode = TrunkMode(
+                opts=_opts(idea_directory=project.directory, thread=2),
+                workspace=Workspace(fake_repo, project),
+                claude_runner=fake_runner,
+                commit_recovery=commit_recovery,
+            )
+
+            mode.execute()
+
+            commit_recovery.commit_if_needed.assert_not_called()
+            assert fake_runner.calls == []
+            assert "Thread 2 (Thread 2) is already complete." in capsys.readouterr().out
 
 
 PLAN_WITH_INCOMPLETE_TASK = """\

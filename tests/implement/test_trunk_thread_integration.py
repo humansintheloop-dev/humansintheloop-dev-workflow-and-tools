@@ -218,3 +218,36 @@ class TestThreadAlreadyComplete:
         ]), result.stdout
         assert idea.repo.head.commit.hexsha == head_before
         assert _read_file(idea.plan_path) == plan_before
+
+
+def _assert_trunk_dry_run_succeeds_printing(idea, extra_args, trailing_lines):
+    result = run_script(idea.idea_dir, cwd=idea.tmpdir, extra_args=["--dry-run", "--trunk", *extra_args])
+
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    assert _lines_in_order(result.stdout, [
+        "Mode: trunk",
+        f"Idea: {IDEA_NAME}",
+        f"Directory: {idea.idea_dir}",
+        *trailing_lines,
+    ]), result.stdout
+    return result
+
+
+@pytest.mark.integration
+class TestThreadDryRun:
+
+    def test_dry_run_prints_selected_thread_without_range_check(self, three_thread_idea):
+        _assert_trunk_dry_run_succeeds_printing(three_thread_idea, ["--thread", "5"], ["Thread: 5"])
+
+    def test_dry_run_thread_without_trunk_is_usage_error(self, three_thread_idea):
+        idea = three_thread_idea
+
+        result = run_script(idea.idea_dir, cwd=idea.tmpdir, extra_args=["--dry-run", "--thread", "5"])
+
+        assert result.returncode == 2, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        assert "Error: --thread requires --trunk" in result.stderr
+
+    def test_dry_run_without_thread_prints_no_thread_line(self, three_thread_idea):
+        result = _assert_trunk_dry_run_succeeds_printing(three_thread_idea, [], [])
+
+        assert "Thread:" not in result.stdout

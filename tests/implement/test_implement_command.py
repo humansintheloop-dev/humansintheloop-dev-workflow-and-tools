@@ -54,6 +54,18 @@ class TestImplementCommandDryRun:
         cmd.execute()
         assert "worktree" in capsys.readouterr().out.lower()
 
+    def test_dry_run_prints_thread_after_directory(self, capsys):
+        cmd, project, _ = _make_command(dry_run=True, trunk=True, thread=5)
+        cmd.execute()
+        lines = capsys.readouterr().out.splitlines()
+        assert lines[-2].endswith(f"Directory: {project.directory}")
+        assert lines[-1].endswith("Thread: 5")
+
+    def test_dry_run_without_thread_prints_no_thread_line(self, capsys):
+        cmd, *_ = _make_command(dry_run=True, trunk=True)
+        cmd.execute()
+        assert "Thread:" not in capsys.readouterr().out
+
     def test_dry_run_does_not_execute(self):
         cmd, *_ = _make_command(dry_run=True, trunk=True)
         with patch.object(cmd, '_trunk_mode') as mock_trunk:

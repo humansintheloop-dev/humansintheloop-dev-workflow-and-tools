@@ -171,15 +171,15 @@ The developer selects a thread that has no incomplete tasks. i2code reports it, 
 
 The developer runs a dry run with `--thread`. i2code shows the selected thread without reading the plan's task state.
 
-- [ ] **Task 6.1: `--dry-run --trunk --thread N` prints the selected thread**
+- [x] **Task 6.1: `--dry-run --trunk --thread N` prints the selected thread**
   - TaskType: OUTCOME
   - Entrypoint: `i2code implement --dry-run --trunk --thread 5 <idea-directory>`
   - Observable: On a three-thread plan, stdout contains the `Mode: trunk`, `Idea: test-feature` and `Directory: <idea-directory>` lines followed by `Thread: 5`. The exit status is 0, because a dry run does not apply the range check. `--dry-run --thread 5` without `--trunk` still exits with `Error: --thread requires --trunk` and status 2. A dry run without `--thread` prints no `Thread:` line.
   - Evidence: `uv run --python 3.12 python3 -m pytest tests/implement/test_trunk_thread_integration.py::TestThreadDryRun -v -m integration` runs each command as a subprocess, then asserts the exit status and the stdout and stderr lines in order
   - Steps:
-    - [ ] Write the failing acceptance test `TestThreadDryRun` with the three cases
-    - [ ] Write unit tests in `tests/implement/test_implement_command.py` in `TestImplementCommandDryRun` (`tests/implement/test_implement_command.py:39`): with `thread=5`, `_print_dry_run` prints `Thread: 5` after `Directory:`, and without `thread` it prints no `Thread:` line. Implement this in `_print_dry_run` (`src/i2code/implement/implement_command.py:146`).
-    - [ ] Run the acceptance test and confirm it passes
+    - [x] Write the failing acceptance test `TestThreadDryRun` with the three cases
+    - [x] Write unit tests in `tests/implement/test_implement_command.py` in `TestImplementCommandDryRun` (`tests/implement/test_implement_command.py:39`): with `thread=5`, `_print_dry_run` prints `Thread: 5` after `Directory:`, and without `thread` it prints no `Thread:` line. Implement this in `_print_dry_run` (`src/i2code/implement/implement_command.py:146`).
+    - [x] Run the acceptance test and confirm it passes
 
 ---
 

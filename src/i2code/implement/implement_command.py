@@ -155,3 +155,5 @@ class ImplementCommand:
         print_message(f"Mode: {mode}")
         print_message(f"Idea: {self.project.name}")
         print_message(f"Directory: {self.project.directory}")
+        if self.opts.thread is not None:
+            print_message(f"Thread: {self.opts.thread}")

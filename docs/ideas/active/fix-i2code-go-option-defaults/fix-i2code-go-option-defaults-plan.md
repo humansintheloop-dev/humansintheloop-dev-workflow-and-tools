@@ -68,16 +68,16 @@ Projects created outside `i2code go` (e.g., via `i2code idea`/`i2code spec`/`i2c
 
 When the implement config file already exists and the project is in `ready` state, the default is "Revise implement options" instead of "Move idea to wip". The user should advance through the workflow, not revisit already-completed configuration.
 
-- [ ] **Task 2.1: Ready state with existing config defaults to MOVE_TO_WIP**
+- [x] **Task 2.1: Ready state with existing config defaults to MOVE_TO_WIP**
   - TaskType: OUTCOME
   - Entrypoint: `pytest tests/go-cmd/test_orchestrator_lifecycle_menu.py::TestReadyIdeaMenu -x`
   - Observable: When lifecycle state is `"ready"` and the implement config file exists, the menu default is "Move idea to wip" instead of "Revise implement options".
   - Evidence: `test_ready_idea_with_config_defaults_to_revise` in `tests/go-cmd/test_orchestrator_lifecycle_menu.py:167` is updated to expect `MOVE_TO_WIP` and passes.
   - Steps:
-    - [ ] Update `test_ready_idea_with_config_defaults_to_revise` in `tests/go-cmd/test_orchestrator_lifecycle_menu.py:167`: change expected default from `REVISE_IMPLEMENT` to `MOVE_TO_WIP`, and rename to `test_ready_idea_with_config_defaults_to_move_to_wip`
-    - [ ] Run the test — verify it fails (current code returns REVISE_IMPLEMENT)
-    - [ ] Modify `_lifecycle_default()` in `src/i2code/go_cmd/orchestrator.py:332`: for `state == "ready"`, check if config file exists (`os.path.isfile(self._project.implement_config_file)`). If config exists and `MOVE_TO_WIP` is in options, return `options.index(MOVE_TO_WIP) + 1`. Otherwise, return the configure label index as before.
-    - [ ] Run all tests in `tests/go-cmd/test_orchestrator_lifecycle_menu.py` — verify all pass
+    - [x] Update `test_ready_idea_with_config_defaults_to_revise` in `tests/go-cmd/test_orchestrator_lifecycle_menu.py:167`: change expected default from `REVISE_IMPLEMENT` to `MOVE_TO_WIP`, and rename to `test_ready_idea_with_config_defaults_to_move_to_wip`
+    - [x] Run the test — verify it fails (current code returns REVISE_IMPLEMENT)
+    - [x] Modify `_lifecycle_default()` in `src/i2code/go_cmd/orchestrator.py:332`: for `state == "ready"`, check if config file exists (`os.path.isfile(self._project.implement_config_file)`). If config exists and `MOVE_TO_WIP` is in options, return `options.index(MOVE_TO_WIP) + 1`. Otherwise, return the configure label index as before.
+    - [x] Run all tests in `tests/go-cmd/test_orchestrator_lifecycle_menu.py` — verify all pass
 
 ---
 

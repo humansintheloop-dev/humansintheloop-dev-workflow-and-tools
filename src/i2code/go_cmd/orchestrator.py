@@ -341,8 +341,7 @@ class Orchestrator:
         if state == "draft" and MOVE_TO_READY in options:
             return options.index(MOVE_TO_READY) + 1
         if state == "ready":
-            configure_label = self._configure_implement_label()
-            return options.index(configure_label) + 1
+            return self._ready_default(options)
         if state == "wip":
             if COMMIT_CHANGES in options:
                 return options.index(COMMIT_CHANGES) + 1
@@ -350,6 +349,11 @@ class Orchestrator:
         if COMMIT_CHANGES in options:
             return options.index(COMMIT_CHANGES) + 1
         return 2
+
+    def _ready_default(self, options):
+        if os.path.isfile(self._project.implement_config_file) and MOVE_TO_WIP in options:
+            return options.index(MOVE_TO_WIP) + 1
+        return options.index(self._configure_implement_label()) + 1
 
     def _implement_option_index(self, options):
         for i, option in enumerate(options):

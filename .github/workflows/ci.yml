@@ -21,10 +21,10 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.3.0
 
       - name: Run ruff check
         run: uv run --with ruff ruff check
@@ -52,7 +52,7 @@ jobs:
         run: gitleaks detect --source . --verbose --config "$RUNNER_TEMP/gitleaks.toml"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
 
       - name: Run plugin JavaScript tests
         run: ./test-scripts/test-plugin-javascript.sh
@@ -60,10 +60,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.3.0
 
       - name: Run tests
         run: ./test-scripts/test-end-to-end.sh
@@ -72,10 +72,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, test]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.3.0
 
       - name: Configure git to use gh for authentication
         env:
@@ -98,7 +98,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 

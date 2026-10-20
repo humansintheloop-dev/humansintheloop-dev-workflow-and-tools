@@ -12,6 +12,13 @@ from i2code.cli import main
 from i2code.idea.resolver import IdeaInfo
 
 
+@pytest.fixture(autouse=True)
+def skip_git_repository_check():
+    """These tests run in temp directories that are not git repositories."""
+    with patch("i2code.go_cmd.cli.ensure_git_repository") as mock_check:
+        yield mock_check
+
+
 @pytest.mark.unit
 class TestGoCommandRegistered:
     def test_go_command_listed_in_help(self):

@@ -78,7 +78,7 @@ _MOVE_TARGETS = {
 }
 
 
-def _git_root_from_path(idea_dir):
+def git_root_from_path(idea_dir):
     """Derive the git repository root from an idea directory path."""
     parts = Path(idea_dir).resolve().parts
     for i in range(len(parts) - 1):
@@ -146,22 +146,22 @@ def _default_implement_runner(flags, directory):
 
 
 def _default_brainstorm_idea(project):
-    repo_root = str(_git_root_from_path(project.directory))
+    repo_root = str(git_root_from_path(project.directory))
     return brainstorm_idea(project, ClaudeRunner(), repo_root=repo_root)
 
 
 def _default_create_spec(project):
-    repo_root = str(_git_root_from_path(project.directory))
+    repo_root = str(git_root_from_path(project.directory))
     return create_spec(project, ClaudeRunner(), repo_root=repo_root)
 
 
 def _default_revise_spec(project):
-    repo_root = str(_git_root_from_path(project.directory))
+    repo_root = str(git_root_from_path(project.directory))
     return revise_spec(project, ClaudeRunner(), repo_root=repo_root)
 
 
 def _default_create_plan(project):
-    repo_root = str(_git_root_from_path(project.directory))
+    repo_root = str(git_root_from_path(project.directory))
     runner = ClaudeRunner()
     services = PlanServices(
         template_renderer=render_template,
@@ -172,7 +172,7 @@ def _default_create_plan(project):
 
 
 def _default_revise_plan(project):
-    repo_root = str(_git_root_from_path(project.directory))
+    repo_root = str(git_root_from_path(project.directory))
     return revise_plan(project, ClaudeRunner(), render_template, repo_root=repo_root)
 
 
@@ -298,7 +298,7 @@ class Orchestrator:
         new_state = _MOVE_TARGETS[selected]
         name = self._project.name
         old_path = Path(self._project.directory)
-        git_root = _git_root_from_path(old_path)
+        git_root = git_root_from_path(old_path)
         message = self._deps.transition_fn(name, old_path, new_state, git_root)
         print(message, file=self._deps.output)
 
@@ -437,7 +437,7 @@ class Orchestrator:
 
     def _check_plan_completion(self):
         config = read_implement_config(self._project.implement_config_file)
-        git_root = str(_git_root_from_path(self._project.directory))
+        git_root = str(git_root_from_path(self._project.directory))
         plan_text = resolve_plan_text(
             self._project, config, git_root,
             ResolverDeps(

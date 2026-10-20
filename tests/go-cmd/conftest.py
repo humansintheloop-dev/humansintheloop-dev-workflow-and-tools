@@ -19,12 +19,12 @@ def TempIdeaProject(name):
     """Create a temporary IdeaProject with its directory on disk.
 
     The directory is laid out as `<tmpdir>/docs/ideas/active/<name>` so that
-    `_git_root_from_path` resolves the enclosing git root deterministically.
+    `git_root_from_path` resolves the enclosing git root deterministically.
     The git root is attached as `project_root` on the yielded IdeaProject
     so tests can build sibling worktree/clone paths.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Resolve the tmpdir so that _git_root_from_path (which calls
+        # Resolve the tmpdir so that git_root_from_path (which calls
         # Path.resolve) produces the same prefix as project.directory —
         # otherwise relpath produces a broken path on macOS where
         # /var/folders is a symlink to /private/var/folders.

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 
+from i2code.go_cmd.git_repository import ensure_git_repository
 from i2code.go_cmd.orchestrator import Orchestrator, OrchestratorDeps
 from i2code.idea.resolver import list_ideas, resolve_idea_directory
 from i2code.implement.idea_project import IdeaProject
@@ -43,6 +44,7 @@ def go_cmd(directory):
         click.echo(f"Directory created successfully: {directory}")
         click.echo("")
 
+    ensure_git_repository(directory)
     project = IdeaProject(directory)
 
     click.echo("================================================")

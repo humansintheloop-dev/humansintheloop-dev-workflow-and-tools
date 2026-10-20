@@ -35,7 +35,7 @@ VALID_PLAN = """\
 
 
 def _make_idea_project(tmp_path, name="my-feature"):
-    """Create an IdeaProject with docs/ideas/draft structure so _git_root_from_path works."""
+    """Create an IdeaProject with docs/ideas/draft structure so git_root_from_path works."""
     repo_root = tmp_path / "repo"
     idea_dir = repo_root / "docs" / "ideas" / "draft" / name
     os.makedirs(idea_dir)

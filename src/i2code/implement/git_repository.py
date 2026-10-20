@@ -61,6 +61,9 @@ class GitRepository:
     def is_worktree(self):
         return self._repo.working_tree_dir != self._main_repo_dir
 
+    def has_origin_remote(self):
+        return "origin" in [remote.name for remote in self._repo.remotes]
+
     @property
     def origin_url(self):
         return self._repo.remotes.origin.url

@@ -77,6 +77,21 @@ class TestGetUserConfig:
 
 
 @pytest.mark.unit
+class TestHasOriginRemote:
+
+    def test_false_when_repository_has_no_remotes(self, test_git_repo_with_commit):
+        _, repo = test_git_repo_with_commit
+
+        assert _make_git_repo(repo).has_origin_remote() is False
+
+    def test_true_when_origin_remote_exists(self, test_git_repo_with_commit):
+        tmpdir, repo = test_git_repo_with_commit
+        repo.create_remote("origin", os.path.join(tmpdir, "remote.git"))
+
+        assert _make_git_repo(repo).has_origin_remote() is True
+
+
+@pytest.mark.unit
 class TestEnsureBranch:
 
     def test_creates_branch_from_head(self, test_git_repo_with_commit):

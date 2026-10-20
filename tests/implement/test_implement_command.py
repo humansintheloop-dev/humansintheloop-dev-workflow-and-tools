@@ -101,6 +101,40 @@ class TestImplementCommandWorktreeDispatch:
 
 
 @pytest.mark.unit
+class TestImplementCommandRequiresOriginRemote:
+    """Worktree and isolate modes push to GitHub, so they need an origin remote."""
+
+    @pytest.mark.parametrize("mode_opts, mode_method", [
+        ({}, "_worktree_mode"),
+        ({"isolate": True}, "_isolate_mode"),
+    ])
+    def test_exits_before_dispatch_without_origin_remote(self, capsys, mode_opts, mode_method):
+        cmd, _, git_repo = _make_command(ignore_uncommitted_idea_changes=True, **mode_opts)
+        git_repo.has_origin_remote.return_value = False
+        with patch.object(cmd, mode_method) as mock_mode:
+            with pytest.raises(SystemExit) as exc_info:
+                cmd.execute()
+            mock_mode.assert_not_called()
+        git_repo.has_origin_remote.assert_called_once()
+        assert exc_info.value.code == 1
+        assert "--trunk" in capsys.readouterr().err
+
+    def test_setup_only_runs_without_origin_remote(self):
+        cmd, _, git_repo = _make_command(setup_only=True, ignore_uncommitted_idea_changes=True)
+        git_repo.has_origin_remote.return_value = False
+        with patch.object(cmd, "_worktree_mode") as mock_wt:
+            cmd.execute()
+            mock_wt.assert_called_once()
+
+    def test_trunk_mode_runs_without_origin_remote(self):
+        cmd, _, git_repo = _make_command(trunk=True, ignore_uncommitted_idea_changes=True)
+        git_repo.has_origin_remote.return_value = False
+        with patch.object(cmd, "_trunk_mode") as mock_trunk:
+            cmd.execute()
+            mock_trunk.assert_called_once()
+
+
+@pytest.mark.unit
 class TestImplementCommandValidation:
     """execute() validates idea files committed unless skipped."""
 

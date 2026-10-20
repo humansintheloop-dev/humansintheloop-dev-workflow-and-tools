@@ -39,10 +39,24 @@ class ImplementCommand:
 
         if self.opts.trunk:
             self._trunk_mode()
-        elif self.opts.isolate:
+            return
+
+        self._require_origin_remote()
+        if self.opts.isolate:
             self._isolate_mode()
         else:
             self._worktree_mode()
+
+    def _require_origin_remote(self):
+        """Worktree and isolate modes push branches and open PRs on GitHub."""
+        if self.opts.setup_only or self.git_repo.has_origin_remote():
+            return
+        print(
+            "Error: this repository has no 'origin' remote. "
+            "Add a GitHub remote, or use --trunk to implement on the current branch.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     def _trunk_mode(self):
         """Execute tasks locally on the current branch."""

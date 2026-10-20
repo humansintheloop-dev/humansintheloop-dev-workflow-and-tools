@@ -213,16 +213,31 @@ class TestEnsureProjectSetupMethod:
             fake_git.set_head_sha(new_sha)
         fake_runner.set_side_effect(side_effect)
 
-    def _setup_with_push_tracking(self, tmp_path):
+    def _setup_head_advancing(self, tmp_path, push_fn):
         fake_runner, fake_git, fake_gh = self._make_fakes(tmp_path)
         fake_git.set_head_sha("aaa111")
-        pushed = []
         self._advance_head(fake_runner, fake_git)
         initializer = self._make_initializer(
-            fake_runner=fake_runner, git_repo=fake_git,
-            push_fn=lambda branch: pushed.append(branch) or True,
+            fake_runner=fake_runner, git_repo=fake_git, push_fn=push_fn,
+        )
+        return initializer, fake_gh
+
+    def _setup_with_push_tracking(self, tmp_path):
+        pushed = []
+        initializer, fake_gh = self._setup_head_advancing(
+            tmp_path, push_fn=lambda branch: pushed.append(branch) or True,
         )
         return initializer, fake_gh, pushed
+
+    @staticmethod
+    def _run_setup(initializer, tmp_path, **opt_overrides):
+        return initializer.ensure_scaffolding_setup(
+            _opts(**opt_overrides), idea_directory=str(tmp_path), branch="idea/test/integration",
+        )
+
+    @staticmethod
+    def _waited_for_ci(fake_gh):
+        return any(call[0] == "wait_for_workflow_completion" for call in fake_gh.calls)
 
     def _setup_ci_failure(self, tmp_path, ci_result, build_fixer):
         fake_runner, fake_git, fake_gh = self._make_fakes(tmp_path)
@@ -246,12 +261,10 @@ class TestEnsureProjectSetupMethod:
             fake_runner=fake_runner, git_repo=fake_git, push_fn=lambda branch: True,
         )
 
-        result = initializer.ensure_scaffolding_setup(
-            _opts(), idea_directory=str(tmp_path), branch="idea/test/integration",
-        )
+        result = self._run_setup(initializer, tmp_path)
 
         assert result is True
-        assert not any(call[0] == "wait_for_workflow_completion" for call in fake_gh.calls)
+        assert not self._waited_for_ci(fake_gh)
 
     def test_commits_made_pushes_and_waits_for_ci(self, tmp_path):
         """When scaffolding makes commits, should push and wait for CI."""
@@ -267,6 +280,16 @@ class TestEnsureProjectSetupMethod:
         assert pushed == ["idea/test/integration"]
         assert ("wait_for_workflow_completion", "idea/test/integration", "bbb222") in fake_gh.calls
 
+    def test_push_failure_returns_false_without_waiting_for_ci(self, tmp_path, capsys):
+        """When the push fails, there is no CI run to wait for."""
+        initializer, fake_gh = self._setup_head_advancing(tmp_path, push_fn=lambda branch: False)
+
+        result = self._run_setup(initializer, tmp_path)
+
+        assert result is False
+        assert not self._waited_for_ci(fake_gh)
+        assert "push failed" in capsys.readouterr().out
+
     def test_skip_ci_wait_pushes_but_does_not_wait(self, tmp_path):
         """When skip_ci_wait=True, should push but not wait for CI."""
         initializer, fake_gh, pushed = self._setup_with_push_tracking(tmp_path)
@@ -278,7 +301,7 @@ class TestEnsureProjectSetupMethod:
 
         assert result is True
         assert pushed == ["idea/test/integration"]
-        assert not any(call[0] == "wait_for_workflow_completion" for call in fake_gh.calls)
+        assert not self._waited_for_ci(fake_gh)
 
     def test_ci_failure_sets_branch_and_calls_build_fixer(self, tmp_path):
         """When CI fails, should set git_repo.branch and call build_fixer.fix_ci_failure()."""
@@ -287,9 +310,7 @@ class TestEnsureProjectSetupMethod:
             tmp_path, ci_result=(False, {"name": "CI", "id": 123}), build_fixer=fake_fixer,
         )
 
-        result = initializer.ensure_scaffolding_setup(
-            _opts(), idea_directory=str(tmp_path), branch="idea/test/integration",
-        )
+        result = self._run_setup(initializer, tmp_path)
 
         assert result is True
         assert fake_fixer.calls == ["fix_ci_failure"]
@@ -302,9 +323,7 @@ class TestEnsureProjectSetupMethod:
             tmp_path, ci_result=(False, {"name": "CI", "id": 123}), build_fixer=fake_fixer,
         )
 
-        result = initializer.ensure_scaffolding_setup(
-            _opts(), idea_directory=str(tmp_path), branch="idea/test/integration",
-        )
+        result = self._run_setup(initializer, tmp_path)
 
         assert result is False
 
@@ -329,9 +348,7 @@ class TestEnsureProjectSetupMethod:
             tmp_path, ci_result=(False, None), build_fixer=None,
         )
 
-        result = initializer.ensure_scaffolding_setup(
-            _opts(), idea_directory=str(tmp_path), branch="idea/test/integration",
-        )
+        result = self._run_setup(initializer, tmp_path)
 
         assert result is False
 
@@ -351,9 +368,7 @@ class TestEnsureProjectSetupMethod:
         assert len(fake_runner.calls) == 1
 
         # Second call — guard file exists, skips scaffolding
-        result = initializer.ensure_scaffolding_setup(
-            _opts(), idea_directory=str(tmp_path), branch="idea/test/integration",
-        )
+        result = self._run_setup(initializer, tmp_path)
         assert result is True
         assert len(fake_runner.calls) == 1
 

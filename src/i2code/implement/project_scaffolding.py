@@ -85,7 +85,9 @@ class ProjectScaffolder:
         self._write_guard_file()
 
         print_message(f"Scaffolding: pushing branch '{branch}'")
-        self._steps.push_fn(branch)
+        if not self._steps.push_fn(branch):
+            print_message("Scaffolding: push failed, cannot wait for CI")
+            return False
 
         if not head_advanced:
             print_message("Scaffolding: no new commits, skipping CI wait")

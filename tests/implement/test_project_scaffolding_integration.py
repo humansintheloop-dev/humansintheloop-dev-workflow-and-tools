@@ -74,10 +74,11 @@ def init_repo_with_remote(tmpdir):
 class TestEnsureProjectSetupWithMockClaude:
     """Integration tests for ensure_scaffolding_setup with a mock Claude script."""
 
-    def test_mock_claude_setup_creates_scaffolding_commit(self):
+    def test_mock_claude_setup_creates_scaffolding_commit(self, monkeypatch):
         """Mock Claude creates scaffolding, ensure_scaffolding_setup detects and pushes it."""
         with tempfile.TemporaryDirectory() as tmpdir:
             repo, repo_path, idea_dir = init_repo_with_remote(tmpdir)
+            monkeypatch.chdir(repo_path)
 
             mock_script = os.path.join(tmpdir, "mock-claude.sh")
             create_mock_claude_script(mock_script)
@@ -114,10 +115,11 @@ class TestEnsureProjectSetupWithMockClaude:
             log = repo.git.log("--oneline")
             assert "mock Claude" in log
 
-    def test_idempotent_second_run_is_noop(self):
+    def test_idempotent_second_run_is_noop(self, monkeypatch):
         """Second run with idempotent mock should detect no new commits and return True."""
         with tempfile.TemporaryDirectory() as tmpdir:
             repo, repo_path, idea_dir = init_repo_with_remote(tmpdir)
+            monkeypatch.chdir(repo_path)
 
             mock_script = os.path.join(tmpdir, "mock-claude.sh")
             create_mock_claude_script(mock_script)

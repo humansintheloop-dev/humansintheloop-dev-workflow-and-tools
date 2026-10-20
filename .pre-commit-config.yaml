@@ -1,4 +1,12 @@
+default_install_hook_types: [pre-commit, commit-msg]
 repos:
+  - repo: https://github.com/cer/pre-commit-hooks
+    rev: v1.1.0
+    hooks:
+      - id: gitleaks-staged
+      - id: gitleaks-commit-message
+      - id: block-claude-coauthor
+      - id: shellcheck
   - repo: local
     hooks:
       - id: ruff-check
@@ -7,49 +15,38 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+        stages: [pre-commit]
       - id: pyright
         name: Run pyright --level error
         entry: uvx pyright --level error src/
         language: system
         types: [python]
         pass_filenames: false
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
-    hooks:
-      - id: shellcheck
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.24.2
-    hooks:
-      - id: gitleaks
-  - repo: local
-    hooks:
+        stages: [pre-commit]
       - id: run-codescene
         name: Run CodeScene
         entry: codescene-precommit.sh
         language: script
         pass_filenames: false
+        stages: [pre-commit]
       - id: plugin-javascript-tests
         name: Run plugin JavaScript tests
         entry: ./test-scripts/test-plugin-javascript.sh
         language: script
         pass_filenames: false
         files: ^claude-code-plugins/.*\.js$
+        stages: [pre-commit]
       - id: precommit-check
         name: Run precommit.sh checks
         entry: ./test-scripts/test-precommit.sh
         language: script
         pass_filenames: false
         files: ^(src/|test-scripts/|tests/)
+        stages: [pre-commit]
       - id: validate-idea-to-code-plugin
         name: Validate idea-to-code plugin
         entry: claude plugin validate --strict claude-code-plugins/idea-to-code
         language: system
         pass_filenames: false
         files: ^claude-code-plugins/idea-to-code/
-  - repo: local
-    hooks:
-      - id: block-claude-coauthor
-        name: Block Claude Co-Authored-By in commit messages
-        entry: bash -c 'if grep -q "noreply@anthropic.com" "$1"; then echo "Commit message contains noreply@anthropic.com. Use the idea-to-code:commit-guidelines skill for the correct commit message format."; exit 1; fi' --
-        language: system
-        stages: [commit-msg]
+        stages: [pre-commit]

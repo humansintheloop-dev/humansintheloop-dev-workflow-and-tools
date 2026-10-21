@@ -6,6 +6,16 @@ import re
 
 _TASK_HEADER_RE = re.compile(r'^- \[([ x])\] \*\*Task \d+\.\d+: (.+)\*\*$')
 _STEP_RE = re.compile(r'^\s+- \[([ x])\] (.+)$')
+_SINGLE_CODE_SPAN_RE = re.compile(r'^`([^`]+)`$')
+
+
+def _unwrap_single_code_span(value: str) -> str:
+    m = _SINGLE_CODE_SPAN_RE.match(value)
+    return m.group(1) if m else value
+
+
+def _as_code_unless_it_has_code_spans(value: str) -> str:
+    return value if '`' in value else f'`{value}`'
 
 
 @dataclass
@@ -37,7 +47,7 @@ class Task:
 
     @property
     def entrypoint(self) -> str:
-        return self._extract_metadata('Entrypoint')
+        return _unwrap_single_code_span(self._extract_metadata('Entrypoint'))
 
     @property
     def observable(self) -> str:
@@ -45,7 +55,7 @@ class Task:
 
     @property
     def evidence(self) -> str:
-        return self._extract_metadata('Evidence')
+        return _unwrap_single_code_span(self._extract_metadata('Evidence'))
 
     @property
     def steps(self) -> list[dict]:
@@ -54,6 +64,16 @@ class Task:
             for line in self._lines_after_steps_marker()
             if (m := _STEP_RE.match(line))
         ]
+
+    def to_spec(self) -> dict:
+        return {
+            'title': self.title,
+            'task_type': self.task_type,
+            'entrypoint': self.entrypoint,
+            'observable': self.observable,
+            'evidence': self.evidence,
+            'steps': [step['description'] for step in self.steps],
+        }
 
     def _lines_after_steps_marker(self) -> list[str]:
         for i, line in enumerate(self._lines[1:], 1):
@@ -66,10 +86,7 @@ class Task:
         for line in self._lines[1:]:
             stripped = line.strip()
             if stripped.startswith(prefix):
-                val = stripped[len(prefix):].strip()
-                if val.startswith('`') and val.endswith('`'):
-                    val = val[1:-1]
-                return val
+                return stripped[len(prefix):].strip()
         return ''
 
     def mark_complete(self) -> None:
@@ -114,9 +131,9 @@ class Task:
     def create(cls, title: str, metadata: TaskMetadata, steps: list[str]) -> 'Task':
         lines = [f'- [ ] **Task 0.0: {title}**']
         lines.append(f'  - TaskType: {metadata.task_type}')
-        lines.append(f'  - Entrypoint: `{metadata.entrypoint}`')
+        lines.append(f'  - Entrypoint: {_as_code_unless_it_has_code_spans(metadata.entrypoint)}')
         lines.append(f'  - Observable: {metadata.observable}')
-        lines.append(f'  - Evidence: `{metadata.evidence}`')
+        lines.append(f'  - Evidence: {_as_code_unless_it_has_code_spans(metadata.evidence)}')
         lines.append('  - Steps:')
         for step in steps:
             lines.append(f'    - [ ] {step}')

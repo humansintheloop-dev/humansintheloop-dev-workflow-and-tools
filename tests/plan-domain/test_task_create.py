@@ -42,3 +42,20 @@ class TestTaskCreate:
             '    - [ ] Write test',
             '    - [ ] Implement handler',
         ]
+
+    def test_does_not_wrap_values_that_contain_code_spans(self):
+        task = Task.create(
+            'Wait for CI',
+            TaskMetadata(
+                'OUTCOME',
+                '`vmr-push.sh` in `$SRC_ROOT/x`',
+                'CI passes',
+                '`vmr-wait-for-circleci.sh`, run in `$SRC_ROOT/x` after the push, exits 0',
+            ),
+            ['Push'],
+        )
+
+        lines = task.to_lines(thread_num=1, task_num=1)
+
+        assert lines[2] == '  - Entrypoint: `vmr-push.sh` in `$SRC_ROOT/x`'
+        assert lines[4] == '  - Evidence: `vmr-wait-for-circleci.sh`, run in `$SRC_ROOT/x` after the push, exits 0'

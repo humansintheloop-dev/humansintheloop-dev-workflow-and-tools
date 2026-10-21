@@ -1,5 +1,7 @@
 """Click handlers for plan-level commands."""
 
+import json
+
 import click
 
 from i2code.plan.plan_file_io import with_error_handling, with_plan_file, with_plan_file_update
@@ -68,20 +70,48 @@ def _print_task(thread_num, task_num, task):
     click.echo()
 
 
+def _print_thread(thread_num, thread):
+    click.echo(f"Thread {thread_num}: {thread.title}")
+    click.echo()
+    click.echo(thread.introduction)
+    click.echo()
+    for task_num, task in enumerate(thread.tasks, 1):
+        _print_task(thread_num, task_num, task)
+
+
+def _echo_json(spec):
+    click.echo(json.dumps(spec, indent=2))
+
+
 @click.command("get-thread")
 @click.argument("plan_file")
 @click.option("--thread", required=True, type=int, help="Thread number")
-def get_thread_cmd(plan_file, thread):
+@click.option("--json", "as_json", is_flag=True, help="Print the thread as a thread.schema.json object")
+def get_thread_cmd(plan_file, thread, as_json):
     """Get a thread's full content."""
     with with_error_handling():
         with with_plan_file(plan_file) as domain_plan:
             domain_thread = domain_plan.get_thread(thread)
-            click.echo(f"Thread {thread}: {domain_thread.title}")
-            click.echo()
-            click.echo(domain_thread.introduction)
-            click.echo()
-            for task_num, task in enumerate(domain_thread.tasks, 1):
-                _print_task(thread, task_num, task)
+            if as_json:
+                _echo_json(domain_thread.to_spec())
+            else:
+                _print_thread(thread, domain_thread)
+
+
+@click.command("get-task")
+@click.argument("plan_file")
+@click.option("--thread", required=True, type=int, help="Thread number")
+@click.option("--task", required=True, type=int, help="Task number")
+@click.option("--json", "as_json", is_flag=True, help="Print the task as a task.schema.json object")
+def get_task_cmd(plan_file, thread, task, as_json):
+    """Get a single task's full content."""
+    with with_error_handling():
+        with with_plan_file(plan_file) as domain_plan:
+            domain_task = domain_plan.get_thread(thread).get_task(task)
+            if as_json:
+                _echo_json(domain_task.to_spec())
+            else:
+                _print_task(thread, task, domain_task)
 
 
 def register(group):
@@ -91,3 +121,4 @@ def register(group):
     group.add_command(list_threads_cmd)
     group.add_command(get_summary_cmd)
     group.add_command(get_thread_cmd)
+    group.add_command(get_task_cmd)

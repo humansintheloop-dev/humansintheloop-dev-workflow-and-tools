@@ -20,7 +20,7 @@
     "entrypoint": {
       "type": "string",
       "minLength": 1,
-      "description": "Exact shell command or execution path that runs the task (rendered as the `Entrypoint:` line, backticked)."
+      "description": "Exact shell command or execution path that runs the task (rendered as the `Entrypoint:` line, wrapped in backticks unless the value already contains a backtick)."
     },
     "observable": {
       "type": "string",
@@ -30,7 +30,7 @@
     "evidence": {
       "type": "string",
       "minLength": 1,
-      "description": "Exact shell command that proves the observable via the entrypoint (rendered as the `Evidence:` line, backticked)."
+      "description": "Exact shell command that proves the observable via the entrypoint (rendered as the `Evidence:` line, wrapped in backticks unless the value already contains a backtick)."
     },
     "steps": {
       "type": "array",

@@ -1,5 +1,7 @@
 """CLI integration tests for get-thread command."""
 
+import json
+
 from click.testing import CliRunner
 
 from i2code.plan.plan_cli import get_thread_cmd
@@ -91,3 +93,24 @@ class TestGetThreadCli:
 
         assert result.exit_code == 1
         assert "thread 99 does not exist" in result.output
+
+    def test_json_outputs_thread_object(self, tmp_path):
+        plan_file = tmp_path / "plan.md"
+        plan_file.write_text(PLAN_WITH_TWO_THREADS)
+
+        runner = CliRunner(catch_exceptions=False)
+        result = runner.invoke(get_thread_cmd, [str(plan_file), "--thread", "2", "--json"])
+
+        assert result.exit_code == 0
+        assert json.loads(result.output) == {
+            "title": "Second Thread",
+            "introduction": "Introduction to second thread.",
+            "tasks": [{
+                "title": "Another task",
+                "task_type": "OUTCOME",
+                "entrypoint": "echo another",
+                "observable": "Another thing happens",
+                "evidence": "echo another-done",
+                "steps": ["Do another thing"],
+            }],
+        }

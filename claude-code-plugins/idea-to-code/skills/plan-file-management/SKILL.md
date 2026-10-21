@@ -1,6 +1,6 @@
 ---
 name: plan-file-management
-description: Structural CRUD and reordering operations on plan files via the `i2code plan` CLI — insert/replace/delete/reorder threads and tasks, mark tasks/steps complete or incomplete, fix numbering, and query plan structure (get-next-task, get-thread, get-summary, list-threads). Claude MUST use this skill (not raw file edits) for any change to a plan file's threads, tasks, or steps, and for reading plan structure programmatically.
+description: Structural CRUD and reordering operations on plan files via the `i2code plan` CLI — insert/replace/delete/reorder threads and tasks, mark tasks/steps complete or incomplete, fix numbering, and query plan structure (get-next-task, get-thread, get-task, get-summary, list-threads). Claude MUST use this skill (not raw file edits) for any change to a plan file's threads, tasks, or steps, and for reading plan structure programmatically.
 ---
 
 # Plan File Management
@@ -99,9 +99,35 @@ Return the plan's name, idea type, overview, and progress (thread count, task co
 
 Return a specific thread's full content including number, title, introduction, and all tasks with their metadata and steps.
 
-    i2code plan get-thread <plan_file> --thread <N>
+    i2code plan get-thread <plan_file> --thread <N> [--json]
 
 Errors if the thread does not exist.
+
+With `--json`, prints the thread as a [thread.schema.json](references/thread.schema.json) object (`title`, `introduction`, `tasks[]`), where each task is a [task.schema.json](references/task.schema.json) object. Use it to revise existing tasks without retyping them:
+
+    i2code plan get-thread <plan_file> --thread <N> --json > thread.json
+    # edit thread.json, then write its tasks array to tasks.json
+    i2code plan replace-thread <plan_file> --thread <N> --title <title> --introduction <text> --tasks-file tasks.json --rationale <text>
+
+Passing the JSON back unedited leaves the thread's markdown unchanged, with these exceptions:
+
+- The schema has no completion state, so the JSON leaves it out. `replace-thread` and `replace-task` write every task and step as incomplete. Re-mark completed ones with `mark-task-complete` or `mark-step-complete`.
+- An `Entrypoint` or `Evidence` that contains no backticks comes back wrapped in one pair of backticks.
+- Lines the schema cannot represent, such as sub-bullets under a step, are dropped.
+
+## get-task
+
+Return a single task's metadata and steps, with completion state.
+
+    i2code plan get-task <plan_file> --thread <N> --task <M> [--json]
+
+Errors if the thread or task does not exist.
+
+With `--json`, prints the task as a [task.schema.json](references/task.schema.json) object, which `replace-task --task-file` accepts. The same exceptions as `get-thread --json` apply.
+
+    i2code plan get-task <plan_file> --thread <N> --task <M> --json > task.json
+    # edit task.json
+    i2code plan replace-task <plan_file> --thread <N> --task <M> --task-file task.json --rationale <text>
 
 ## mark-step-complete
 

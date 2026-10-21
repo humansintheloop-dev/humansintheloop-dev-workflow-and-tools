@@ -20,6 +20,13 @@ class Thread:
     def introduction(self) -> str:
         return '\n'.join(self._header_lines[1:]).strip()
 
+    def to_spec(self) -> dict:
+        return {
+            'title': self.title,
+            'introduction': self.introduction,
+            'tasks': [task.to_spec() for task in self.tasks],
+        }
+
     def get_task(self, task_number: int) -> Task:
         if task_number < 1 or task_number > len(self.tasks):
             raise ValueError(f"task {task_number} does not exist")

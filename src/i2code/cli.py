@@ -2,9 +2,11 @@
 
 import glob
 import os
+from pathlib import Path
 
 import click
 
+from i2code.claude.erm import use_erm_root
 from i2code.completion import completion
 from i2code.design_cmd.cli import design
 from i2code.go_cmd.cli import go_cmd
@@ -29,10 +31,16 @@ def _init_sdkman():
 
 @click.group()
 @click.option("--with-sdkman", is_flag=True, help="Add SDKMAN-installed tools to PATH")
-def main(with_sdkman):
+@click.option(
+    "--erm", is_flag=True,
+    help="Give Claude access to the nearest parent directory containing .erm",
+)
+def main(with_sdkman, erm):
     """i2code - Idea to Code development workflow tools."""
     if with_sdkman:
         _init_sdkman()
+    if erm:
+        use_erm_root(Path.cwd())
 
 
 main.add_command(plan)

@@ -4,6 +4,7 @@ import json
 import os
 import tempfile
 import pytest
+from i2code.claude.erm import ERM_ROOT_ENV
 from i2code.claude.permissions import (
     calculate_claude_permissions,
     copy_source_settings,
@@ -26,6 +27,15 @@ class TestCalculateClaudePermissions:
         perms = calculate_claude_permissions("/fake/repo")
 
         assert "Edit(//fake/repo/**)" in perms
+
+    def test_grants_edit_for_erm_root_instead_of_repo_root(self, monkeypatch):
+        monkeypatch.setenv(ERM_ROOT_ENV, "/fake")
+
+        perms = calculate_claude_permissions("/fake/repo")
+
+        assert "Edit(//fake/**)" in perms
+        assert "Bash(rm /fake/*)" in perms
+        assert not any("/fake/repo" in perm for perm in perms)
 
     def test_omits_path_scoped_write_rule(self):
         """Write(path) rules are ignored by Claude Code; Edit(path) covers all file-editing tools."""

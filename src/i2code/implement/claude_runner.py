@@ -13,6 +13,7 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
+from i2code.claude.erm import erm_root
 from i2code.implement.managed_subprocess import ManagedSubprocess
 
 
@@ -287,6 +288,14 @@ def print_task_failure_diagnostics(
             _format_message(msg)
 
 
+def _erm_args() -> List[str]:
+    """Arguments `i2code --erm` adds: access to the ERM root, in auto permission mode."""
+    root = erm_root()
+    if root is None:
+        return []
+    return ["--add-dir", root, "--permission-mode", "auto"]
+
+
 def _positional_prompt_after_end_of_options(prompt: str) -> List[str]:
     """Guard a positional prompt from variadic options such as --allowedTools.
 
@@ -339,6 +348,8 @@ class ClaudeRunner:
 
         for directory in command.add_dirs:
             argv += ["--add-dir", directory]
+
+        argv += _erm_args()
 
         argv += list(command.extra_args)
 

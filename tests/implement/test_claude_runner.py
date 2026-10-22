@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from fake_claude_runner import FakeClaudeRunner
+from i2code.claude.erm import ERM_ROOT_ENV
 from i2code.implement.claude_runner import (
     CapturedOutput,
     ClaudeCodeCommand,
@@ -407,6 +408,21 @@ class TestClaudeRunnerExecute:
         runner.execute(command)
 
         _assert_argv_and_cwd(mock_run, ["claude", "--session-id", "newid", "--", "p"], "/c")
+
+    def test_execute_adds_erm_root_directory(self, mocker, monkeypatch):
+        monkeypatch.setenv(ERM_ROOT_ENV, "/workspace")
+        mock_run = _patch_interactive_run(mocker)
+
+        runner = ClaudeRunner(interactive=True)
+        command = ClaudeCodeCommand(prompt="p", cwd="/c", interactive=True)
+
+        runner.execute(command)
+
+        _assert_argv_and_cwd(
+            mock_run,
+            ["claude", "--add-dir", "/workspace", "--permission-mode", "auto", "--", "p"],
+            "/c",
+        )
 
     @pytest.mark.parametrize(
         "add_dirs,expected_dir_args",

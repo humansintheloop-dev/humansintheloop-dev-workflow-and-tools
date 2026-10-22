@@ -140,6 +140,7 @@ class ImplementCommand:
             self.opts.isolate = True
         if self.opts.shell:
             self.opts.isolate = True
+        self.opts.validate_erm_options()
 
     def _check_idea_files_committed(self):
         if not self.opts.isolated and not self.opts.ignore_uncommitted_idea_changes:

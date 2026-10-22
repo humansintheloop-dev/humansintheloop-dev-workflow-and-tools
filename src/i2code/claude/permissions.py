@@ -6,6 +6,8 @@ import shutil
 from pathlib import Path
 from typing import List
 
+from i2code.claude.erm import erm_root
+
 
 REQUIRED_PERMISSIONS = [
     "Bash(git commit:*)",
@@ -28,42 +30,48 @@ def _resolve_path(path: str) -> str:
     return str(Path(path).resolve())
 
 
+def _permission_root(repo_root: str) -> str:
+    """The directory Claude is granted access to: the ERM root under `i2code --erm`, else the repo root."""
+    return erm_root() or repo_root
+
+
 def build_read_only_tools_flag(repo_root: str) -> str:
     """Build the --allowedTools flag value granting only Read access.
 
     Used for batch-mode commands where Claude should output to stdout
     rather than writing files directly.
     """
-    repo = _resolve_path(repo_root)
-    return f"Read(/{repo}/**)"
+    root = _resolve_path(_permission_root(repo_root))
+    return f"Read(/{root}/**)"
 
 
 def build_allowed_tools_flag(repo_root: str, idea_dir: str) -> str:
     """Build the --allowedTools flag value for claude CLI.
 
-    Returns a comma-separated string granting Read access to the repo root
-    and Edit access to the idea directory.
+    Returns a comma-separated string granting Read access to the permission
+    root (see _permission_root) and Edit access to the idea directory.
     Uses / prefix for absolute paths per Claude Code permission syntax.
     Edit(path) rules cover all file-editing tools; Write(path) rules are
     ignored by Claude Code's file permission checks.
     """
-    repo = _resolve_path(repo_root)
+    root = _resolve_path(_permission_root(repo_root))
     idea = _resolve_path(idea_dir)
     return (
-        f"Read(/{repo}/**),"
+        f"Read(/{root}/**),"
         f"Edit(/{idea}/**)"
     )
 
 
 def calculate_claude_permissions(repo_root: str) -> List[str]:
-    """Calculate the full list of Claude permissions for a repo root.
+    """Calculate the full list of Claude permissions for a repo root (see _permission_root).
 
     Edit(path) rules cover all file-editing tools; Write(path) rules are
     ignored by Claude Code's file permission checks.
     """
+    root = _permission_root(repo_root)
     return REQUIRED_PERMISSIONS + [
-        f"Edit(/{repo_root}/**)",
-        f"Bash(rm {repo_root}/*)",
+        f"Edit(/{root}/**)",
+        f"Bash(rm {root}/*)",
     ]
 
 

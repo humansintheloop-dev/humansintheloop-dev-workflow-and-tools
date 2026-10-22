@@ -4,6 +4,8 @@ from dataclasses import dataclass, fields
 
 import click
 
+from i2code.claude.erm import erm_root
+
 
 @dataclass
 class ImplementOpts:
@@ -77,6 +79,14 @@ class ImplementOpts:
             raise click.UsageError(
                 f"--trunk cannot be combined with: {', '.join(incompatible)}"
             )
+
+    def validate_erm_options(self):
+        """Raise click.UsageError unless `i2code --erm` is combined with --trunk.
+
+        `--erm` supports trunk-based development only.
+        """
+        if not self.trunk and erm_root() is not None:
+            raise click.UsageError("--erm requires --trunk")
 
     def inner_cli_flags(self):
         """Return CLI flags to pass to the inner i2code implement command."""

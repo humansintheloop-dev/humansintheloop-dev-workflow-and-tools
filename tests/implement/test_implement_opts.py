@@ -5,6 +5,7 @@ from dataclasses import fields
 import click
 import pytest
 
+from i2code.claude.erm import ERM_ROOT_ENV
 from i2code.implement.implement_opts import ImplementOpts
 
 
@@ -51,6 +52,26 @@ class TestValidateTrunkOptions:
             address_review_comments=True,
         )
         opts.validate_trunk_options()  # should not raise
+
+
+@pytest.mark.unit
+class TestValidateErmOptions:
+    """validate_erm_options() requires --trunk under `i2code --erm`."""
+
+    def test_without_trunk_under_erm_raises_usage_error(self, monkeypatch):
+        monkeypatch.setenv(ERM_ROOT_ENV, "/workspace")
+        opts = ImplementOpts(idea_directory="/tmp")
+        with pytest.raises(click.UsageError, match="--erm requires --trunk"):
+            opts.validate_erm_options()
+
+    def test_trunk_under_erm_passes(self, monkeypatch):
+        monkeypatch.setenv(ERM_ROOT_ENV, "/workspace")
+        opts = ImplementOpts(idea_directory="/tmp", trunk=True)
+        opts.validate_erm_options()  # should not raise
+
+    def test_without_trunk_or_erm_passes(self):
+        opts = ImplementOpts(idea_directory="/tmp")
+        opts.validate_erm_options()  # should not raise
 
 
 @pytest.mark.unit

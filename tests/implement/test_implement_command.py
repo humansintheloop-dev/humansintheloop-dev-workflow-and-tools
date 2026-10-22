@@ -5,6 +5,7 @@ import click
 import pytest
 from unittest.mock import MagicMock, patch
 
+from i2code.claude.erm import ERM_ROOT_ENV
 from i2code.implement.implement_command import ImplementCommand
 from i2code.implement.implement_opts import ImplementOpts
 from i2code.plan_domain.numbered_task import NumberedTask, TaskNumber
@@ -59,6 +60,24 @@ class TestImplementCommandDryRun:
         with patch.object(cmd, '_trunk_mode') as mock_trunk:
             cmd.execute()
             mock_trunk.assert_not_called()
+
+
+@pytest.mark.unit
+class TestImplementCommandErm:
+    """execute() accepts only trunk mode under `i2code --erm`."""
+
+    @pytest.mark.parametrize("mode_opts", [{}, {"isolation_type": "vm"}], ids=["worktree", "isolate"])
+    def test_rejects_non_trunk_mode_under_erm(self, monkeypatch, mode_opts):
+        monkeypatch.setenv(ERM_ROOT_ENV, "/workspace")
+        cmd, *_ = _make_command(dry_run=True, **mode_opts)
+        with pytest.raises(click.UsageError, match="--erm requires --trunk"):
+            cmd.execute()
+
+    def test_accepts_trunk_mode_under_erm(self, monkeypatch, capsys):
+        monkeypatch.setenv(ERM_ROOT_ENV, "/workspace")
+        cmd, *_ = _make_command(dry_run=True, trunk=True)
+        cmd.execute()
+        assert "trunk" in capsys.readouterr().out.lower()
 
 
 @pytest.mark.unit

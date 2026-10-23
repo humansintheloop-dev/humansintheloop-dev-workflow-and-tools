@@ -41,7 +41,7 @@ class TrunkMode:
         head_before = self._workspace.git_repo.head_sha
 
         for attempt in range(1, max_attempts + 1):
-            print_message(f"Executing task (attempt {attempt}/{max_attempts}): {task_description}")
+            print_message(f"\nExecuting task (attempt {attempt}/{max_attempts}): {task_description}")
 
             claude_result = self._run_claude(claude_cmd)
             head_after = self._workspace.git_repo.head_sha

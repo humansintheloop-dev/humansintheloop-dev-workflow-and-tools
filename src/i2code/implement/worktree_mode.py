@@ -123,7 +123,7 @@ class WorktreeMode:
         """Execute a single task: run Claude, push, create PR, wait for CI."""
         task_description = next_task.print()
         progress = self._work_project.task_progress()
-        print_message(f"Executing task {progress.current} of {progress.total}: {task_description}")
+        print_message(f"\nExecuting task {progress.current} of {progress.total}: {task_description}")
 
         start = self._clock()
         self._run_claude_and_validate(next_task, task_description)

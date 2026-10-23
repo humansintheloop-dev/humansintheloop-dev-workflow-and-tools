@@ -1,6 +1,7 @@
 """Tests for TrunkMode class using fakes — zero @patch decorators."""
 
 import os
+import re
 import tempfile
 from contextlib import contextmanager
 
@@ -104,6 +105,18 @@ class TestTrunkModeExecute:
         assert isinstance(cmd, ClaudeCodeCommand)
         assert cwd == fake_repo.working_tree_dir
         assert "All tasks completed!" in capsys.readouterr().out
+
+    def test_prints_blank_line_before_executing_task(self, capsys):
+        mode, _, fake_repo, fake_runner, plan_path = _make_trunk_mode([(1, 1, "Set up project", False)])
+
+        fake_runner.set_side_effect(combined(
+            advance_head(fake_repo, "bbb"),
+            mark_task_complete(plan_path, 1, 1, "Set up project"),
+        ))
+        mode.execute()
+
+        output = capsys.readouterr().out
+        assert re.search(r"^\n\[\d{2}:\d{2}:\d{2}\] Executing task \(attempt 1/3\): ", output, re.MULTILINE)
 
     def test_exits_on_claude_failure(self):
         mode, _, _, fake_runner, _ = _make_trunk_mode([(1, 1, "Set up", False)])

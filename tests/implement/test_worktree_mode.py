@@ -1,6 +1,7 @@
 """Tests for WorktreeMode class using fakes — zero @patch decorators."""
 
 import os
+import re
 import tempfile
 
 import pytest
@@ -258,6 +259,12 @@ def _run_with_fake_clock(capsys, start, end):
 def test_prints_task_duration(capsys, start, end, expected_duration):
     output = _run_with_fake_clock(capsys, start, end)
     assert f"Task 1 of 1 completed successfully in {expected_duration}." in output
+
+
+@pytest.mark.unit
+def test_prints_blank_line_before_executing_task(capsys):
+    output = _run_with_fake_clock(capsys, 100.0, 145.0)
+    assert re.search(r"^\n\[\d{2}:\d{2}:\d{2}\] Executing task 1 of 1: ", output, re.MULTILINE)
 
 
 def _setup_failure_task(tmpdir, task_name="Set up", *, ci_workflow=True):

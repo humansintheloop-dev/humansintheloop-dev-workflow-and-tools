@@ -8,7 +8,7 @@ description: Provides a pre-commit checklist and commit message formatting stand
 Before committing, first stage the files and then complete these steps in order:
 
 1. On the final task of a Steel Thread, check for dead code and review findings.
-2. If the project has a configured linter, run it with auto-fix. Resolve any unfixable errors.
+2. If the project has a configured linter, run it with auto-fix on the whole project, not only on the files you changed. Fix every error it reports, including in files outside the current work: a linter hook that checks the whole project otherwise fails every later commit. Commit fixes outside the current work separately, before the change itself.
 3. If committing Python code, run `uvx pyright --level error src/` and fix any type errors.
 4. If any new or modified shell scripts will be committed, run `shellcheck` on them and fix any issues.
 5. If the `pre_commit_code_health_safeguard` CodeScene MCP tool is available, run it.

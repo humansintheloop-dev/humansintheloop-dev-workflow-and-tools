@@ -1,8 +1,12 @@
 """Reusable numbered-option menu for interactive workflows."""
 
+import os
 import sys
 from dataclasses import dataclass, field
 from typing import Callable, TextIO
+
+BOLD = "\033[1m"
+RESET = "\033[0m"
 
 
 @dataclass
@@ -19,9 +23,19 @@ def _display_options(prompt, options, default, output):
     for i, option in enumerate(options):
         label = f"  {i + 1}) {option}"
         if i + 1 == default:
-            label += " [default]"
+            label = _emphasize(label + " [default]", output)
         print(label, file=output)
     print("", file=output)
+
+
+def _emphasize(text, output):
+    if _supports_styling(output):
+        return f"{BOLD}{text}{RESET}"
+    return text
+
+
+def _supports_styling(output):
+    return output.isatty() and not os.environ.get("NO_COLOR")
 
 
 def _build_prompt_text(option_count, default):

@@ -13,10 +13,24 @@ def _config(input_fn, output=None):
     return MenuConfig(input_fn=input_fn, output=output)
 
 
+class _TerminalOutput(io.StringIO):
+    def isatty(self):
+        return True
+
+
 def _displayed_output(prompt, default, options, input_fn):
     buf = io.StringIO()
     get_user_choice(prompt, default, options, config=_config(input_fn, output=buf))
     return buf.getvalue()
+
+
+def _displayed_on_terminal():
+    terminal = _TerminalOutput()
+    get_user_choice(
+        "Pick one:", 2, ["Alpha", "Beta"],
+        config=_config(lambda _: "2", output=terminal),
+    )
+    return terminal.getvalue()
 
 
 @pytest.mark.unit
@@ -63,6 +77,18 @@ class TestGetUserChoiceDisplaysMenu:
         displayed = _displayed_output("Pick one:", 2, ["Alpha", "Beta"], lambda _: "2")
         assert "[default]" in displayed
         assert "2) Beta [default]" in displayed
+
+    def test_bolds_default_option_on_terminal(self, monkeypatch):
+        monkeypatch.delenv("NO_COLOR", raising=False)
+        displayed = _displayed_on_terminal()
+        assert "\033[1m  2) Beta [default]\033[0m" in displayed
+        assert "  1) Alpha\n" in displayed
+
+    def test_does_not_bold_default_option_when_no_color_is_set(self, monkeypatch):
+        monkeypatch.setenv("NO_COLOR", "1")
+        displayed = _displayed_on_terminal()
+        assert "\033[" not in displayed
+        assert "  2) Beta [default]\n" in displayed
 
     def test_displays_prompt(self):
         displayed = _displayed_output("Pick one:", 1, ["Alpha", "Beta"], lambda _: "1")

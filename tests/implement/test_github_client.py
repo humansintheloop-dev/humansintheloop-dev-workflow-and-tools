@@ -1,6 +1,7 @@
 """Tests for GitHubClient class."""
 
 import json
+import subprocess
 
 import pytest
 
@@ -300,6 +301,34 @@ class TestGitHubClientWaitForWorkflowCompletion:
         success, failing_run = client.wait_for_workflow_completion("my-branch", "abc123")
         assert success is True
         assert failing_run is None
+
+    def test_keeps_watching_when_watch_times_out(self, monkeypatch, capsys):
+        runs_initial = [{"databaseId": 111, "status": "in_progress",
+                         "conclusion": None, "name": "CI", "headSha": "abc123"}]
+        runs_final = [{"databaseId": 111, "status": "completed",
+                       "conclusion": "success", "name": "CI", "headSha": "abc123"}]
+        watch_calls = []
+        list_calls = []
+
+        def fake_run(cmd, **kwargs):
+            r = _gh_result()
+            if cmd[:3] == ["gh", "run", "watch"]:
+                watch_calls.append(cmd)
+                if len(watch_calls) == 1:
+                    raise subprocess.TimeoutExpired(cmd, kwargs["timeout"])
+            else:
+                list_calls.append(cmd)
+                r.stdout = json.dumps(runs_initial if len(list_calls) == 1 else runs_final)
+            return r
+
+        monkeypatch.setattr("subprocess.run", fake_run)
+        client = GitHubClient()
+        success, failing_run = client.wait_for_workflow_completion("my-branch", "abc123", timeout_seconds=600)
+
+        assert success is True
+        assert failing_run is None
+        assert len(watch_calls) == 2
+        assert "Workflow 'CI' (run 111) is still running after 600s, continuing to wait..." in capsys.readouterr().out
 
     def test_returns_failure_when_run_fails(self, monkeypatch):
         runs = [{"databaseId": 111, "status": "completed",

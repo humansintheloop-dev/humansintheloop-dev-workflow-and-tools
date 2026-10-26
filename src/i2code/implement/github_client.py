@@ -200,10 +200,22 @@ class GitHubClient:
             run_id = run.get("databaseId")
             run_name = run.get("name", "unknown")
             print_message(f"  Watching workflow '{run_name}' (run {run_id})...")
+            while not self._watch_run(run_id, timeout_seconds):
+                print_message(
+                    f"  Workflow '{run_name}' (run {run_id}) is still running after "
+                    f"{timeout_seconds}s, continuing to wait..."
+                )
+
+    def _watch_run(self, run_id, timeout_seconds) -> bool:
+        """Return True when the run finished within timeout_seconds."""
+        try:
             self._run_gh(
                 ["gh", "run", "watch", str(run_id)],
                 timeout=timeout_seconds,
             )
+            return True
+        except subprocess.TimeoutExpired:
+            return False
 
     def get_resolved_review_comment_ids(self, owner: str, repo: str, pr_number: int) -> set[int]:
         query = """

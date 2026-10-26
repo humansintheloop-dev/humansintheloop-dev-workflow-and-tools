@@ -1,6 +1,7 @@
 """GitHubClient: wraps all `gh` CLI calls for PR and feedback operations."""
 
 import json
+import os
 import subprocess
 import time
 from typing import Any, Dict, List, Optional
@@ -246,5 +247,18 @@ query($owner: String!, $repo: String!, $pr: Int!) {
              "--jq", ".defaultBranchRef.name"]
         )
         if result.returncode != 0:
-            raise RuntimeError(f"Failed to detect default branch: {result.stderr}")
+            raise RuntimeError(
+                f"Failed to detect default branch in {self._effective_cwd()}: "
+                f"{result.stderr} ({_describe_token_env_vars()})"
+            )
         return result.stdout.strip()
+
+    def _effective_cwd(self) -> str:
+        return self._cwd if self._cwd is not None else os.getcwd()
+
+
+def _describe_token_env_vars() -> str:
+    return ", ".join(
+        f"{name} is {'set' if os.environ.get(name) else 'not set'}"
+        for name in ("GH_TOKEN", "GITHUB_TOKEN")
+    )

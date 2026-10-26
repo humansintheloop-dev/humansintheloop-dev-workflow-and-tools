@@ -323,6 +323,30 @@ class TestGitHubClientGetDefaultBranch:
         with pytest.raises(RuntimeError, match="Failed to detect default branch"):
             client.get_default_branch()
 
+    def test_failure_message_includes_cwd(self, monkeypatch):
+        result = _gh_result("", 1, "not a GitHub repository")
+        monkeypatch.setattr("subprocess.run", lambda cmd, **kwargs: result)
+        client = GitHubClient(cwd="/some/repo")
+        with pytest.raises(RuntimeError, match="in /some/repo: not a GitHub repository"):
+            client.get_default_branch()
+
+    def test_failure_message_includes_current_directory_when_no_cwd(self, monkeypatch, tmp_path):
+        monkeypatch.chdir(tmp_path)
+        client = _gh_client(monkeypatch, returncode=1, stderr="not a GitHub repository")
+        with pytest.raises(RuntimeError, match=f"in {tmp_path}"):
+            client.get_default_branch()
+
+    def test_failure_message_says_which_token_env_vars_are_set_without_values(self, monkeypatch):
+        monkeypatch.setenv("GH_TOKEN", "secret-gh-token")
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        client = _gh_client(monkeypatch, returncode=1, stderr="not a GitHub repository")
+        with pytest.raises(RuntimeError) as exc_info:
+            client.get_default_branch()
+        message = str(exc_info.value)
+        assert "GH_TOKEN is set" in message
+        assert "GITHUB_TOKEN is not set" in message
+        assert "secret-gh-token" not in message
+
 
 @pytest.mark.unit
 class TestGitHubClientGetResolvedReviewCommentIds:

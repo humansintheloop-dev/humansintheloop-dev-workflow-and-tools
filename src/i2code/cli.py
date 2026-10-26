@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 
+from i2code.claude.added_dirs import use_added_dirs
 from i2code.claude.erm import use_erm_root
 from i2code.completion import completion
 from i2code.design_cmd.cli import design
@@ -35,12 +36,18 @@ def _init_sdkman():
     "--erm", is_flag=True,
     help="Give Claude access to the nearest parent directory containing .erm",
 )
-def main(with_sdkman, erm):
+@click.option(
+    "--add-dir", "add_dirs", multiple=True,
+    help="Run Claude with --add-dir DIRECTORY (repeatable)",
+)
+def main(with_sdkman, erm, add_dirs):
     """i2code - Idea to Code development workflow tools."""
     if with_sdkman:
         _init_sdkman()
     if erm:
         use_erm_root(Path.cwd())
+    if add_dirs:
+        use_added_dirs(add_dirs)
 
 
 main.add_command(plan)

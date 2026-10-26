@@ -13,6 +13,7 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
+from i2code.claude.added_dirs import added_dirs
 from i2code.claude.erm import erm_root
 from i2code.implement.managed_subprocess import ManagedSubprocess
 
@@ -346,7 +347,7 @@ class ClaudeRunner:
             flag = "--session-id" if command.session_id.is_new else "--resume"
             argv += [flag, command.session_id.session_id]
 
-        for directory in command.add_dirs:
+        for directory in [*command.add_dirs, *added_dirs()]:
             argv += ["--add-dir", directory]
 
         argv += _erm_args()

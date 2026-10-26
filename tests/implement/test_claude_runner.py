@@ -424,6 +424,24 @@ class TestClaudeRunnerExecute:
             "/c",
         )
 
+    def test_execute_adds_directories_given_to_i2code_add_dir(self, mocker):
+        mock_added_dirs = mocker.patch(
+            "i2code.implement.claude_runner.added_dirs", return_value=["/d1", "/d2"],
+        )
+        mock_run = _patch_interactive_run(mocker)
+
+        runner = ClaudeRunner(interactive=True)
+        command = ClaudeCodeCommand(prompt="p", cwd="/c", interactive=True)
+
+        runner.execute(command)
+
+        mock_added_dirs.assert_called_once()
+        _assert_argv_and_cwd(
+            mock_run,
+            ["claude", "--add-dir", "/d1", "--add-dir", "/d2", "--", "p"],
+            "/c",
+        )
+
     @pytest.mark.parametrize(
         "add_dirs,expected_dir_args",
         [
